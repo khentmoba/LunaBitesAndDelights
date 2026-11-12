@@ -5,15 +5,23 @@
   if (!bar) return;
 
   var stuck = false;
-  var onScroll = function () {
+  var ticking = false;
+  var update = function () {
+    ticking = false;
     var next = window.scrollY > 6;
     if (next !== stuck) {
       stuck = next;
       bar.classList.toggle('is-stuck', stuck);
     }
   };
+  var onScroll = function () {
+    if (ticking) return;
+    ticking = true;
+    if (typeof requestAnimationFrame === 'function') requestAnimationFrame(update);
+    else update();
+  };
   window.addEventListener('scroll', onScroll, { passive: true });
-  onScroll();
+  update();
 })();
 
 /* The cashier writes the first slip, then the stamps land as the menu and photos arrive.

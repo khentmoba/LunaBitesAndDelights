@@ -180,7 +180,7 @@ try {
 } catch (e) { window.__perf.error = String(e); }
 `;
 
-async function measure({ send, events }, { width, height, dpr, throttle, clearCache = false }) {
+async function measure({ send, events }, { width, height, dpr, throttle, cpuRate, clearCache = false, path = '/' }) {
   events.length = 0;
   await send('Network.enable');
   if (clearCache) await send('Network.clearBrowserCache');
@@ -196,34 +196,47 @@ async function measure({ send, events }, { width, height, dpr, throttle, clearCa
       downloadThroughput: (400 * 1024) / 8, uploadThroughput: (400 * 1024) / 8,
       connectionType: 'cellular3g',
     });
-    await send('Emulation.setCPUThrottlingRate', { rate: 4 });
+    await send('Emulation.setCPUThrottlingRate', { rate: cpuRate ?? 4 });
   } else {
     await send('Network.emulateNetworkConditions', {
       offline: false, latency: 0, downloadThroughput: -1, uploadThroughput: -1,
     });
-    await send('Emulation.setCPUThrottlingRate', { rate: 1 });
+    await send('Emulation.setCPUThrottlingRate', { rate: cpuRate ?? 1 });
   }
-  await send('Page.navigate', { url: 'http://127.0.0.1:' + server.address().port + '/' });
+  await send('Page.navigate', { url: 'http://127.0.0.1:' + server.address().port + path });
   const deadline = Date.now() + 60000;
   while (!events.some((e) => e.method === 'Page.loadEventFired') && Date.now() < deadline) await sleep(100);
   await sleep(throttle ? 2500 : 900);
 
   const evaluated = await send('Runtime.evaluate', {
-    expression: `JSON.stringify({
-      ...window.__perf,
-      domNodes: document.querySelectorAll('*').length,
-      title: document.title,
-      h1: document.querySelector('h1')?.textContent ?? null,
-      font: document.querySelector('h1') ? getComputedStyle(document.querySelector('h1')).fontFamily : null,
-      sheets: document.styleSheets.length,
-      resources: performance.getEntriesByType('resource').map(r => ({
-        name: new URL(r.name).pathname, transferSize: r.transferSize,
-        encodedBodySize: r.encodedBodySize, duration: Math.round(r.duration),
-      })),
-      nav: (() => { const n = performance.getEntriesByType('navigation')[0]; return {
-        responseEnd: Math.round(n.responseEnd), domContentLoaded: Math.round(n.domContentLoadedEventEnd),
-        load: Math.round(n.loadEventEnd) }; })(),
-    })`,
+    expression: `(async () => {
+      const btn = document.querySelector('[data-show="map"]');
+      let interactionMs = null;
+      if (btn) {
+        const t0 = performance.now();
+        btn.click();
+        await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+        interactionMs = +(performance.now() - t0).toFixed(3);
+      }
+      return JSON.stringify({
+        ...window.__perf,
+        interactionMs,
+        interactionUs: interactionMs !== null ? Math.round(interactionMs * 1000) : null,
+        domNodes: document.querySelectorAll('*').length,
+        title: document.title,
+        h1: document.querySelector('h1')?.textContent ?? null,
+        font: document.querySelector('h1') ? getComputedStyle(document.querySelector('h1')).fontFamily : null,
+        sheets: document.styleSheets.length,
+        resources: performance.getEntriesByType('resource').map(r => ({
+          name: new URL(r.name).pathname, transferSize: r.transferSize,
+          encodedBodySize: r.encodedBodySize, duration: Math.round(r.duration),
+        })),
+        nav: (() => { const n = performance.getEntriesByType('navigation')[0]; return {
+          responseEnd: Math.round(n.responseEnd), domContentLoaded: Math.round(n.domContentLoadedEventEnd),
+          load: Math.round(n.loadEventEnd) }; })(),
+      });
+    })()`,
+    awaitPromise: true,
     returnByValue: true,
   });
   if (evaluated.exceptionDetails) throw new Error(JSON.stringify(evaluated.exceptionDetails));
@@ -313,6 +326,9 @@ try {
   const cold = await measure(session, { ...mobile, throttle: true });
   const warm = await measure(session, { ...mobile, throttle: true });
   const desktopCold = await measure(session, { width: 1440, height: 900, dpr: 1, throttle: true, clearCache: true });
+  const lowEndLite = await measure(session, { width: 360, height: 640, dpr: 1, throttle: true, cpuRate: 6, clearCache: true });
+  const wifiMobile = await measure(session, { ...mobile, throttle: false, cpuRate: 1, clearCache: true });
+  const menuCold = await measure(session, { ...mobile, throttle: true, clearCache: true, path: '/menu/' });
 
   const shots = [];
   const takeShots = args.screenshots === true || args.screenshots === 'true';
@@ -337,7 +353,7 @@ try {
     url: `http://127.0.0.1:${port}/`,
     profile: 'slow 3G: 400 kbps down/up, 400 ms RTT, 4x CPU slowdown',
     viewports: { mobile: '390x844@2x', desktop: '1440x900@1x' },
-    cold, warm, desktopCold,
+    cold, warm, desktopCold, lowEndLite, wifiMobile, menuCold,
     screenshots: takeShots
       ? shots.map((s) => s.replace(/\\/g, '/').replace(root.replace(/\\/g, '/') + '/', ''))
       : [],
@@ -346,9 +362,13 @@ try {
   mkdirSync(dirname(outFile), { recursive: true });
   writeFileSync(outFile, JSON.stringify(result, null, 2) + '\n');
   console.log(JSON.stringify({
-    label, cold: { fcp: cold.fcp, lcp: cold.lcp, cls: cold.cls, tbt: cold.tbt, bytes: cold.bytesOnWire, requests: cold.requests },
-    warm: { fcp: warm.fcp, lcp: warm.lcp, bytes: warm.bytesOnWire, requests: warm.requests, from304: warm.conditionalRequests, fromCache: warm.cachedRequests },
-    desktop: { fcp: desktopCold.fcp, lcp: desktopCold.lcp, bytes: desktopCold.bytesOnWire },
+    label,
+    cold: { fcp: cold.fcp, lcp: cold.lcp, cls: cold.cls, tbt: cold.tbt, interactionMs: cold.interactionMs, bytes: cold.bytesOnWire, requests: cold.requests },
+    warm: { fcp: warm.fcp, lcp: warm.lcp, interactionMs: warm.interactionMs, bytes: warm.bytesOnWire, requests: warm.requests, from304: warm.conditionalRequests, fromCache: warm.cachedRequests },
+    desktop: { fcp: desktopCold.fcp, lcp: desktopCold.lcp, tbt: desktopCold.tbt, bytes: desktopCold.bytesOnWire },
+    lowEndLite: { fcp: lowEndLite.fcp, lcp: lowEndLite.lcp, tbt: lowEndLite.tbt, interactionMs: lowEndLite.interactionMs, bytes: lowEndLite.bytesOnWire },
+    wifiMobile: { fcp: wifiMobile.fcp, lcp: wifiMobile.lcp, tbt: wifiMobile.tbt, interactionMs: wifiMobile.interactionMs, bytes: wifiMobile.bytesOnWire },
+    menuCold: { fcp: menuCold.fcp, lcp: menuCold.lcp, tbt: menuCold.tbt, bytes: menuCold.bytesOnWire },
   }, null, 2));
   session.ws.close();
 } finally {

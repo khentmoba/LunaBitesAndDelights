@@ -503,7 +503,52 @@
   if (lite) document.documentElement.setAttribute('data-lite', '');
 })();
 </script>
-<link rel="stylesheet" href="/styles.css">
+<style>
+@font-face{font-family:'Bricolage Grotesque';src:url('/fonts/bricolage.woff2?v=2') format('woff2');font-weight:400 800;font-style:normal;font-display:swap}
+@font-face{font-family:'Caveat';src:url('/fonts/caveat.woff2?v=2') format('woff2');font-weight:400 700;font-style:normal;font-display:swap}
+:root{--pink:#ec1c72;--pink-plate:#d91566;--pink-press:#b30e52;--pink-ink:#b30e52;--pink-rule:rgba(236,28,114,.32);--blush:#feb7c9;--blush-paper:#fff0f4;--butter:#fcd04e;--paper:#fffafb;--ink:#2a0f1e;--ink-soft:#6b3a52;--print:'Bricolage Grotesque',ui-sans-serif,system-ui,-apple-system,'Segoe UI',sans-serif;--hand:'Caveat','Segoe Print','Bradley Hand',cursive;--pad:clamp(16px,4.4vw,56px);--inset:clamp(20px,3.6vw,48px);--max:1120px}
+*{box-sizing:border-box}
+html{background:var(--blush);color-scheme:light;overflow-x:clip}
+body{margin:0;color:var(--ink);font-family:var(--print);font-size:clamp(16px,1.05vw,17px);line-height:1.55;font-optical-sizing:auto;-webkit-font-smoothing:antialiased}
+body::before{content:'';position:fixed;inset:0;z-index:-1;background:#f97cb3 url('/img/pink-wash.webp') center/cover no-repeat;transform:translateZ(0)}
+img{display:block;max-width:100%;height:auto}
+a{color:inherit;text-underline-offset:.2em;text-decoration-thickness:1px}
+a,button{touch-action:manipulation}
+p,h1,h2,h3,dl,dd,figure,ul{margin:0}
+ul{padding:0;list-style:none}
+.skip{position:absolute;left:12px;top:-60px;z-index:30;padding:.7em 1em;background:var(--paper);color:var(--ink);font-weight:700;border-radius:6px}
+.skip:focus{top:12px}
+.stamp{display:inline-flex;align-items:center;justify-content:center;min-height:48px;padding:.85em 1.45em;border-radius:6px;background:var(--pink-plate);color:#fff;font-family:var(--print);font-size:1.05rem;font-weight:750;letter-spacing:.01em;line-height:1.1;text-decoration:none;box-shadow:inset 0 0 0 3px var(--pink-plate),inset 0 0 0 4.5px rgba(255,255,255,.6),0 1px 0 var(--pink-press),0 12px 20px -12px rgba(142,11,65,.75)}
+.stamp--sm{min-height:44px;padding:.6em 1.05em;font-size:.95rem}
+.bar{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:8px 18px;padding:8px var(--pad);background:var(--paper);border-bottom:2px solid var(--pink)}
+.bar__home{flex:none;width:40px;opacity:0;transform:scale(.85)}
+.bar.is-stuck .bar__home,.bar__home:focus-visible{opacity:1;transform:none}
+.bar__nav{display:flex;gap:2px clamp(8px,2vw,22px);margin-left:auto;font-size:.95rem;font-weight:650}
+.bar__nav a{display:inline-flex;align-items:center;min-height:44px;padding:0 4px;text-decoration:none;color:var(--ink)}
+.bar__nav .bar__staff{color:var(--ink-soft)}
+main{padding:clamp(18px,3vw,40px) var(--pad) 0}
+.sheet{max-width:var(--max);margin:0 auto clamp(28px,4vw,56px);filter:drop-shadow(0 1px 0 rgba(142,11,65,.22)) drop-shadow(0 16px 18px rgba(110,4,50,.3))}
+.slip{position:relative;padding:calc(var(--inset) + 6px) var(--inset) var(--inset);background:var(--paper);-webkit-mask:radial-gradient(circle at 50% 0,#0000 4px,#000 4.5px) top/16px 100% repeat-x;mask:radial-gradient(circle at 50% 0,#0000 4px,#000 4.5px) top/16px 100% repeat-x}
+.menu__head{display:flex;flex-wrap:wrap;align-items:end;justify-content:space-between;gap:8px 32px;padding-bottom:clamp(16px,2.4vw,26px);border-bottom:3px double var(--pink)}
+.menu__title{font-size:clamp(2.4rem,6vw,4.4rem);font-weight:800;line-height:.95;letter-spacing:-.025em}
+.menu__sub{max-width:40ch;color:var(--ink-soft)}
+.menu__cols{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));margin-top:clamp(20px,2.6vw,30px)}
+.col{min-width:0;padding:0 clamp(16px,2vw,28px)}
+.col:first-child{padding-left:0}
+.col:last-child{padding-right:0}
+.col+.col{border-left:1px solid var(--pink-rule)}
+.col__title{display:flex;align-items:center;gap:10px;margin:24px 0 8px;padding:6px 10px;background:var(--pink-plate);color:#fff;font-size:.74rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase}
+.col__title:first-child{margin-top:0}
+.row{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:11px 0;border-bottom:1px solid var(--pink-rule)}
+.row__name{font-weight:500}
+.row__price{font-size:1.35rem;font-weight:780;font-variant-numeric:tabular-nums lining-nums;white-space:nowrap}
+html[data-lite] .sheet{filter:none}
+html[data-lite] .slip{-webkit-mask:none;mask:none;border-top:3px dashed var(--pink-rule);box-shadow:0 2px 10px rgba(110,4,50,.18)}
+@media (max-width:940px){.menu__cols{grid-template-columns:minmax(0,1fr)}.col,.col:first-child,.col:last-child{padding:0}.col+.col{border-left:0;margin-top:30px}}
+@media (max-width:460px){.bar{flex-wrap:wrap;gap:6px 10px}.bar__home{display:none}.bar__nav{margin-left:0;font-size:.88rem;gap:2px 8px}.stamp--sm{margin-left:auto;padding:.6em .85em}}
+</style>
+<link rel="preload" href="/styles.css?v=3" as="style" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="/styles.css?v=3"></noscript>
 <script src="/app.js" defer></script>
 </head>
 <body>
@@ -511,7 +556,7 @@
 
 <header class="bar">
   <a class="bar__home" href="/" aria-label="Luna Bites &amp; Delights, back to the storefront">
-    <img src="/img/luna-logo-320.webp" width="320" height="385" alt="">
+    <img src="/img/luna-logo-320.webp" width="320" height="385" alt="" decoding="async">
   </a>
   <nav class="bar__nav" aria-label="Sections">
     <a href="/#board">Prices</a>
@@ -656,7 +701,7 @@
 </main>
 
 <footer class="foot">
-  <img class="foot__logo" src="/img/luna-logo-320.webp" width="320" height="385" alt="" loading="lazy">
+  <img class="foot__logo" src="/img/luna-logo-320.webp" width="320" height="385" alt="" loading="lazy" decoding="async">
   <div>
     <p class="foot__name">Luna Bites &amp; Delights</p>
     <p class="foot__meta">Purok 5, Poblacion, Magallanes · Agusan del Norte (~15 mins from Cabadbaran) · open 9am to 8pm</p>

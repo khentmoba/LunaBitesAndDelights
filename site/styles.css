@@ -66,6 +66,7 @@ body::before {
   inset: 0;
   z-index: -1;
   background: #f97cb3 url('/img/pink-wash.webp') center / cover no-repeat;
+  transform: translateZ(0);
 }
 
 img { display: block; max-width: 100%; height: auto; }
@@ -681,6 +682,13 @@ mark {
 
 /* Save-Data, 2G/3G and low-memory phones keep the page still and readable. */
 html[data-lite] { scroll-behavior: auto; }
+html[data-lite] .sheet { filter: none; }
+html[data-lite] .slip {
+  -webkit-mask: none;
+  mask: none;
+  border-top: 3px dashed var(--pink-rule);
+  box-shadow: 0 2px 10px rgba(110, 4, 50, .18);
+}
 html[data-lite] .stamp,
 html[data-lite] .btn-line,
 html[data-lite] .bar,
