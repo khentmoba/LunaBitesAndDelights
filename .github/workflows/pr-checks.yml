@@ -1,5 +1,6 @@
 name: PR Checks
-# Regression gate: every PR must pass analyze + tests + builds + proof before merge.
+# Regression gate: every PR must pass analyze + tests + builds + proof
+# before merge.
 # Protect `main` (Settings → Branches → Require status checks) with:
 #   flutter / functions / rules / proof
 on:
@@ -19,7 +20,7 @@ jobs:
 
       - uses: subosito/flutter-action@v2
         with:
-          channel: stable
+          flutter-version: '3.47.7'
           cache: true
 
       - run: flutter pub get
@@ -27,14 +28,17 @@ jobs:
       - name: Analyze (errors fail; new info/warning issues fail)
         run: |
           set -o pipefail
-          flutter analyze --no-fatal-infos --no-fatal-warnings 2>&1 | tee analyze.txt
+          flutter analyze --no-fatal-infos --no-fatal-warnings 2>&1 \
+            | tee analyze.txt
           node tool/check_analyzer_baseline.mjs analyze.txt
 
       - name: Format check (changed files only)
         run: |
-          FILES=$(git diff --name-only --diff-filter=d origin/${{ github.base_ref }}...HEAD -- '*.dart')
+          FILES=$(git diff --name-only --diff-filter=d \
+            "origin/${{ github.base_ref }}...HEAD" -- '*.dart')
           if [ -n "$FILES" ]; then
-            echo "$FILES" | xargs dart format --output=none --set-exit-if-changed
+            echo "$FILES" | xargs dart format --output=none \
+              --set-exit-if-changed
           else
             echo "no Dart files changed"
           fi

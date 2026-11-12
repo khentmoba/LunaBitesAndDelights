@@ -25,7 +25,7 @@ Order Luna Bites & Delights for delivery or pick-up without talking to anyone. T
 
 ## Positioning
 
-A neighbourhood kiosk with the prices printed where you can see them: real per-item pricing, buy-1-take-1 burgers and hotdogs, and a separate delivery fee whose amount is confirmed by the rider. The ordering system is the business's own app, not a marketplace listing.
+A neighbourhood kiosk with the prices printed where you can see them: real per-item pricing, buy-1-take-1 burgers, and a separate delivery fee whose amount is confirmed by the rider. The ordering system is the business's own app, not a marketplace listing.
 
 ## Operating Context
 
@@ -37,10 +37,11 @@ A neighbourhood kiosk with the prices printed where you can see them: real per-i
 
 ## Capabilities and Constraints
 
-- Menu sections: Shawarma Favorites, French Fries, Combo Meals, Extras, Refreshments (coolers), Burger & Hotdog Sandwich (buy 1 take 1).
+- Menu sections: Shawarma Favorites, French Fries, Combo Meals, Extras, Refreshments (coolers), Burgers (buy 1 take 1).
 - Prices live in `lib/data/menu_data.dart`; the storefront must not drift from them.
 - Fries & Nachos Overload has Buddy (1–2 pax, ₱99) and Barkada (3–5 pax, ₱150) sizes. Burger favorites retain buy 1 take 1 pricing.
 - The owner's dessert and combo uploads add Ube Halo, Mango Graham, Choco Oreo and Vanilla Cheese ice cream at ₱65 each, Luna Leche Flan at ₱20, and D1–D4 fries/drink bundles at ₱55/₱65/₱75/₱89. Combo 2 is wrap + fries (₱99), Super Combo 1 is burger + fries + drink (₱99), Super Combo 2 is wrap + fries + drink (₱128), Combo 3 is two burgers + regular fries + two drinks (₱169), Combo 4 is wrap + burger + fries (₱139), and Combo 6 is wrap + shawarma burger + drink (₱150). Original uploads and crop mappings are in `docs/reference/menu-update/` and `docs/owner-menu-crops.json`.
+- Shawarma Fries and Shawarma Nachos are ₱99. Milo Craze (Dinosaur, Float, Crunch, Oreo) is ₱65; Cream Float Craze is Coke ₱49, Chuckie ₱65, Milo ₱65 and Cookies and Cream ₱65; every Coffee Foam drink is ₱49.
 - Delivery fee: rider-confirmed and charged separately. The storefront, checkout and receipt show a delivery-fee notice without quoting an amount. Checkout totals and online payments cover food only.
 - Checkout supports cash and GCash; staff verify orders in the dashboard.
 - Routes in the kiosk app: `/menu`, `/cart`, `/checkout_process`, `/kds`, `/analytics`, `/pasugo/*`.
@@ -57,7 +58,7 @@ A neighbourhood kiosk with the prices printed where you can see them: real per-i
 
 ## Evidence on Hand
 
-- Real product photography in `images/` (shawarma wrap, fries, burger, halo-halo, three large coolers, couple snack combo, and more) — the kiosk's own menu assets.
+- Real product photography in `images/` (shawarma wrap, fries, burger, three large coolers, couple snack combo, and more) — the kiosk's own menu assets.
 - Real prices and item descriptions in `lib/data/menu_data.dart`.
 - Public Facebook figures as of capture: 866 followers, 270 talking about this.
 - No testimonials, reviews, awards, or press exist. Do not fabricate any.

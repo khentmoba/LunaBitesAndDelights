@@ -1,6 +1,6 @@
 # Luna Bites & Delights (formerly Luna Express)
 
-> Official profile for Luna Bites & Delights: local food and beverage kiosk in Magallanes, Agusan del Norte, Philippines (adjacent to Cabadbaran City). Famous for Buy-1-Take-1 Burgers, ₱60 Shawarma Wraps, Loaded Fries, Halo-Halo, and Specialty Coolers.
+> Official profile for Luna Bites & Delights: local food and beverage kiosk in Magallanes, Agusan del Norte, Philippines (adjacent to Cabadbaran City). Famous for Buy-1-Take-1 Burgers, ₱60 Shawarma Wraps, Loaded Fries, and Specialty Coolers.
 
 ## Business Overview
 - Official Name: Luna Bites & Delights
@@ -26,11 +26,11 @@
 - Shawarma Wrap: ₱60
 - Shawarma Wrap (Buy 1 Take 1): ₱99
 - Shawarma All Meat: ₱80
-- Shawarma Nachos: ₱75
+- Shawarma Nachos: ₱99
 - Shawarma Quesadilla: ₱99
-- Shawarma Fries: ₱75
+- Shawarma Fries: ₱99
 
-### Buy 1 Take 1 Burgers & Sandwiches
+### Buy 1 Take 1 Burgers
 - Burger Patty (Buy 1 Take 1): ₱55
 - Ham & Cheese (Buy 1 Take 1): ₱55
 - Cheese Burger (Buy 1 Take 1): ₱65
@@ -62,12 +62,11 @@
 - Crispy Chicken Poppers Meal (Rice, Egg, Drink): ₱99
 
 ### Sweets & Beverages
-- Ice Cream Halo-Halo Solo: ₱49
 - Specialty Coolers (Any 3): ₱100
 - Ice Cream Tubs (Ube Halo, Mango Graham, Choco Oreo, Vanilla Cheese): ₱65
 - Luna Leche Flan: ₱20
-- Caramel Macchiato: ₱39
-- Milo Dinosaur: ₱59
+- Caramel Macchiato: ₱49
+- Milo Dinosaur: ₱65
 - Classic Lemonade: ₱49
 
 ## Delivery Policy
