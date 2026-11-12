@@ -99,7 +99,7 @@ class _InactivityWatcherState extends State<InactivityWatcher> {
                     width: 90,
                     height: 90,
                     decoration: BoxDecoration(
-                      color: KioskTheme.lunaPink.withOpacity(0.05),
+                      color: KioskTheme.lunaPink.withValues(alpha: 0.05),
                       shape: BoxShape.circle,
                     ),
                     child: Center(

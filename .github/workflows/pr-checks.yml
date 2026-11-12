@@ -2,7 +2,7 @@ name: PR Checks
 # Regression gate: every PR must pass analyze + tests + builds + proof
 # before merge.
 # Protect `main` (Settings → Branches → Require status checks) with:
-#   flutter / functions / rules / proof
+#   flutter / functions / rules / proof / site
 on:
   pull_request:
 
@@ -100,6 +100,22 @@ jobs:
 
       - name: Firestore rules tests (emulator)
         run: npm run test:rules
+
+  site:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: package-lock.json
+
+      - run: npm ci
+
+      - name: Storefront script tests
+        run: npm run test:site
 
   proof:
     runs-on: ubuntu-latest

@@ -350,7 +350,7 @@ fetchAddressAt($lat, $lng);
         color: KioskTheme.lunaWhite,
         boxShadow: [
           BoxShadow(
-            color: KioskTheme.lunaPink.withOpacity(0.05),
+            color: KioskTheme.lunaPink.withValues(alpha: 0.05),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -407,7 +407,7 @@ fetchAddressAt($lat, $lng);
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(KioskTheme.radiusMd),
             borderSide: BorderSide(
-              color: KioskTheme.lunaPink.withOpacity(0.3),
+              color: KioskTheme.lunaPink.withValues(alpha: 0.3),
               width: 1,
             ),
           ),
@@ -424,7 +424,7 @@ fetchAddressAt($lat, $lng);
         color: KioskTheme.lunaWhite,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.06),
+            color: Colors.black.withValues(alpha: 0.06),
             blurRadius: 8,
             offset: const Offset(0, 4),
           ),
@@ -434,7 +434,7 @@ fetchAddressAt($lat, $lng);
         shrinkWrap: true,
         padding: EdgeInsets.zero,
         itemCount: _searchResults.length,
-        separatorBuilder: (_, __) => KioskTheme.divider(opacity: 0.05),
+        separatorBuilder: (_, _) => KioskTheme.divider(opacity: 0.05),
         itemBuilder: (context, index) {
           final r = _searchResults[index];
           final name = r['display_name'] as String? ?? '';
@@ -590,7 +590,7 @@ fetchAddressAt($lat, $lng);
                     border: Border.all(color: Colors.white, width: 3),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.35),
+                        color: Colors.black.withValues(alpha: 0.35),
                         blurRadius: 10,
                         offset: const Offset(0, 3),
                       ),
@@ -605,7 +605,7 @@ fetchAddressAt($lat, $lng);
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.15),
+                            color: Colors.black.withValues(alpha: 0.15),
                             blurRadius: 2,
                           ),
                         ],
@@ -618,7 +618,7 @@ fetchAddressAt($lat, $lng);
                   width: 14,
                   height: 7,
                   decoration: BoxDecoration(
-                    color: KioskTheme.lunaPink.withOpacity(0.15),
+                    color: KioskTheme.lunaPink.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(7),
                   ),
                 ),
@@ -638,7 +638,7 @@ fetchAddressAt($lat, $lng);
         color: KioskTheme.lunaWhite,
         borderRadius: BorderRadius.circular(KioskTheme.radiusFull),
         elevation: 4,
-        shadowColor: Colors.black.withOpacity(0.2),
+        shadowColor: Colors.black.withValues(alpha: 0.2),
         child: InkWell(
           borderRadius: BorderRadius.circular(KioskTheme.radiusFull),
           onTap: _goToMyLocation,
@@ -647,7 +647,9 @@ fetchAddressAt($lat, $lng);
             height: 44,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              border: Border.all(color: KioskTheme.lunaPink.withOpacity(0.1)),
+              border: Border.all(
+                color: KioskTheme.lunaPink.withValues(alpha: 0.1),
+              ),
             ),
             child: const Icon(
               Icons.my_location,
@@ -719,7 +721,7 @@ fetchAddressAt($lat, $lng);
 
   Widget _buildLoadingOverlay() {
     return Container(
-      color: KioskTheme.lunaWhite.withOpacity(0.85),
+      color: KioskTheme.lunaWhite.withValues(alpha: 0.85),
       child: const Center(
         child: CircularProgressIndicator(color: KioskTheme.lunaPink),
       ),

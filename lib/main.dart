@@ -19,21 +19,21 @@ import 'screens/admin_dashboard.dart';
 
 /// #12 bot protection: Firebase App Check (reCAPTCHA Enterprise on web).
 /// Site key is injected at build time so it never lands in git:
-///   flutter build web --dart-define=RECAPTCHA_SITE_KEY=<key>
+///   `flutter build web --dart-define=RECAPTCHA_SITE_KEY=<key>`
 /// Until the key is set, activation is skipped (requests still work).
 Future<void> _activateAppCheck() async {
   const siteKey = String.fromEnvironment('RECAPTCHA_SITE_KEY');
   try {
     if (kDebugMode) {
       await FirebaseAppCheck.instance.activate(
-        androidProvider: AndroidProvider.debug,
-        appleProvider: AppleProvider.debug,
+        providerAndroid: const AndroidDebugProvider(),
+        providerApple: const AppleDebugProvider(),
       );
     } else if (siteKey.isNotEmpty) {
       await FirebaseAppCheck.instance.activate(
-        androidProvider: AndroidProvider.playIntegrity,
-        appleProvider: AppleProvider.appAttest,
-        webProvider: ReCaptchaEnterpriseProvider(siteKey),
+        providerAndroid: const AndroidPlayIntegrityProvider(),
+        providerApple: const AppleAppAttestProvider(),
+        providerWeb: ReCaptchaEnterpriseProvider(siteKey),
       );
     } else {
       debugPrint('AppCheck skipped: no RECAPTCHA_SITE_KEY defined');

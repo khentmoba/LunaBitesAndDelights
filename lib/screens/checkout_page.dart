@@ -410,12 +410,12 @@ class _CheckoutPageState extends State<CheckoutPage> {
                       margin: const EdgeInsets.only(top: 24),
                       padding: const EdgeInsets.all(24),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF007DFE).withOpacity(0.05),
+                        color: const Color(0xFF007DFE).withValues(alpha: 0.05),
                         borderRadius: BorderRadius.circular(
                           KioskTheme.radiusLg,
                         ),
                         border: Border.all(
-                          color: const Color(0xFF007DFE).withOpacity(0.2),
+                          color: const Color(0xFF007DFE).withValues(alpha: 0.2),
                         ),
                       ),
                       child: Column(
@@ -458,7 +458,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
                                 KioskTheme.radiusSm,
                               ),
                               border: Border.all(
-                                color: const Color(0xFF007DFE).withOpacity(0.1),
+                                color: const Color(
+                                  0xFF007DFE,
+                                ).withValues(alpha: 0.1),
                               ),
                             ),
                             child: Row(
@@ -521,7 +523,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                             ),
                             decoration: BoxDecoration(
                               color: _locationPinned
-                                  ? KioskTheme.lunaPink.withOpacity(0.05)
+                                  ? KioskTheme.lunaPink.withValues(alpha: 0.05)
                                   : Colors.white,
                               borderRadius: BorderRadius.circular(
                                 KioskTheme.radiusMd,

@@ -122,7 +122,7 @@ class WhiteCard extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(radius),
         border: Border.all(
-          color: KioskTheme.lunaPink.withOpacity(borderOpacity),
+          color: KioskTheme.lunaPink.withValues(alpha: borderOpacity),
         ),
         boxShadow: shadows ?? KioskTheme.shadowSm,
       ),
@@ -161,7 +161,7 @@ class MetricCard extends StatelessWidget {
           Container(
             padding: EdgeInsets.all(compact ? 12 : 16),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              color: color.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
             child: Icon(icon, color: color, size: compact ? 24 : 28),
