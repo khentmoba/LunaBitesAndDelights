@@ -200,6 +200,7 @@ ul { padding: 0; list-style: none; }
   color: var(--ink);
 }
 .bar__nav a:hover { color: var(--pink-ink); text-decoration: underline; text-decoration-thickness: 2px; }
+.bar__nav .bar__staff { color: var(--ink-soft); }
 
 /* ─── Sheets ─────────────────────────────────────────────────────────────── */
 
@@ -703,7 +704,7 @@ mark {
 }
 
 @media (max-width: 460px) {
-  .bar { gap: 6px 10px; }
+  .bar { flex-wrap: wrap; gap: 6px 10px; }
   .bar__home { display: none; }
   .bar__nav { margin-left: 0; font-size: .88rem; gap: 2px 8px; }
   .stamp--sm { margin-left: auto; padding: .6em .85em; }
