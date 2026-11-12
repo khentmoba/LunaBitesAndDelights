@@ -28,6 +28,7 @@ const MENU_PRICES = {
     // Previous names/prices below remain valid for carts from cached clients.
     'Shawarma Rice Bowl': [50], 'Lemon Yakult': [49], 'Lemon Yogurt': [49],
     'Hotdog Sandwich': [69],
+    'Green Apple': [49], 'Sweet Orange': [49], 'Mixed Berries': [49], 'Four Seasons': [49],
     'Buy 1 Take 1 French Fries': [50], 'Large Fries': [75], 'Bucket Fries': [99], 'Terra Fries': [150],
     'Combo 1 – Burger + Fries': [60], 'Combo 2 – Hotdog + Fries': [60],
     'Super Combo 1 – Hotdog + Fries + Drink': [99], 'Super Combo 2 – Burger + Fries + Drink': [99],
@@ -38,7 +39,6 @@ const MENU_PRICES = {
     'Strawberry': [39, 49], 'Rocky Road': [39], 'Choco Kisses': [39], '3 for ₱100 Coolers': [100],
     'Classic Lemonade': [49], 'Lemon Strawberry': [49],
     'Lemon Cucumber': [49],
-    'Green Apple': [49], 'Sweet Orange': [49], 'Mixed Berries': [49], 'Four Seasons': [49],
     'Cookies & Cream Overload': [65], 'Chocolate Oreo': [65], 'Strawberry Oreo': [65], 'Milo Oreo Float': [65],
     'Milo Dinosaur': [65], 'Milo Float': [65], 'Milo Crunch': [65], 'Milo Oreo': [65],
     'Coke Float': [49], 'Chuckie Float': [65], 'Cookies and Cream Float': [65],
