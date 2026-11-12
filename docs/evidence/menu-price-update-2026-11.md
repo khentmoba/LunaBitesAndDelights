@@ -128,6 +128,8 @@ Every job in `.github/workflows/pr-checks.yml` was executed locally:
 | rules (emulator) | `cd functions && npm run test:rules` (JDK 21) | 8 passed, 0 failed — PASS |
 | proof (verification) | `node tool/check_pr_proof.mjs` | Proof check passed — PASS |
 
+CI now pins Flutter 3.47.7 in `.github/workflows/pr-checks.yml`. The floating `stable` channel pulled a newer SDK whose 30 new `material_ui` deprecation infos (all in untouched files) broke the 87-issue baseline check; the pin matches the toolchain the baseline was measured with.
+
 The new regression test fails without the change: it asserts the four retired names are absent, the two shawarma sides are ₱99, the Milo/floats are ₱65, and Coke Float and the four coffees are flat ₱49 with no variants.
 
 **Language-server note.** The worktree's Dart and TypeScript language servers started before `flutter pub get` and `npm ci` finished, so they briefly reported unresolved imports and an implicit `any` in `create_checkout.ts`. The authoritative compilers are clean: `dart analyze lib/screens/kds_page.dart lib/data/menu_data.dart` reports "No issues found!" (the whole-project result is the 87-issue baseline in the table above), and `npx tsc --noEmit` (with `strict: true`) exits 0.
