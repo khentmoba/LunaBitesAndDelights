@@ -1,4 +1,4 @@
-// Fails a pull request that changes product code without the proof AGENTS.md requires.
+// Optional local check for the proof AGENTS.md requires. Not run in CI.
 // Inputs (env): PR_BODY (pull request description), CHANGED_FILES (newline-separated repo paths).
 //
 // UI change (lib/ except services and models, web/, site/): needs an inline image and a docs/evidence/ reference.

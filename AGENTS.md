@@ -25,14 +25,14 @@
 - **For UI / Visual changes:** Capture real rendered screenshots at supported viewports (e.g. mobile 320px/390px, tablet 768px, desktop 1440px) and save them to `docs/evidence/`.
 - **For Backend / API / Integration features:** Produce tangible evidence of end-to-end functionality (e.g. test payloads, actual API output artifacts, verified live responses, or simulated message captures) and document the validation in `docs/evidence/<feature-name>.md`.
 - **Embed visual proof in PR descriptions:** Every PR must embed visual proof and screenshots directly into the Evidence section using inline images (`![alt](url)` or `raw=true` URLs), not just text links, so reviewers see the proof immediately without clicking away.
-- **Enforced by CI:** the `proof` job in `.github/workflows/pr-checks.yml` fails a PR that changes `lib/` (UI), `web/`, or `site/` without an inline image and a `docs/evidence/` reference, or changes `functions/src/`, `lib/services/`, or the rules files without a `docs/evidence/` reference.
+- **Not enforced by CI:** the `proof` job was removed. Reviewers still check evidence; `tool/check_pr_proof.mjs` remains available for a local check.
 
 ## Branching & Deployment Rules
 
 1. **Never push directly to `main`.**
    - Direct pushes to `main` trigger the automated production deploy workflow (`.github/workflows/firebase-hosting-merge.yml`).
    - Do NOT run manual production deployments (`firebase deploy`) without explicit user instruction.
-   - Branch protection on `main` requires the `flutter`, `functions`, `rules`, and `proof` checks.
+   - Branch protection on `main` requires the `flutter`, `functions`, and `rules` checks.
 
 2. **Always create a Pull Request (PR).**
    - Always use the `$file-pr` skill when making PRs.

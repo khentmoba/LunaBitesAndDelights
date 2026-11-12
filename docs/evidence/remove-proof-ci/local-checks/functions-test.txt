@@ -1,0 +1,40 @@
+
+> test
+> npm run build && node --test test/telegram_notification.test.js test/payment_reconciliation.test.js test/staff_auth.test.js
+
+
+> build
+> tsc
+
+✔ prefers the order document id from metadata (0.7458ms)
+✔ falls back to reference_number for sessions created before this change (0.1666ms)
+✔ ignores metadata that is not a plain document id (0.1439ms)
+✔ returns null when the payload has no usable id (0.1063ms)
+▶ staff auth: scrypt PIN and password verification
+  ✔ hashes and verifies a 4-digit PIN (188.0709ms)
+  ✔ hashes and verifies a staff password (97.2064ms)
+  ✔ timing-safe comparison rejects tampered hash (66.2988ms)
+✔ staff auth: scrypt PIN and password verification (352.806ms)
+{"error":"ETELEGRAM: 400 Bad Request: can't parse entities: Character '(' is reserved","chatId":"111","severity":"WARNING","message":"sendToAll: MarkdownV2 parsing failed for chat 111; falling back to plain text"}
+{"error":"ETELEGRAM: 400 Bad Request: can't parse entities: Character '(' is reserved","chatId":"222","severity":"WARNING","message":"sendToAll: MarkdownV2 parsing failed for chat 222; falling back to plain text"}
+{"error":"ETELEGRAM: 400 Bad Request: can't parse entities","chatId":"333","severity":"WARNING","message":"sendPhotoToAll: MarkdownV2 parsing failed for chat 333; falling back to plain text caption"}
+{"error":"ETELEGRAM: 400 Bad Request: can't parse entities","chatId":"444","severity":"WARNING","message":"sendPhotoToAll: MarkdownV2 parsing failed for chat 444; falling back to plain text caption"}
+▶ Telegram MarkdownV2 escaping and order notifications
+  ✔ escapeMd escapes all Telegram MarkdownV2 reserved characters (1.8921ms)
+  ✔ escapeMd handles numbers, null, and undefined without throwing (0.1929ms)
+  ✔ item line with variant must have escaped parentheses in MarkdownV2 (0.8255ms)
+  ✔ full order notification messages must be valid MarkdownV2 (0.5635ms)
+  ✔ stripMarkdownV2 removes backslash escapes cleanly for plain-text fallback (0.2143ms)
+  ✔ sendToAll falls back to plain text when Telegram rejects entity parsing (1.3591ms)
+  ✔ map URL helpers generate valid Google and MapTiler URLs (0.2327ms)
+  ✔ formatDeliverySummaryCaption generates valid MarkdownV2 under 1024 chars (0.2392ms)
+  ✔ sendPhotoToAll sends photo with caption and reply_markup, and falls back to plain text on entity parse error (0.6462ms)
+✔ Telegram MarkdownV2 escaping and order notifications (7.7275ms)
+ℹ tests 16
+ℹ suites 2
+ℹ pass 16
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 668.27
