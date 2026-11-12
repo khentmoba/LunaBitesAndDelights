@@ -58,7 +58,7 @@ class ReceiptPage extends StatelessWidget {
                     width: 80,
                     height: 80,
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.1),
+                      color: Colors.white.withValues(alpha: 0.1),
                       shape: BoxShape.circle,
                     ),
                     child: const Center(
@@ -114,7 +114,7 @@ class ReceiptPage extends StatelessWidget {
                     width: double.infinity,
                     padding: const EdgeInsets.symmetric(vertical: 32),
                     decoration: BoxDecoration(
-                      color: KioskTheme.lunaButter.withOpacity(0.3),
+                      color: KioskTheme.lunaButter.withValues(alpha: 0.3),
                       borderRadius: const BorderRadius.vertical(
                         top: Radius.circular(KioskTheme.radiusXl),
                       ),
@@ -252,12 +252,14 @@ class ReceiptPage extends StatelessWidget {
                           width: double.infinity,
                           padding: const EdgeInsets.all(20),
                           decoration: BoxDecoration(
-                            color: KioskTheme.lunaButter.withOpacity(0.1),
+                            color: KioskTheme.lunaButter.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(
                               KioskTheme.radiusMd,
                             ),
                             border: Border.all(
-                              color: KioskTheme.lunaButter.withOpacity(0.5),
+                              color: KioskTheme.lunaButter.withValues(
+                                alpha: 0.5,
+                              ),
                             ),
                           ),
                           child: Center(

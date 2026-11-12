@@ -108,7 +108,7 @@ class _StaffMenuDialogState extends State<StaffMenuDialog> {
             onTap: _isGenerating
                 ? () {}
                 : () {
-                    _triggerManualReport(context);
+                    _triggerManualReport();
                   },
           ),
           const SizedBox(height: 12),
@@ -152,9 +152,9 @@ class _StaffMenuDialogState extends State<StaffMenuDialog> {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 20),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.05),
+          color: color.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(KioskTheme.radiusMd),
-          border: Border.all(color: color.withOpacity(0.15)),
+          border: Border.all(color: color.withValues(alpha: 0.15)),
         ),
         child: Column(
           children: [
@@ -183,16 +183,16 @@ class _StaffMenuDialogState extends State<StaffMenuDialog> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.05),
+          color: color.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(KioskTheme.radiusMd),
-          border: Border.all(color: color.withOpacity(0.1)),
+          border: Border.all(color: color.withValues(alpha: 0.1)),
         ),
         child: Row(
           children: [
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
+                color: color.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: Icon(icon, color: color, size: 22),
@@ -219,7 +219,7 @@ class _StaffMenuDialogState extends State<StaffMenuDialog> {
             Icon(
               Icons.arrow_forward_ios_rounded,
               size: 14,
-              color: color.withOpacity(0.5),
+              color: color.withValues(alpha: 0.5),
             ),
           ],
         ),
@@ -227,7 +227,7 @@ class _StaffMenuDialogState extends State<StaffMenuDialog> {
     );
   }
 
-  Future<void> _triggerManualReport(BuildContext context) async {
+  Future<void> _triggerManualReport() async {
     setState(() => _isGenerating = true);
     try {
       final data = await callFn('triggerManualReport', {}, 30);

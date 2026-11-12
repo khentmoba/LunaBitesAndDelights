@@ -16,6 +16,10 @@ class _Firestore extends Fake implements FirebaseFirestore {
   }
 }
 
+// Firestore 6 sealed these interfaces, so a hand-rolled fake cannot satisfy
+// them without tripping the analyzer. The alternative is a mocking package plus
+// codegen for one regression test; these two suppressions are the cheaper trade.
+// ignore: subtype_of_sealed_class
 class _Orders extends Fake
     implements CollectionReference<Map<String, dynamic>> {
   final order = _OrderDocument();
@@ -24,9 +28,10 @@ class _Orders extends Fake
   DocumentReference<Map<String, dynamic>> doc([String? path]) => order;
 }
 
+// ignore: subtype_of_sealed_class
 class _OrderDocument extends Fake
     implements DocumentReference<Map<String, dynamic>> {
-  Map<String, dynamic>? payload;
+  late final Map<String, dynamic> payload;
 
   @override
   String get id => 'testOrderReference';
@@ -63,7 +68,7 @@ void main() {
       );
 
       final docId = await OrderService.saveOrder(order, firestore: firestore);
-      final payload = firestore.orders.order.payload!;
+      final payload = firestore.orders.order.payload;
       final json = jsonEncode(
         payload,
         toEncodable: (value) =>

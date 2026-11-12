@@ -233,7 +233,7 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
             ),
             boxShadow: [
               BoxShadow(
-                color: barColor.withOpacity(0.2),
+                color: barColor.withValues(alpha: 0.2),
                 blurRadius: 8,
                 offset: const Offset(0, 4),
               ),
@@ -293,7 +293,7 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
                       width: 24,
                       height: 24,
                       decoration: BoxDecoration(
-                        color: KioskTheme.lunaPink.withOpacity(0.05),
+                        color: KioskTheme.lunaPink.withValues(alpha: 0.05),
                         shape: BoxShape.circle,
                       ),
                       child: Center(
@@ -320,7 +320,7 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: KioskTheme.lunaPink.withOpacity(0.08),
+                        color: KioskTheme.lunaPink.withValues(alpha: 0.08),
                         borderRadius: BorderRadius.circular(
                           KioskTheme.radiusSm,
                         ),

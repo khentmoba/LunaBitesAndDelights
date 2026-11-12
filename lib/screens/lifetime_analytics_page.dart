@@ -177,7 +177,9 @@ class _LifetimeAnalyticsPageState extends State<LifetimeAnalyticsPage> {
       decoration: BoxDecoration(
         color: Colors.white,
         border: Border(
-          bottom: BorderSide(color: KioskTheme.lunaPink.withOpacity(0.06)),
+          bottom: BorderSide(
+            color: KioskTheme.lunaPink.withValues(alpha: 0.06),
+          ),
         ),
       ),
       child: SingleChildScrollView(
@@ -200,7 +202,7 @@ class _LifetimeAnalyticsPageState extends State<LifetimeAnalyticsPage> {
                     border: Border.all(
                       color: selected
                           ? KioskTheme.lunaPink
-                          : KioskTheme.textMuted.withOpacity(0.3),
+                          : KioskTheme.textMuted.withValues(alpha: 0.3),
                     ),
                   ),
                   child: Text(
@@ -286,7 +288,7 @@ class _LifetimeAnalyticsPageState extends State<LifetimeAnalyticsPage> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
           decoration: BoxDecoration(
-            color: KioskTheme.lunaPink.withOpacity(0.08),
+            color: KioskTheme.lunaPink.withValues(alpha: 0.08),
             borderRadius: BorderRadius.circular(KioskTheme.radiusFull),
           ),
           child: Text(
@@ -449,7 +451,7 @@ class _LifetimeAnalyticsPageState extends State<LifetimeAnalyticsPage> {
                         style: KioskTheme.font(
                           fontSize: 7,
                           fontWeight: FontWeight.w600,
-                          color: KioskTheme.textMuted.withOpacity(0.6),
+                          color: KioskTheme.textMuted.withValues(alpha: 0.6),
                         ),
                       ),
                       const SizedBox(height: 2),
@@ -564,7 +566,7 @@ class _LifetimeAnalyticsPageState extends State<LifetimeAnalyticsPage> {
           borderRadius: BorderRadius.circular(4),
           child: LinearProgressIndicator(
             value: fraction,
-            backgroundColor: color.withOpacity(0.1),
+            backgroundColor: color.withValues(alpha: 0.1),
             valueColor: AlwaysStoppedAnimation<Color>(color),
             minHeight: 10,
           ),
@@ -737,7 +739,7 @@ class _LifetimeAnalyticsPageState extends State<LifetimeAnalyticsPage> {
                                 KioskTheme.textSecondary,
                                 KioskTheme.textMuted,
                               ][idx]
-                            : KioskTheme.lunaPink.withOpacity(0.05),
+                            : KioskTheme.lunaPink.withValues(alpha: 0.05),
                         borderRadius: BorderRadius.circular(
                           KioskTheme.radiusSm,
                         ),
@@ -780,7 +782,7 @@ class _LifetimeAnalyticsPageState extends State<LifetimeAnalyticsPage> {
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: KioskTheme.lunaPink.withOpacity(0.08),
+                        color: KioskTheme.lunaPink.withValues(alpha: 0.08),
                         borderRadius: BorderRadius.circular(
                           KioskTheme.radiusSm,
                         ),

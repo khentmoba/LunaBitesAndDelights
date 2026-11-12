@@ -89,10 +89,10 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.15),
+                  color: Colors.white.withValues(alpha: 0.15),
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: Colors.white.withOpacity(0.25),
+                    color: Colors.white.withValues(alpha: 0.25),
                     width: 1.5,
                   ),
                 ),
@@ -122,7 +122,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                     Text(
                       'Welcome, ${session.username}!',
                       style: KioskTheme.font(
-                        color: KioskTheme.textOnPrimary.withOpacity(0.85),
+                        color: KioskTheme.textOnPrimary.withValues(alpha: 0.85),
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
                       ),
@@ -138,16 +138,18 @@ class _AdminDashboardState extends State<AdminDashboard> {
                     vertical: 9,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.15),
+                    color: Colors.white.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(KioskTheme.radiusFull),
-                    border: Border.all(color: Colors.white.withOpacity(0.3)),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.3),
+                    ),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(
                         Icons.logout_rounded,
-                        color: Colors.white.withOpacity(0.9),
+                        color: Colors.white.withValues(alpha: 0.9),
                         size: 16,
                       ),
                       const SizedBox(width: 6),
@@ -169,7 +171,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.15),
+              color: Colors.white.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(KioskTheme.radiusFull),
             ),
             child: Text(
@@ -205,14 +207,14 @@ class _AdminDashboardState extends State<AdminDashboard> {
         children: [
           _statCard(
             'Today\'s Sales',
-            '₱${todayRevenue}',
+            '₱$todayRevenue',
             Icons.trending_up_rounded,
             KioskTheme.success,
             (constraints.maxWidth - 14) / 2,
           ),
           _statCard(
             'Orders',
-            '${todayOrderCount}',
+            '$todayOrderCount',
             Icons.receipt_long_rounded,
             KioskTheme.info,
             (constraints.maxWidth - 14) / 2,
@@ -253,7 +255,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
             width: 42,
             height: 42,
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              color: color.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(KioskTheme.radiusSm),
             ),
             child: Icon(icon, color: color, size: 22),
@@ -357,7 +359,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.2),
+                color: Colors.white.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(KioskTheme.radiusSm),
               ),
               child: const Icon(
@@ -491,7 +493,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.15),
+                color: Colors.white.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(KioskTheme.radiusSm),
               ),
               child: const Icon(
@@ -516,7 +518,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 Text(
                   'Full history \u00B7 Best sellers \u00B7 Date filters',
                   style: KioskTheme.font(
-                    color: Colors.white.withOpacity(0.75),
+                    color: Colors.white.withValues(alpha: 0.75),
                     fontWeight: FontWeight.w600,
                     fontSize: 11,
                   ),
@@ -526,7 +528,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
             const Spacer(),
             Icon(
               Icons.arrow_forward_rounded,
-              color: Colors.white.withOpacity(0.8),
+              color: Colors.white.withValues(alpha: 0.8),
               size: 20,
             ),
           ],
@@ -548,7 +550,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
               width: 42,
               height: 42,
               decoration: BoxDecoration(
-                color: item.color.withOpacity(0.1),
+                color: item.color.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(KioskTheme.radiusSm),
               ),
               child: Icon(item.icon, color: item.color, size: 22),
@@ -576,7 +578,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(KioskTheme.radiusMd),
-        border: Border.all(color: KioskTheme.lunaPink.withOpacity(0.06)),
+        border: Border.all(color: KioskTheme.lunaPink.withValues(alpha: 0.06)),
         boxShadow: KioskTheme.shadowSm,
       ),
       child: Column(
@@ -624,7 +626,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
             width: 48,
             height: 48,
             decoration: BoxDecoration(
-              color: typeColor.withOpacity(0.1),
+              color: typeColor.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(KioskTheme.radiusSm),
             ),
             child: Center(child: Icon(typeIcon, size: 24, color: typeColor)),
@@ -647,7 +649,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                         vertical: 3,
                       ),
                       decoration: BoxDecoration(
-                        color: typeColor.withOpacity(0.1),
+                        color: typeColor.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(
                           KioskTheme.radiusFull,
                         ),
@@ -725,7 +727,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                       vertical: 5,
                     ),
                     decoration: BoxDecoration(
-                      color: KioskTheme.lunaPink.withOpacity(0.08),
+                      color: KioskTheme.lunaPink.withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(
                         KioskTheme.radiusFull,
                       ),

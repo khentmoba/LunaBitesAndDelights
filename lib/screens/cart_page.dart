@@ -75,7 +75,7 @@ class KioskCartPage extends StatelessWidget {
                       Icon(
                         Icons.shopping_cart_outlined,
                         size: isMobile ? 60 : 100,
-                        color: KioskTheme.lunaPink.withOpacity(0.3),
+                        color: KioskTheme.lunaPink.withValues(alpha: 0.3),
                       ),
                       const SizedBox(height: 16),
                       Text(

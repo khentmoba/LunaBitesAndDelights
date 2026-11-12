@@ -4,11 +4,11 @@ import 'package:image/image.dart' as img;
 void main() async {
   final dir = Directory('images');
   if (!await dir.exists()) {
-    print('Error: images directory not found');
+    stderr.writeln('Error: images directory not found');
     return;
   }
 
-  print('Scanning images directory...');
+  stdout.writeln('Scanning images directory...');
   final files = await dir.list().toList();
   var processed = 0;
 
@@ -24,12 +24,12 @@ void main() async {
       continue;
     }
 
-    print('Optimizing ${file.path}...');
+    stdout.writeln('Optimizing ${file.path}...');
     try {
       final bytes = await file.readAsBytes();
       final image = img.decodeImage(bytes);
       if (image == null) {
-        print('Failed to decode ${file.path}');
+        stdout.writeln('Failed to decode ${file.path}');
         continue;
       }
 
@@ -47,29 +47,29 @@ void main() async {
           width = (width * (maxDimension / height)).round();
           height = maxDimension;
         }
-        print(
-          '  Resizing from ${image.width}x${image.height} to ${width}x${height}...',
+        stdout.writeln(
+          '  Resizing from ${image.width}x${image.height} to ${width}x$height...',
         );
         resizedImage = img.copyResize(image, width: width, height: height);
       }
 
       List<int> compressedBytes;
       if (path.endsWith('.png')) {
-        print('  Compressing PNG...');
+        stdout.writeln('  Compressing PNG...');
         compressedBytes = img.encodePng(resizedImage, level: 6);
       } else {
-        print('  Compressing JPEG...');
+        stdout.writeln('  Compressing JPEG...');
         compressedBytes = img.encodeJpg(resizedImage, quality: 75);
       }
 
       // Save in-place
       await file.writeAsBytes(compressedBytes);
-      print('  Saved: ${file.path} (${compressedBytes.length} bytes)');
+      stdout.writeln('  Saved: ${file.path} (${compressedBytes.length} bytes)');
       processed++;
     } catch (e) {
-      print('Error processing ${file.path}: $e');
+      stderr.writeln('Error processing ${file.path}: $e');
     }
   }
 
-  print('\nOptimization complete! Processed $processed image(s).');
+  stdout.writeln('\nOptimization complete! Processed $processed image(s).');
 }

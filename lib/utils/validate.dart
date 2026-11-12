@@ -10,22 +10,25 @@ class V {
   static String? phone(String? v) {
     final p = (v ?? '').trim().replaceAll(RegExp(r'[\s-]'), '');
     if (p.isEmpty) return 'Phone is required';
-    if (!RegExp(r'^(\+?63|0)9\d{9}$').hasMatch(p))
+    if (!RegExp(r'^(\+?63|0)9\d{9}$').hasMatch(p)) {
       return 'Enter a valid PH mobile number';
+    }
     return null;
   }
 
   static String? email(String? v) {
     final e = (v ?? '').trim();
     if (e.isEmpty) return 'Email is required';
-    if (!RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(e))
+    if (!RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(e)) {
       return 'Enter a valid email';
+    }
     return null;
   }
 
   static String? password(String? v, [int min = 8]) {
-    if (v == null || v.length < min)
+    if (v == null || v.length < min) {
       return 'Password must be at least $min characters';
+    }
     if (v.length > 128) return 'Password too long';
     return null;
   }
