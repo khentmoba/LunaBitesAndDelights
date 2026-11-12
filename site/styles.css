@@ -3,14 +3,14 @@
 
 @font-face {
   font-family: 'Bricolage Grotesque';
-  src: url('/fonts/bricolage.woff2') format('woff2');
+  src: url('/fonts/bricolage.woff2?v=2') format('woff2');
   font-weight: 400 800;
   font-style: normal;
   font-display: swap;
 }
 @font-face {
   font-family: 'Caveat';
-  src: url('/fonts/caveat.woff2') format('woff2');
+  src: url('/fonts/caveat.woff2?v=2') format('woff2');
   font-weight: 400 700;
   font-style: normal;
   font-display: swap;
@@ -55,7 +55,6 @@ body {
   line-height: 1.55;
   font-optical-sizing: auto;
   -webkit-font-smoothing: antialiased;
-  text-rendering: optimizeLegibility;
 }
 
 /* The owner's pink watercolor is the pad's carbon copy, held still behind every sheet. */
@@ -611,6 +610,7 @@ mark {
 }
 .locate__panel { height: 300px; }
 .locate__panel iframe { display: block; width: 100%; height: 100%; border: 0; }
+.locate__fallback { display: grid; place-items: center; height: 100%; }
 .js-view .locate__panel:not(.is-active) { display: none; }
 .locate__panel + .locate__panel { margin-top: 8px; }
 .js-view .locate__panel + .locate__panel { margin-top: 0; }
@@ -664,6 +664,27 @@ mark {
 .foot__meta { color: var(--ink-soft); }
 .foot__links { display: flex; gap: 6px 20px; margin-left: auto; font-weight: 650; }
 .foot__links a { display: inline-flex; align-items: center; min-height: 44px; }
+
+/* ─── Weak devices and slow data ─────────────────────────────────────────── */
+
+/* Skip style, layout and paint for sheets the visitor has not reached yet. */
+.slip--menu, .window, .slip--find, .close {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 1200px;
+}
+@media (max-width: 940px) {
+  .slip--menu, .window, .slip--find, .close { contain-intrinsic-size: auto 2600px; }
+}
+
+/* Save-Data, 2G/3G and low-memory phones keep the page still and readable. */
+html[data-lite] { scroll-behavior: auto; }
+html[data-lite] .stamp,
+html[data-lite] .btn-line,
+html[data-lite] .bar,
+html[data-lite] .bar__home { transition: none; }
+html[data-lite].js-motion .slip--menu .mark-stamp,
+html[data-lite].js-motion .slip--menu .offer__price,
+html[data-lite].js-motion .window__wall .snap { opacity: 1; animation: none; }
 
 /* ─── Responsive ─────────────────────────────────────────────────────────── */
 

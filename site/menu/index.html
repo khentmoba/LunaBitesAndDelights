@@ -486,7 +486,18 @@
 </script>
 <link rel="icon" href="/img/favicon-32.png" type="image/png" sizes="32x32">
 <link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
-<link rel="preload" href="/fonts/bricolage.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/bricolage.woff2?v=2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/img/pink-wash.webp" as="image" type="image/webp" fetchpriority="low">
+<script>
+(function () {
+  var c = navigator.connection || {};
+  var lite = c.saveData === true || /^(slow-)?2g$|^3g$/.test(c.effectiveType || '') ||
+    (navigator.deviceMemory && navigator.deviceMemory <= 2) ||
+    (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 2) ||
+    (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  if (lite) document.documentElement.setAttribute('data-lite', '');
+})();
+</script>
 <link rel="stylesheet" href="/styles.css">
 <script src="/app.js" defer></script>
 </head>

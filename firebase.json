@@ -39,36 +39,20 @@
         ]
       },
       {
-        "source": "**/*.{html,js,wasm,css,json,svg,ico,webp}",
+        "source": "**/*.{html,js,wasm,css,json,svg,ico}",
         "headers": [
           {
             "key": "Cache-Control",
-            "value": "no-cache, no-store, must-revalidate"
-          },
-          {
-            "key": "Pragma",
-            "value": "no-cache"
-          },
-          {
-            "key": "Expires",
-            "value": "0"
+            "value": "public, no-cache"
           }
         ]
       },
       {
-        "source": "**/*.{png,jpg,jpeg,gif}",
+        "source": "**/*.{png,jpg,jpeg,gif,webp}",
         "headers": [
           {
             "key": "Cache-Control",
-            "value": "no-cache, no-store, must-revalidate"
-          },
-          {
-            "key": "Pragma",
-            "value": "no-cache"
-          },
-          {
-            "key": "Expires",
-            "value": "0"
+            "value": "public, max-age=604800, stale-while-revalidate=604800"
           }
         ]
       },
@@ -77,15 +61,7 @@
         "headers": [
           {
             "key": "Cache-Control",
-            "value": "no-cache, no-store, must-revalidate"
-          },
-          {
-            "key": "Pragma",
-            "value": "no-cache"
-          },
-          {
-            "key": "Expires",
-            "value": "0"
+            "value": "public, max-age=2592000, stale-while-revalidate=604800"
           }
         ]
       },
@@ -94,15 +70,7 @@
         "headers": [
           {
             "key": "Cache-Control",
-            "value": "no-cache, no-store, must-revalidate"
-          },
-          {
-            "key": "Pragma",
-            "value": "no-cache"
-          },
-          {
-            "key": "Expires",
-            "value": "0"
+            "value": "public, no-cache"
           }
         ]
       }

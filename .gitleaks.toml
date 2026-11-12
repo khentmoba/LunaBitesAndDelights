@@ -1,0 +1,11 @@
+title = "Luna Bites & Delights secret scanning"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Firebase web apiKey is a public client identifier, not a secret (SECURITY.md section 3). Access is enforced by Firestore rules and App Check."
+paths = [
+  '''(^|/)lib/firebase_options\.dart$''',
+  '''(^|/)build/.*''',
+]

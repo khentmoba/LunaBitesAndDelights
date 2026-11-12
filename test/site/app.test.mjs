@@ -5,10 +5,11 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { JSDOM } from 'jsdom';
 
-/// `site/app.js` is the only script the storefront ships: the sticky bar, the
-/// scroll reveals, and the map/street-view swap. It had no tests, so a selector
-/// that stopped matching the markup would fail silently in production — the page
-/// would still load, just without the behaviour.
+/// `site/app.js` is the storefront's behaviour script: the sticky bar, the
+/// scroll reveals, and the map/street-view swap. A tiny inline probe in each
+/// <head> flags weak devices before the stylesheet loads; jsdom does not run
+/// inline scripts, so these tests supply that flag themselves. A selector that
+/// stopped matching the markup would fail silently in production otherwise.
 ///
 /// These tests run the real `site/index.html` and `site/menu/index.html` through
 /// the real `site/app.js`, so they fail if either the script or the markup it
@@ -18,6 +19,7 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const storefront = readFileSync(join(root, 'site', 'index.html'), 'utf8');
 const menuPage = readFileSync(join(root, 'site', 'menu', 'index.html'), 'utf8');
 const script = readFileSync(join(root, 'site', 'app.js'), 'utf8');
+const styles = readFileSync(join(root, 'site', 'styles.css'), 'utf8');
 
 /// Both pages ship `app.js`, so both are exercised.
 const pages = { index: storefront, menu: menuPage };
@@ -30,6 +32,7 @@ function load({
   page = 'index',
   reducedMotion = false,
   intersectionObserver = true,
+  lite = false,
 } = {}) {
   const dom = new JSDOM(pages[page], {
     runScripts: 'outside-only',
@@ -71,6 +74,7 @@ function load({
     };
   }
 
+  if (lite) window.document.documentElement.setAttribute('data-lite', '');
   window.eval(script);
   return { window, observers };
 }
@@ -235,4 +239,66 @@ test('the map and street view swap one at a time', () => {
   assert.equal(mapTab.getAttribute('aria-pressed'), 'true');
   assert.equal(mapPanel.classList.contains('is-active'), true);
   assert.equal(streetPanel.classList.contains('is-active'), false);
+});
+
+test('a weak device keeps every line visible and starts no observers', () => {
+  const { window, observers } = load({ lite: true });
+  const doc = window.document;
+
+  assert.equal(doc.documentElement.classList.contains('js-motion'), false);
+  assert.equal(doc.querySelector('.slip--hero .field').style.getPropertyValue('--w'), '');
+  assert.equal(observers.length, 0, 'no IntersectionObserver work on a weak device');
+  assert.equal(doc.querySelector('.slip--menu').classList.contains('is-in'), false);
+});
+
+test('both pages flag weak devices before the stylesheet', () => {
+  for (const [name, html] of Object.entries(pages)) {
+    assert.match(html, /data-lite/, `${name} must carry the capability probe`);
+    assert.match(html, /navigator\.connection/, `${name} must check the connection`);
+    assert.ok(
+      html.indexOf('data-lite') < html.indexOf('<link rel="stylesheet"'),
+      `${name} must flag weak devices before CSS is fetched`,
+    );
+  }
+});
+
+test('font preloads match the stylesheet so each font is fetched once', () => {
+  for (const [name, html] of Object.entries(pages)) {
+    const preload = html.match(/<link rel="preload" href="([^"]+\.woff2[^"]*)" as="font"/);
+    assert.ok(preload, `${name} must preload the display font`);
+    assert.match(preload[1], /\?v=\d+/, 'cached fonts need a cache-busting version');
+    assert.ok(
+      styles.includes(`url('${preload[1]}')`),
+      `${name} preload must point at the exact URL in styles.css`,
+    );
+  }
+});
+
+test('the hero logo is responsive and the hidden bar logo is not preloaded', () => {
+  assert.doesNotMatch(storefront, /rel="preload"[^>]*luna-logo-320\.webp/);
+  assert.match(
+    storefront,
+    /class="slip__logo"[^>]*srcset="\/img\/luna-logo-320\.webp 320w, \/img\/luna-logo-640\.webp 640w"/,
+  );
+  assert.match(storefront, /sizes="\(max-width: 700px\) 112px, 236px"/);
+});
+
+test('the street view embed is fetched only when its tab is chosen', () => {
+  const { window } = load();
+  const doc = window.document;
+  const frame = doc.querySelector('[data-panel="street"] iframe');
+  assert.ok(frame, 'the street view iframe stays in the markup');
+  assert.equal(frame.getAttribute('src'), null, 'no map request on a slow first visit');
+  const deferred = frame.getAttribute('data-src') ?? '';
+  assert.match(deferred, /^https:\/\/www\.google\.com\/maps\/embed/);
+
+  doc.querySelector('[data-show="street"]').dispatchEvent(new window.Event('click', { bubbles: true }));
+  assert.equal(frame.getAttribute('src'), deferred, 'choosing the tab starts the embed');
+
+  doc.querySelector('[data-show="map"]').dispatchEvent(new window.Event('click', { bubbles: true }));
+  assert.equal(frame.getAttribute('src'), deferred, 'switching back does not refetch it');
+});
+
+test('without script the street view still offers a way out', () => {
+  assert.match(storefront, /<noscript>[\s\S]*Open street view in Maps[\s\S]*<\/noscript>/);
 });
