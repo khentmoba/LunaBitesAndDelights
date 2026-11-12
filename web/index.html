@@ -19,7 +19,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Luna Bites">
   <meta name="theme-color" content="#EC1C72">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 
   <!-- PWA manifest & icons -->
   <link rel="manifest" href="manifest.json">
@@ -46,7 +46,7 @@
       background: #FFFAFB;
       color: #2A0F1E;
       border-bottom: 2px solid #EC1C72;
-      padding: 12px 20px;
+      padding: calc(12px + env(safe-area-inset-top)) calc(20px + env(safe-area-inset-right)) 12px calc(20px + env(safe-area-inset-left));
       align-items: center;
       gap: 12px;
       box-shadow: 0 14px 26px -18px rgba(110, 4, 50, 0.8);

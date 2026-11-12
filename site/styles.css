@@ -43,9 +43,11 @@ html {
   scroll-behavior: smooth;
   scrollbar-color: var(--pink-plate) var(--blush);
   overflow-x: clip;
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: rgba(236, 28, 114, .18);
 }
 
-section[id] { scroll-margin-top: 5.5rem; }
+section[id] { scroll-margin-top: calc(4.75rem + env(safe-area-inset-top)); }
 
 body {
   margin: 0;
@@ -68,6 +70,7 @@ body::before {
 
 img { display: block; max-width: 100%; height: auto; }
 a { color: inherit; text-underline-offset: .2em; text-decoration-thickness: 1px; }
+a, button { touch-action: manipulation; }
 p, h1, h2, h3, dl, dd, figure, ul { margin: 0; }
 ul { padding: 0; list-style: none; }
 
@@ -166,7 +169,7 @@ ul { padding: 0; list-style: none; }
   display: flex;
   align-items: center;
   gap: 8px 18px;
-  padding: 8px var(--pad);
+  padding: calc(8px + env(safe-area-inset-top)) calc(var(--pad) + env(safe-area-inset-right)) 8px calc(var(--pad) + env(safe-area-inset-left));
   background: var(--paper);
   border-bottom: 2px solid var(--pink);
   transition: box-shadow .2s ease-out;
@@ -203,7 +206,7 @@ ul { padding: 0; list-style: none; }
 
 /* ─── Sheets ─────────────────────────────────────────────────────────────── */
 
-main { padding: clamp(18px, 3vw, 40px) var(--pad) 0; }
+main { padding: clamp(18px, 3vw, 40px) calc(var(--pad) + env(safe-area-inset-right)) 0 calc(var(--pad) + env(safe-area-inset-left)); }
 
 /* A sheet torn off the pad: perforation notches run along its top edge. The mask would also cut
    away a box-shadow, so the wrapper casts the sheet's shadow around its torn outline. */
@@ -260,7 +263,7 @@ main { padding: clamp(18px, 3vw, 40px) var(--pad) 0; }
   text-transform: uppercase;
 }
 .field dd { min-width: 0; }
-.field dd.hand { font-size: clamp(1.45rem, 2.4vw, 1.75rem); }
+.field dd.hand { font-size: clamp(1.45rem, 2.4vw, 1.75rem); padding-right: 4px; }
 
 .slip__body {
   display: grid;
@@ -654,7 +657,7 @@ mark {
   flex-wrap: wrap;
   align-items: center;
   gap: 14px 22px;
-  padding: 26px var(--pad) 30px;
+  padding: 26px calc(var(--pad) + env(safe-area-inset-right)) calc(30px + env(safe-area-inset-bottom)) calc(var(--pad) + env(safe-area-inset-left));
   background: var(--paper);
   border-top: 2px solid var(--pink);
   font-size: .95rem;
@@ -724,20 +727,36 @@ html[data-lite].js-motion .window__wall .snap { opacity: 1; animation: none; }
   .foot__links { margin-left: 0; }
 }
 
-@media (max-width: 460px) {
-  .bar { flex-wrap: wrap; gap: 6px 10px; }
+@media (max-width: 520px) {
+  .bar { flex-wrap: nowrap; gap: 8px; }
   .bar__home { display: none; }
-  .bar__nav { margin-left: 0; font-size: .88rem; gap: 2px 8px; }
-  .stamp--sm { margin-left: auto; padding: .6em .85em; }
-  .slip__head { grid-template-columns: 92px minmax(0, 1fr); gap: 12px; }
+  .bar__nav .bar__staff { display: none; }
+  .bar__nav { margin-left: 0; font-size: .9rem; gap: 2px 10px; min-width: 0; }
+  .bar__nav a { padding: 0 5px; white-space: nowrap; }
+  .stamp--sm { flex: none; margin-left: auto; padding: .55em .95em; font-size: .9rem; white-space: nowrap; }
+  .slip__head { grid-template-columns: 96px minmax(0, 1fr); gap: 12px; }
   .window__wall { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 26px 14px; }
   .snap--a, .snap--d { grid-column: 1 / -1; }
   .snap--b, .snap--c { grid-column: span 1; }
   .snap figcaption { font-size: 1.3rem; }
-  .actions > .stamp { flex: 1 1 100%; }
+  .actions { flex-direction: column; align-items: stretch; }
+  .actions > .stamp,
+  .actions > .btn-line { width: 100%; justify-content: center; text-align: center; }
+  .locate__controls { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .locate__coords { right: 12px; font-size: .75rem; }
   .snap--hero { width: 100%; }
   .lines th:first-child { width: 2.8rem; }
   .lines td.hand { font-size: 1.4rem; }
+}
+
+@media (max-width: 360px) {
+  .bar { gap: 4px; }
+  .bar__nav { font-size: .82rem; gap: 2px; }
+  .bar__nav a { padding: 0 4px; }
+  .stamp--sm { padding: .5em .78em; font-size: .84rem; }
+  .slip__head { grid-template-columns: 84px minmax(0, 1fr); gap: 10px; }
+  .slip__name { font-size: 1.65rem; }
+  .field dd.hand { font-size: 1.28rem; line-height: 1.15; }
 }
 
 /* ─── Motion: the cashier writes the slip, then the stamps land ───────────── */
