@@ -39,9 +39,10 @@ export const getActiveOrders = onCall(async (request) => {
   const db = getFirestore();
   const includeCompleted = request.data?.includeCompleted === true;
   try {
-    const activeThreshold = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    // 7-day lookback so yesterday's active and history orders are never cut off
+    const lookbackThreshold = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
     const snapshot = await db.collection('orders')
-      .where('timestamp', '>=', activeThreshold)
+      .where('timestamp', '>=', lookbackThreshold)
       .orderBy('timestamp', 'desc')
       .limit(200)
       .get();

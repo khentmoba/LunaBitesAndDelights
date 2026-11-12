@@ -16,6 +16,7 @@ exports.getSalesAnalytics = (0, https_1.onCall)(async (request) => {
             .where('dateLabel', '==', dateLabel)
             .get();
         let totalRevenue = 0;
+        let totalItemsSold = 0;
         const channel = (0, util_1.emptyChannel)();
         const itemCounts = {};
         for (const doc of snapshot.docs) {
@@ -25,7 +26,9 @@ exports.getSalesAnalytics = (0, https_1.onCall)(async (request) => {
             (0, util_1.addToChannel)(channel, data.type || 'Pickup', totalAmount);
             for (const item of data.items || []) {
                 const name = item.name || 'Unknown';
-                itemCounts[name] = (itemCounts[name] || 0) + (item.quantity || 1);
+                const qty = Number(item.quantity || item.qty || 1);
+                totalItemsSold += qty;
+                itemCounts[name] = (itemCounts[name] || 0) + qty;
             }
         }
         const orderCount = snapshot.size;
@@ -37,6 +40,7 @@ exports.getSalesAnalytics = (0, https_1.onCall)(async (request) => {
             success: true,
             dateLabel,
             totalRevenue,
+            totalItemsSold,
             orderCount,
             averageOrderValue: orderCount > 0 ? Math.round(totalRevenue / orderCount) : 0,
             breakdown: {

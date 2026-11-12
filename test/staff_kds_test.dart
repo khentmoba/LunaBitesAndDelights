@@ -6,6 +6,9 @@ import 'package:luna_bites_and_delights/services/cart_notifier.dart';
 import 'package:luna_bites_and_delights/services/audio_alert_service.dart';
 import 'package:luna_bites_and_delights/screens/staff_login_dialog.dart';
 import 'package:luna_bites_and_delights/screens/kds_page.dart';
+import 'package:luna_bites_and_delights/screens/admin_dashboard.dart';
+import 'package:luna_bites_and_delights/screens/analytics_page.dart';
+import 'package:luna_bites_and_delights/screens/lifetime_analytics_page.dart';
 
 void main() {
   group('Staff Session & Audio Alert Tests', () {
@@ -113,8 +116,86 @@ void main() {
       expect(find.text('PICKUP'), findsWidgets);
       expect(find.text('WALK-IN'), findsWidgets);
       expect(find.text('POS WALK-IN'), findsOneWidget);
+      expect(find.text('Maria Santos'), findsNothing);
+      expect(find.text('#2026-10-24-001'), findsNothing);
 
       session.logout();
     });
+
+    testWidgets(
+      'KdsPage mobile layout (390x844 & 320x640) renders without overflow or mock orders',
+      (tester) async {
+        session.login('staff_kiosk');
+
+        for (final size in [const Size(390, 844), const Size(320, 640)]) {
+          tester.view.physicalSize = size;
+          tester.view.devicePixelRatio = 1.0;
+
+          await tester.pumpWidget(
+            MultiProvider(
+              providers: [
+                ChangeNotifierProvider.value(value: session),
+                ChangeNotifierProvider.value(value: kioskSession),
+                ChangeNotifierProvider.value(value: cartNotifier),
+              ],
+              child: const MaterialApp(home: KdsPage()),
+            ),
+          );
+          await tester.pump();
+
+          expect(tester.takeException(), isNull);
+          expect(find.text('LIVE KDS'), findsOneWidget);
+          expect(find.text('ALL'), findsOneWidget);
+          expect(find.text('DELIVERY'), findsOneWidget);
+          expect(find.text('HISTORY'), findsOneWidget);
+          expect(find.text('PENDING'), findsOneWidget);
+          expect(find.text('COOKING'), findsOneWidget);
+          expect(find.text('READY'), findsOneWidget);
+          expect(find.text('DONE'), findsOneWidget);
+          expect(find.text('Maria Santos'), findsNothing);
+        }
+
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+        session.logout();
+      },
+    );
+
+    testWidgets(
+      'AdminDashboard, AnalyticsPage, and LifetimeAnalyticsPage require staff login and render cleanly on mobile',
+      (tester) async {
+        tester.view.physicalSize = const Size(390, 844);
+        tester.view.devicePixelRatio = 1.0;
+
+        for (final page in const [
+          AdminDashboard(),
+          AnalyticsPage(),
+          LifetimeAnalyticsPage(),
+        ]) {
+          session.logout();
+          await tester.pumpWidget(
+            MultiProvider(
+              providers: [
+                ChangeNotifierProvider.value(value: session),
+                ChangeNotifierProvider.value(value: kioskSession),
+                ChangeNotifierProvider.value(value: cartNotifier),
+              ],
+              child: MaterialApp(home: page),
+            ),
+          );
+          await tester.pump();
+          expect(find.text('STAFF OPERATIONS'), findsOneWidget);
+          expect(tester.takeException(), isNull);
+
+          session.login('admin', role: 'admin');
+          await tester.pump();
+          expect(tester.takeException(), isNull);
+        }
+
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+        session.logout();
+      },
+    );
   });
 }

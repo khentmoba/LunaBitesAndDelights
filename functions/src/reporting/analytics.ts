@@ -16,6 +16,7 @@ export const getSalesAnalytics = onCall(async (request) => {
       .get();
 
     let totalRevenue = 0;
+    let totalItemsSold = 0;
     const channel = emptyChannel();
     const itemCounts: { [key: string]: number } = {};
 
@@ -27,7 +28,9 @@ export const getSalesAnalytics = onCall(async (request) => {
 
       for (const item of data.items || []) {
         const name = item.name || 'Unknown';
-        itemCounts[name] = (itemCounts[name] || 0) + (item.quantity || 1);
+        const qty = Number(item.quantity || item.qty || 1);
+        totalItemsSold += qty;
+        itemCounts[name] = (itemCounts[name] || 0) + qty;
       }
     }
 
@@ -41,6 +44,7 @@ export const getSalesAnalytics = onCall(async (request) => {
       success: true,
       dateLabel,
       totalRevenue,
+      totalItemsSold,
       orderCount,
       averageOrderValue: orderCount > 0 ? Math.round(totalRevenue / orderCount) : 0,
       breakdown: {

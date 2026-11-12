@@ -28,11 +28,15 @@ class ReportScaffold extends StatelessWidget {
     return Scaffold(
       backgroundColor: KioskTheme.lunaBlushPaper,
       appBar: AppBar(
-        title: Text(
-          title,
-          style: KioskTheme.headerSmall.copyWith(
-            color: KioskTheme.textOnPrimary,
-            letterSpacing: 2,
+        title: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            title,
+            maxLines: 1,
+            style: KioskTheme.headerSmall.copyWith(
+              color: KioskTheme.textOnPrimary,
+              letterSpacing: 2,
+            ),
           ),
         ),
         centerTitle: true,
