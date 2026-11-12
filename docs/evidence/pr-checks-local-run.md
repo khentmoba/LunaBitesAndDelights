@@ -10,7 +10,7 @@ Run on the worktree at `t3/identify-improvements`, Flutter 3.47.7, Node 24.22.2.
 | `flutter` — web build | pass, `√ Built build\web` |
 | `functions` — TypeScript build | pass, TS 5.9.3, exit 0 |
 | `rules` — emulator | **not runnable locally**, see below |
-| `site` — storefront script tests | pass, 7/7 |
+| `site` — storefront script tests | pass, 9/9 |
 | `proof` — proof gate | pass, see PR body |
 
 ## Notes

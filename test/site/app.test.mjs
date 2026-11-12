@@ -10,19 +10,28 @@ import { JSDOM } from 'jsdom';
 /// that stopped matching the markup would fail silently in production — the page
 /// would still load, just without the behaviour.
 ///
-/// These tests run the real `site/index.html` through the real `site/app.js`, so
-/// they fail if either the script or the markup it depends on drifts.
+/// These tests run the real `site/index.html` and `site/menu/index.html` through
+/// the real `site/app.js`, so they fail if either the script or the markup it
+/// depends on drifts.
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
-const html = readFileSync(join(root, 'site', 'index.html'), 'utf8');
+const storefront = readFileSync(join(root, 'site', 'index.html'), 'utf8');
+const menuPage = readFileSync(join(root, 'site', 'menu', 'index.html'), 'utf8');
 const script = readFileSync(join(root, 'site', 'app.js'), 'utf8');
+
+/// Both pages ship `app.js`, so both are exercised.
+const pages = { index: storefront, menu: menuPage };
 
 /// Boots the storefront in jsdom with the browser features app.js probes.
 ///
 /// jsdom ships no `matchMedia` and no `IntersectionObserver`, so both are stubbed
 /// here — which is also how the fallback branches get exercised.
-function load({ reducedMotion = false, intersectionObserver = true } = {}) {
-  const dom = new JSDOM(html, {
+function load({
+  page = 'index',
+  reducedMotion = false,
+  intersectionObserver = true,
+} = {}) {
+  const dom = new JSDOM(pages[page], {
     runScripts: 'outside-only',
     url: 'https://lunabitesanddelights.test/',
   });
@@ -77,7 +86,31 @@ function scrollTo(window, value) {
 }
 
 test('index.html still loads the script these tests exercise', () => {
-  assert.match(html, /<script src="\/app\.js" defer><\/script>/);
+  assert.match(storefront, /<script src="\/app\.js" defer><\/script>/);
+});
+
+test('the menu page loads the same script', () => {
+  assert.match(menuPage, /<script src="\/app\.js" defer><\/script>/);
+});
+
+test('the menu page keeps the bar and reveal behaviour', () => {
+  const { window } = load({ page: 'menu' });
+  const doc = window.document;
+
+  const bar = doc.querySelector('.bar');
+  assert.ok(bar, 'site/menu/index.html must keep a .bar for the sticky state');
+  assert.ok(
+    doc.querySelector('.slip--menu'),
+    'site/menu/index.html must keep .slip--menu for the reveal',
+  );
+  assert.equal(
+    doc.documentElement.classList.contains('js-motion'),
+    true,
+    'the menu page engages the reveal styles',
+  );
+
+  scrollTo(window, 200);
+  assert.equal(bar.classList.contains('is-stuck'), true, 'the bar sticks here too');
 });
 
 test('the bar only sticks once the page has scrolled', () => {

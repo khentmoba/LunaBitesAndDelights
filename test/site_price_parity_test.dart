@@ -87,10 +87,12 @@ class _MenuPrices {
       }
 
       // The item's own price, ignoring the `price:` inside variant lines.
+      // `[\s\S]*?\)` stops at the variant's closing `),`, so a label that
+      // contains a parenthesis — 'Buddy (1–2 pax)' — is stripped whole.
       final ownPrice = RegExp(
         r'^\s*price: (\d+),',
         multiLine: true,
-      ).firstMatch(body.replaceAll(RegExp(r'MenuVariant\([^)]*\)'), ''));
+      ).firstMatch(body.replaceAll(RegExp(r'MenuVariant\([\s\S]*?\),'), ''));
       if (ownPrice != null) {
         bySource[id] = int.parse(ownPrice.group(1)!);
       }

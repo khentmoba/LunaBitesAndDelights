@@ -2,28 +2,34 @@
 
 ## What was wrong
 
-`tool/analyzer_baseline.txt` held `87`, but the analyzer was actually reporting
-26 issues. The baseline was stale and 61 issues too generous, so CI would have
-accepted 61 new infos or warnings without complaint.
+`tool/analyzer_baseline.txt` held `87`, and the analyzer reported exactly 87.
+The baseline was accurate, but it left no slack: CI would accept any count up to
+87, so a change could add issues while removing others and still pass.
+
+This change clears all 87 and sets the baseline to `0`, so any new info or
+warning fails CI.
 
 ## What changed
 
 | Rule | Count | Fix |
 | --- | --- | --- |
-| `deprecated_member_use` (`withOpacity`) | 7 | `withValues(alpha: …)` |
-| `deprecated_member_use` (App Check providers) | 5 | `providerAndroid` / `providerApple` / `providerWeb` |
-| `deprecated_member_use` (`dart:js`, `desiredAccuracy`) | 2 | `dart:js_interop` split; `locationSettings:` |
-| `avoid_web_libraries_in_flutter` | 1 | web code moved to `location_web.dart` |
-| `use_build_context_synchronously` | 4 | dropped the unused `context` param; `mounted` now guards `State.context` |
+| `deprecated_member_use` — `withOpacity` | 54 | `withValues(alpha: …)` |
+| `deprecated_member_use` — App Check providers | 5 | `providerAndroid` / `providerApple` / `providerWeb` |
+| `deprecated_member_use` — `dart:js`, `desiredAccuracy` | 2 | `dart:js_interop` split; `locationSettings:` |
 | `avoid_print` | 10 | `stdout.writeln` / `stderr.writeln` in the CLI tool |
-| `subtype_of_sealed_class` | 2 | documented `// ignore:` (see below) |
-| `must_be_immutable` | 1 | `late final payload` |
-| `unintended_html_in_doc_comment` | 1 | backticked the `<key>` placeholder |
+| `use_build_context_synchronously` | 4 | dropped the unused `context` param; `mounted` now guards `State.context` |
+| `unnecessary_brace_in_string_interps` | 3 | removed braces |
 | `curly_braces_in_flow_control_structures` | 3 | braces |
+| `subtype_of_sealed_class` | 2 | documented `// ignore:` (see below) |
+| `unnecessary_underscores` | 1 | `(_, __)` → `(_, _)` |
+| `unintended_html_in_doc_comment` | 1 | backticked the `<key>` placeholder |
+| `must_be_immutable` | 1 | `late final payload` |
+| `avoid_web_libraries_in_flutter` | 1 | web code moved to `location_web.dart` |
 
-The seven `withOpacity` rewrites were applied by the Dart language tool's
-quick-fix, not by hand. They are the documented replacement and change no
-behaviour, but they are in the diff, so they are listed here.
+61 of the 87 were auto-fixable and were applied by the Dart tool's quick-fix
+(`withOpacity`, the brace and string-interp rules, and the underscore rule),
+not by hand. They are behavior-identical, but they are in the diff, so they are
+listed here.
 
 ## The two suppressions
 
@@ -43,10 +49,11 @@ $ node tool/check_analyzer_baseline.mjs analyze.txt
 Analyzer issues: 0 (baseline 0).
 ```
 
-`tool/analyzer_baseline.txt` now reads `0`, so any new info or warning fails CI.
+`tool/analyzer_baseline.txt` now reads `0`.
 
 ## Not verified locally
 
 The `rules` job needs Java 21 for the Firestore emulator; this machine has Java
 8, so `npm run test:rules` exits with `firebase-tools no longer supports Java
-version before 21`. CI runs it on Java 21. This change touches no rules files.
+version before 21`. CI runs it on Java 21 and passes. This change touches no
+rules files.

@@ -37,6 +37,18 @@ map, and asserts:
 Adding a storefront row without recording where its price comes from fails the
 test. That is the point: the mapping is knowledge, and it has to be maintained.
 
+## Scope
+
+The guard covers the 38 rows on the price board — the `<span class="row__price">`
+listings in both pages. It does not cover every number the pages print:
+
+- the hero sample slip (`site/index.html:166-168`), which is illustrative copy;
+- photo captions and the offer badges;
+- the JSON-LD `priceRange` and the meta descriptions.
+
+Those can still go stale. Extending `_priceSources` to the hero slip is the next
+cheap win if this guard earns its keep.
+
 ## Proof the guard can fail
 
 Injected a ₱65 price for Shawarma Wrap into `site/index.html`:

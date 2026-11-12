@@ -1,6 +1,6 @@
 {
   "scripts": {
-    "test:site": "node --test \"test/site/**/*.test.mjs\""
+    "test:site": "node --test test/site/app.test.mjs"
   },
   "devDependencies": {
     "firebase-tools": "^15.15.0",
