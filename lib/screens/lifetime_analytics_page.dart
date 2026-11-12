@@ -1,8 +1,12 @@
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../services/functions.dart';
+import '../services/session.dart';
 import '../utils/format.dart';
 import '../widgets/kiosk/kiosk_theme.dart';
 import '../widgets/report/report_widgets.dart';
+import 'staff_login_dialog.dart';
 
 /// Quick date-range preset for the lifetime report.
 enum DateRangePreset {
@@ -32,11 +36,37 @@ class _LifetimeAnalyticsPageState extends State<LifetimeAnalyticsPage> {
   DateRangePreset _selectedPreset = DateRangePreset.allTime;
   DateTime? _customStart;
   DateTime? _customEnd;
+  bool _wasStaff = false;
 
   @override
   void initState() {
     super.initState();
-    _fetchReport();
+    _wasStaff = session.isStaff;
+    session.addListener(_onSessionChanged);
+    if (_wasStaff) {
+      _fetchReport();
+    }
+  }
+
+  void _onSessionChanged() {
+    if (!mounted) return;
+    final isStaffNow = session.isStaff;
+    if (isStaffNow && !_wasStaff) {
+      _wasStaff = true;
+      _fetchReport();
+    } else if (!isStaffNow && _wasStaff) {
+      _wasStaff = false;
+      setState(() {
+        _data = {};
+        _error = null;
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    session.removeListener(_onSessionChanged);
+    super.dispose();
   }
 
   String _computeStartDate() {
@@ -67,6 +97,7 @@ class _LifetimeAnalyticsPageState extends State<LifetimeAnalyticsPage> {
   }
 
   Future<void> _fetchReport() async {
+    if (!session.isStaff) return;
     setState(() {
       _loading = true;
       _error = null;
@@ -76,6 +107,7 @@ class _LifetimeAnalyticsPageState extends State<LifetimeAnalyticsPage> {
         'startDate': _computeStartDate(),
         'endDate': _computeEndDate(),
       });
+      if (!mounted) return;
       setState(() {
         if (data['success'] == true) {
           _data = data;
@@ -84,7 +116,21 @@ class _LifetimeAnalyticsPageState extends State<LifetimeAnalyticsPage> {
         }
         _loading = false;
       });
+    } on FirebaseFunctionsException catch (e) {
+      if (!mounted) return;
+      final isAuthError =
+          e.code == 'unauthenticated' || e.code == 'permission-denied';
+      if (isAuthError) {
+        session.logout();
+      }
+      setState(() {
+        _error = isAuthError
+            ? 'Staff session expired (${e.code}). Please sign in again.'
+            : 'Could not load report: ${e.message ?? e.code}';
+        _loading = false;
+      });
     } catch (_) {
+      if (!mounted) return;
       setState(() {
         _error = 'Error connecting to server. Please try again.';
         _loading = false;
@@ -100,6 +146,19 @@ class _LifetimeAnalyticsPageState extends State<LifetimeAnalyticsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final sessionWatcher = context.watch<Session>();
+    if (!sessionWatcher.isStaff) {
+      return const Scaffold(
+        backgroundColor: KioskTheme.lunaBlushPaper,
+        body: Center(
+          child: SingleChildScrollView(
+            padding: EdgeInsets.symmetric(vertical: 24),
+            child: StaffLoginDialog(),
+          ),
+        ),
+      );
+    }
+
     final isMobile = MediaQuery.of(context).size.width < 800;
 
     return ReportScaffold(
@@ -113,7 +172,12 @@ class _LifetimeAnalyticsPageState extends State<LifetimeAnalyticsPage> {
           _buildDateFilterBar(),
           Expanded(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(24, 16, 24, 40),
+              padding: EdgeInsets.fromLTRB(
+                isMobile ? 16 : 24,
+                16,
+                isMobile ? 16 : 24,
+                40,
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [

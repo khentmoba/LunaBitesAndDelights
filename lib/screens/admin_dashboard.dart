@@ -1,7 +1,11 @@
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../services/functions.dart';
 import '../services/session.dart';
 import '../services/cart_notifier.dart';
 import '../services/order_service.dart';
+import '../utils/format.dart';
 import '../widgets/kiosk/kiosk_theme.dart';
 import '../widgets/kiosk/juicy_feedback.dart';
 import '../widgets/report/report_widgets.dart';
@@ -9,6 +13,7 @@ import 'menu_page.dart';
 import 'analytics_page.dart';
 import 'lifetime_analytics_page.dart';
 import 'kds_page.dart';
+import 'staff_login_dialog.dart';
 
 class AdminDashboard extends StatefulWidget {
   const AdminDashboard({super.key});
@@ -18,6 +23,128 @@ class AdminDashboard extends StatefulWidget {
 }
 
 class _AdminDashboardState extends State<AdminDashboard> {
+  bool _loading = false;
+  String? _error;
+  int _totalRevenue = 0;
+  int _orderCount = 0;
+  int _avgOrderValue = 0;
+  int _itemsSold = 0;
+  List<Map<String, dynamic>> _recentOrders = [];
+  bool _wasStaff = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _wasStaff = session.isStaff;
+    session.addListener(_onSessionChanged);
+    if (_wasStaff) {
+      _fetchDashboardData();
+    }
+  }
+
+  void _onSessionChanged() {
+    if (!mounted) return;
+    final isStaffNow = session.isStaff;
+    if (isStaffNow && !_wasStaff) {
+      _wasStaff = true;
+      _fetchDashboardData();
+    } else if (!isStaffNow && _wasStaff) {
+      _wasStaff = false;
+      setState(() {
+        _totalRevenue = 0;
+        _orderCount = 0;
+        _avgOrderValue = 0;
+        _itemsSold = 0;
+        _recentOrders = [];
+        _error = null;
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    session.removeListener(_onSessionChanged);
+    super.dispose();
+  }
+
+  Future<void> _fetchDashboardData() async {
+    if (!session.isStaff) return;
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+
+    try {
+      final results = await Future.wait([
+        callFn('getSalesAnalytics'),
+        callFn('getActiveOrders', {'includeCompleted': true}),
+      ]);
+
+      if (!mounted) return;
+      final analytics = results[0];
+      final ordersRes = results[1];
+
+      final rawOrders = (ordersRes['orders'] as List<dynamic>?) ?? [];
+      final mappedOrders = rawOrders.map<Map<String, dynamic>>((o) {
+        final ts = DateTime.tryParse((o['timestamp'] ?? '').toString());
+        final timeLabel = ts != null ? localStamp(ts.toLocal()) : '';
+        final entryType = (o['entryType'] ?? '').toString();
+        return {
+          'orderNumber': (o['orderNumber'] ?? o['id'] ?? '').toString(),
+          'customerName': (o['customerName'] ?? 'Customer').toString(),
+          'type': (o['type'] ?? 'Pickup').toString(),
+          'isWalkIn':
+              entryType == 'Staff' ||
+              (o['type'] ?? '').toString().toLowerCase().contains('walk-in'),
+          'total': (o['total'] as num?)?.toInt() ?? 0,
+          'time': timeLabel,
+          'status': (o['status'] ?? 'Pending').toString(),
+        };
+      }).toList();
+
+      int itemsCount = (analytics['totalItemsSold'] as num?)?.toInt() ?? 0;
+      if (itemsCount == 0 && rawOrders.isNotEmpty) {
+        final todayPrefix = phtDateLabel(DateTime.now());
+        for (final o in rawOrders) {
+          final ts = DateTime.tryParse((o['timestamp'] ?? '').toString());
+          if (ts != null && phtDateLabel(ts) == todayPrefix) {
+            itemsCount += (o['itemsCount'] as num?)?.toInt() ?? 0;
+          }
+        }
+      }
+
+      setState(() {
+        if (analytics['success'] == true) {
+          _totalRevenue = (analytics['totalRevenue'] as num?)?.toInt() ?? 0;
+          _orderCount = (analytics['orderCount'] as num?)?.toInt() ?? 0;
+          _avgOrderValue =
+              (analytics['averageOrderValue'] as num?)?.toInt() ?? 0;
+          _itemsSold = itemsCount;
+        }
+        if (ordersRes['success'] == true) {
+          _recentOrders = mappedOrders;
+        }
+        _loading = false;
+      });
+    } on FirebaseFunctionsException catch (e) {
+      if (!mounted) return;
+      final isAuthError =
+          e.code == 'unauthenticated' || e.code == 'permission-denied';
+      setState(() {
+        _error = isAuthError
+            ? 'Staff session expired (${e.code}). Please sign in again.'
+            : 'Could not load dashboard data: ${e.message ?? e.code}';
+        _loading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _error = 'Error connecting to server. Tap RETRY to sync.';
+        _loading = false;
+      });
+    }
+  }
+
   void _logout() {
     session.logout();
     cartNotifier.clear();
@@ -33,18 +160,44 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
   @override
   Widget build(BuildContext context) {
+    final sessionWatcher = context.watch<Session>();
+    if (!sessionWatcher.isStaff) {
+      return const Scaffold(
+        backgroundColor: KioskTheme.lunaBlushPaper,
+        body: Center(
+          child: SingleChildScrollView(
+            padding: EdgeInsets.symmetric(vertical: 24),
+            child: StaffLoginDialog(),
+          ),
+        ),
+      );
+    }
+
     final isMobile = MediaQuery.of(context).size.width < 800;
-    final recentOrders = orderHistory.reversed.take(10).toList();
+    final recentOrders = _recentOrders.isNotEmpty
+        ? _recentOrders.take(10).toList()
+        : orderHistory.reversed.take(10).toList();
 
     return Scaffold(
       backgroundColor: KioskTheme.lunaBlushPaper,
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
+          padding: EdgeInsets.all(isMobile ? 16 : 24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildHeader(),
+              if (_error != null) ...[
+                const SizedBox(height: 16),
+                _buildErrorBanner(),
+              ],
+              if (_loading) ...[
+                const SizedBox(height: 16),
+                const LinearProgressIndicator(
+                  color: KioskTheme.lunaPink,
+                  backgroundColor: KioskTheme.lunaPaper,
+                ),
+              ],
               const SizedBox(height: 28),
               _buildSectionTitle("TODAY'S OVERVIEW"),
               const SizedBox(height: 16),
@@ -68,6 +221,49 @@ class _AdminDashboardState extends State<AdminDashboard> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildErrorBanner() {
+    final isAuthIssue =
+        (_error ?? '').toLowerCase().contains('sign in') ||
+        (_error ?? '').toLowerCase().contains('unauthenticated') ||
+        (_error ?? '').toLowerCase().contains('permission-denied');
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFCE4E4),
+        borderRadius: BorderRadius.circular(KioskTheme.radiusMd),
+        border: Border.all(color: KioskTheme.error),
+      ),
+      child: Row(
+        children: [
+          const Icon(
+            Icons.warning_amber_rounded,
+            color: KioskTheme.error,
+            size: 18,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              _error!,
+              style: KioskTheme.bodySmall.copyWith(
+                color: KioskTheme.textPrimary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          if (isAuthIssue)
+            TextButton(
+              onPressed: () => session.logout(),
+              child: const Text('SIGN IN'),
+            ),
+          TextButton(
+            onPressed: _fetchDashboardData,
+            child: const Text('RETRY'),
+          ),
+        ],
       ),
     );
   }
@@ -129,6 +325,11 @@ class _AdminDashboardState extends State<AdminDashboard> {
                     ),
                   ],
                 ),
+              ),
+              IconButton(
+                tooltip: 'Refresh Dashboard',
+                onPressed: _loading ? null : _fetchDashboardData,
+                icon: const Icon(Icons.refresh_rounded, color: Colors.white),
               ),
               JuicyFeedback(
                 onPressed: _logout,
@@ -200,6 +401,11 @@ class _AdminDashboardState extends State<AdminDashboard> {
   }
 
   Widget _buildStatsGrid() {
+    final revenue = _totalRevenue > 0 ? _totalRevenue : todayRevenue;
+    final count = _orderCount > 0 ? _orderCount : todayOrderCount;
+    final avg = _avgOrderValue > 0 ? _avgOrderValue : avgOrderValue.round();
+    final items = _itemsSold > 0 ? _itemsSold : todayItemsSold;
+
     return LayoutBuilder(
       builder: (_, constraints) => Wrap(
         spacing: 14,
@@ -207,28 +413,28 @@ class _AdminDashboardState extends State<AdminDashboard> {
         children: [
           _statCard(
             'Today\'s Sales',
-            '₱$todayRevenue',
+            '₱$revenue',
             Icons.trending_up_rounded,
             KioskTheme.success,
             (constraints.maxWidth - 14) / 2,
           ),
           _statCard(
             'Orders',
-            '$todayOrderCount',
+            '$count',
             Icons.receipt_long_rounded,
             KioskTheme.info,
             (constraints.maxWidth - 14) / 2,
           ),
           _statCard(
             'Avg order',
-            '₱${avgOrderValue.toStringAsFixed(0)}',
+            '₱$avg',
             Icons.analytics_rounded,
             Colors.purple,
             (constraints.maxWidth - 14) / 2,
           ),
           _statCard(
             'Items sold',
-            '$todayItemsSold',
+            '$items',
             Icons.shopping_bag_rounded,
             KioskTheme.warning,
             (constraints.maxWidth - 14) / 2,
@@ -369,13 +575,17 @@ class _AdminDashboardState extends State<AdminDashboard> {
               ),
             ),
             const SizedBox(width: 16),
-            Text(
-              'New Walk-in Order',
-              style: KioskTheme.font(
-                color: Colors.white,
-                fontWeight: FontWeight.w800,
-                fontSize: 18,
-                letterSpacing: 0.5,
+            Flexible(
+              child: Text(
+                'New Walk-in Order',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: KioskTheme.font(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 18,
+                  letterSpacing: 0.5,
+                ),
               ),
             ),
             const SizedBox(width: 12),
@@ -407,10 +617,12 @@ class _AdminDashboardState extends State<AdminDashboard> {
       _ActionItem(
         icon: Icons.receipt_long_rounded,
         title: 'Order History',
-        subtitle: 'All today\'s orders',
+        subtitle: 'Recent orders',
         color: Colors.purple,
         onTap: () {
-          final orders = orderHistory.reversed.toList();
+          final orders = _recentOrders.isNotEmpty
+              ? _recentOrders
+              : orderHistory.reversed.toList();
           if (orders.isEmpty) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
@@ -503,29 +715,31 @@ class _AdminDashboardState extends State<AdminDashboard> {
               ),
             ),
             const SizedBox(width: 14),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'LIFETIME SALES REPORT',
-                  style: KioskTheme.font(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w800,
-                    fontSize: 15,
-                    letterSpacing: 1,
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'LIFETIME SALES REPORT',
+                    style: KioskTheme.font(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 15,
+                      letterSpacing: 1,
+                    ),
                   ),
-                ),
-                Text(
-                  'Full history \u00B7 Best sellers \u00B7 Date filters',
-                  style: KioskTheme.font(
-                    color: Colors.white.withValues(alpha: 0.75),
-                    fontWeight: FontWeight.w600,
-                    fontSize: 11,
+                  Text(
+                    'Full history \u00B7 Best sellers \u00B7 Date filters',
+                    style: KioskTheme.font(
+                      color: Colors.white.withValues(alpha: 0.75),
+                      fontWeight: FontWeight.w600,
+                      fontSize: 11,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-            const Spacer(),
+            const SizedBox(width: 8),
             Icon(
               Icons.arrow_forward_rounded,
               color: Colors.white.withValues(alpha: 0.8),
@@ -636,13 +850,15 @@ class _AdminDashboardState extends State<AdminDashboard> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 4,
+                  crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
                     Text(
                       order['orderNumber'] as String,
                       style: KioskTheme.titleMedium.copyWith(fontSize: 14),
                     ),
-                    const SizedBox(width: 8),
                     Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 8,

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart' hide MenuTheme;
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -36,14 +37,19 @@ class _KdsPageState extends State<KdsPage> with SingleTickerProviderStateMixin {
   final Set<String> _checkedItemKeys = {};
 
   TabController? _tabController;
+  bool _wasStaff = false;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 4, vsync: this);
-    _fetchActiveOrders();
+    _wasStaff = session.isStaff;
+    session.addListener(_onSessionChanged);
+    if (_wasStaff) {
+      _fetchActiveOrders();
+    }
     _refreshTimer = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (!mounted) return;
+      if (!mounted || !session.isStaff) return;
       setState(() {
         if (_secondsUntilSync > 1) {
           _secondsUntilSync--;
@@ -60,8 +66,33 @@ class _KdsPageState extends State<KdsPage> with SingleTickerProviderStateMixin {
     });
   }
 
+  void _onSessionChanged() {
+    if (!mounted) return;
+    final isStaffNow = session.isStaff;
+    if (isStaffNow && !_wasStaff) {
+      _wasStaff = true;
+      setState(() {
+        _orders = [];
+        _error = null;
+        _hasInitialFetchDone = false;
+        _knownPendingOrderIds = {};
+        _secondsUntilSync = 10;
+      });
+      _fetchActiveOrders();
+    } else if (!isStaffNow && _wasStaff) {
+      _wasStaff = false;
+      setState(() {
+        _orders = [];
+        _error = null;
+        _hasInitialFetchDone = false;
+        _knownPendingOrderIds = {};
+      });
+    }
+  }
+
   @override
   void dispose() {
+    session.removeListener(_onSessionChanged);
     _refreshTimer?.cancel();
     _clockTimer?.cancel();
     _tabController?.dispose();
@@ -70,6 +101,7 @@ class _KdsPageState extends State<KdsPage> with SingleTickerProviderStateMixin {
   }
 
   Future<void> _fetchActiveOrders({bool silent = false}) async {
+    if (!session.isStaff) return;
     if (!silent) setState(() => _loading = true);
     setState(() => _error = null);
 
@@ -93,99 +125,25 @@ class _KdsPageState extends State<KdsPage> with SingleTickerProviderStateMixin {
           _loading = false;
         });
       }
+    } on FirebaseFunctionsException catch (e) {
+      if (!mounted) return;
+      final isAuthError =
+          e.code == 'unauthenticated' || e.code == 'permission-denied';
+      setState(() {
+        _error = isAuthError
+            ? 'Staff session expired or unauthorized (${e.code}). Please sign in again.'
+            : 'Could not load live orders: ${e.message ?? e.code}';
+        _loading = false;
+      });
     } catch (_) {
       if (!mounted) return;
       setState(() {
-        if (_orders.isEmpty) {
-          _orders = _sampleKdsOrders();
-        }
+        _error =
+            'Connection error while loading live orders. Tap RETRY to sync.';
         _loading = false;
       });
     }
   }
-
-  static List<dynamic> _sampleKdsOrders() => [
-    {
-      'id': 'ord_del_101',
-      'orderNumber': '2026-10-24-001',
-      'customerName': 'Maria Santos',
-      'customerPhone': '09171234567',
-      'customerAddress': 'Purok 5, Magallanes (Near 7/11)',
-      'lat': 9.0163,
-      'lng': 125.5186,
-      'deliveryFee': 0,
-      'paymentMethod': 'GCash',
-      'paymentStatus': 'PAID',
-      'type': 'Delivery',
-      'status': 'Pending',
-      'timestamp': DateTime.now()
-          .subtract(const Duration(minutes: 3))
-          .toIso8601String(),
-      'total': 198,
-      'items': [
-        {
-          'name': 'Shawarma Wrap',
-          'quantity': 1,
-          'variant': 'Buy 1 Take 1',
-          'price': 99,
-        },
-        {
-          'name': 'Nachos & Fries Overload',
-          'quantity': 1,
-          'variant': 'Buddy (1–2 pax)',
-          'price': 99,
-        },
-      ],
-    },
-    {
-      'id': 'ord_prep_102',
-      'orderNumber': '2026-10-24-002',
-      'customerName': 'Juan Dela Cruz',
-      'customerPhone': '09289876543',
-      'customerAddress': '',
-      'lat': null,
-      'lng': null,
-      'deliveryFee': 0,
-      'paymentMethod': 'Cash',
-      'paymentStatus': 'NOT PAID',
-      'type': 'Pickup',
-      'status': 'Preparing',
-      'timestamp': DateTime.now()
-          .subtract(const Duration(minutes: 9))
-          .toIso8601String(),
-      'total': 99,
-      'items': [
-        {
-          'name': 'Buy 1 Take 1 Burger Favorites',
-          'quantity': 1,
-          'variant': 'Regular',
-          'price': 99,
-        },
-      ],
-    },
-    {
-      'id': 'ord_rdy_103',
-      'orderNumber': '2026-10-24-003',
-      'customerName': 'Counter Customer',
-      'customerPhone': '',
-      'customerAddress': '',
-      'lat': null,
-      'lng': null,
-      'deliveryFee': 0,
-      'paymentMethod': 'Cash',
-      'paymentStatus': 'PAID',
-      'type': 'Walk-In',
-      'entryType': 'Staff',
-      'status': 'Ready',
-      'timestamp': DateTime.now()
-          .subtract(const Duration(minutes: 14))
-          .toIso8601String(),
-      'total': 98,
-      'items': [
-        {'name': 'Classic Lemonade', 'quantity': 2, 'variant': '', 'price': 49},
-      ],
-    },
-  ];
 
   void _checkNewOrdersAndChime(List<dynamic> freshOrders) {
     final pendingOrders = freshOrders
@@ -609,11 +567,15 @@ class _KdsPageState extends State<KdsPage> with SingleTickerProviderStateMixin {
     int readyCount,
   ) {
     final sessionWatcher = context.watch<Session>();
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isCompact = screenWidth < 640;
+    final isVeryNarrow = screenWidth < 460;
+
     return AppBar(
       backgroundColor: MenuTheme.paper,
       foregroundColor: MenuTheme.ink,
       elevation: 0,
-      titleSpacing: 16,
+      titleSpacing: isCompact ? 6 : 16,
       bottom: PreferredSize(
         preferredSize: const Size.fromHeight(2),
         child: Container(color: MenuTheme.pinkInk, height: 2),
@@ -621,8 +583,8 @@ class _KdsPageState extends State<KdsPage> with SingleTickerProviderStateMixin {
       title: Row(
         children: [
           Container(
-            width: 32,
-            height: 32,
+            width: isCompact ? 28 : 32,
+            height: isCompact ? 28 : 32,
             decoration: BoxDecoration(
               color: MenuTheme.card,
               border: Border.all(color: MenuTheme.rule),
@@ -630,22 +592,24 @@ class _KdsPageState extends State<KdsPage> with SingleTickerProviderStateMixin {
             child: Center(
               child: Image.asset(
                 'images/luna_logo.png',
-                height: 28,
+                height: isCompact ? 24 : 28,
                 excludeFromSemantics: true,
               ),
             ),
           ),
-          const SizedBox(width: 12),
+          SizedBox(width: isCompact ? 8 : 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  'LUNA LIVE OPERATIONS',
+                  isCompact ? 'LIVE KDS' : 'LUNA LIVE OPERATIONS',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: MenuTheme.heading(20).copyWith(letterSpacing: 1.5),
+                  style: MenuTheme.heading(
+                    isCompact ? 16 : 20,
+                  ).copyWith(letterSpacing: isCompact ? 1.0 : 1.5),
                 ),
                 Row(
                   children: [
@@ -654,10 +618,12 @@ class _KdsPageState extends State<KdsPage> with SingleTickerProviderStateMixin {
                       height: 6,
                       color: const Color(0xFF1E7A3C),
                     ),
-                    const SizedBox(width: 6),
-                    Expanded(
+                    const SizedBox(width: 5),
+                    Flexible(
                       child: Text(
-                        'Purok 5 Kiosk · Sync in ${_secondsUntilSync}s',
+                        isCompact
+                            ? '${_secondsUntilSync}s'
+                            : 'Purok 5 Kiosk · Sync in ${_secondsUntilSync}s',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: MenuTheme.body(
@@ -669,8 +635,8 @@ class _KdsPageState extends State<KdsPage> with SingleTickerProviderStateMixin {
                     const SizedBox(width: 6),
                     Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 6,
-                        vertical: 2,
+                        horizontal: 5,
+                        vertical: 1,
                       ),
                       decoration: BoxDecoration(
                         color: sessionWatcher.isAdmin
@@ -703,250 +669,468 @@ class _KdsPageState extends State<KdsPage> with SingleTickerProviderStateMixin {
           ),
         ],
       ),
-      actions: [
-        // Sound Chime Toggle & Test
-        IconButton(
-          tooltip: AudioAlertService.soundEnabled
-              ? 'Audio Alerts: ON (Tap to Mute)'
-              : 'Audio Alerts: MUTED (Tap to Enable)',
-          icon: Icon(
-            AudioAlertService.soundEnabled
-                ? Icons.volume_up_rounded
-                : Icons.volume_off_rounded,
-            color: AudioAlertService.soundEnabled
-                ? MenuTheme.pinkInk
-                : MenuTheme.inkSoft,
-            size: 20,
-          ),
-          onPressed: () {
-            setState(() {
-              AudioAlertService.soundEnabled = !AudioAlertService.soundEnabled;
-            });
-            if (AudioAlertService.soundEnabled) {
-              AudioAlertService.playOrderChime();
-              _snack(
-                'Audio Alert Enabled (Chime tested)',
-                const Color(0xFF1E7A3C),
-              );
-            } else {
-              _snack('Audio Alert Muted', MenuTheme.inkSoft);
-            }
-          },
-        ),
-
-        // Manual Refresh
-        IconButton(
-          tooltip: 'Sync Orders Now',
-          icon: _loading
-              ? const SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: MenuTheme.pinkInk,
+      actions: isVeryNarrow
+          ? [
+              IconButton(
+                tooltip: 'Sync Orders Now',
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 38, minHeight: 38),
+                icon: _loading
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: MenuTheme.pinkInk,
+                        ),
+                      )
+                    : const Icon(
+                        Icons.sync_rounded,
+                        color: MenuTheme.pinkInk,
+                        size: 20,
+                      ),
+                onPressed: _loading
+                    ? null
+                    : () {
+                        _secondsUntilSync = 10;
+                        _fetchActiveOrders();
+                      },
+              ),
+              InkWell(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const KioskMenuPage()),
+                  );
+                },
+                child: Container(
+                  margin: const EdgeInsets.symmetric(vertical: 10),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
                   ),
-                )
-              : const Icon(
-                  Icons.sync_rounded,
+                  decoration: BoxDecoration(
+                    color: MenuTheme.plate,
+                    border: Border.all(
+                      color: MenuTheme.pinkInk.withValues(alpha: 0.4),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.point_of_sale_outlined,
+                        color: MenuTheme.onPlate,
+                        size: 15,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        'POS',
+                        style:
+                            MenuTheme.body(
+                              size: 10,
+                              color: MenuTheme.onPlate,
+                            ).copyWith(
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 0.8,
+                            ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              PopupMenuButton<String>(
+                tooltip: 'Staff Menu',
+                icon: const Icon(
+                  Icons.more_vert_rounded,
                   color: MenuTheme.pinkInk,
                   size: 20,
                 ),
-          onPressed: _loading
-              ? null
-              : () {
-                  _secondsUntilSync = 10;
-                  _fetchActiveOrders();
+                onSelected: (val) {
+                  if (val == 'sound') {
+                    setState(() {
+                      AudioAlertService.soundEnabled =
+                          !AudioAlertService.soundEnabled;
+                    });
+                    if (AudioAlertService.soundEnabled) {
+                      AudioAlertService.playOrderChime();
+                      _snack(
+                        'Audio Alert Enabled (Chime tested)',
+                        const Color(0xFF1E7A3C),
+                      );
+                    } else {
+                      _snack('Audio Alert Muted', MenuTheme.inkSoft);
+                    }
+                  } else if (val == 'analytics') {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const AdminDashboard()),
+                    );
+                  } else if (val == 'logout') {
+                    session.logout();
+                    Navigator.pushNamedAndRemoveUntil(
+                      context,
+                      '/',
+                      (route) => false,
+                    );
+                  }
                 },
-        ),
-
-        const SizedBox(width: 4),
-
-        // Walk-in Order Button (Square Vermilion Plate)
-        InkWell(
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const KioskMenuPage()),
-            );
-          },
-          child: Container(
-            margin: const EdgeInsets.symmetric(vertical: 10),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: MenuTheme.plate,
-              border: Border.all(
-                color: MenuTheme.pinkInk.withValues(alpha: 0.4),
+                itemBuilder: (_) => [
+                  PopupMenuItem(
+                    value: 'sound',
+                    child: Row(
+                      children: [
+                        Icon(
+                          AudioAlertService.soundEnabled
+                              ? Icons.volume_up_rounded
+                              : Icons.volume_off_rounded,
+                          size: 18,
+                          color: MenuTheme.pinkInk,
+                        ),
+                        const SizedBox(width: 10),
+                        Text(
+                          AudioAlertService.soundEnabled
+                              ? 'Mute Chime'
+                              : 'Enable Chime',
+                        ),
+                      ],
+                    ),
+                  ),
+                  PopupMenuItem(
+                    value: 'analytics',
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.bar_chart_outlined,
+                          size: 18,
+                          color: MenuTheme.pinkInk,
+                        ),
+                        SizedBox(width: 10),
+                        Text('Sales & Admin'),
+                      ],
+                    ),
+                  ),
+                  PopupMenuItem(
+                    value: 'logout',
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.logout_rounded,
+                          size: 18,
+                          color: Color(0xFFB3261E),
+                        ),
+                        SizedBox(width: 10),
+                        Text('Exit Staff Portal'),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(
-                  Icons.point_of_sale_outlined,
-                  color: MenuTheme.onPlate,
-                  size: 15,
+            ]
+          : [
+              // Sound Chime Toggle & Test
+              IconButton(
+                tooltip: AudioAlertService.soundEnabled
+                    ? 'Audio Alerts: ON (Tap to Mute)'
+                    : 'Audio Alerts: MUTED (Tap to Enable)',
+                padding: isCompact ? EdgeInsets.zero : null,
+                constraints: isCompact
+                    ? const BoxConstraints(minWidth: 34, minHeight: 34)
+                    : null,
+                visualDensity: isCompact ? VisualDensity.compact : null,
+                icon: Icon(
+                  AudioAlertService.soundEnabled
+                      ? Icons.volume_up_rounded
+                      : Icons.volume_off_rounded,
+                  color: AudioAlertService.soundEnabled
+                      ? MenuTheme.pinkInk
+                      : MenuTheme.inkSoft,
+                  size: isCompact ? 18 : 20,
                 ),
-                const SizedBox(width: 6),
-                Text(
-                  'POS WALK-IN',
-                  style: MenuTheme.body(
-                    size: 11,
-                    color: MenuTheme.onPlate,
-                  ).copyWith(fontWeight: FontWeight.w800, letterSpacing: 1),
+                onPressed: () {
+                  setState(() {
+                    AudioAlertService.soundEnabled =
+                        !AudioAlertService.soundEnabled;
+                  });
+                  if (AudioAlertService.soundEnabled) {
+                    AudioAlertService.playOrderChime();
+                    _snack(
+                      'Audio Alert Enabled (Chime tested)',
+                      const Color(0xFF1E7A3C),
+                    );
+                  } else {
+                    _snack('Audio Alert Muted', MenuTheme.inkSoft);
+                  }
+                },
+              ),
+
+              // Manual Refresh
+              IconButton(
+                tooltip: 'Sync Orders Now',
+                padding: isCompact ? EdgeInsets.zero : null,
+                constraints: isCompact
+                    ? const BoxConstraints(minWidth: 34, minHeight: 34)
+                    : null,
+                visualDensity: isCompact ? VisualDensity.compact : null,
+                icon: _loading
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: MenuTheme.pinkInk,
+                        ),
+                      )
+                    : Icon(
+                        Icons.sync_rounded,
+                        color: MenuTheme.pinkInk,
+                        size: isCompact ? 18 : 20,
+                      ),
+                onPressed: _loading
+                    ? null
+                    : () {
+                        _secondsUntilSync = 10;
+                        _fetchActiveOrders();
+                      },
+              ),
+
+              SizedBox(width: isCompact ? 2 : 4),
+
+              // Walk-in Order Button (Square Vermilion Plate)
+              InkWell(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const KioskMenuPage()),
+                  );
+                },
+                child: Container(
+                  margin: const EdgeInsets.symmetric(vertical: 10),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: isCompact ? 8 : 12,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: MenuTheme.plate,
+                    border: Border.all(
+                      color: MenuTheme.pinkInk.withValues(alpha: 0.4),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.point_of_sale_outlined,
+                        color: MenuTheme.onPlate,
+                        size: 15,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        isVeryNarrow ? 'POS' : 'POS WALK-IN',
+                        style:
+                            MenuTheme.body(
+                              size: isCompact ? 10 : 11,
+                              color: MenuTheme.onPlate,
+                            ).copyWith(
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 0.8,
+                            ),
+                      ),
+                    ],
+                  ),
                 ),
-              ],
-            ),
-          ),
-        ),
+              ),
 
-        const SizedBox(width: 4),
+              SizedBox(width: isCompact ? 2 : 4),
 
-        // Admin Dashboard Link
-        IconButton(
-          tooltip: 'Sales Analytics & Admin',
-          icon: const Icon(
-            Icons.bar_chart_outlined,
-            color: MenuTheme.pinkInk,
-            size: 20,
-          ),
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const AdminDashboard()),
-            );
-          },
-        ),
+              // Admin Dashboard Link
+              IconButton(
+                tooltip: 'Sales Analytics & Admin',
+                padding: isCompact ? EdgeInsets.zero : null,
+                constraints: isCompact
+                    ? const BoxConstraints(minWidth: 34, minHeight: 34)
+                    : null,
+                visualDensity: isCompact ? VisualDensity.compact : null,
+                icon: Icon(
+                  Icons.bar_chart_outlined,
+                  color: MenuTheme.pinkInk,
+                  size: isCompact ? 18 : 20,
+                ),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const AdminDashboard()),
+                  );
+                },
+              ),
 
-        // Logout
-        IconButton(
-          tooltip: 'Exit Staff Portal',
-          icon: const Icon(
-            Icons.logout_rounded,
-            color: Color(0xFFB3261E),
-            size: 19,
-          ),
-          onPressed: () {
-            session.logout();
-            Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false);
-          },
-        ),
-        const SizedBox(width: 8),
-      ],
+              // Logout
+              IconButton(
+                tooltip: 'Exit Staff Portal',
+                padding: isCompact ? EdgeInsets.zero : null,
+                constraints: isCompact
+                    ? const BoxConstraints(minWidth: 34, minHeight: 34)
+                    : null,
+                visualDensity: isCompact ? VisualDensity.compact : null,
+                icon: Icon(
+                  Icons.logout_rounded,
+                  color: const Color(0xFFB3261E),
+                  size: isCompact ? 18 : 19,
+                ),
+                onPressed: () {
+                  session.logout();
+                  Navigator.pushNamedAndRemoveUntil(
+                    context,
+                    '/',
+                    (route) => false,
+                  );
+                },
+              ),
+              SizedBox(width: isCompact ? 4 : 8),
+            ],
     );
   }
 
   Widget _buildControlBar(int pendingCount, int prepCount, int readyCount) {
+    final isNarrow = MediaQuery.of(context).size.width < 720;
+
+    final filterRow = SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          _buildFilterChip('ALL'),
+          const SizedBox(width: 8),
+          _buildFilterChip('Delivery', icon: Icons.motorcycle_outlined),
+          const SizedBox(width: 8),
+          _buildFilterChip('Pickup', icon: Icons.storefront_outlined),
+          const SizedBox(width: 8),
+          _buildFilterChip('Walk-In', icon: Icons.shopping_bag_outlined),
+        ],
+      ),
+    );
+
+    final searchBox = Container(
+      height: 36,
+      decoration: BoxDecoration(
+        color: MenuTheme.card,
+        border: Border.all(color: MenuTheme.rule),
+      ),
+      child: TextField(
+        controller: _searchCtrl,
+        onChanged: (v) => setState(() => _searchQuery = v),
+        textAlignVertical: TextAlignVertical.center,
+        style: MenuTheme.body(size: 12),
+        decoration: InputDecoration(
+          isDense: true,
+          hintText: 'Search orders...',
+          hintStyle: MenuTheme.body(size: 12, color: MenuTheme.inkSoft),
+          prefixIcon: const Icon(
+            Icons.search_rounded,
+            size: 16,
+            color: MenuTheme.inkSoft,
+          ),
+          prefixIconConstraints: const BoxConstraints(
+            minWidth: 32,
+            minHeight: 32,
+          ),
+          suffixIcon: _searchQuery.isNotEmpty
+              ? GestureDetector(
+                  onTap: () {
+                    _searchCtrl.clear();
+                    setState(() => _searchQuery = '');
+                  },
+                  child: const Icon(
+                    Icons.clear_rounded,
+                    size: 15,
+                    color: MenuTheme.inkSoft,
+                  ),
+                )
+              : null,
+          suffixIconConstraints: const BoxConstraints(
+            minWidth: 30,
+            minHeight: 30,
+          ),
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 8,
+            vertical: 8,
+          ),
+        ),
+      ),
+    );
+
+    final historyButton = InkWell(
+      onTap: () {
+        setState(() {
+          _showCompleted = !_showCompleted;
+        });
+        _fetchActiveOrders();
+      },
+      child: Container(
+        height: 36,
+        padding: const EdgeInsets.symmetric(horizontal: 10),
+        decoration: BoxDecoration(
+          color: _showCompleted ? MenuTheme.card : MenuTheme.paper,
+          border: Border.all(
+            color: _showCompleted ? MenuTheme.pinkInk : MenuTheme.rule,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              _showCompleted
+                  ? Icons.check_box_outlined
+                  : Icons.check_box_outline_blank_outlined,
+              size: 15,
+              color: _showCompleted ? MenuTheme.pinkInk : MenuTheme.inkSoft,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              'HISTORY',
+              style: MenuTheme.body(
+                size: 11,
+                color: _showCompleted ? MenuTheme.ink : MenuTheme.inkSoft,
+              ).copyWith(fontWeight: FontWeight.w700, letterSpacing: 1),
+            ),
+          ],
+        ),
+      ),
+    );
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+      padding: EdgeInsets.symmetric(
+        horizontal: isNarrow ? 12 : 20,
+        vertical: 10,
+      ),
       decoration: const BoxDecoration(
         color: MenuTheme.paper,
         border: Border(bottom: BorderSide(color: MenuTheme.rule)),
       ),
-      child: Row(
-        children: [
-          // Filter Chips (Square Painted Plates)
-          Expanded(
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
-                  _buildFilterChip('ALL'),
-                  const SizedBox(width: 8),
-                  _buildFilterChip('Delivery', icon: Icons.motorcycle_outlined),
-                  const SizedBox(width: 8),
-                  _buildFilterChip('Pickup', icon: Icons.storefront_outlined),
-                  const SizedBox(width: 8),
-                  _buildFilterChip(
-                    'Walk-In',
-                    icon: Icons.shopping_bag_outlined,
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-
-          // Search Box (Square Painted)
-          Container(
-            width: 170,
-            height: 32,
-            decoration: BoxDecoration(
-              color: MenuTheme.card,
-              border: Border.all(color: MenuTheme.rule),
-            ),
-            child: TextField(
-              controller: _searchCtrl,
-              onChanged: (v) => setState(() => _searchQuery = v),
-              style: MenuTheme.body(size: 12),
-              decoration: InputDecoration(
-                hintText: 'Search orders...',
-                hintStyle: MenuTheme.body(size: 11, color: MenuTheme.inkSoft),
-                prefixIcon: const Icon(
-                  Icons.search_rounded,
-                  size: 15,
-                  color: MenuTheme.inkSoft,
+      child: isNarrow
+          ? Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  children: [
+                    Expanded(child: searchBox),
+                    const SizedBox(width: 8),
+                    historyButton,
+                  ],
                 ),
-                suffixIcon: _searchQuery.isNotEmpty
-                    ? GestureDetector(
-                        onTap: () {
-                          _searchCtrl.clear();
-                          setState(() => _searchQuery = '');
-                        },
-                        child: const Icon(
-                          Icons.clear_rounded,
-                          size: 14,
-                          color: MenuTheme.inkSoft,
-                        ),
-                      )
-                    : null,
-                border: InputBorder.none,
-                contentPadding: const EdgeInsets.symmetric(vertical: 8),
-              ),
+                const SizedBox(height: 8),
+                filterRow,
+              ],
+            )
+          : Row(
+              children: [
+                Expanded(child: filterRow),
+                const SizedBox(width: 12),
+                SizedBox(width: 190, child: searchBox),
+                const SizedBox(width: 10),
+                historyButton,
+              ],
             ),
-          ),
-          const SizedBox(width: 10),
-
-          // History toggle
-          InkWell(
-            onTap: () {
-              setState(() {
-                _showCompleted = !_showCompleted;
-              });
-              _fetchActiveOrders();
-            },
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: _showCompleted ? MenuTheme.card : MenuTheme.paper,
-                border: Border.all(
-                  color: _showCompleted ? MenuTheme.pinkInk : MenuTheme.rule,
-                ),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    _showCompleted
-                        ? Icons.check_box_outlined
-                        : Icons.check_box_outline_blank_outlined,
-                    size: 15,
-                    color: _showCompleted
-                        ? MenuTheme.pinkInk
-                        : MenuTheme.inkSoft,
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    'HISTORY',
-                    style: MenuTheme.body(
-                      size: 11,
-                      color: _showCompleted ? MenuTheme.ink : MenuTheme.inkSoft,
-                    ).copyWith(fontWeight: FontWeight.w700, letterSpacing: 1),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
     );
   }
 
@@ -986,12 +1170,16 @@ class _KdsPageState extends State<KdsPage> with SingleTickerProviderStateMixin {
   }
 
   Widget _buildErrorBanner() {
+    final isAuthIssue =
+        (_error ?? '').toLowerCase().contains('sign in') ||
+        (_error ?? '').toLowerCase().contains('unauthenticated') ||
+        (_error ?? '').toLowerCase().contains('permission-denied');
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFCE4E4),
-        border: const Border(bottom: BorderSide(color: Color(0xFFB3261E))),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      decoration: const BoxDecoration(
+        color: Color(0xFFFCE4E4),
+        border: Border(bottom: BorderSide(color: Color(0xFFB3261E))),
       ),
       child: Row(
         children: [
@@ -1010,6 +1198,17 @@ class _KdsPageState extends State<KdsPage> with SingleTickerProviderStateMixin {
               ).copyWith(fontWeight: FontWeight.w600),
             ),
           ),
+          if (isAuthIssue)
+            TextButton(
+              onPressed: () => session.logout(),
+              child: Text(
+                'SIGN IN',
+                style: MenuTheme.body(
+                  size: 12,
+                  color: const Color(0xFFB3261E),
+                ).copyWith(fontWeight: FontWeight.w800, letterSpacing: 1),
+              ),
+            ),
           TextButton(
             onPressed: () => _fetchActiveOrders(),
             child: Text(
@@ -1083,60 +1282,43 @@ class _KdsPageState extends State<KdsPage> with SingleTickerProviderStateMixin {
     List<dynamic> ready,
     List<dynamic> completed,
   ) {
+    Widget buildTab(String label, int count, Color badgeColor) {
+      return Tab(
+        height: 46,
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(label),
+              const SizedBox(width: 5),
+              _buildCountBadge(count, badgeColor),
+            ],
+          ),
+        ),
+      );
+    }
+
     return Column(
       children: [
         Container(
           color: MenuTheme.paper,
           child: TabBar(
             controller: _tabController,
+            labelPadding: const EdgeInsets.symmetric(horizontal: 4),
             labelColor: MenuTheme.ink,
             unselectedLabelColor: MenuTheme.inkSoft,
             indicatorColor: MenuTheme.plate,
             indicatorWeight: 3,
             labelStyle: MenuTheme.body(
-              size: 12,
-            ).copyWith(fontWeight: FontWeight.w800, letterSpacing: 1),
+              size: 11,
+            ).copyWith(fontWeight: FontWeight.w800, letterSpacing: 0.6),
             tabs: [
-              Tab(
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Text('PENDING'),
-                    const SizedBox(width: 6),
-                    _buildCountBadge(pending.length, MenuTheme.plate),
-                  ],
-                ),
-              ),
-              Tab(
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Text('COOKING'),
-                    const SizedBox(width: 6),
-                    _buildCountBadge(preparing.length, MenuTheme.card),
-                  ],
-                ),
-              ),
-              Tab(
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Text('READY'),
-                    const SizedBox(width: 6),
-                    _buildCountBadge(ready.length, const Color(0xFF1E7A3C)),
-                  ],
-                ),
-              ),
-              Tab(
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Text('DONE'),
-                    const SizedBox(width: 6),
-                    _buildCountBadge(completed.length, MenuTheme.rule),
-                  ],
-                ),
-              ),
+              buildTab('PENDING', pending.length, MenuTheme.plate),
+              buildTab('COOKING', preparing.length, MenuTheme.card),
+              buildTab('READY', ready.length, const Color(0xFF1E7A3C)),
+              buildTab('DONE', completed.length, MenuTheme.rule),
             ],
           ),
         ),
@@ -1273,14 +1455,14 @@ class _KdsPageState extends State<KdsPage> with SingleTickerProviderStateMixin {
   }
 
   Widget _buildOrderCard(dynamic order) {
-    final orderId = order['id'] as String;
-    final orderNum = order['orderNumber'] as String? ?? orderId;
+    final orderId = (order['id'] ?? '').toString();
+    final orderNum = (order['orderNumber'] ?? orderId).toString();
     final customerName =
         (order['customerName'] as String?)?.trim() ?? 'Customer';
     final customerPhone = (order['customerPhone'] as String?)?.trim() ?? '';
     final customerAddress = (order['customerAddress'] as String?)?.trim() ?? '';
-    final lat = order['lat'] as double?;
-    final lng = order['lng'] as double?;
+    final lat = (order['lat'] as num?)?.toDouble();
+    final lng = (order['lng'] as num?)?.toDouble();
     final type = order['type'] as String? ?? 'Walk-In';
     final paymentStatus = (order['paymentStatus'] as String? ?? 'NOT PAID')
         .toUpperCase();
@@ -1321,57 +1503,63 @@ class _KdsPageState extends State<KdsPage> with SingleTickerProviderStateMixin {
           children: [
             // Top Row: Order # and Elapsed Time + Actions
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 3,
+                Expanded(
+                  child: Wrap(
+                    spacing: 4,
+                    runSpacing: 4,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color: MenuTheme.paper,
+                          border: Border.all(color: MenuTheme.rule),
+                        ),
+                        child: Text(
+                          '#$orderNum',
+                          style: MenuTheme.heading(
+                            16,
+                          ).copyWith(letterSpacing: 0.8),
+                        ),
                       ),
-                      decoration: BoxDecoration(
-                        color: MenuTheme.paper,
-                        border: Border.all(color: MenuTheme.rule),
-                      ),
-                      child: Text(
-                        '#$orderNum',
-                        style: MenuTheme.heading(18).copyWith(letterSpacing: 1),
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    IconButton(
-                      tooltip: 'Kitchen Slip Ticket',
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(
-                        minWidth: 26,
-                        minHeight: 26,
-                      ),
-                      icon: const Icon(
-                        Icons.receipt_long_outlined,
-                        size: 16,
-                        color: MenuTheme.pinkInk,
-                      ),
-                      onPressed: () => _showPrintTicketDialog(order),
-                    ),
-                    if (isDelivery)
                       IconButton(
-                        tooltip: 'Copy Delivery Dispatch Note',
+                        tooltip: 'Kitchen Slip Ticket',
                         padding: EdgeInsets.zero,
                         constraints: const BoxConstraints(
-                          minWidth: 26,
-                          minHeight: 26,
+                          minWidth: 28,
+                          minHeight: 28,
                         ),
                         icon: const Icon(
-                          Icons.copy_rounded,
-                          size: 14,
+                          Icons.receipt_long_outlined,
+                          size: 16,
                           color: MenuTheme.pinkInk,
                         ),
-                        onPressed: () => _copyRiderDispatchNote(order),
+                        onPressed: () => _showPrintTicketDialog(order),
                       ),
-                  ],
+                      if (isDelivery)
+                        IconButton(
+                          tooltip: 'Copy Delivery Dispatch Note',
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(
+                            minWidth: 28,
+                            minHeight: 28,
+                          ),
+                          icon: const Icon(
+                            Icons.copy_rounded,
+                            size: 14,
+                            color: MenuTheme.pinkInk,
+                          ),
+                          onPressed: () => _copyRiderDispatchNote(order),
+                        ),
+                    ],
+                  ),
                 ),
+                const SizedBox(width: 8),
                 Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 8,
@@ -1413,7 +1601,9 @@ class _KdsPageState extends State<KdsPage> with SingleTickerProviderStateMixin {
             const SizedBox(height: 10),
 
             // Order Type & Payment Status Badge (Square Painted Plates)
-            Row(
+            Wrap(
+              spacing: 8,
+              runSpacing: 6,
               children: [
                 // Type Pill
                 Container(
@@ -1453,7 +1643,6 @@ class _KdsPageState extends State<KdsPage> with SingleTickerProviderStateMixin {
                     ],
                   ),
                 ),
-                const SizedBox(width: 8),
 
                 // Payment Status Pill
                 Container(
@@ -1484,23 +1673,26 @@ class _KdsPageState extends State<KdsPage> with SingleTickerProviderStateMixin {
             const SizedBox(height: 10),
 
             // Customer Name & Phone
-            Row(
+            Wrap(
+              spacing: 8,
+              runSpacing: 4,
+              alignment: WrapAlignment.spaceBetween,
+              crossAxisAlignment: WrapCrossAlignment.center,
               children: [
-                Expanded(
-                  child: Text(
-                    customerName,
-                    style: MenuTheme.body(
-                      size: 15,
-                      color: MenuTheme.ink,
-                    ).copyWith(fontWeight: FontWeight.w700),
-                  ),
+                Text(
+                  customerName,
+                  style: MenuTheme.body(
+                    size: 15,
+                    color: MenuTheme.ink,
+                  ).copyWith(fontWeight: FontWeight.w700),
                 ),
                 if (customerPhone.isNotEmpty)
                   InkWell(
                     onTap: () => openUrlInBrowser('tel:$customerPhone'),
                     child: Padding(
-                      padding: const EdgeInsets.all(4.0),
+                      padding: const EdgeInsets.symmetric(vertical: 2),
                       child: Row(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
                           const Icon(
                             Icons.phone_outlined,
@@ -1582,7 +1774,8 @@ class _KdsPageState extends State<KdsPage> with SingleTickerProviderStateMixin {
               final idx = entry.key;
               final item = entry.value;
               final name = item['name'] as String? ?? 'Item';
-              final qty = (item['quantity'] ?? item['qty'] ?? 1) as int;
+              final qty = ((item['quantity'] ?? item['qty'] ?? 1) as num)
+                  .toInt();
               final variant = item['variant'] as String?;
               final itemKey = '${orderId}_$idx';
               final isChecked = _checkedItemKeys.contains(itemKey);

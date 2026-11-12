@@ -1,7 +1,11 @@
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../services/functions.dart';
+import '../services/session.dart';
 import '../widgets/kiosk/kiosk_theme.dart';
 import '../widgets/report/report_widgets.dart';
+import 'staff_login_dialog.dart';
 
 class AnalyticsPage extends StatefulWidget {
   const AnalyticsPage({super.key});
@@ -14,20 +18,48 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
   bool _loading = false;
   Map<String, dynamic> _data = {};
   String? _error;
+  bool _wasStaff = false;
 
   @override
   void initState() {
     super.initState();
-    _fetchAnalytics();
+    _wasStaff = session.isStaff;
+    session.addListener(_onSessionChanged);
+    if (_wasStaff) {
+      _fetchAnalytics();
+    }
+  }
+
+  void _onSessionChanged() {
+    if (!mounted) return;
+    final isStaffNow = session.isStaff;
+    if (isStaffNow && !_wasStaff) {
+      _wasStaff = true;
+      _fetchAnalytics();
+    } else if (!isStaffNow && _wasStaff) {
+      _wasStaff = false;
+      setState(() {
+        _data = {};
+        _error = null;
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    session.removeListener(_onSessionChanged);
+    super.dispose();
   }
 
   Future<void> _fetchAnalytics() async {
+    if (!session.isStaff) return;
     setState(() {
       _loading = true;
       _error = null;
     });
     try {
       final data = await callFn('getSalesAnalytics');
+      if (!mounted) return;
       setState(() {
         if (data['success'] == true) {
           _data = data;
@@ -36,7 +68,21 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
         }
         _loading = false;
       });
+    } on FirebaseFunctionsException catch (e) {
+      if (!mounted) return;
+      final isAuthError =
+          e.code == 'unauthenticated' || e.code == 'permission-denied';
+      if (isAuthError) {
+        session.logout();
+      }
+      setState(() {
+        _error = isAuthError
+            ? 'Staff session expired (${e.code}). Please sign in again.'
+            : 'Could not load analytics: ${e.message ?? e.code}';
+        _loading = false;
+      });
     } catch (_) {
+      if (!mounted) return;
       setState(() {
         _error = 'Error connecting to server. Please try again.';
         _loading = false;
@@ -46,6 +92,19 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final sessionWatcher = context.watch<Session>();
+    if (!sessionWatcher.isStaff) {
+      return const Scaffold(
+        backgroundColor: KioskTheme.lunaBlushPaper,
+        body: Center(
+          child: SingleChildScrollView(
+            padding: EdgeInsets.symmetric(vertical: 24),
+            child: StaffLoginDialog(),
+          ),
+        ),
+      );
+    }
+
     final isMobile = MediaQuery.of(context).size.width < 800;
 
     return ReportScaffold(
@@ -56,12 +115,15 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
       onRefresh: _loading ? null : _fetchAnalytics,
       refreshTooltip: 'Refresh Metrics',
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(32),
+        padding: EdgeInsets.all(isMobile ? 16 : 32),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            Wrap(
+              spacing: 12,
+              runSpacing: 10,
+              alignment: WrapAlignment.spaceBetween,
+              crossAxisAlignment: WrapCrossAlignment.center,
               children: [
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -70,22 +132,25 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
                       'TODAY\'S REVENUE METRICS',
                       style: KioskTheme.labelMedium.copyWith(
                         color: KioskTheme.textMuted,
-                        fontSize: 14,
+                        fontSize: 13,
                       ),
                     ),
                     Text(
                       _data['dateLabel'] ?? 'Date loading...',
-                      style: KioskTheme.headerMedium.copyWith(fontSize: 24),
+                      style: KioskTheme.headerMedium.copyWith(
+                        fontSize: isMobile ? 20 : 24,
+                      ),
                     ),
                   ],
                 ),
                 Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
+                    horizontal: 14,
+                    vertical: 7,
                   ),
                   decoration: KioskTheme.badgeSuccess,
                   child: Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       const Icon(
                         Icons.check_circle_rounded,

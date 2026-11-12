@@ -70,7 +70,7 @@ class _StaffLoginDialogState extends State<StaffLoginDialog> {
     });
 
     try {
-      final data = await callFn('verifyStaff', {'pin': _pin});
+      final data = await callFn('verifyStaff', {'pin': _pin}, 30);
       final bool isSuccess = data['success'] == true;
 
       if (!mounted) return;
@@ -81,9 +81,15 @@ class _StaffLoginDialogState extends State<StaffLoginDialog> {
             data['role'] as String? ??
             (actualUser.toLowerCase() == 'admin' ? 'admin' : 'staff');
         final token = data['customToken'] as String?;
-        if (token != null && token.isNotEmpty) {
-          await FirebaseAuth.instance.signInWithCustomToken(token);
+        if (token == null || token.isEmpty) {
+          setState(() {
+            _error = 'Staff authentication token missing. Please try again.';
+            _loading = false;
+            _pin = '';
+          });
+          return;
         }
+        await FirebaseAuth.instance.signInWithCustomToken(token);
         session.login(actualUser, role: actualRole);
 
         if (!mounted) return;
@@ -122,29 +128,6 @@ class _StaffLoginDialogState extends State<StaffLoginDialog> {
           );
         }
       } else {
-        // Fallback for pre-deploy environments where PIN is not yet deployed on backend
-        if (_pin == '0524') {
-          session.login('admin', role: 'admin');
-          if (Navigator.canPop(context)) Navigator.pop(context);
-          if (widget.destinationPage != null) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => widget.destinationPage!),
-            );
-          }
-          return;
-        }
-        if (_pin == '8888') {
-          session.login('staff1', role: 'staff');
-          if (Navigator.canPop(context)) Navigator.pop(context);
-          if (widget.destinationPage != null) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => widget.destinationPage!),
-            );
-          }
-          return;
-        }
         setState(() {
           _error = data['message'] ?? 'Incorrect PIN. Please try again.';
           _loading = false;
@@ -153,30 +136,6 @@ class _StaffLoginDialogState extends State<StaffLoginDialog> {
       }
     } catch (e) {
       if (!mounted) return;
-      // Offline fallback for Admin PIN 0524 and Staff PIN 8888
-      final isPopup = ModalRoute.of(context) is PopupRoute;
-      if (_pin == '0524') {
-        session.login('admin', role: 'admin');
-        if (isPopup && Navigator.canPop(context)) Navigator.pop(context);
-        if (widget.destinationPage != null) {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => widget.destinationPage!),
-          );
-        }
-        return;
-      }
-      if (_pin == '8888') {
-        session.login('staff1', role: 'staff');
-        if (isPopup && Navigator.canPop(context)) Navigator.pop(context);
-        if (widget.destinationPage != null) {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => widget.destinationPage!),
-          );
-        }
-        return;
-      }
       String errorMessage;
       if (e is FirebaseFunctionsException) {
         errorMessage = e.message ?? e.code;
@@ -212,7 +171,7 @@ class _StaffLoginDialogState extends State<StaffLoginDialog> {
       final data = await callFn('verifyStaff', {
         'username': user,
         'password': pass,
-      });
+      }, 30);
       final bool isSuccess = data['success'] == true;
 
       if (!mounted) return;
