@@ -1,0 +1,21 @@
+
+> test:site
+> node --test test/site/app.test.mjs
+
+✔ index.html still loads the script these tests exercise (1.2468ms)
+✔ the menu page loads the same script (0.1683ms)
+✔ the menu page keeps the bar and reveal behaviour (155.8807ms)
+✔ the bar only sticks once the page has scrolled (50.0379ms)
+✔ reduced motion hides nothing and writes no reveal state (34.3032ms)
+✔ without IntersectionObserver the menu and photos appear at once (33.0702ms)
+✔ with IntersectionObserver the reveal waits for the section to arrive (36.1049ms)
+✔ a section that never intersects stays unrevealed (31.3832ms)
+✔ the map and street view swap one at a time (45.805ms)
+ℹ tests 9
+ℹ suites 0
+ℹ pass 9
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1131.2733

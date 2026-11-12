@@ -1,0 +1,61 @@
+
+> test:rules
+> npx --yes firebase-tools emulators:exec --only firestore "node --test test/firestore-rules.test.js"
+
+[36m[1mi  emulators:[22m[39m Starting emulators: firestore
+[36m[1mi  firestore:[22m[39m Firestore Emulator logging to [1mfirestore-debug.log[22m
+[32m[1m+  firestore:[22m[39m Firestore Emulator was started in standard edition.
+[32m[1m+  firestore:[22m[39m Firestore Emulator UI websocket is running on 9150.
+[36m[1mi [22m[39m Running script: [1mnode --test test/firestore-rules.test.js[22m
+▶ orders: kiosk can only create (validated)
+  ✔ anon can create a valid order (597.1478ms)
+  ✔ anon can create the complete checkout payload (77.6896ms)
+[2026-11-12T15:37:57.195Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x4cd7da0e error. Code: 7 Message: 7 PERMISSION_DENIED:
+false for 'create' @ L17, false for 'create' @ L161
+  ✔ create rejects telegramSent (the field that broke checkout) (86.5519ms)
+[2026-11-12T15:37:57.295Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x4cd7da0f error. Code: 7 Message: 7 PERMISSION_DENIED:
+Property customerName is undefined on object. for 'create' @ L17, false for 'create' @ L161, Property customerName is undefined on object. for 'create' @ L17, false for 'create' @ L161
+[2026-11-12T15:37:57.331Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x4cd7da10 error. Code: 7 Message: 7 PERMISSION_DENIED:
+false for 'create' @ L17, false for 'create' @ L161
+[2026-11-12T15:37:57.363Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x4cd7da11 error. Code: 7 Message: 7 PERMISSION_DENIED:
+false for 'create' @ L17, false for 'create' @ L161
+[2026-11-12T15:37:57.391Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x4cd7da12 error. Code: 7 Message: 7 PERMISSION_DENIED:
+false for 'create' @ L17, false for 'create' @ L161
+  ✔ create rejects missing/junk/oversized fields (194.2691ms)
+[2026-11-12T15:37:57.502Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x4cd7da15 error. Code: 7 Message: 7 PERMISSION_DENIED:
+false for 'update' @ L33, false for 'update' @ L161
+[2026-11-12T15:37:57.512Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x4cd7da16 error. Code: 7 Message: 7 PERMISSION_DENIED:
+false for 'delete' @ L33, false for 'delete' @ L161
+  ✔ nobody can read/update/delete via client (145.6402ms)
+✔ orders: kiosk can only create (validated) (2425.9762ms)
+[2026-11-12T15:37:57.639Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x4cd7da1a error. Code: 7 Message: 7 PERMISSION_DENIED:
+false for 'create' @ L39, false for 'create' @ L161, false for 'update' @ L39, false for 'update' @ L161
+[2026-11-12T15:37:57.670Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x4cd7da1b error. Code: 7 Message: 7 PERMISSION_DENIED:
+false for 'update' @ L39, false for 'update' @ L161
+▶ config: public read-only
+  ✔ anon can read, cannot write (132.277ms)
+✔ config: public read-only (132.5412ms)
+[2026-11-12T15:37:57.792Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x4cd7da1f error. Code: 7 Message: 7 PERMISSION_DENIED:
+false for 'create' @ L49, false for 'create' @ L161, false for 'update' @ L49, false for 'update' @ L161
+▶ staff_accounts + login_attempts: server only
+  ✔ everyone denied, even staff (144.7097ms)
+✔ staff_accounts + login_attempts: server only (145.0043ms)
+[2026-11-12T15:37:57.901Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x4cd7da22 error. Code: 7 Message: 7 PERMISSION_DENIED:
+false for 'create' @ L161, false for 'update' @ L161
+▶ default deny
+  ✔ unknown collections denied (85.6827ms)
+✔ default deny (85.9097ms)
+ℹ tests 8
+ℹ suites 4
+ℹ pass 8
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 3098.5373
+[32m[1m+ [22m[39m Script exited successfully (code 0)
+[36m[1mi  emulators:[22m[39m Shutting down emulators.
+[36m[1mi  firestore:[22m[39m Stopping Firestore Emulator
+[33m[1m! [22m[39m Firestore Emulator has exited upon receiving signal: SIGINT
+[36m[1mi  hub:[22m[39m Stopping emulator hub
+[36m[1mi  logging:[22m[39m Stopping Logging Emulator

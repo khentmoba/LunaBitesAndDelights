@@ -1,0 +1,7 @@
+
+> check:rules-drift
+> node scripts/check-firestore-rules-drift.js
+
+Could not compare rules: Could not load the default credentials. Browse to https://cloud.google.com/docs/authentication/getting-started for more information.
+(node:44880) MetadataLookupWarning: received unexpected error = All promises were rejected code = UNKNOWN
+(Use `node --trace-warnings ...` to show where the warning was created)
