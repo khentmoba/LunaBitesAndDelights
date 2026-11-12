@@ -53,23 +53,23 @@ void main() {
   ) async {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
-    await openItem(tester, 'e2');
+    await openItem(tester, 's1');
     expect(
       tester.widget<FilledButton>(find.byType(FilledButton)).onPressed,
       isNull,
     );
-    await tester.ensureVisible(find.text('Overload'));
-    await tester.tap(find.text('Overload'));
+    await tester.ensureVisible(find.text('Buy 1 Take 1'));
+    await tester.tap(find.text('Buy 1 Take 1'));
     await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('Increase quantity'));
     await tester.pumpAndSettle();
-    expect(find.text('Add to order · ₱130'), findsOneWidget);
-    await tester.tap(find.text('Add to order · ₱130'));
+    expect(find.text('Add to order · ₱198'), findsOneWidget);
+    await tester.tap(find.text('Add to order · ₱198'));
     await tester.pumpAndSettle();
-    expect(cartNotifier.items.single.variant, 'Overload');
-    expect(cartNotifier.items.single.price, 65);
+    expect(cartNotifier.items.single.variant, 'Buy 1 Take 1');
+    expect(cartNotifier.items.single.price, 99);
     expect(cartNotifier.items.single.quantity, 2);
-    expect(cartNotifier.totalPrice, 130);
+    expect(cartNotifier.totalPrice, 198);
     expect(tester.takeException(), isNull);
   });
 
@@ -152,7 +152,7 @@ void main() {
   testWidgets('closing item details does not add an order', (tester) async {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
-    await openItem(tester, 'e2');
+    await openItem(tester, 'e3');
     await tester.tap(find.byTooltip('Close item details'));
     await tester.pumpAndSettle();
     expect(cartNotifier.items, isEmpty);

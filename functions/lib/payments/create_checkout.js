@@ -12,7 +12,7 @@ const PAYMONGO_API = 'https://api.paymongo.com/v2/checkout_sessions';
 // #8: never trust client-supplied prices; they only pick name+variant+qty.
 const MENU_PRICES = {
     'Shawarma Wrap': [99, 60], 'Shawarma All Meat': [80],
-    'Shawarma Burger': [95], 'Shawarma Fries': [75], 'Shawarma Nachos': [75],
+    'Shawarma Burger': [95], 'Shawarma Fries': [99], 'Shawarma Nachos': [99],
     'Shawarma Quesadilla': [99], 'Nachos & Fries Overload': [99, 150],
     'Shawarma Wrap + Fries + Drinks': [128], 'Shawarma Burger + Shawarma Wrap + Drinks': [149],
     'Combo 2 – Shawarma Wrap + Fries': [99],
@@ -26,7 +26,8 @@ const MENU_PRICES = {
     'Ube Halo Ice Cream': [65], 'Mango Graham Ice Cream': [65],
     'Choco Oreo Ice Cream': [65], 'Vanilla Cheese Ice Cream': [65], 'Luna Leche Flan': [20],
     // Previous names/prices below remain valid for carts from cached clients.
-    'Shawarma Rice Bowl': [50],
+    'Shawarma Rice Bowl': [50], 'Lemon Yakult': [49], 'Lemon Yogurt': [49],
+    'Hotdog Sandwich': [69],
     'Buy 1 Take 1 French Fries': [50], 'Large Fries': [75], 'Bucket Fries': [99], 'Terra Fries': [150],
     'Combo 1 – Burger + Fries': [60], 'Combo 2 – Hotdog + Fries': [60],
     'Super Combo 1 – Hotdog + Fries + Drink': [99], 'Super Combo 2 – Burger + Fries + Drink': [99],
@@ -35,16 +36,16 @@ const MENU_PRICES = {
     'Mango-Graham Ice Cream Overload': [65], 'Leche Flan': [20, 39],
     'Purple Taro': [39], 'Cookies N Cream': [39], 'Dark Chocolate': [39], 'Black Forest': [39],
     'Strawberry': [39, 49], 'Rocky Road': [39], 'Choco Kisses': [39], '3 for ₱100 Coolers': [100],
-    'Classic Lemonade': [49], 'Lemon Yakult': [49], 'Lemon Strawberry': [49],
-    'Lemon Cucumber': [49], 'Lemon Yogurt': [49],
+    'Classic Lemonade': [49], 'Lemon Strawberry': [49],
+    'Lemon Cucumber': [49],
     'Green Apple': [49], 'Sweet Orange': [49], 'Mixed Berries': [49], 'Four Seasons': [49],
     'Cookies & Cream Overload': [65], 'Chocolate Oreo': [65], 'Strawberry Oreo': [65], 'Milo Oreo Float': [65],
-    'Milo Dinosaur': [59], 'Milo Float': [59], 'Milo Crunch': [59], 'Milo Oreo': [59],
-    'Coke Float': [39, 49], 'Chuckie Float': [59], 'Cookies and Cream Float': [65],
-    'Cafe Latte': [39, 49], 'Caramel Macchiato': [39, 49],
-    'Ice Cappuccino': [39, 49], 'Chocolate Coffee': [39, 49],
+    'Milo Dinosaur': [65], 'Milo Float': [65], 'Milo Crunch': [65], 'Milo Oreo': [65],
+    'Coke Float': [49], 'Chuckie Float': [65], 'Cookies and Cream Float': [65],
+    'Cafe Latte': [49], 'Caramel Macchiato': [49],
+    'Ice Cappuccino': [49], 'Chocolate Coffee': [49],
     'Burger Patty': [55], 'Ham & Cheese': [55], 'Cheese Burger': [65],
-    'Burger with Egg': [85], 'Cheese & Egg Burger': [95], 'Hotdog Sandwich': [69],
+    'Burger with Egg': [85], 'Cheese & Egg Burger': [95],
     // Cached clients can still submit the previous name for this same ₱95 burger.
     'Egg & Cheese': [95],
     // Sulit Meals + Chicken Poppers. A parity test in test/menu_price_parity_test.dart

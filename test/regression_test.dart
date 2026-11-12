@@ -171,6 +171,42 @@ void main() {
       }
     });
 
+    test('retired items are gone and the owner price board is enforced', () {
+      final items = kMenuSections.expand((section) => section.items).toList();
+      final names = items.map((item) => item.name).toSet();
+      for (final retired in [
+        'Lemon Yakult',
+        'Lemon Yogurt',
+        'Hotdog Sandwich',
+        'Ice Cream Halo-Halo',
+      ]) {
+        expect(names.contains(retired), isFalse, reason: '$retired is retired');
+      }
+
+      final byId = {for (final item in items) item.id: item};
+      for (final id in ['mc1', 'mc2', 'mc3', 'mc4', 'cf_chuckie', 'cf_milo']) {
+        expect(byId[id]!.price, 65, reason: '$id is ₱65');
+      }
+      expect(byId['s5']!.price, 99, reason: 'Shawarma Fries is ₱99');
+      expect(byId['s6']!.price, 99, reason: 'Shawarma Nachos is ₱99');
+
+      for (final id in [
+        'cf_coke',
+        'cf_latte',
+        'cf_macchiato',
+        'cf_cappuccino',
+        'cf_choc_coffee',
+      ]) {
+        expect(byId[id]!.price, 49, reason: '$id is a flat ₱49');
+        expect(byId[id]!.hasVariants, isFalse, reason: '$id has no sizes');
+      }
+
+      expect(
+        kMenuSections.firstWhere((s) => s.id == 'burger_hotdog_combined').title,
+        'Burgers',
+      );
+    });
+
     test('contains sulit_meals and chicken_poppers sections', () {
       final sectionIds = kMenuSections.map((s) => s.id).toList();
       expect(sectionIds, contains('sulit_meals'));

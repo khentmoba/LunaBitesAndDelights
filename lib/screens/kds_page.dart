@@ -182,12 +182,7 @@ class _KdsPageState extends State<KdsPage> with SingleTickerProviderStateMixin {
           .toIso8601String(),
       'total': 98,
       'items': [
-        {
-          'name': 'Solo Halo-Halo Special',
-          'quantity': 2,
-          'variant': '',
-          'price': 49,
-        },
+        {'name': 'Classic Lemonade', 'quantity': 2, 'variant': '', 'price': 49},
       ],
     },
   ];
