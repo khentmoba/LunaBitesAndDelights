@@ -30,7 +30,7 @@
 - Shawarma Quesadilla: ₱99
 - Shawarma Fries: ₱99
 
-### Buy 1 Take 1 Burgers & Sandwiches
+### Buy 1 Take 1 Burgers
 - Burger Patty (Buy 1 Take 1): ₱55
 - Ham & Cheese (Buy 1 Take 1): ₱55
 - Cheese Burger (Buy 1 Take 1): ₱65

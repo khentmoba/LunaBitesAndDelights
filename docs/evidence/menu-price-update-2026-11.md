@@ -130,4 +130,4 @@ Every job in `.github/workflows/pr-checks.yml` was executed locally:
 
 The new regression test fails without the change: it asserts the four retired names are absent, the two shawarma sides are ₱99, the Milo/floats are ₱65, and Coke Float and the four coffees are flat ₱49 with no variants.
 
-**Language-server note.** The worktree's Dart and TypeScript language servers started before `flutter pub get` and `npm ci` finished, so they briefly reported unresolved imports and an implicit `any` in `create_checkout.ts`. The authoritative compilers are clean: `dart analyze` reports "No issues found!" and `npx tsc --noEmit` (with `strict: true`) exits 0.
+**Language-server note.** The worktree's Dart and TypeScript language servers started before `flutter pub get` and `npm ci` finished, so they briefly reported unresolved imports and an implicit `any` in `create_checkout.ts`. The authoritative compilers are clean: `dart analyze lib/screens/kds_page.dart lib/data/menu_data.dart` reports "No issues found!" (the whole-project result is the 87-issue baseline in the table above), and `npx tsc --noEmit` (with `strict: true`) exits 0.
