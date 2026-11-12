@@ -11,7 +11,6 @@ import '../widgets/kiosk/category_bar.dart';
 import '../widgets/kiosk/product_card.dart';
 import '../widgets/kiosk/customization_modal.dart';
 import 'staff_menu.dart';
-import 'staff_login_dialog.dart';
 
 class KioskMenuPage extends StatelessWidget {
   const KioskMenuPage({super.key});
@@ -180,20 +179,12 @@ class KioskMenuPage extends StatelessWidget {
         icon: const Icon(Icons.more_horiz),
         onSelected: (value) {
           if (value == 'staff') {
-            if (session.isStaff) {
-              showModalBottomSheet(
-                context: context,
-                backgroundColor: Colors.transparent,
-                builder: (_) =>
-                    Theme(data: appTheme, child: const StaffMenuDialog()),
-              );
-            } else {
-              showDialog(
-                context: context,
-                builder: (_) =>
-                    Theme(data: appTheme, child: const StaffLoginDialog()),
-              );
-            }
+            showModalBottomSheet(
+              context: context,
+              backgroundColor: Colors.transparent,
+              builder: (_) =>
+                  Theme(data: appTheme, child: const StaffMenuDialog()),
+            );
           } else if (value == 'reset') {
             kioskSession.reset();
             cartNotifier.clear();
@@ -203,10 +194,8 @@ class KioskMenuPage extends StatelessWidget {
           }
         },
         itemBuilder: (context) => [
-          PopupMenuItem(
-            value: 'staff',
-            child: Text(session.isStaff ? 'Staff console' : 'Staff login'),
-          ),
+          if (session.isStaff)
+            const PopupMenuItem(value: 'staff', child: Text('Staff console')),
           const PopupMenuItem(value: 'reset', child: Text('Start over')),
         ],
       ),

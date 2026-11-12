@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../widgets/kiosk/kiosk_theme.dart';
 import '../widgets/kiosk/juicy_feedback.dart';
 import '../services/session.dart';
-import 'staff_login_dialog.dart';
 import 'menu_page.dart';
 import 'admin_dashboard.dart';
 
@@ -123,21 +122,18 @@ class _KioskSplashScreenState extends State<KioskSplashScreen>
                   },
                   child: FadeTransition(
                     opacity: _scaleAnimation,
-                    child: GestureDetector(
-                      onLongPress: _enterStaffMode,
-                      child: SizedBox(
-                        width: 260,
-                        height: 312,
-                        child: Image.asset(
-                          'images/luna_logo.png',
-                          semanticLabel: 'Luna Bites & Delights',
-                          errorBuilder: (context, error, stackTrace) =>
-                              const Icon(
-                                Icons.nightlight_round,
-                                size: 100,
-                                color: KioskTheme.lunaPink,
-                              ),
-                        ),
+                    child: SizedBox(
+                      width: 260,
+                      height: 312,
+                      child: Image.asset(
+                        'images/luna_logo.png',
+                        semanticLabel: 'Luna Bites & Delights',
+                        errorBuilder: (context, error, stackTrace) =>
+                            const Icon(
+                              Icons.nightlight_round,
+                              size: 100,
+                              color: KioskTheme.lunaPink,
+                            ),
                       ),
                     ),
                   ),
@@ -171,47 +167,8 @@ class _KioskSplashScreenState extends State<KioskSplashScreen>
               ],
             ),
           ),
-          Positioned(
-            bottom: 0,
-            right: 0,
-            child: GestureDetector(
-              behavior: HitTestBehavior.translucent,
-              onTap: () {
-                final now = DateTime.now();
-                if (_lastTapTime != null &&
-                    now.difference(_lastTapTime!) <
-                        const Duration(milliseconds: 500)) {
-                  _tapCount++;
-                } else {
-                  _tapCount = 1;
-                }
-                _lastTapTime = now;
-
-                if (_tapCount >= 3) {
-                  _tapCount = 0;
-                  _enterStaffMode();
-                }
-              },
-              child: Container(
-                width: 100,
-                height: 100,
-                color: Colors.transparent,
-              ),
-            ),
-          ),
         ],
       ),
-    );
-  }
-
-  DateTime? _lastTapTime;
-  int _tapCount = 0;
-
-  void _enterStaffMode() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => const StaffLoginDialog(),
     );
   }
 
