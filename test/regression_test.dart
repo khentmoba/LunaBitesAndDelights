@@ -207,6 +207,35 @@ void main() {
       );
     });
 
+    test('soda pop is retired and the Strawberry cooler stays', () {
+      final items = kMenuSections.expand((section) => section.items).toList();
+      final names = items.map((item) => item.name).toSet();
+      for (final retired in [
+        'Green Apple',
+        'Sweet Orange',
+        'Mixed Berries',
+        'Four Seasons',
+      ]) {
+        expect(names.contains(retired), isFalse, reason: '$retired is retired');
+      }
+      expect(names.contains('SODA POP'), isFalse);
+      expect(
+        items.any((item) => item.name == 'Strawberry' && item.price == 39),
+        isTrue,
+        reason: 'the Strawberry cooler stays',
+      );
+    });
+
+    test('Blue Lemonade joins the Lemon Series at ₱49', () {
+      final lemon = kMenuSections
+          .firstWhere((s) => s.id == 'drinks')
+          .items
+          .firstWhere((i) => i.name == 'Blue Lemonade');
+      expect(lemon.price, 49);
+      expect(lemon.imageUrl, 'images/blue_lemonade.png');
+      expect(File(lemon.imageUrl).existsSync(), isTrue);
+    });
+
     test('contains sulit_meals and chicken_poppers sections', () {
       final sectionIds = kMenuSections.map((s) => s.id).toList();
       expect(sectionIds, contains('sulit_meals'));
