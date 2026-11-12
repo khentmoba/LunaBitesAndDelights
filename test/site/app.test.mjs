@@ -104,8 +104,8 @@ test('the menu page keeps the bar and reveal behaviour', () => {
     'site/menu/index.html must keep .slip--menu for the reveal',
   );
   assert.ok(
-    doc.querySelector('.menu__cols'),
-    'site/menu/index.html must keep .menu__cols for the reveal to watch',
+    doc.querySelector('.slip--menu .menu__cols'),
+    'site/menu/index.html must keep .menu__cols inside .slip--menu for the reveal',
   );
   assert.equal(
     doc.documentElement.classList.contains('js-motion'),
@@ -176,17 +176,18 @@ test('with IntersectionObserver the reveal waits for the section to arrive', () 
   );
   assert.equal(observers.length, 2, 'the menu and the photo wall are watched');
 
-  // The watch targets, not just the count: app.js falls back to the target when
-  // its watch selector misses, so a renamed .menu__cols would still fire.
+  // The watch targets, not just the count, and anchored to their section: app.js
+  // falls back to the target when its watch selector misses, so a renamed or
+  // relocated .menu__cols would still fire on the wrong element.
   assert.equal(
     observers[0].watched[0],
-    doc.querySelector('.menu__cols'),
-    'the menu is watched through .menu__cols',
+    doc.querySelector('.slip--menu .menu__cols'),
+    'the menu is watched through .menu__cols inside .slip--menu',
   );
   assert.equal(
     observers[1].watched[0],
-    doc.querySelector('.window__wall'),
-    'the photo wall is watched through .window__wall',
+    doc.querySelector('.window .window__wall'),
+    'the photo wall is watched through .window__wall inside .window',
   );
 
   const [menuObserver] = observers;
