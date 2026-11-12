@@ -118,8 +118,18 @@
 </script>
 <link rel="icon" href="/img/favicon-32.png" type="image/png" sizes="32x32">
 <link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
-<link rel="preload" href="/fonts/bricolage.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="preload" href="/img/luna-logo-320.webp" as="image" type="image/webp">
+<link rel="preload" href="/fonts/bricolage.woff2?v=2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/img/pink-wash.webp" as="image" type="image/webp" fetchpriority="low">
+<script>
+(function () {
+  var c = navigator.connection || {};
+  var lite = c.saveData === true || /^(slow-)?2g$|^3g$/.test(c.effectiveType || '') ||
+    (navigator.deviceMemory && navigator.deviceMemory <= 2) ||
+    (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 2) ||
+    (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  if (lite) document.documentElement.setAttribute('data-lite', '');
+})();
+</script>
 <link rel="stylesheet" href="/styles.css">
 <script src="/app.js" defer></script>
 </head>
@@ -143,7 +153,7 @@
   <div class="sheet">
   <section class="slip slip--hero" aria-labelledby="hero-title">
     <div class="slip__head">
-      <img class="slip__logo" src="/img/luna-logo-640.webp" width="640" height="770" alt="Luna Bites &amp; Delights" fetchpriority="high" decoding="async">
+      <img class="slip__logo" src="/img/luna-logo-640.webp" srcset="/img/luna-logo-320.webp 320w, /img/luna-logo-640.webp 640w" sizes="(max-width: 700px) 112px, 236px" width="640" height="770" alt="Luna Bites &amp; Delights" fetchpriority="high" decoding="async">
       <div class="slip__form">
         <p class="slip__name">Order slip</p>
         <dl class="fields">
@@ -177,7 +187,7 @@
       </div>
 
       <figure class="snap snap--hero">
-        <img src="/img/shawarma-wrap.webp" width="474" height="573" alt="Two shawarma wraps cut open, beef and sauce showing" decoding="async">
+        <img src="/img/shawarma-wrap.webp" width="474" height="573" alt="Two shawarma wraps cut open, beef and sauce showing" fetchpriority="low" decoding="async">
         <figcaption class="hand">Shawarma wrap, ₱60 each</figcaption>
       </figure>
     </div>
@@ -329,7 +339,8 @@
           <iframe src="https://maps.google.com/maps?q=9.0205278,125.5176389&amp;z=18&amp;output=embed" title="Map of Luna Bites &amp; Delights, Purok 5, Poblacion Magallanes" loading="lazy" allowfullscreen></iframe>
         </div>
         <div class="locate__panel" data-panel="street">
-          <iframe src="https://www.google.com/maps/embed?pb=!4v1792886400000!6m8!1m7!1s61SETDphUfmUQE7V5AOiWA!2m2!1d125.5177199!2d9.0205469!3f263.1!4f0!5f0.7820865974627469" title="Street view of Luna Bites &amp; Delights, Purok 5, Poblacion Magallanes" loading="lazy" allowfullscreen></iframe>
+          <iframe data-src="https://www.google.com/maps/embed?pb=!4v1792886400000!6m8!1m7!1s61SETDphUfmUQE7V5AOiWA!2m2!1d125.5177199!2d9.0205469!3f263.1!4f0!5f0.7820865974627469" title="Street view of Luna Bites &amp; Delights, Purok 5, Poblacion Magallanes" loading="lazy" allowfullscreen></iframe>
+          <noscript><p class="locate__fallback"><a class="btn-line" href="https://www.google.com/maps/search/?api=1&amp;query=9.0205278,125.5176389" target="_blank" rel="noopener">Open street view in Maps</a></p></noscript>
         </div>
         <p class="locate__coords">9&deg;01&prime;13.9&Prime;N 125&deg;31&prime;03.5&Prime;E</p>
       </div>

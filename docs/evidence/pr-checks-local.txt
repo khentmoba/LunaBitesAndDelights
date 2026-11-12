@@ -1,0 +1,292 @@
+=== pr-checks local run: 2026-11-12T16:04:23Z ===
+branch: t3/optimize-low-end-slow-network
+head: b75273f9db77b1b7300fc403a2955b5d90b09f91
+
+
+### site: npm run test:site
+$ npm run test:site
+
+> test:site
+> node --test test/site/app.test.mjs
+
+✔ index.html still loads the script these tests exercise (0.834ms)
+✔ the menu page loads the same script (0.1103ms)
+✔ the menu page keeps the bar and reveal behaviour (104.0755ms)
+✔ the bar only sticks once the page has scrolled (43.5427ms)
+✔ reduced motion hides nothing and writes no reveal state (29.8322ms)
+✔ without IntersectionObserver the menu and photos appear at once (28.0921ms)
+✔ with IntersectionObserver the reveal waits for the section to arrive (37.7803ms)
+✔ a section that never intersects stays unrevealed (22.1395ms)
+✔ the map and street view swap one at a time (29.1758ms)
+✔ a weak device keeps every line visible and starts no observers (21.4045ms)
+✔ both pages flag weak devices before the stylesheet (0.1977ms)
+✔ font preloads match the stylesheet so each font is fetched once (0.2827ms)
+✔ the hero logo is responsive and the hidden bar logo is not preloaded (0.1769ms)
+✔ the street view embed is fetched only when its tab is chosen (34.3772ms)
+✔ without script the street view still offers a way out (0.1507ms)
+ℹ tests 15
+ℹ suites 0
+ℹ pass 15
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 11640.9755
+EXIT=0
+
+### functions: npm run build
+$ cd functions && npm run build && cd ..
+
+> build
+> tsc
+
+EXIT=0
+
+### functions: npm audit --audit-level=high
+$ cd functions && npm audit --audit-level=high; cd ..
+# npm audit report
+
+fast-xml-parser  <=5.11.2
+fast-xml-parser: Quadratic CPU consumption scanning unterminated stop-node tags - https://github.com/advisories/GHSA-474x-hrwr-fgx4
+fix available via `npm audit fix`
+node_modules/fast-xml-parser
+
+qs  <=6.16.0
+Severity: moderate
+qs's arrayLimit bypass in its bracket notation allows DoS via memory exhaustion - https://github.com/advisories/GHSA-6rw7-vpxm-498p
+qs has a remotely triggerable DoS: qs.stringify crashes with TypeError on null/undefined entries in comma-format arrays when encodeValuesOnly is set - https://github.com/advisories/GHSA-q8mj-m7cp-5q26
+qs array-limit bypass via bracket-key comma parsing - https://github.com/advisories/GHSA-x5fp-wj9c-mxmx
+qs: Denial of Service via Attacker Controlled isBuffer - https://github.com/advisories/GHSA-4mjr-xmp4-gh2g
+qs : qs.stringify with arrayFormat 'comma' throws an uncaught TypeError on array elements carrying a non-callable own toString (DoS) - https://github.com/advisories/GHSA-6pq8-jhm2-2vcw
+fix available via `npm audit fix`
+node_modules/body-parser/node_modules/qs
+node_modules/qs
+node_modules/request/node_modules/qs
+  request  *
+  Depends on vulnerable versions of qs
+  Depends on vulnerable versions of tough-cookie
+  Depends on vulnerable versions of uuid
+  node_modules/request
+    request-promise-core  *
+    Depends on vulnerable versions of request
+    node_modules/request-promise-core
+
+
+tough-cookie  <4.1.3
+Severity: moderate
+tough-cookie Prototype Pollution vulnerability - https://github.com/advisories/GHSA-72xf-g2v4-qvf3
+fix available via `npm audit fix`
+node_modules/request/node_modules/tough-cookie
+
+uuid  <11.1.1
+Severity: moderate
+uuid: Missing buffer bounds check in v3/v5/v6 when buf is provided - https://github.com/advisories/GHSA-w5hq-g745-h8pq
+fix available via `npm audit fix --force`
+Will install node-telegram-bot-api@2.4.0, which is a breaking change
+node_modules/gaxios/node_modules/uuid
+node_modules/google-gax/node_modules/uuid
+node_modules/request/node_modules/uuid
+node_modules/teeny-request/node_modules/uuid
+node_modules/uuid
+  @cypress/request  <=3.0.10
+  Depends on vulnerable versions of uuid
+  node_modules/@cypress/request
+    @cypress/request-promise  *
+    Depends on vulnerable versions of @cypress/request
+    Depends on vulnerable versions of request-promise-core
+    node_modules/@cypress/request-promise
+    node-telegram-bot-api  0.64.0 - 0.67.0
+    Depends on vulnerable versions of @cypress/request
+    Depends on vulnerable versions of @cypress/request-promise
+    node_modules/node-telegram-bot-api
+  gaxios  6.4.0 - 6.7.1
+  Depends on vulnerable versions of uuid
+  node_modules/gaxios
+  google-gax  4.0.5-experimental - 4.6.1
+  Depends on vulnerable versions of retry-request
+  Depends on vulnerable versions of uuid
+  node_modules/google-gax
+    @google-cloud/firestore  7.5.0-pre.0 || 7.6.0 - 7.11.6
+    Depends on vulnerable versions of google-gax
+    node_modules/@google-cloud/firestore
+      firebase-admin  7.0.0 - 8.2.0 || 11.0.0 - 14.3.0
+      Depends on vulnerable versions of @google-cloud/firestore
+      Depends on vulnerable versions of @google-cloud/storage
+      node_modules/firebase-admin
+  teeny-request  3.9.1 - 9.0.0
+  Depends on vulnerable versions of uuid
+  node_modules/teeny-request
+    @google-cloud/storage  2.2.0 - 2.5.0 || 5.19.0 - 8.0.0
+    Depends on vulnerable versions of retry-request
+    Depends on vulnerable versions of teeny-request
+    node_modules/@google-cloud/storage
+    retry-request  7.0.0 - 7.0.2
+    Depends on vulnerable versions of teeny-request
+    node_modules/retry-request
+
+16 vulnerabilities (1 low, 15 moderate)
+
+To address issues that do not require attention, run:
+  npm audit fix
+
+To address all issues (including breaking changes), run:
+  npm audit fix --force
+EXIT=0
+
+### functions: rules drift (read-only)
+$ cd functions && npm run check:rules-drift; cd ..
+
+> check:rules-drift
+> node scripts/check-firestore-rules-drift.js
+
+Could not compare rules: Could not load the default credentials. Browse to https://cloud.google.com/docs/authentication/getting-started for more information.
+(node:33072) MetadataLookupWarning: received unexpected error = All promises were rejected code = UNKNOWN
+(Use `node --trace-warnings ...` to show where the warning was created)
+EXIT=0
+
+### proof: check_pr_proof.mjs with draft PR body
+$ CHANGED_FILES=$(printf '%s\n' firebase.json site/app.js site/index.html site/menu/index.html site/styles.css site/fonts/bricolage.woff2 test/site/app.test.mjs tool/perf_probe.mjs docs/evidence/low-end-slow-network.md) PR_BODY='See docs/evidence/low-end-slow-network.md and ![mobile 390px](https://raw.githubusercontent.com/khentmoba/LunaBitesAndDelights/t3/optimize-low-end-slow-network/docs/evidence/low-end-after-390-top.png)' node tool/check_pr_proof.mjs
+Proof OK (UI: true, backend: false, 9 changed files).
+EXIT=0
+
+> test:rules
+> npx --yes firebase-tools emulators:exec --only firestore "node --test test/firestore-rules.test.js"
+
+[36m[1mi  emulators:[22m[39m Shutting down emulators.
+
+[1m[31mError:[39m[22m firebase-tools no longer supports Java version before 21. Please install a JDK at version 21 or above to get a compatible runtime.
+EXIT=0
+
+> test:rules
+> npx --yes firebase-tools emulators:exec --only firestore "node --test test/firestore-rules.test.js"
+
+[36m[1mi  emulators:[22m[39m Shutting down emulators.
+
+[1m[31mError:[39m[22m firebase-tools no longer supports Java version before 21. Please install a JDK at version 21 or above to get a compatible runtime.
+EXIT=1
+Property customerName is undefined on object. for 'create' @ L17, false for 'create' @ L161, Property customerName is undefined on object. for 'create' @ L17, false for 'create' @ L161
+[2026-11-12T16:07:54.670Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x6c1a0a09 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'create' @ L17, false for 'create' @ L161
+[2026-11-12T16:07:54.702Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x6c1a0a0a error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'create' @ L17, false for 'create' @ L161
+[2026-11-12T16:07:54.725Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x6c1a0a0b error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'create' @ L17, false for 'create' @ L161
+  ✔ create rejects missing/junk/oversized fields (168.046ms)
+[2026-11-12T16:07:54.828Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x6c1a0a0e error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'update' @ L33, false for 'update' @ L161
+[2026-11-12T16:07:54.836Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x6c1a0a0f error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'delete' @ L33, false for 'delete' @ L161
+  ✔ nobody can read/update/delete via client (135.9684ms)
+✔ orders: kiosk can only create (validated) (1679.784ms)
+[2026-11-12T16:07:54.969Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x6c1a0a13 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'create' @ L39, false for 'create' @ L161, false for 'update' @ L39, false for 'update' @ L161
+[2026-11-12T16:07:54.995Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x6c1a0a14 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'update' @ L39, false for 'update' @ L161
+▶ config: public read-only
+  ✔ anon can read, cannot write (132.7773ms)
+✔ config: public read-only (133.0159ms)
+[2026-11-12T16:07:55.136Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x6c1a0a18 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'create' @ L49, false for 'create' @ L161, false for 'update' @ L49, false for 'update' @ L161
+▶ staff_accounts + login_attempts: server only
+  ✔ everyone denied, even staff (162.2036ms)
+✔ staff_accounts + login_attempts: server only (162.4813ms)
+[2026-11-12T16:07:55.248Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x6c1a0a1b error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'create' @ L161, false for 'update' @ L161
+▶ default deny
+  ✔ unknown collections denied (90.1959ms)
+✔ default deny (90.4254ms)
+ℹ tests 8
+ℹ suites 4
+ℹ pass 8
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 3721.5546
+[32m[1m+ [22m[39m Script exited successfully (code 0)
+[36m[1mi  emulators:[22m[39m Shutting down emulators.
+[36m[1mi  firestore:[22m[39m Stopping Firestore Emulator
+[33m[1m! [22m[39m Firestore Emulator has exited upon receiving signal: SIGINT
+[36m[1mi  hub:[22m[39m Stopping emulator hub
+[36m[1mi  logging:[22m[39m Stopping Logging Emulator
+EXIT=0
+
+=== FLUTTER JOB (local, 2026-11-12T16:08:14Z) ===
+### flutter pub get
+  webview_flutter 4.13.1 (4.14.1 available)
+  webview_flutter_android 4.10.13 (4.14.1 available)
+  webview_flutter_platform_interface 2.14.0 (2.15.1 available)
+  webview_flutter_wkwebview 3.24.1 (3.27.2 available)
+  xml 6.6.1 (7.1.0 available)
+Got dependencies!
+47 packages have newer versions incompatible with dependency constraints.
+Try `flutter pub outdated` for more information.
+EXIT=0
+### flutter analyze
+EXIT=0
+  vm_service 15.0.2 (15.4.0 available)
+  web 1.1.1 (1.1.2 available)
+  webview_flutter 4.13.1 (4.14.1 available)
+  webview_flutter_android 4.10.13 (4.14.1 available)
+  webview_flutter_platform_interface 2.14.0 (2.15.1 available)
+  webview_flutter_wkwebview 3.24.1 (3.27.2 available)
+  xml 6.6.1 (7.1.0 available)
+Got dependencies!
+47 packages have newer versions incompatible with dependency constraints.
+Try `flutter pub outdated` for more information.
+Analyzing t3-2037a111-1aaaabad853ba1df...                       
+No issues found! (ran in 9.0s)
+### analyzer baseline guard
+Analyzer issues: 0 (baseline 0).
+EXIT=0
+### dart format (changed Dart files)
+no Dart files changed
+### flutter test
+00:01 +20: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-2037a111-1aaaabad853ba1df/test/menu_kiosk_test.dart: KioskMenuPage displays Sulit Meals and Chicken Poppers categories
+00:01 +21: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-2037a111-1aaaabad853ba1df/test/menu_kiosk_test.dart: KioskMenuPage displays Sulit Meals and Chicken Poppers categories
+00:01 +22: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-2037a111-1aaaabad853ba1df/test/menu_kiosk_test.dart: KioskMenuPage displays Sulit Meals and Chicken Poppers categories
+00:01 +23: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-2037a111-1aaaabad853ba1df/test/menu_kiosk_test.dart: KioskMenuPage displays Sulit Meals and Chicken Poppers categories
+00:01 +24: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-2037a111-1aaaabad853ba1df/test/menu_kiosk_test.dart: KioskMenuPage displays Sulit Meals and Chicken Poppers categories
+00:01 +25: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-2037a111-1aaaabad853ba1df/test/menu_kiosk_test.dart: KioskMenuPage displays Sulit Meals and Chicken Poppers categories
+00:01 +26: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-2037a111-1aaaabad853ba1df/test/menu_kiosk_test.dart: KioskMenuPage displays Sulit Meals and Chicken Poppers categories
+00:01 +27: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-2037a111-1aaaabad853ba1df/test/menu_kiosk_test.dart: KioskMenuPage displays Sulit Meals and Chicken Poppers categories
+00:01 +28: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-2037a111-1aaaabad853ba1df/test/menu_kiosk_test.dart: KioskMenuPage displays Sulit Meals and Chicken Poppers categories
+00:01 +29: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-2037a111-1aaaabad853ba1df/test/menu_kiosk_test.dart: KioskMenuPage displays Sulit Meals and Chicken Poppers categories
+00:01 +30: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-2037a111-1aaaabad853ba1df/test/menu_kiosk_test.dart: KioskMenuPage displays Sulit Meals and Chicken Poppers categories
+00:01 +31: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-2037a111-1aaaabad853ba1df/test/menu_kiosk_test.dart: KioskMenuPage displays Sulit Meals and Chicken Poppers categories
+00:01 +32: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-2037a111-1aaaabad853ba1df/test/menu_kiosk_test.dart: KioskMenuPage displays Sulit Meals and Chicken Poppers categories
+00:02 +33: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-2037a111-1aaaabad853ba1df/test/menu_ordering_test.dart: single option and quantity reach cart with the exact price
+00:02 +34: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-2037a111-1aaaabad853ba1df/test/staff_kds_test.dart: Staff Session & Audio Alert Tests StaffLoginDialog displays Quick PIN keypad by default
+00:02 +35: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-2037a111-1aaaabad853ba1df/test/staff_kds_test.dart: Staff Session & Audio Alert Tests StaffLoginDialog displays Quick PIN keypad by default
+00:02 +36: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-2037a111-1aaaabad853ba1df/test/staff_kds_test.dart: Staff Session & Audio Alert Tests StaffLoginDialog displays Quick PIN keypad by default
+00:02 +37: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-2037a111-1aaaabad853ba1df/test/menu_ordering_test.dart: fd4 poster item reaches cart at 320px
+00:02 +38: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-2037a111-1aaaabad853ba1df/test/staff_kds_test.dart: Staff Session & Audio Alert Tests KdsPage renders operations board when staff is logged in
+00:02 +39: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-2037a111-1aaaabad853ba1df/test/staff_kds_test.dart: Staff Session & Audio Alert Tests KdsPage renders operations board when staff is logged in
+00:02 +40: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-2037a111-1aaaabad853ba1df/test/staff_kds_test.dart: Staff Session & Audio Alert Tests KdsPage renders operations board when staff is logged in
+00:03 +41: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-2037a111-1aaaabad853ba1df/test/staff_kds_test.dart: Staff Session & Audio Alert Tests KdsPage renders operations board when staff is logged in
+00:03 +42: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-2037a111-1aaaabad853ba1df/test/menu_ordering_test.dart: 320px menu supports large text without layout exceptions
+00:03 +43: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-2037a111-1aaaabad853ba1df/test/menu_ordering_test.dart: cart order slip updates quantities and cancels back to /
+00:03 +44: All tests passed!
+EXIT=0
+### flutter build web --release
+  uuid 4.5.3 (4.6.0 available)
+  vector_math 2.4.3 (2.4.4 available)
+  vm_service 15.0.2 (15.4.0 available)
+  web 1.1.1 (1.1.2 available)
+  webview_flutter 4.13.1 (4.14.1 available)
+  webview_flutter_android 4.10.13 (4.14.1 available)
+  webview_flutter_platform_interface 2.14.0 (2.15.1 available)
+  webview_flutter_wkwebview 3.24.1 (3.27.2 available)
+  xml 6.6.1 (7.1.0 available)
+Got dependencies!
+47 packages have newer versions incompatible with dependency constraints.
+Try `flutter pub outdated` for more information.
+Compiling lib\main.dart for the Web...                          
+Warning: In index.html:345: "FlutterLoader.loadEntrypoint" is deprecated. Use "FlutterLoader.load" instead. See https://docs.flutter.dev/platform-integration/web/initialization for more details.
+Wasm dry run succeeded. Consider building and testing your application with the `--wasm` flag. See docs for more info: https://docs.flutter.dev/platform-integration/web/wasm
+Use --no-wasm-dry-run to disable these warnings.
+Font asset "CupertinoIcons.ttf" was tree-shaken, reducing it from 257628 to 1472 bytes (99.4% reduction). Tree-shaking can be disabled by providing the --no-tree-shake-icons flag when building your app.
+Font asset "MaterialIcons-Regular.otf" was tree-shaken, reducing it from 1645184 to 20884 bytes (98.7% reduction). Tree-shaking can be disabled by providing the --no-tree-shake-icons flag when building your app.
+Compiling lib\main.dart for the Web...                             38.6s
+√ Built build\web
+EXIT=0
