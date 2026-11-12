@@ -565,6 +565,14 @@ final List<MenuSection> kMenuSections = [
         imageUrl: 'images/lemon_classic.png',
       ),
       MenuItem(
+        id: 'ls5',
+        name: 'Blue Lemonade',
+        emoji: '🫐🍋',
+        description: 'Bright blue lemonade with a refreshing citrus kick.',
+        price: 49,
+        imageUrl: 'images/blue_lemonade.png',
+      ),
+      MenuItem(
         id: 'ls3',
         name: 'Lemon Strawberry',
         emoji: '🍋🍓',

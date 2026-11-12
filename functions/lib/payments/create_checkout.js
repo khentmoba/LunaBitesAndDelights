@@ -37,7 +37,7 @@ const MENU_PRICES = {
     'Mango-Graham Ice Cream Overload': [65], 'Leche Flan': [20, 39],
     'Purple Taro': [39], 'Cookies N Cream': [39], 'Dark Chocolate': [39], 'Black Forest': [39],
     'Strawberry': [39, 49], 'Rocky Road': [39], 'Choco Kisses': [39], '3 for ₱100 Coolers': [100],
-    'Classic Lemonade': [49], 'Lemon Strawberry': [49],
+    'Classic Lemonade': [49], 'Blue Lemonade': [49], 'Lemon Strawberry': [49],
     'Lemon Cucumber': [49],
     'Cookies & Cream Overload': [65], 'Chocolate Oreo': [65], 'Strawberry Oreo': [65], 'Milo Oreo Float': [65],
     'Milo Dinosaur': [65], 'Milo Float': [65], 'Milo Crunch': [65], 'Milo Oreo': [65],

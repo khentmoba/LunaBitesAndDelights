@@ -226,6 +226,16 @@ void main() {
       );
     });
 
+    test('Blue Lemonade joins the Lemon Series at ₱49', () {
+      final lemon = kMenuSections
+          .firstWhere((s) => s.id == 'drinks')
+          .items
+          .firstWhere((i) => i.name == 'Blue Lemonade');
+      expect(lemon.price, 49);
+      expect(lemon.imageUrl, 'images/blue_lemonade.png');
+      expect(File(lemon.imageUrl).existsSync(), isTrue);
+    });
+
     test('contains sulit_meals and chicken_poppers sections', () {
       final sectionIds = kMenuSections.map((s) => s.id).toList();
       expect(sectionIds, contains('sulit_meals'));
