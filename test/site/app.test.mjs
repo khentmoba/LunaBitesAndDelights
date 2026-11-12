@@ -103,6 +103,10 @@ test('the menu page keeps the bar and reveal behaviour', () => {
     doc.querySelector('.slip--menu'),
     'site/menu/index.html must keep .slip--menu for the reveal',
   );
+  assert.ok(
+    doc.querySelector('.menu__cols'),
+    'site/menu/index.html must keep .menu__cols for the reveal to watch',
+  );
   assert.equal(
     doc.documentElement.classList.contains('js-motion'),
     true,
@@ -162,7 +166,8 @@ test('without IntersectionObserver the menu and photos appear at once', () => {
 
 test('with IntersectionObserver the reveal waits for the section to arrive', () => {
   const { window, observers } = load();
-  const menu = window.document.querySelector('.slip--menu');
+  const doc = window.document;
+  const menu = doc.querySelector('.slip--menu');
 
   assert.equal(
     menu.classList.contains('is-in'),
@@ -170,6 +175,19 @@ test('with IntersectionObserver the reveal waits for the section to arrive', () 
     'nothing is revealed before it is seen',
   );
   assert.equal(observers.length, 2, 'the menu and the photo wall are watched');
+
+  // The watch targets, not just the count: app.js falls back to the target when
+  // its watch selector misses, so a renamed .menu__cols would still fire.
+  assert.equal(
+    observers[0].watched[0],
+    doc.querySelector('.menu__cols'),
+    'the menu is watched through .menu__cols',
+  );
+  assert.equal(
+    observers[1].watched[0],
+    doc.querySelector('.window__wall'),
+    'the photo wall is watched through .window__wall',
+  );
 
   const [menuObserver] = observers;
   menuObserver.callback([{ isIntersecting: true }], menuObserver);

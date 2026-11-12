@@ -1,4 +1,6 @@
 {
+  "name": "luna_bites_and_delights",
+  "private": true,
   "scripts": {
     "test:site": "node --test test/site/app.test.mjs"
   },

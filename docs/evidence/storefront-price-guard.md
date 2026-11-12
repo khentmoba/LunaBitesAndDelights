@@ -44,7 +44,10 @@ listings in both pages. It does not cover every number the pages print:
 
 - the hero sample slip (`site/index.html:166-168`), which is illustrative copy;
 - photo captions and the offer badges;
-- the JSON-LD `priceRange` and the meta descriptions.
+- the JSON-LD `priceRange` on `site/index.html:41`, and the 40 JSON-LD `price`
+  values in `site/menu/index.html` (38 `MenuItem` + 2 section aggregates) — the
+  surface search engines render;
+- the meta descriptions.
 
 Those can still go stale. Extending `_priceSources` to the hero slip is the next
 cheap win if this guard earns its keep.

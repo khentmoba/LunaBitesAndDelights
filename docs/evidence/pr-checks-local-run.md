@@ -1,6 +1,7 @@
 # Local run of every `pr-checks` job
 
-Run on the worktree at `t3/identify-improvements`, Flutter 3.47.7, Node 24.22.2.
+Run on the worktree at `C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-613a316f-da7895603ca8d824`
+(branch `t3/identify-improvements`), Flutter 3.47.7, Node 24.22.2.
 
 | Job | Result |
 | --- | --- |
