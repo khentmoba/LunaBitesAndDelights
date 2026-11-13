@@ -260,6 +260,10 @@ class _CheckoutPageState extends State<CheckoutPage> {
 
   @override
   Widget build(BuildContext context) {
+    final width = MediaQuery.sizeOf(context).width;
+    final isMobile = width < 600;
+    final bottomInset = MediaQuery.paddingOf(context).bottom;
+
     return Scaffold(
       backgroundColor: KioskTheme.lunaBlushPaper,
       appBar: AppBar(
@@ -267,7 +271,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
           session.isStaff ? 'POS CHECKOUT' : 'CHECKOUT',
           style: KioskTheme.headerSmall.copyWith(
             color: KioskTheme.textOnPrimary,
-            letterSpacing: 2,
+            letterSpacing: isMobile ? 1.2 : 2,
           ),
         ),
         centerTitle: true,
@@ -276,395 +280,422 @@ class _CheckoutPageState extends State<CheckoutPage> {
         elevation: 0,
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildSectionCard(
-              title: 'ORDER SUMMARY',
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  ...cartNotifier.items.map(
-                    (item) => Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: Row(
-                        children: [
-                          Text(
-                            '${item.quantity}x',
-                            style: KioskTheme.titleMedium.copyWith(
-                              fontSize: 15,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              '${item.name}${item.variant.isNotEmpty ? ' (${item.variant})' : ''}',
-                              style: KioskTheme.bodyLarge.copyWith(
-                                fontSize: 15,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          Text(
-                            '₱${item.price * item.quantity}',
-                            style: KioskTheme.titleMedium.copyWith(
-                              fontSize: 15,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  KioskTheme.divider(),
-                  const SizedBox(height: 16),
-                  if (_needsCoordinates) ...[
-                    Text(
-                      'Delivery fee applies. Your rider will confirm the amount, charged separately from your food order.',
-                      style: KioskTheme.bodyMedium.copyWith(fontSize: 14),
-                    ),
-                    const SizedBox(height: 12),
-                  ],
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        padding: EdgeInsets.fromLTRB(
+          isMobile ? 16 : 32,
+          isMobile ? 16 : 32,
+          isMobile ? 16 : 32,
+          bottomInset + 32,
+        ),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 760),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildSectionCard(
+                  isMobile: isMobile,
+                  title: 'ORDER SUMMARY',
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        _needsCoordinates ? 'FOOD TOTAL' : 'TOTAL',
-                        style: KioskTheme.headerSmall.copyWith(
-                          letterSpacing: 1.5,
-                        ),
-                      ),
-                      Text(
-                        '₱${cartNotifier.totalPrice}',
-                        style: KioskTheme.headerLarge.copyWith(fontSize: 32),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 32),
-            _buildSectionLabel('ORDER TYPE'),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                if (session.isStaff) ...[
-                  Expanded(
-                    child: _typeBtn(
-                      label: 'Walk-In',
-                      icon: Icons.point_of_sale_rounded,
-                      selected: _orderType == 'Walk-In',
-                      onTap: () => setState(() => _orderType = 'Walk-In'),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                ],
-                Expanded(
-                  child: _typeBtn(
-                    label: 'Pickup',
-                    icon: Icons.storefront_rounded,
-                    selected: _orderType == 'Pickup',
-                    onTap: () => setState(() => _orderType = 'Pickup'),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: _typeBtn(
-                    label: 'Delivery',
-                    icon: Icons.motorcycle_rounded,
-                    selected: _orderType == 'Delivery',
-                    onTap: () => setState(() => _orderType = 'Delivery'),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 32),
-            _buildSectionLabel('PAYMENT METHOD'),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: _typeBtn(
-                    label: 'Cash',
-                    icon: Icons.payments_rounded,
-                    selected: _paymentMethod == 'Cash',
-                    onTap: () => setState(() => _paymentMethod = 'Cash'),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: _typeBtn(
-                    label: 'GCash',
-                    icon: Icons.phone_android_rounded,
-                    selected: _paymentMethod == 'GCash',
-                    onTap: () => setState(() => _paymentMethod = 'GCash'),
-                  ),
-                ),
-              ],
-            ),
-            AnimatedSize(
-              duration: const Duration(milliseconds: 300),
-              child: _paymentMethod == 'Cash'
-                  ? const SizedBox.shrink()
-                  : Container(
-                      margin: const EdgeInsets.only(top: 24),
-                      padding: const EdgeInsets.all(24),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF007DFE).withValues(alpha: 0.05),
-                        borderRadius: BorderRadius.circular(
-                          KioskTheme.radiusLg,
-                        ),
-                        border: Border.all(
-                          color: const Color(0xFF007DFE).withValues(alpha: 0.2),
-                        ),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
+                      ...cartNotifier.items.map(
+                        (item) => Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: Row(
                             children: [
-                              const Icon(
-                                Icons.payment_rounded,
-                                color: Color(0xFF007DFE),
+                              Text(
+                                '${item.quantity}x',
+                                style: KioskTheme.titleMedium.copyWith(
+                                  fontSize: 15,
+                                ),
                               ),
                               const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  '${item.name}${item.variant.isNotEmpty ? ' (${item.variant})' : ''}',
+                                  style: KioskTheme.bodyLarge.copyWith(
+                                    fontSize: 15,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
                               Text(
-                                'GCASH VIA PAYMONGO',
-                                style: KioskTheme.labelLarge.copyWith(
-                                  color: const Color(0xFF007DFE),
+                                '₱${item.price * item.quantity}',
+                                style: KioskTheme.titleMedium.copyWith(
+                                  fontSize: 15,
                                 ),
                               ),
                             ],
                           ),
-                          const SizedBox(height: 16),
+                        ),
+                      ),
+                      KioskTheme.divider(),
+                      const SizedBox(height: 16),
+                      if (_needsCoordinates) ...[
+                        Text(
+                          'Delivery fee applies. Your rider will confirm the amount, charged separately from your food order.',
+                          style: KioskTheme.bodyMedium.copyWith(fontSize: 14),
+                        ),
+                        const SizedBox(height: 12),
+                      ],
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
                           Text(
-                            'You will be redirected to a secure GCash checkout page after confirming your order.',
-                            style: KioskTheme.bodyLarge.copyWith(fontSize: 14),
-                          ),
-                          const SizedBox(height: 12),
-                          Text(
-                            'Select GCash as your payment method in the checkout page and authorize the payment in the GCash app.',
-                            style: KioskTheme.bodyMedium.copyWith(
-                              fontSize: 13,
-                              color: KioskTheme.textSecondary,
+                            _needsCoordinates ? 'FOOD TOTAL' : 'TOTAL',
+                            style: KioskTheme.headerSmall.copyWith(
+                              letterSpacing: 1.5,
                             ),
                           ),
-                          const SizedBox(height: 12),
-                          Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(
-                                KioskTheme.radiusSm,
-                              ),
-                              border: Border.all(
-                                color: const Color(
-                                  0xFF007DFE,
-                                ).withValues(alpha: 0.1),
-                              ),
-                            ),
-                            child: Row(
-                              children: [
-                                const Icon(
-                                  Icons.lock_rounded,
-                                  size: 16,
-                                  color: Color(0xFF007DFE),
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    'Secured by PayMongo. Funds settle to the merchant\'s bank account.',
-                                    style: KioskTheme.bodySmall.copyWith(
-                                      fontSize: 11,
-                                      color: KioskTheme.textSecondary,
-                                    ),
-                                  ),
-                                ),
-                              ],
+                          Text(
+                            '₱${cartNotifier.totalPrice}',
+                            style: KioskTheme.headerLarge.copyWith(
+                              fontSize: 32,
                             ),
                           ),
                         ],
                       ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 32),
+                _buildSectionLabel('ORDER TYPE'),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    if (session.isStaff) ...[
+                      Expanded(
+                        child: _typeBtn(
+                          label: 'Walk-In',
+                          icon: Icons.point_of_sale_rounded,
+                          selected: _orderType == 'Walk-In',
+                          onTap: () => setState(() => _orderType = 'Walk-In'),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                    ],
+                    Expanded(
+                      child: _typeBtn(
+                        label: 'Pickup',
+                        icon: Icons.storefront_rounded,
+                        selected: _orderType == 'Pickup',
+                        onTap: () => setState(() => _orderType = 'Pickup'),
+                      ),
                     ),
-            ),
-            const SizedBox(height: 32),
-            Text(
-              _needsCoordinates ? 'DELIVERY DETAILS' : 'CUSTOMER DETAILS',
-              style: KioskTheme.labelLarge.copyWith(fontSize: 16),
-            ),
-            const SizedBox(height: 16),
-            _field(
-              ctrl: _nameCtrl,
-              label: session.isStaff
-                  ? 'FULL NAME (OPTIONAL FOR POS)'
-                  : 'FULL NAME',
-              icon: Icons.person_rounded,
-              hint: session.isStaff
-                  ? 'e.g. Walk-in Customer (Default)'
-                  : 'e.g. Juan Dela Cruz',
-            ),
-            const SizedBox(height: 16),
-            AnimatedSize(
-              duration: const Duration(milliseconds: 250),
-              curve: Curves.easeInOut,
-              child: !_needsCoordinates
-                  ? const SizedBox.shrink()
-                  : Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        GestureDetector(
-                          onTap: _openMapPicker,
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 200),
-                            width: double.infinity,
-                            padding: const EdgeInsets.symmetric(
-                              vertical: 20,
-                              horizontal: 20,
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: _typeBtn(
+                        label: 'Delivery',
+                        icon: Icons.motorcycle_rounded,
+                        selected: _orderType == 'Delivery',
+                        onTap: () => setState(() => _orderType = 'Delivery'),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 32),
+                _buildSectionLabel('PAYMENT METHOD'),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _typeBtn(
+                        label: 'Cash',
+                        icon: Icons.payments_rounded,
+                        selected: _paymentMethod == 'Cash',
+                        onTap: () => setState(() => _paymentMethod = 'Cash'),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: _typeBtn(
+                        label: 'GCash',
+                        icon: Icons.phone_android_rounded,
+                        selected: _paymentMethod == 'GCash',
+                        onTap: () => setState(() => _paymentMethod = 'GCash'),
+                      ),
+                    ),
+                  ],
+                ),
+                AnimatedSize(
+                  duration: const Duration(milliseconds: 300),
+                  child: _paymentMethod == 'Cash'
+                      ? const SizedBox.shrink()
+                      : Container(
+                          margin: const EdgeInsets.only(top: 24),
+                          padding: const EdgeInsets.all(24),
+                          decoration: BoxDecoration(
+                            color: const Color(
+                              0xFF007DFE,
+                            ).withValues(alpha: 0.05),
+                            borderRadius: BorderRadius.circular(
+                              KioskTheme.radiusLg,
                             ),
-                            decoration: BoxDecoration(
-                              color: _locationPinned
-                                  ? KioskTheme.lunaPink.withValues(alpha: 0.05)
-                                  : Colors.white,
-                              borderRadius: BorderRadius.circular(
-                                KioskTheme.radiusMd,
-                              ),
-                              border: Border.all(
-                                color: _locationPinned
-                                    ? KioskTheme.lunaPink
-                                    : Colors.grey[200]!,
-                                width: 2,
-                              ),
+                            border: Border.all(
+                              color: const Color(
+                                0xFF007DFE,
+                              ).withValues(alpha: 0.2),
                             ),
-                            child: Row(
-                              children: [
-                                Icon(
-                                  _locationPinned
-                                      ? Icons.location_on
-                                      : Icons.add_location_alt_outlined,
-                                  color: KioskTheme.lunaPink,
-                                  size: 24,
-                                ),
-                                const SizedBox(width: 16),
-                                Expanded(
-                                  child: Text(
-                                    _locationPinned
-                                        ? 'Location pinned on map'
-                                        : 'Tap to pin your location on map',
-                                    style: KioskTheme.font(
-                                      color: KioskTheme.lunaPink,
-                                      fontSize: 15,
-                                      fontWeight: _locationPinned
-                                          ? FontWeight.w800
-                                          : FontWeight.w600,
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  const Icon(
+                                    Icons.payment_rounded,
+                                    color: Color(0xFF007DFE),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Text(
+                                    'GCASH VIA PAYMONGO',
+                                    style: KioskTheme.labelLarge.copyWith(
+                                      color: const Color(0xFF007DFE),
                                     ),
                                   ),
-                                ),
-                                const Icon(
-                                  Icons.chevron_right,
-                                  color: KioskTheme.lunaPink,
-                                  size: 20,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        TextField(
-                          controller: _addressCtrl,
-                          maxLines: 2,
-                          style: KioskTheme.font(
-                            fontWeight: FontWeight.w600,
-                            color: KioskTheme.textPrimary,
-                          ),
-                          decoration:
-                              KioskTheme.inputDecoration(
-                                hint: 'Address auto-fills from map...',
-                                icon: Icons.edit_location_alt,
-                              ).copyWith(
-                                prefixIcon: const Icon(
-                                  Icons.edit_location_alt,
-                                  color: KioskTheme.lunaPink,
-                                  size: 20,
+                                ],
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                'You will be redirected to a secure GCash checkout page after confirming your order.',
+                                style: KioskTheme.bodyLarge.copyWith(
+                                  fontSize: 14,
                                 ),
                               ),
+                              const SizedBox(height: 12),
+                              Text(
+                                'Select GCash as your payment method in the checkout page and authorize the payment in the GCash app.',
+                                style: KioskTheme.bodyMedium.copyWith(
+                                  fontSize: 13,
+                                  color: KioskTheme.textSecondary,
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(
+                                    KioskTheme.radiusSm,
+                                  ),
+                                  border: Border.all(
+                                    color: const Color(
+                                      0xFF007DFE,
+                                    ).withValues(alpha: 0.1),
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    const Icon(
+                                      Icons.lock_rounded,
+                                      size: 16,
+                                      color: Color(0xFF007DFE),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        'Secured by PayMongo. Funds settle to the merchant\'s bank account.',
+                                        style: KioskTheme.bodySmall.copyWith(
+                                          fontSize: 11,
+                                          color: KioskTheme.textSecondary,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                        const SizedBox(height: 16),
-                      ],
-                    ),
-            ),
-            _field(
-              ctrl: _phoneCtrl,
-              label: session.isStaff
-                  ? 'CONTACT NUMBER (OPTIONAL FOR POS)'
-                  : 'CONTACT NUMBER',
-              icon: Icons.phone_rounded,
-              hint: 'e.g. 09XX XXX XXXX',
-              keyboard: TextInputType.phone,
-            ),
-            const SizedBox(height: 48),
-            Builder(
-              builder: (context) {
-                final isBlocked = _needsCoordinates && !_locationPinned;
-                final label = _orderType == 'Walk-In'
-                    ? 'CONFIRM POS ORDER'
-                    : (_orderType == 'Pickup'
-                          ? 'CONFIRM PICKUP ORDER'
-                          : 'PLACE DELIVERY ORDER');
+                ),
+                const SizedBox(height: 32),
+                Text(
+                  _needsCoordinates ? 'DELIVERY DETAILS' : 'CUSTOMER DETAILS',
+                  style: KioskTheme.labelLarge.copyWith(fontSize: 16),
+                ),
+                const SizedBox(height: 16),
+                _field(
+                  ctrl: _nameCtrl,
+                  label: session.isStaff
+                      ? 'FULL NAME (OPTIONAL FOR POS)'
+                      : 'FULL NAME',
+                  icon: Icons.person_rounded,
+                  hint: session.isStaff
+                      ? 'e.g. Walk-in Customer (Default)'
+                      : 'e.g. Juan Dela Cruz',
+                ),
+                const SizedBox(height: 16),
+                AnimatedSize(
+                  duration: const Duration(milliseconds: 250),
+                  curve: Curves.easeInOut,
+                  child: !_needsCoordinates
+                      ? const SizedBox.shrink()
+                      : Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            GestureDetector(
+                              onTap: _openMapPicker,
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 200),
+                                width: double.infinity,
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 20,
+                                  horizontal: 20,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: _locationPinned
+                                      ? KioskTheme.lunaPink.withValues(
+                                          alpha: 0.05,
+                                        )
+                                      : Colors.white,
+                                  borderRadius: BorderRadius.circular(
+                                    KioskTheme.radiusMd,
+                                  ),
+                                  border: Border.all(
+                                    color: _locationPinned
+                                        ? KioskTheme.lunaPink
+                                        : Colors.grey[200]!,
+                                    width: 2,
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      _locationPinned
+                                          ? Icons.location_on
+                                          : Icons.add_location_alt_outlined,
+                                      color: KioskTheme.lunaPink,
+                                      size: 24,
+                                    ),
+                                    const SizedBox(width: 16),
+                                    Expanded(
+                                      child: Text(
+                                        _locationPinned
+                                            ? 'Location pinned on map'
+                                            : 'Tap to pin your location on map',
+                                        style: KioskTheme.font(
+                                          color: KioskTheme.lunaPink,
+                                          fontSize: 15,
+                                          fontWeight: _locationPinned
+                                              ? FontWeight.w800
+                                              : FontWeight.w600,
+                                        ),
+                                      ),
+                                    ),
+                                    const Icon(
+                                      Icons.chevron_right,
+                                      color: KioskTheme.lunaPink,
+                                      size: 20,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            TextField(
+                              controller: _addressCtrl,
+                              maxLines: 2,
+                              style: KioskTheme.font(
+                                fontWeight: FontWeight.w600,
+                                color: KioskTheme.textPrimary,
+                              ),
+                              decoration:
+                                  KioskTheme.inputDecoration(
+                                    hint: 'Address auto-fills from map...',
+                                    icon: Icons.edit_location_alt,
+                                  ).copyWith(
+                                    prefixIcon: const Icon(
+                                      Icons.edit_location_alt,
+                                      color: KioskTheme.lunaPink,
+                                      size: 20,
+                                    ),
+                                  ),
+                            ),
+                            const SizedBox(height: 16),
+                          ],
+                        ),
+                ),
+                _field(
+                  ctrl: _phoneCtrl,
+                  label: session.isStaff
+                      ? 'CONTACT NUMBER (OPTIONAL FOR POS)'
+                      : 'CONTACT NUMBER',
+                  icon: Icons.phone_rounded,
+                  hint: 'e.g. 09XX XXX XXXX',
+                  keyboard: TextInputType.phone,
+                ),
+                const SizedBox(height: 48),
+                Builder(
+                  builder: (context) {
+                    final isBlocked = _needsCoordinates && !_locationPinned;
+                    final label = _orderType == 'Walk-In'
+                        ? 'CONFIRM POS ORDER'
+                        : (_orderType == 'Pickup'
+                              ? 'CONFIRM PICKUP ORDER'
+                              : 'PLACE DELIVERY ORDER');
 
-                return JuicyFeedback(
-                  onPressed: (_loading || isBlocked) ? null : _submitOrder,
-                  child: Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(vertical: 24),
-                    decoration: BoxDecoration(
-                      color: (_loading || isBlocked)
-                          ? Colors.grey[400]
-                          : KioskTheme.lunaPink,
-                      borderRadius: BorderRadius.circular(
-                        KioskTheme.radiusFull,
+                    return JuicyFeedback(
+                      onPressed: (_loading || isBlocked) ? null : _submitOrder,
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(vertical: 24),
+                        decoration: BoxDecoration(
+                          color: (_loading || isBlocked)
+                              ? Colors.grey[400]
+                              : KioskTheme.lunaPink,
+                          borderRadius: BorderRadius.circular(
+                            KioskTheme.radiusFull,
+                          ),
+                          boxShadow: (_loading || isBlocked)
+                              ? []
+                              : KioskTheme.shadowPrimary,
+                        ),
+                        child: Center(
+                          child: _loading
+                              ? const SizedBox(
+                                  width: 24,
+                                  height: 24,
+                                  child: CircularProgressIndicator.adaptive(
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                      Colors.white,
+                                    ),
+                                    strokeWidth: 2.5,
+                                  ),
+                                )
+                              : Text(
+                                  label,
+                                  style: KioskTheme.labelLarge.copyWith(
+                                    color: KioskTheme.textOnPrimary,
+                                    fontSize: isMobile ? 16 : 18,
+                                  ),
+                                ),
+                        ),
                       ),
-                      boxShadow: (_loading || isBlocked)
-                          ? []
-                          : KioskTheme.shadowPrimary,
-                    ),
-                    child: Center(
-                      child: _loading
-                          ? const SizedBox(
-                              width: 24,
-                              height: 24,
-                              child: CircularProgressIndicator(
-                                color: Colors.white,
-                                strokeWidth: 2.5,
-                              ),
-                            )
-                          : Text(
-                              label,
-                              style: KioskTheme.labelLarge.copyWith(
-                                color: KioskTheme.textOnPrimary,
-                                fontSize: 18,
-                              ),
-                            ),
-                    ),
-                  ),
-                );
-              },
+                    );
+                  },
+                ),
+                const SizedBox(height: 24),
+              ],
             ),
-            const SizedBox(height: 60),
-          ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildSectionCard({required String title, required Widget child}) {
+  Widget _buildSectionCard({
+    required String title,
+    required Widget child,
+    bool isMobile = false,
+  }) {
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: EdgeInsets.all(isMobile ? 16 : 24),
       decoration: KioskTheme.cardWhite,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(title, style: KioskTheme.labelLarge.copyWith(fontSize: 16)),
-          const SizedBox(height: 20),
+          SizedBox(height: isMobile ? 14 : 20),
           child,
         ],
       ),
@@ -681,11 +712,15 @@ class _CheckoutPageState extends State<CheckoutPage> {
     required bool selected,
     required VoidCallback onTap,
   }) {
+    final isMobile = MediaQuery.sizeOf(context).width < 600;
     return JuicyFeedback(
       onPressed: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(vertical: 20),
+        padding: EdgeInsets.symmetric(
+          vertical: isMobile ? 14 : 20,
+          horizontal: 6,
+        ),
         decoration: BoxDecoration(
           color: selected ? KioskTheme.lunaPink : Colors.white,
           borderRadius: BorderRadius.circular(KioskTheme.radiusLg),
@@ -698,17 +733,20 @@ class _CheckoutPageState extends State<CheckoutPage> {
           children: [
             Icon(
               icon,
-              size: 32,
+              size: isMobile ? 26 : 32,
               color: selected ? Colors.white : KioskTheme.lunaPink,
             ),
             const SizedBox(height: 8),
-            Text(
-              label.toUpperCase(),
-              style: KioskTheme.font(
-                color: selected ? Colors.white : KioskTheme.lunaPink,
-                fontWeight: FontWeight.w800,
-                fontSize: 14,
-                letterSpacing: 2,
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                label.toUpperCase(),
+                style: KioskTheme.font(
+                  color: selected ? Colors.white : KioskTheme.lunaPink,
+                  fontWeight: FontWeight.w800,
+                  fontSize: isMobile ? 12 : 14,
+                  letterSpacing: isMobile ? 0.8 : 2,
+                ),
               ),
             ),
           ],

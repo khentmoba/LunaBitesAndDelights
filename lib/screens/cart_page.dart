@@ -27,10 +27,11 @@ class KioskCartPage extends StatelessWidget {
           backgroundColor: Colors.transparent,
           elevation: 0,
           leading: IconButton(
+            tooltip: 'Back',
             icon: Icon(
-              Icons.arrow_back_ios_new_rounded,
+              Icons.adaptive.arrow_back,
               color: KioskTheme.lunaPink,
-              size: isMobile ? 18 : 24,
+              size: isMobile ? 20 : 24,
             ),
             onPressed: () => Navigator.pop(context),
           ),

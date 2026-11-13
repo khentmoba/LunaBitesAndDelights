@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart' show CupertinoPageTransitionsBuilder;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -77,6 +78,14 @@ class LunaExpressApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,
+        visualDensity: VisualDensity.adaptivePlatformDensity,
+        pageTransitionsTheme: const PageTransitionsTheme(
+          builders: {
+            TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+            TargetPlatform.macOS: CupertinoPageTransitionsBuilder(),
+            TargetPlatform.android: PredictiveBackPageTransitionsBuilder(),
+          },
+        ),
         colorScheme: ColorScheme.fromSeed(
           seedColor: KioskTheme.lunaPink,
           brightness: Brightness.light,
