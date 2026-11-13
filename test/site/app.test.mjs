@@ -302,3 +302,20 @@ test('the street view embed is fetched only when its tab is chosen', () => {
 test('without script the street view still offers a way out', () => {
   assert.match(storefront, /<noscript>[\s\S]*Open street view in Maps[\s\S]*<\/noscript>/);
 });
+
+test('staff login link remains visible in the header and is not hidden in CSS', () => {
+  assert.match(storefront, /<a class="bar__staff" href="\/kiosk\/#\/staff">Staff login<\/a>/);
+  assert.match(menuPage, /<a class="bar__staff" href="\/kiosk\/#\/staff">Staff login<\/a>/);
+  assert.doesNotMatch(styles, /\.bar__staff\s*\{[^}]*display:\s*none/);
+});
+
+test('the bar publishes its measured height to --bar-h for scroll-margin-top', () => {
+  const { window } = load();
+  const doc = window.document;
+  const bar = doc.querySelector('.bar');
+  bar.getBoundingClientRect = () => ({ height: 110 });
+  window.dispatchEvent(new window.Event('resize'));
+
+  assert.equal(doc.documentElement.style.getPropertyValue('--bar-h'), '110px');
+  assert.match(styles, /scroll-margin-top:\s*calc\(var\(--bar-h,/);
+});

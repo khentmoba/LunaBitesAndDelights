@@ -22,6 +22,16 @@
   };
   window.addEventListener('scroll', onScroll, { passive: true });
   update();
+
+  var syncBarHeight = function () {
+    var h = Math.ceil(bar.getBoundingClientRect().height);
+    if (h > 0) document.documentElement.style.setProperty('--bar-h', h + 'px');
+  };
+  if (typeof ResizeObserver === 'function') {
+    new ResizeObserver(syncBarHeight).observe(bar);
+  }
+  window.addEventListener('resize', syncBarHeight, { passive: true });
+  syncBarHeight();
 })();
 
 /* The cashier writes the first slip, then the stamps land as the menu and photos arrive.
