@@ -51,7 +51,7 @@ function parseJson(text, fallback = {}) {
 const MIME = {
   '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8',
   '.js': 'text/javascript; charset=utf-8', '.json': 'application/json',
-  '.webp': 'image/webp', '.png': 'image/png', '.jpg': 'image/jpeg',
+  '.webp': 'image/webp', '.avif': 'image/avif', '.png': 'image/png', '.jpg': 'image/jpeg',
   '.woff2': 'font/woff2', '.svg': 'image/svg+xml', '.txt': 'text/plain',
 };
 

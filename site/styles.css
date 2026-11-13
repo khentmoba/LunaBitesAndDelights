@@ -342,7 +342,7 @@ main { padding: clamp(18px, 3vw, 40px) calc(var(--pad) + env(safe-area-inset-rig
 }
 .snap img { width: 100%; object-fit: cover; }
 .snap figcaption { padding: 10px 4px 12px; font-size: 1.5rem; }
-.snap--hero { margin-top: 10px; }
+.snap--hero { margin-top: 10px; max-width: 295px; justify-self: center; }
 .snap--hero img { aspect-ratio: 4 / 4.4; }
 
 .note {
@@ -682,6 +682,7 @@ mark {
 
 /* Save-Data, 2G/3G and low-memory phones keep the page still and readable. */
 html[data-lite] { scroll-behavior: auto; }
+html[data-lite] body::before { background: #f97cb3 linear-gradient(160deg, #feb7c9 0%, #f97cb3 55%, #ec1c72 100%); }
 html[data-lite] .sheet { filter: none; }
 html[data-lite] .slip {
   -webkit-mask: none;
