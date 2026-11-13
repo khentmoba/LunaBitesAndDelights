@@ -24,58 +24,10 @@
 <meta name="twitter:description" content="Shawarma, B1T1 burgers, fries, combos and coolers. Full prices for delivery around Magallanes and near Cabadbaran.">
 <meta name="twitter:image" content="https://lunabitesanddelights.web.app/images/og-cover.jpg">
 <link rel="canonical" href="https://lunabitesanddelights.web.app/menu/">
-<script type="application/ld+json">
-{
-"@context": "https://schema.org",
-"@type": "FAQPage",
-"mainEntity": [
-{
-"@type": "Question",
-"name": "Do you deliver to Cabadbaran?",
-"acceptedAnswer": {
-"@type": "Answer",
-"text": "We deliver around Magallanes and nearby Cabadbaran areas. The rider confirms the delivery fee before dispatch."
-}
-},
-{
-"@type": "Question",
-"name": "How much is delivery?",
-"acceptedAnswer": {
-"@type": "Answer",
-"text": "The delivery fee is separate from the food and confirmed by your rider. The prices on this page are for the food only."
-}
-},
-{
-"@type": "Question",
-"name": "What are your hours?",
-"acceptedAnswer": {
-"@type": "Answer",
-"text": "9am to 8pm daily."
-}
-},
-{
-"@type": "Question",
-"name": "How do I pay?",
-"acceptedAnswer": {
-"@type": "Answer",
-"text": "Cash or GCash on delivery or pickup."
-}
-},
-{
-"@type": "Question",
-"name": "Can I pick up instead?",
-"acceptedAnswer": {
-"@type": "Answer",
-"text": "Yes. Choose pickup in the app and collect at Purok 5, Poblacion, Magallanes — unahan lang gamay sa 7/11."
-}
-}
-]
-}
-</script>
-<link rel="manifest" href="/manifest.webmanifest">
+<link rel="manifest" href="/manifest.webmanifest?v=2">
 <link rel="icon" href="/img/favicon-32.png" type="image/png" sizes="32x32">
 <link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
-<link rel="preload" href="/fonts/bricolage.woff2?v=2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/bricolage.woff2?v=3" as="font" type="font/woff2" crossorigin>
 <script>
 (function () {
 var c = navigator.connection || {};
@@ -87,8 +39,8 @@ if (lite) document.documentElement.setAttribute('data-lite', '');
 })();
 </script>
 <style>
-@font-face{font-family:'Bricolage Grotesque';src:url('/fonts/bricolage.woff2?v=2') format('woff2');font-weight:400 800;font-style:normal;font-display:swap}
-@font-face{font-family:'Caveat';src:url('/fonts/caveat.woff2?v=2') format('woff2');font-weight:400 700;font-style:normal;font-display:swap}
+@font-face{font-family:'Bricolage Grotesque';src:url('/fonts/bricolage.woff2?v=3') format('woff2');font-weight:400 800;font-style:normal;font-display:swap}
+@font-face{font-family:'Caveat';src:url('/fonts/caveat.woff2?v=3') format('woff2');font-weight:400 700;font-style:normal;font-display:swap}
 :root{--pink:#ec1c72;--pink-plate:#d91566;--pink-press:#b30e52;--pink-ink:#b30e52;--pink-rule:rgba(236,28,114,.32);--blush:#feb7c9;--blush-paper:#fff0f4;--butter:#fcd04e;--paper:#fffafb;--ink:#2a0f1e;--ink-soft:#6b3a52;--print:'Bricolage Grotesque',ui-sans-serif,system-ui,-apple-system,'Segoe UI',sans-serif;--hand:'Caveat','Segoe Print','Bradley Hand',cursive;--pad:clamp(16px,4.4vw,56px);--inset:clamp(20px,3.6vw,48px);--max:1120px}
 *{box-sizing:border-box}
 html{background:var(--blush);color-scheme:light;overflow-x:clip}
@@ -130,17 +82,17 @@ html[data-lite] .sheet{filter:none}
 html[data-lite] .slip{-webkit-mask:none;mask:none;border-top:3px dashed var(--pink-rule);box-shadow:0 2px 10px rgba(110,4,50,.18)}
 @media (max-width:940px){.menu__cols{grid-template-columns:minmax(0,1fr)}.col,.col:first-child,.col:last-child{padding:0}.col+.col{border-left:0;margin-top:30px}}
 @media (max-width:520px){.bar{flex-wrap:nowrap;gap:8px}.bar__home{display:none}.bar__nav .bar__staff{display:none}.bar__nav{margin-left:0;font-size:.9rem;gap:2px 10px;min-width:0}.bar__nav a{padding:0 5px;white-space:nowrap}.stamp--sm{flex:none;margin-left:auto;padding:.55em .95em;font-size:.9rem;white-space:nowrap}}
-@media (max-width:360px){.bar{gap:4px}.bar__nav{font-size:.82rem;gap:2px}.bar__nav a{padding:0 4px}.stamp--sm{padding:.5em .78em;font-size:.84rem}}.bar__home{display:none}.bar__nav{margin-left:0;font-size:.88rem;gap:2px 8px}.stamp--sm{margin-left:auto;padding:.6em .85em}}
+@media (max-width:360px){.bar{gap:4px}.bar__nav{font-size:.82rem;gap:2px}.bar__nav a{padding:0 4px}.stamp--sm{padding:.5em .78em;font-size:.84rem}}
 </style>
-<link rel="preload" href="/styles.css?v=3" as="style" onload="this.onload=null;this.rel='stylesheet'">
-<noscript><link rel="stylesheet" href="/styles.css?v=3"></noscript>
-<script src="/app.js" defer></script>
+<link rel="preload" href="/styles.css?v=4" as="style" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="/styles.css?v=4"></noscript>
+<script src="/app.js?v=2" defer></script>
 </head>
 <body>
 <a class="skip" href="#menu">Skip to the menu</a>
 <header class="bar">
 <a class="bar__home" href="/" aria-label="Luna Bites &amp; Delights, back to the storefront">
-<img src="/img/luna-logo-320.webp" width="320" height="385" alt="" decoding="async">
+<picture><source srcset="/img/luna-logo-320.avif" type="image/avif"><img src="/img/luna-logo-320.webp" width="320" height="385" alt="" decoding="async"></picture>
 </a>
 <nav class="bar__nav" aria-label="Sections">
 <a href="/#board">Prices</a>
@@ -277,7 +229,7 @@ html[data-lite] .slip{-webkit-mask:none;mask:none;border-top:3px dashed var(--pi
 </section>
 </main>
 <footer class="foot">
-<img class="foot__logo" src="/img/luna-logo-320.webp" width="320" height="385" alt="" loading="lazy" decoding="async">
+<picture><source srcset="/img/luna-logo-320.avif" type="image/avif"><img class="foot__logo" src="/img/luna-logo-320.webp" width="320" height="385" alt="" loading="lazy" decoding="async"></picture>
 <div>
 <p class="foot__name">Luna Bites &amp; Delights</p>
 <p class="foot__meta">Purok 5, Poblacion, Magallanes · Agusan del Norte (~15 mins from Cabadbaran) · open 9am to 8pm</p>
@@ -290,5 +242,6 @@ html[data-lite] .slip{-webkit-mask:none;mask:none;border-top:3px dashed var(--pi
 </p>
 </footer>
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"Menu","@id":"https://lunabitesanddelights.web.app/menu/#menu","name":"Luna Bites & Delights Menu","description":"Full menu and prices for Luna Bites & Delights, a food and drink kiosk in Poblacion, Magallanes, Agusan del Norte, near Cabadbaran City.","inLanguage":"en-PH","hasMenuSection":[{"@type":"MenuSection","name":"Shawarma favorites","hasMenuItem":[{"@type":"MenuItem","name":"Shawarma Wrap","offers":{"@type":"Offer","price":"60","priceCurrency":"PHP"}},{"@type":"MenuItem","name":"Shawarma All Meat","offers":{"@type":"Offer","price":"80","priceCurrency":"PHP"}},{"@type":"MenuItem","name":"Shawarma Nachos","offers":{"@type":"Offer","price":"99","priceCurrency":"PHP"}},{"@type":"MenuItem","name":"Shawarma Quesadilla","offers":{"@type":"Offer","price":"99","priceCurrency":"PHP"}},{"@type":"MenuItem","name":"Shawarma Fries","offers":{"@type":"Offer","price":"99","priceCurrency":"PHP"}},{"@type":"MenuItem","name":"Wrap, buy 1 take 1","offers":{"@type":"Offer","price":"99","priceCurrency":"PHP"}}]},{"@type":"MenuSection","name":"Combo meals","hasMenuItem":[{"@type":"MenuItem","name":"Combo 1 · burger + fries","offers":{"@type":"Offer","price":"60","priceCurrency":"PHP"}},{"@type":"MenuItem","name":"Combo 2 · shawarma wrap + fries","offers":{"@type":"Offer","price":"99","priceCurrency":"PHP"}},{"@type":"MenuItem","name":"Super Combo 1 · burger + fries + drink","offers":{"@type":"Offer","price":"99","priceCurrency":"PHP"}},{"@type":"MenuItem","name":"Super Combo 2 · wrap + fries + drink","offers":{"@type":"Offer","price":"128","priceCurrency":"PHP"}},{"@type":"MenuItem","name":"Combo 3 · 2 burgers + regular fries + 2 drinks","offers":{"@type":"Offer","price":"169","priceCurrency":"PHP"}},{"@type":"MenuItem","name":"Combo 4 · wrap + burger + fries","offers":{"@type":"Offer","price":"139","priceCurrency":"PHP"}},{"@type":"MenuItem","name":"Combo 6 · wrap + shawarma burger + drink","offers":{"@type":"Offer","price":"150","priceCurrency":"PHP"}}]},{"@type":"MenuSection","name":"French fries","hasMenuItem":[{"@type":"MenuItem","name":"D1 · fries + drink","offers":{"@type":"Offer","price":"55","priceCurrency":"PHP"}},{"@type":"MenuItem","name":"D2 · fries + hotdog + drink","offers":{"@type":"Offer","price":"65","priceCurrency":"PHP"}},{"@type":"MenuItem","name":"D3 · fries + hotdog + cheesestick + drink","offers":{"@type":"Offer","price":"75","priceCurrency":"PHP"}},{"@type":"MenuItem","name":"D4 · fries + hotdog + cheesestick + fried siomai + drink","offers":{"@type":"Offer","price":"89","priceCurrency":"PHP"}},{"@type":"MenuItem","name":"Fries, buy 1 take 1","offers":{"@type":"Offer","price":"50","priceCurrency":"PHP"}},{"@type":"MenuItem","name":"Large Fries","offers":{"@type":"Offer","price":"75","priceCurrency":"PHP"}},{"@type":"MenuItem","name":"Bucket Fries","offers":{"@type":"Offer","price":"99","priceCurrency":"PHP"}},{"@type":"MenuItem","name":"Terra Fries · 3 flavors","offers":{"@type":"Offer","price":"150","priceCurrency":"PHP"}},{"@type":"MenuItem","name":"Fries & Nachos Overload · Buddy, 1–2 pax","offers":{"@type":"Offer","price":"99","priceCurrency":"PHP"}},{"@type":"MenuItem","name":"Fries & Nachos Overload · Barkada, 3–5 pax","offers":{"@type":"Offer","price":"150","priceCurrency":"PHP"}}]},{"@type":"MenuSection","name":"Burger favorites","hasMenuItem":[{"@type":"MenuItem","name":"Burger Patty","offers":{"@type":"Offer","price":"55","priceCurrency":"PHP"}},{"@type":"MenuItem","name":"Ham & Cheese","offers":{"@type":"Offer","price":"55","priceCurrency":"PHP"}},{"@type":"MenuItem","name":"Cheese Burger","offers":{"@type":"Offer","price":"65","priceCurrency":"PHP"}},{"@type":"MenuItem","name":"Burger with Egg","offers":{"@type":"Offer","price":"85","priceCurrency":"PHP"}},{"@type":"MenuItem","name":"Cheese & Egg Burger","offers":{"@type":"Offer","price":"95","priceCurrency":"PHP"}},{"@type":"MenuItem","name":"Shawarma Burger","offers":{"@type":"Offer","price":"95","priceCurrency":"PHP"}}]},{"@type":"MenuSection","name":"Sweet · cold","hasMenuItem":[{"@type":"MenuItem","name":"Coolers, any three","offers":{"@type":"Offer","price":"100","priceCurrency":"PHP"}},{"@type":"MenuItem","name":"Ube Halo Ice Cream","offers":{"@type":"Offer","price":"65","priceCurrency":"PHP"}},{"@type":"MenuItem","name":"Mango Graham Ice Cream","offers":{"@type":"Offer","price":"65","priceCurrency":"PHP"}},{"@type":"MenuItem","name":"Choco Oreo Ice Cream","offers":{"@type":"Offer","price":"65","priceCurrency":"PHP"}},{"@type":"MenuItem","name":"Vanilla Cheese Ice Cream","offers":{"@type":"Offer","price":"65","priceCurrency":"PHP"}},{"@type":"MenuItem","name":"Luna Leche Flan","offers":{"@type":"Offer","price":"20","priceCurrency":"PHP"}},{"@type":"MenuItem","name":"Milo Dinosaur","offers":{"@type":"Offer","price":"65","priceCurrency":"PHP"}},{"@type":"MenuItem","name":"Caramel Macchiato","offers":{"@type":"Offer","price":"49","priceCurrency":"PHP"}},{"@type":"MenuItem","name":"Classic Lemonade","offers":{"@type":"Offer","price":"49","priceCurrency":"PHP"}}]},{"@type":"MenuSection","name":"Sulit meals","hasMenuItem":[{"@type":"MenuItem","name":"Sulit meals","description":"A filling meal, a fried egg and a cold drink. Hungarian sausage · tocino · shawarma rice · jumbo hotdog · Korean Spam Musubi · pork sisig.","offers":{"@type":"Offer","price":"99","priceCurrency":"PHP"}}]},{"@type":"MenuSection","name":"Chicken poppers","hasMenuItem":[{"@type":"MenuItem","name":"Chicken poppers","description":"Crispy poppers with rice, egg and a drink. Korean barbeque · yangnyeom · lemon glaze · teriyaki · creamy cheese · mango habanero.","offers":{"@type":"Offer","price":"99","priceCurrency":"PHP"}}]}]}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Do you deliver to Cabadbaran?","acceptedAnswer":{"@type":"Answer","text":"We deliver around Magallanes and nearby Cabadbaran areas. The rider confirms the delivery fee before dispatch."}},{"@type":"Question","name":"How much is delivery?","acceptedAnswer":{"@type":"Answer","text":"The delivery fee is separate from the food and confirmed by your rider. The prices on this page are for the food only."}},{"@type":"Question","name":"What are your hours?","acceptedAnswer":{"@type":"Answer","text":"9am to 8pm daily."}},{"@type":"Question","name":"How do I pay?","acceptedAnswer":{"@type":"Answer","text":"Cash or GCash on delivery or pickup."}},{"@type":"Question","name":"Can I pick up instead?","acceptedAnswer":{"@type":"Answer","text":"Yes. Choose pickup in the app and collect at Purok 5, Poblacion, Magallanes — unahan lang gamay sa 7/11."}}]}</script>
 </body>
 </html>
