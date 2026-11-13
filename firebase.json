@@ -66,6 +66,15 @@
         ]
       },
       {
+        "source": "/{styles.css,app.js,manifest.webmanifest}",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "public, max-age=604800, stale-while-revalidate=604800"
+          }
+        ]
+      },
+      {
         "source": "**/*.{bin,frag,symbols}",
         "headers": [
           {

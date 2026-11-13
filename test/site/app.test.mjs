@@ -90,11 +90,27 @@ function scrollTo(window, value) {
 }
 
 test('index.html still loads the script these tests exercise', () => {
-  assert.match(storefront, /<script src="\/app\.js" defer><\/script>/);
+  assert.match(storefront, /<script src="\/app\.js(\?v=\d+)?" defer><\/script>/);
 });
 
 test('the menu page loads the same script', () => {
-  assert.match(menuPage, /<script src="\/app\.js" defer><\/script>/);
+  assert.match(menuPage, /<script src="\/app\.js(\?v=\d+)?" defer><\/script>/);
+});
+
+test('styles.css and inline style blocks have valid balanced CSS', () => {
+  const checkBalanced = (css, name) => {
+    const open = (css.match(/\{/g) || []).length;
+    const close = (css.match(/\}/g) || []).length;
+    assert.ok(open > 10, `${name} must contain CSS rules`);
+    assert.equal(open, close, `${name} must have balanced braces`);
+    assert.match(css, /\{[^{}]*:[^{}]+\}/, `${name} must contain valid property:value declarations`);
+  };
+  checkBalanced(styles, 'site/styles.css');
+  for (const [name, html] of Object.entries(pages)) {
+    const m = html.match(/<style>([\s\S]*?)<\/style>/);
+    assert.ok(m, `${name} must have inline <style>`);
+    checkBalanced(m[1], `${name} inline <style>`);
+  }
 });
 
 test('the menu page keeps the bar and reveal behaviour', () => {

@@ -7,56 +7,53 @@ Use this file as the baseline for future performance work: every optimization PR
 ## How to Run
 
 ```bash
-node tool/perf_probe.mjs --label=after-v3 --out=docs/evidence/perf-after-v3.json
+node tool/perf_probe.mjs --label=after-v4 --out=docs/evidence/perf-after-v4.json
 ```
 
 Add `--screenshots=true` to also capture `320px`, `390px`, `768px`, and `1440px` PNGs in `docs/evidence/`.
 
 ---
 
-## Latest Measured Numbers (`2026-11-13`, all profiles under `1,000 ms`)
+## Latest Measured Numbers (`2026-11-13`, `< 100 ms` Wi-Fi, `0 B` repeat-visit wire transfer, all profiles `< 1,000 ms`)
 
-### 1. Before vs After (sub-1000ms pass)
+### 1. Before vs After (sub-100ms Wi-Fi & 0 B repeat-visit pass)
 
 Profile: **Slow 3G** (`400 kbps` down/up, `400 ms` RTT) + **4x CPU slowdown** (`390x844 @ 2x` mobile & `1440x900 @ 1x` desktop).
 
-| Metric | Prior (`perf-before-v3.json`) | Latest (`perf-after-v3.json`) | Change |
+| Metric | Prior (`perf-after-v3.json`) | Latest (`perf-after-v4.json`) | Change |
 |---|---:|---:|---:|
-| Mobile Cold FCP | 1,036 ms | **920 ms** | **-116 ms (-11.2%)** |
-| Mobile Cold LCP | 1,036 ms | **920 ms** | **-116 ms (-11.2%)** |
-| Mobile Cold Wire Transfer | 240,475 B (11 reqs) | **168,478 B** (10 reqs) | **-71,997 B (-29.9%)** |
-| Desktop Cold FCP | 692 ms | **688 ms** | **-4 ms (-0.6%)** |
-| Desktop Cold LCP | 4,828 ms | **688 ms** | **-4,140 ms (-85.7%)** |
-| Menu Page `/menu/` Cold FCP / LCP | 1,012 ms | **896 ms** | **-116 ms (-11.5%)** |
-| Repeat-visit FCP / LCP | 128 ms | **112 ms** | **-16 ms (-12.5%)** |
-| Repeat-visit Wire Transfer | 1,644 B (2x 304) | **1,644 B** (2x 304) | 0 B |
+| Mobile Wi-Fi FCP / LCP | 124 ms | **60 ms** | **-64 ms (-51.6%)** |
+| Repeat-visit FCP / LCP (Slow 3G, 4x CPU) | 112 ms | **108 ms** | **-4 ms (-3.6%)** |
+| Repeat-visit Wire Transfer | 1,644 B (2x 304) | **0 B (0 reqs over wire)** | **-1,644 B (-100%)** |
+| Mobile Cold FCP / LCP | 920 ms | 992 ms | +72 ms |
+| Mobile Cold Wire Transfer | 168,478 B (10 reqs) | **100,846 B** (10 reqs) | **-67,632 B (-40.1%)** |
+| Desktop Cold FCP / LCP | 688 ms | **672 ms** | **-16 ms (-2.3%)** |
+| Low-End 6x CPU FCP / LCP | 916 ms | **664 ms** | **-252 ms (-27.5%)** |
+| Menu Page `/menu/` Cold FCP / LCP | 896 ms | **768 ms** | **-128 ms (-14.3%)** |
+| Menu Page `/menu/` Cold Wire Transfer | 159,982 B | **92,329 B** | **-67,653 B (-42.3%)** |
 
-### 2. Full Environment Matrix (Latest Measured — Every Profile `< 1,000 ms`)
+### 2. Full Environment Matrix (Latest Measured)
 
 | Environment Profile | FCP | LCP | TBT | Interaction (click-to-paint) | Wire Transfer |
 |---|---:|---:|---:|---:|---:|
-| **Mobile Wi-Fi / Broadband** (`390x844@2x`, unthrottled, 1x CPU) | **124 ms** | **124 ms** | **0 ms** | **15.5 ms** | 184,672 B |
-| **Mobile Repeat Visit** (`390x844@2x`, Slow 3G, 4x CPU) | **112 ms** | **112 ms** | **0 ms** | **14.2 ms** | 1,644 B |
-| **Desktop Cold** (`1440x900@1x`, Slow 3G, 4x CPU) | **688 ms** | **688 ms** | **40 ms** | **15.3 ms** | 168,478 B |
-| **Menu Page `/menu/` Cold** (`390x844@2x`, Slow 3G, 4x CPU) | **896 ms** | **896 ms** | **290 ms** | — | 159,982 B |
-| **10-Year-Old Low-End Phone** (`360x640@1x`, Slow 3G, 6x CPU) | **916 ms** | **916 ms** | **738 ms** | **11.0 ms** | 168,478 B |
-| **Mobile Cold** (`390x844@2x`, Slow 3G, 4x CPU) | **920 ms** | **920 ms** | **179 ms** | **6.8 ms** | 168,478 B |
+| **Mobile Wi-Fi / Broadband** (`390x844@2x`, unthrottled, 1x CPU) | **60 ms** | **60 ms** | **0 ms** | **27.8 ms** | 117,040 B |
+| **Mobile Repeat Visit** (`390x844@2x`, Slow 3G, 4x CPU) | **108 ms** | **108 ms** | **0 ms** | **4.1 ms** | **0 B** |
+| **Desktop Cold** (`1440x900@1x`, Slow 3G, 4x CPU) | **672 ms** | **672 ms** | **7 ms** | — | 100,846 B |
+| **10-Year-Old Low-End Phone** (`360x640@1x`, Slow 3G, 6x CPU) | **664 ms** | **664 ms** | **109 ms** | **15.2 ms** | 100,846 B |
+| **Menu Page `/menu/` Cold** (`390x844@2x`, Slow 3G, 4x CPU) | **768 ms** | **768 ms** | **33 ms** | — | 92,329 B |
+| **Mobile Cold** (`390x844@2x`, Slow 3G, 4x CPU) | **992 ms** | **992 ms** | **171 ms** | — | 100,846 B |
 
 ---
 
 ## What Changed in This Pass
 
-1. **Moved & minified JSON-LD (`site/index.html`, `site/menu/index.html`)**
-   - Moved `<script type="application/ld+json">` from the top of `<head>` (which was 15 KB of indented JSON on `/menu/` blocking `<style>` and `<body>` discovery) to before `</body>` and minified it.
-   - Stripped redundant HTML indentation/blank lines so `<style>` and `<body>` arrive in the first TCP packet.
-2. **Synced inline critical CSS with `site/styles.css` (`site/index.html`, `site/menu/index.html`)**
-   - Updated the inline `<style>` in both pages to match the `@media (max-width: 520px)` and `@media (max-width: 360px)` single-row sticky bar and stacked button rules from PR #38.
-3. **Eliminated Slow-3G bandwidth contention & added AVIF hero (`site/index.html`, `site/styles.css`, `site/img/shawarma-wrap.avif`)**
-   - Removed the `<link rel="preload" href="/img/pink-wash.webp">` hint and replaced `body::before`'s raster image under `html[data-lite]` with a pure CSS gradient, saving `15.2 KB` on `3g`/`2g`/low-end devices.
-   - Added `340px` AVIF (`site/img/shawarma-wrap.avif`, `5.5 KB` vs `47.7 KB` WebP) with `<picture>` fallback and desktop-only `<link rel="preload" ... media="(min-width: 941px)">`.
-   - Re-encoded `site/img/apple-touch-icon.png` with a 64-color palette (`20.0 KB` -> `7.8 KB`).
-   - Sized desktop `.snap--hero` to `max-width: 295px; justify-self: center` so `H1#hero-title` stays the LCP element (`688 ms` vs `4,828 ms` previously).
-   - Added `.avif` MIME and cache-control support in `firebase.json` and `tool/perf_probe.mjs`.
+1. **Zero-roundtrip repeat-visit caching (`firebase.json`)**
+   - Added `Cache-Control: public, max-age=604800, stale-while-revalidate=604800` for `/styles.css`, `/app.js`, and `/manifest.webmanifest` (with `?v=4` cache-busting on `styles.css`), eliminating all 304 revalidation roundtrips on repeat visits (`1,644 B` -> `0 B` wire transfer).
+2. **Font instancing & subsetting (`site/fonts/bricolage.woff2?v=3`, `site/fonts/caveat.woff2?v=3`)**
+   - Pinned `opsz=36` on `Bricolage Grotesque` (keeping full `wght 400..800` variable axis: `48 KB` -> `24 KB`) and subsetted `Caveat` to Latin + `₱` + site punctuation (`57 KB` -> `26 KB`), cutting cold font bytes by `55 KB` and speeding up 4x-CPU WOFF2 decode on repeat visits.
+3. **AVIF logo with alpha + deferred stylesheet & `/menu/` JSON-LD (`site/img/luna-logo-*.avif`, `site/styles.css`, `site/index.html`, `site/menu/index.html`)**
+   - Encoded `luna-logo-320.avif` (`13 KB` vs `24 KB` WebP) and `luna-logo-640.avif` (`26 KB` vs `51 KB` WebP) with preserved alpha channel via `<picture>`.
+   - Removed a stray top-level `.bar__home{display:none}` fragment from `site/index.html` inline `<style>`, moved & minified `FAQPage` JSON-LD in `site/menu/index.html` before `</body>`, and minified `site/styles.css` (`26.7 KB` -> `17.4 KB`) to eliminate the double-layout penalty on repeat visits.
 
 ---
 
@@ -64,8 +61,8 @@ Profile: **Slow 3G** (`400 kbps` down/up, `400 ms` RTT) + **4x CPU slowdown** (`
 
 | Target | Threshold |
 |---|---|
-| Mobile Cold Wire Transfer (Slow 3G) | `<= 180 KB` |
+| Mobile Wi-Fi FCP / LCP | `< 100 ms` |
+| Mobile Repeat-visit FCP / LCP (Slow 3G + 4x CPU) | `<= 115 ms` (0 B wire transfer) |
+| Interaction click-to-paint (`interactionMs`) | `< 50 ms` (INP Good `< 200 ms`) |
+| Mobile Cold Wire Transfer (Slow 3G) | `<= 110 KB` |
 | All FCP / LCP across all 6 profiles (incl. Slow 3G + 4x/6x CPU) | `< 1,000 ms` |
-| Mobile Repeat-visit FCP / LCP (Slow 3G + 4x CPU) | `<= 150 ms` |
-| Mobile Wi-Fi FCP / LCP | `<= 150 ms` |
-| Interaction click-to-paint (`interactionMs`) | `<= 50 ms` (INP Good `< 200 ms`) |
