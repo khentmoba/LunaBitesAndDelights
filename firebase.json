@@ -39,47 +39,19 @@
         ]
       },
       {
-        "source": "**/*.{html,js,wasm,css,json,svg,ico}",
+        "source": "**",
         "headers": [
           {
             "key": "Cache-Control",
-            "value": "public, no-cache"
-          }
-        ]
-      },
-      {
-        "source": "**/*.{png,jpg,jpeg,gif,webp,avif}",
-        "headers": [
+            "value": "no-cache, no-store, must-revalidate"
+          },
           {
-            "key": "Cache-Control",
-            "value": "public, max-age=604800, stale-while-revalidate=604800"
-          }
-        ]
-      },
-      {
-        "source": "**/*.{ttf,otf,woff,woff2}",
-        "headers": [
+            "key": "Pragma",
+            "value": "no-cache"
+          },
           {
-            "key": "Cache-Control",
-            "value": "public, max-age=2592000, stale-while-revalidate=604800"
-          }
-        ]
-      },
-      {
-        "source": "/{styles.css,app.js,manifest.webmanifest}",
-        "headers": [
-          {
-            "key": "Cache-Control",
-            "value": "public, max-age=604800, stale-while-revalidate=604800"
-          }
-        ]
-      },
-      {
-        "source": "**/*.{bin,frag,symbols}",
-        "headers": [
-          {
-            "key": "Cache-Control",
-            "value": "public, no-cache"
+            "key": "Expires",
+            "value": "0"
           }
         ]
       }

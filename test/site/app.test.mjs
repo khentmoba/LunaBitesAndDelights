@@ -18,11 +18,18 @@ import { JSDOM } from 'jsdom';
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const storefront = readFileSync(join(root, 'site', 'index.html'), 'utf8');
 const menuPage = readFileSync(join(root, 'site', 'menu', 'index.html'), 'utf8');
-const script = readFileSync(join(root, 'site', 'app.js'), 'utf8');
-const styles = readFileSync(join(root, 'site', 'styles.css'), 'utf8');
 
-/// Both pages ship `app.js`, so both are exercised.
 const pages = { index: storefront, menu: menuPage };
+
+function inlineStyleOf(html) {
+  const m = html.match(/<style>([\s\S]*?)<\/style>/);
+  return m ? m[1] : '';
+}
+
+function inlineScriptOf(html) {
+  const matches = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)];
+  return matches.length ? matches[matches.length - 1][1] : '';
+}
 
 /// Boots the storefront in jsdom with the browser features app.js probes.
 ///
@@ -75,7 +82,7 @@ function load({
   }
 
   if (lite) window.document.documentElement.setAttribute('data-lite', '');
-  window.eval(script);
+  window.eval(inlineScriptOf(pages[page]));
   return { window, observers };
 }
 
@@ -89,15 +96,16 @@ function scrollTo(window, value) {
   window.dispatchEvent(new window.Event('scroll'));
 }
 
-test('index.html still loads the script these tests exercise', () => {
-  assert.match(storefront, /<script src="\/app\.js(\?v=\d+)?" defer><\/script>/);
+test('both pages inline their script and stylesheet with no external CSS/JS or cache-busting params', () => {
+  for (const [name, html] of Object.entries(pages)) {
+    assert.ok(inlineScriptOf(html).length > 100, `${name} must inline its behaviour script`);
+    assert.doesNotMatch(html, /\/styles\.css/, `${name} must not request external styles.css`);
+    assert.doesNotMatch(html, /\/app\.js/, `${name} must not request external app.js`);
+    assert.doesNotMatch(html, /\?v=\d+/, `${name} must not carry cache-busting query strings`);
+  }
 });
 
-test('the menu page loads the same script', () => {
-  assert.match(menuPage, /<script src="\/app\.js(\?v=\d+)?" defer><\/script>/);
-});
-
-test('styles.css and inline style blocks have valid balanced CSS', () => {
+test('inline style blocks have valid balanced CSS', () => {
   const checkBalanced = (css, name) => {
     const open = (css.match(/\{/g) || []).length;
     const close = (css.match(/\}/g) || []).length;
@@ -105,11 +113,10 @@ test('styles.css and inline style blocks have valid balanced CSS', () => {
     assert.equal(open, close, `${name} must have balanced braces`);
     assert.match(css, /\{[^{}]*:[^{}]+\}/, `${name} must contain valid property:value declarations`);
   };
-  checkBalanced(styles, 'site/styles.css');
   for (const [name, html] of Object.entries(pages)) {
-    const m = html.match(/<style>([\s\S]*?)<\/style>/);
-    assert.ok(m, `${name} must have inline <style>`);
-    checkBalanced(m[1], `${name} inline <style>`);
+    const css = inlineStyleOf(html);
+    assert.ok(css.length > 0, `${name} must have inline <style>`);
+    checkBalanced(css, `${name} inline <style>`);
   }
 });
 
@@ -272,20 +279,19 @@ test('both pages flag weak devices before the stylesheet', () => {
     assert.match(html, /data-lite/, `${name} must carry the capability probe`);
     assert.match(html, /navigator\.connection/, `${name} must check the connection`);
     assert.ok(
-      html.indexOf('data-lite') < html.indexOf('<link rel="stylesheet"'),
-      `${name} must flag weak devices before CSS is fetched`,
+      html.indexOf('data-lite') < html.indexOf('<style>'),
+      `${name} must flag weak devices before inline styles`,
     );
   }
 });
 
-test('font preloads match the stylesheet so each font is fetched once', () => {
+test('font preloads match the inline stylesheet so each font is fetched once', () => {
   for (const [name, html] of Object.entries(pages)) {
     const preload = html.match(/<link rel="preload" href="([^"]+\.woff2[^"]*)" as="font"/);
     assert.ok(preload, `${name} must preload the display font`);
-    assert.match(preload[1], /\?v=\d+/, 'cached fonts need a cache-busting version');
     assert.ok(
-      styles.includes(`url('${preload[1]}')`),
-      `${name} preload must point at the exact URL in styles.css`,
+      inlineStyleOf(html).includes(`url('${preload[1]}')`),
+      `${name} preload must point at the exact URL in inline <style>`,
     );
   }
 });
@@ -322,7 +328,9 @@ test('without script the street view still offers a way out', () => {
 test('staff login link remains visible in the header and is not hidden in CSS', () => {
   assert.match(storefront, /<a class="bar__staff" href="\/kiosk\/#\/staff">Staff login<\/a>/);
   assert.match(menuPage, /<a class="bar__staff" href="\/kiosk\/#\/staff">Staff login<\/a>/);
-  assert.doesNotMatch(styles, /\.bar__staff\s*\{[^}]*display:\s*none/);
+  for (const [name, html] of Object.entries(pages)) {
+    assert.doesNotMatch(inlineStyleOf(html), /\.bar__staff\s*\{[^}]*display:\s*none/, `${name} must not hide .bar__staff`);
+  }
 });
 
 test('the bar publishes its measured height to --bar-h for scroll-margin-top', () => {
@@ -333,5 +341,5 @@ test('the bar publishes its measured height to --bar-h for scroll-margin-top', (
   window.dispatchEvent(new window.Event('resize'));
 
   assert.equal(doc.documentElement.style.getPropertyValue('--bar-h'), '110px');
-  assert.match(styles, /scroll-margin-top:\s*calc\(var\(--bar-h,/);
+  assert.match(inlineStyleOf(storefront), /scroll-margin-top:\s*calc\(var\(--bar-h,/);
 });
