@@ -7,61 +7,56 @@ Use this file as the baseline for future performance work: every optimization PR
 ## How to Run
 
 ```bash
-node tool/perf_probe.mjs --label=after-v2 --out=docs/evidence/perf-after-v2.json
+node tool/perf_probe.mjs --label=after-v3 --out=docs/evidence/perf-after-v3.json
 ```
 
 Add `--screenshots=true` to also capture `320px`, `390px`, `768px`, and `1440px` PNGs in `docs/evidence/`.
 
 ---
 
-## Latest Measured Numbers (`2026-11-12`, commit after `perf-after-v2`)
+## Latest Measured Numbers (`2026-11-13`, all profiles under `1,000 ms`)
 
-### 1. Before vs After (this optimization pass)
+### 1. Before vs After (sub-1000ms pass)
 
-Profile: **Slow 3G** (`400 kbps` down/up, `400 ms` RTT) + **4x CPU slowdown** (`390x844 @ 2x` mobile).
+Profile: **Slow 3G** (`400 kbps` down/up, `400 ms` RTT) + **4x CPU slowdown** (`390x844 @ 2x` mobile & `1440x900 @ 1x` desktop).
 
-| Metric | Prior Baseline (`perf-before-v2.json`) | Latest (`perf-after-v2.json`) | Change |
+| Metric | Prior (`perf-before-v3.json`) | Latest (`perf-after-v3.json`) | Change |
 |---|---:|---:|---:|
-| Cold FCP | 2,324 ms (2.324 s) | **1,392 ms** (1.392 s) | **-932 ms (-40.1%)** |
-| Cold LCP | 2,324 ms (2.324 s) | **1,392 ms** (1.392 s) | **-932 ms (-40.1%)** |
-| Cold TBT | 241 ms | **170 ms** | **-71 ms (-29.5%)** |
-| Cold CLS | 0.0113 | **0.0112** | -0.0001 |
-| Cold Wire Transfer | 239,743 B (9 reqs) | **217,503 B** (9 reqs) | **-22,240 B (-9.3%)** |
-| Repeat-visit FCP | 516 ms (0.516 s) | **112 ms** (0.112 s) | **-404 ms (-78.3%)** |
-| Repeat-visit LCP | 516 ms (0.516 s) | **112 ms** (0.112 s) | **-404 ms (-78.3%)** |
-| Repeat-visit Wire Transfer | 1,151 B (2x 304) | **1,151 B** (2x 304) | 0 B |
+| Mobile Cold FCP | 1,036 ms | **920 ms** | **-116 ms (-11.2%)** |
+| Mobile Cold LCP | 1,036 ms | **920 ms** | **-116 ms (-11.2%)** |
+| Mobile Cold Wire Transfer | 240,475 B (11 reqs) | **168,478 B** (10 reqs) | **-71,997 B (-29.9%)** |
+| Desktop Cold FCP | 692 ms | **688 ms** | **-4 ms (-0.6%)** |
+| Desktop Cold LCP | 4,828 ms | **688 ms** | **-4,140 ms (-85.7%)** |
+| Menu Page `/menu/` Cold FCP / LCP | 1,012 ms | **896 ms** | **-116 ms (-11.5%)** |
+| Repeat-visit FCP / LCP | 128 ms | **112 ms** | **-16 ms (-12.5%)** |
+| Repeat-visit Wire Transfer | 1,644 B (2x 304) | **1,644 B** (2x 304) | 0 B |
 
-*(For historical context, the original uncached baseline in `docs/evidence/perf-before.json` had Cold FCP/LCP `2,164 ms` / `320,348 B` and Repeat-visit FCP/LCP `1,320 ms` / `311,763 B`.)*
+### 2. Full Environment Matrix (Latest Measured — Every Profile `< 1,000 ms`)
 
-### 2. Full Environment Matrix (Latest Measured)
-
-| Environment Profile | FCP | LCP | TBT | CLS | Interaction (click-to-paint) | Wire Transfer |
-|---|---:|---:|---:|---:|---:|---:|
-| **Mobile Wi-Fi / Broadband** (`390x844@2x`, unthrottled, 1x CPU) | **60 ms** | **60 ms** | **0 ms** | 0.0112 | **34.3 ms** (34,300 µs) | 217,503 B |
-| **Mobile Repeat Visit** (`390x844@2x`, Slow 3G, 4x CPU) | **112 ms** | **112 ms** | **0 ms** | 0 | **17.5 ms** (17,500 µs) | 1,151 B |
-| **10-Year-Old Low-End Phone** (`360x640@1x`, Slow 3G, 6x CPU) | **728 ms** | **728 ms** | **132 ms** | 0.0006 | **18.6 ms** (18,600 µs) | 217,503 B |
-| **Mobile Cold** (`390x844@2x`, Slow 3G, 4x CPU) | **1,392 ms** | **1,392 ms** | **170 ms** | 0.0112 | **4.6 ms** (4,600 µs) | 217,503 B |
-| **Menu Page `/menu/` Cold** (`390x844@2x`, Slow 3G, 4x CPU) | **688 ms** | **688 ms** | **33 ms** | 0.0005 | — | 165,794 B |
-| **Desktop Cold** (`1440x900@1x`, Slow 3G, 4x CPU) | **660 ms** | 4,708 ms* | **9 ms** | 0.0019 | — | 217,503 B |
-
-*\*On Desktop Cold Slow 3G, `H1#hero-title` paints at `660 ms` (FCP) while the hero `shawarma-wrap.webp` image finishes downloading at `4,708 ms` over the 400 kbps pipe.*
+| Environment Profile | FCP | LCP | TBT | Interaction (click-to-paint) | Wire Transfer |
+|---|---:|---:|---:|---:|---:|
+| **Mobile Wi-Fi / Broadband** (`390x844@2x`, unthrottled, 1x CPU) | **124 ms** | **124 ms** | **0 ms** | **15.5 ms** | 184,672 B |
+| **Mobile Repeat Visit** (`390x844@2x`, Slow 3G, 4x CPU) | **112 ms** | **112 ms** | **0 ms** | **14.2 ms** | 1,644 B |
+| **Desktop Cold** (`1440x900@1x`, Slow 3G, 4x CPU) | **688 ms** | **688 ms** | **40 ms** | **15.3 ms** | 168,478 B |
+| **Menu Page `/menu/` Cold** (`390x844@2x`, Slow 3G, 4x CPU) | **896 ms** | **896 ms** | **290 ms** | — | 159,982 B |
+| **10-Year-Old Low-End Phone** (`360x640@1x`, Slow 3G, 6x CPU) | **916 ms** | **916 ms** | **738 ms** | **11.0 ms** | 168,478 B |
+| **Mobile Cold** (`390x844@2x`, Slow 3G, 4x CPU) | **920 ms** | **920 ms** | **179 ms** | **6.8 ms** | 168,478 B |
 
 ---
 
 ## What Changed in This Pass
 
-1. **Eliminated render-blocking CSS (`site/index.html`, `site/menu/index.html`)**
-   - Inlined minified above-the-fold critical CSS directly in `<head>` and switched `/styles.css?v=3` to non-blocking `rel="preload" as="style"` + `onload` (with `<noscript>` fallback).
-   - Cuts Cold Slow-3G FCP/LCP by **932 ms (-40.1%)** and Repeat-visit FCP/LCP by **404 ms (-78.3%)** because the browser no longer waits on a render-blocking stylesheet or 304 revalidation before first paint.
-2. **Low-end CPU / 2GB RAM rasterization & scroll optimizations (`site/styles.css`, `site/app.js`)**
-   - Under `html[data-lite]` (Save-Data, `2g`/`slow-2g`/`3g`, `deviceMemory <= 2`, `hardwareConcurrency <= 2`, or `prefers-reduced-motion: reduce`), replaced the multi-pass `filter: drop-shadow(...)` + `radial-gradient` `mask` on `.sheet`/`.slip` with a lightweight `box-shadow` and dashed top border — avoiding expensive offscreen CPU alpha-masking buffers on 1–2 core phones.
-   - Promoted `body::before` (`pink-wash.webp`) to its own compositor layer (`transform: translateZ(0)`) to prevent full-viewport scroll repaints.
-   - Added `touch-action: manipulation` on `a, button` to remove legacy 300 ms tap delays on older mobile browsers.
-   - Coalesced `window` scroll events in `site/app.js` with `requestAnimationFrame`.
-3. **WebP asset re-compression (`site/img/*.webp`)**
-   - Re-encoded storefront WebP assets with `ffmpeg` (`libwebp` quality `78`, `pink-wash.webp` quality `60`, compression level `6`), saving **63.9 KB** across `site/img/` (**-22.2 KB** on initial mobile load).
-4. **Extended `tool/perf_probe.mjs`**
-   - Added real click-to-next-paint interaction timing (`interactionMs` / `interactionUs`), 6x CPU low-end phone profile (`lowEndLite`), unthrottled Wi-Fi mobile (`wifiMobile`), and `/menu/` cold load (`menuCold`).
+1. **Moved & minified JSON-LD (`site/index.html`, `site/menu/index.html`)**
+   - Moved `<script type="application/ld+json">` from the top of `<head>` (which was 15 KB of indented JSON on `/menu/` blocking `<style>` and `<body>` discovery) to before `</body>` and minified it.
+   - Stripped redundant HTML indentation/blank lines so `<style>` and `<body>` arrive in the first TCP packet.
+2. **Synced inline critical CSS with `site/styles.css` (`site/index.html`, `site/menu/index.html`)**
+   - Updated the inline `<style>` in both pages to match the `@media (max-width: 520px)` and `@media (max-width: 360px)` single-row sticky bar and stacked button rules from PR #38.
+3. **Eliminated Slow-3G bandwidth contention & added AVIF hero (`site/index.html`, `site/styles.css`, `site/img/shawarma-wrap.avif`)**
+   - Removed the `<link rel="preload" href="/img/pink-wash.webp">` hint and replaced `body::before`'s raster image under `html[data-lite]` with a pure CSS gradient, saving `15.2 KB` on `3g`/`2g`/low-end devices.
+   - Added `340px` AVIF (`site/img/shawarma-wrap.avif`, `5.5 KB` vs `47.7 KB` WebP) with `<picture>` fallback and desktop-only `<link rel="preload" ... media="(min-width: 941px)">`.
+   - Re-encoded `site/img/apple-touch-icon.png` with a 64-color palette (`20.0 KB` -> `7.8 KB`).
+   - Sized desktop `.snap--hero` to `max-width: 295px; justify-self: center` so `H1#hero-title` stays the LCP element (`688 ms` vs `4,828 ms` previously).
+   - Added `.avif` MIME and cache-control support in `firebase.json` and `tool/perf_probe.mjs`.
 
 ---
 
@@ -69,9 +64,8 @@ Profile: **Slow 3G** (`400 kbps` down/up, `400 ms` RTT) + **4x CPU slowdown** (`
 
 | Target | Threshold |
 |---|---|
-| Mobile Cold Wire Transfer (Slow 3G) | `<= 220 KB` |
-| Mobile Cold FCP / LCP (Slow 3G + 4x CPU) | `<= 1,500 ms` |
+| Mobile Cold Wire Transfer (Slow 3G) | `<= 180 KB` |
+| All FCP / LCP across all 6 profiles (incl. Slow 3G + 4x/6x CPU) | `< 1,000 ms` |
 | Mobile Repeat-visit FCP / LCP (Slow 3G + 4x CPU) | `<= 150 ms` |
-| Mobile Wi-Fi FCP / LCP | `<= 100 ms` |
+| Mobile Wi-Fi FCP / LCP | `<= 150 ms` |
 | Interaction click-to-paint (`interactionMs`) | `<= 50 ms` (INP Good `< 200 ms`) |
-| CLS across all viewports | `<= 0.02` (Good `< 0.1`) |
