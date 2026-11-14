@@ -22,9 +22,10 @@ export const verifyStaff = onCall(async (request) => {
   // Never seed well-known defaults; they end up in git/history forever.
   if ((await db.collection('staff_accounts').limit(1).get()).empty) {
     const mk = () => crypto.randomBytes(9).toString('base64url');
+    const mkPin = () => String(crypto.randomInt(100000, 1000000));
     const seeds = [
-      { username: 'admin', role: 'admin', pin: '0524' },
-      { username: 'staff1', role: 'staff', pin: '8888' },
+      { username: 'admin', role: 'admin', pin: mkPin() },
+      { username: 'staff1', role: 'staff', pin: mkPin() },
     ];
     const batch = db.batch();
     for (const s of seeds) {

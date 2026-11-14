@@ -39,9 +39,6 @@ class _StaffLoginDialogState extends State<StaffLoginDialog> {
         _error = null;
         _pin += value;
       });
-      if (_pin.length == 8) {
-        _submitPin();
-      }
     }
   }
 
@@ -481,7 +478,7 @@ class _StaffLoginDialogState extends State<StaffLoginDialog> {
                     // Mode 1: Quick PIN keypad
                     if (_mode == StaffLoginMode.pin) ...[
                       Text(
-                        'ENTER 4-DIGIT PIN',
+                        'ENTER 4–8 DIGIT PIN',
                         style:
                             MenuTheme.body(
                               size: 12,

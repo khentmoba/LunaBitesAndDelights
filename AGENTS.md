@@ -9,11 +9,6 @@
   promotional posts. Copy and photos posted there are what the landing page should showcase.
 - **Location:** Purok 5, Poblacion Magallanes, Agusan Del Norte (near 7/11), Philippines.
 
-## Subagents & Delegation
-
-- **Do not use subagents or delegate work unless the user explicitly asks you to.** Complete implementation, research, testing, reviews, and documentation yourself by default.
-- Invoking a skill, including `$impeccable`, does **not** authorize subagents. If a skill calls for delegated work, perform that step yourself unless the user explicitly authorizes delegation.
-
 ## UI Work
 
 - **Always use the `$impeccable` skill for UI work**, including design, implementation, review, and changes to layout, styling, copy, motion, accessibility, or responsive behavior in the storefront or Flutter app. Read its `SKILL.md` from the available skill catalog before starting.

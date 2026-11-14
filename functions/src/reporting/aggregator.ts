@@ -41,8 +41,6 @@ export async function aggregateDailySales(dateLabel: string): Promise<DailySales
     }
   });
 
-  if (totalOrders === 0) return null;
-
   return {
     date: dateLabel,
     totalSales,

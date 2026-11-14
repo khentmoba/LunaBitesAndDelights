@@ -33,8 +33,6 @@ async function aggregateDailySales(dateLabel) {
             itemCounts[key] = (itemCounts[key] || 0) + (item.quantity || 1);
         }
     });
-    if (totalOrders === 0)
-        return null;
     return {
         date: dateLabel,
         totalSales,
