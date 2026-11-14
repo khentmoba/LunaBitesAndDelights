@@ -1,9 +1,9 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import '../services/cart_notifier.dart';
 import '../services/session.dart';
 import '../widgets/kiosk/kiosk_theme.dart';
-import '../widgets/kiosk/juicy_feedback.dart';
 
 class InactivityWatcher extends StatefulWidget {
   final Widget child;
@@ -22,11 +22,18 @@ class _InactivityWatcherState extends State<InactivityWatcher> {
   @override
   void initState() {
     super.initState();
+    session.addListener(_onSessionChanged);
+    _resetInactivityTimer();
+  }
+
+  void _onSessionChanged() {
+    if (!mounted) return;
     _resetInactivityTimer();
   }
 
   @override
   void dispose() {
+    session.removeListener(_onSessionChanged);
     _inactivityTimer?.cancel();
     _countdownTimer?.cancel();
     super.dispose();
@@ -35,8 +42,11 @@ class _InactivityWatcherState extends State<InactivityWatcher> {
   void _resetInactivityTimer() {
     if (_dialogOpen) return;
     _inactivityTimer?.cancel();
+    // Keep the 2-minute unattended reset on web kiosk and staff POS sessions,
+    // while letting personal native Android/iOS app users switch apps freely.
+    if (!kIsWeb && !session.isStaff) return;
     _inactivityTimer = Timer(const Duration(minutes: 2), () {
-      if (!mounted) return;
+      if (!mounted || (!kIsWeb && !session.isStaff)) return;
       final isCurrent = ModalRoute.of(context)?.isCurrent ?? true;
       if (!isCurrent) {
         _resetInactivityTimer();
@@ -80,17 +90,19 @@ class _InactivityWatcherState extends State<InactivityWatcher> {
           builder: (context, setDialogState) {
             dialogSetState = setDialogState;
             return AlertDialog(
-              backgroundColor: Colors.white,
+              backgroundColor: KioskTheme.lunaPaper,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(32),
+                borderRadius: BorderRadius.circular(KioskTheme.radiusLg),
+                side: const BorderSide(color: KioskTheme.rule),
               ),
               title: Center(
                 child: Text(
                   'ARE YOU STILL THERE?',
+                  textAlign: TextAlign.center,
                   style: KioskTheme.font(
                     fontWeight: FontWeight.w800,
                     fontSize: 20,
-                    color: KioskTheme.lunaPink,
+                    color: KioskTheme.pinkInk,
                     letterSpacing: 1.5,
                   ),
                 ),
@@ -98,41 +110,43 @@ class _InactivityWatcherState extends State<InactivityWatcher> {
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
                   Text(
                     'This kiosk will automatically reset to the main screen in:',
                     style: KioskTheme.font(
                       fontSize: 14,
-                      color: Colors.grey[600],
+                      color: KioskTheme.textSecondary,
                       fontWeight: FontWeight.w500,
                     ),
                     textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 20),
                   Container(
-                    width: 90,
-                    height: 90,
-                    decoration: BoxDecoration(
-                      color: KioskTheme.lunaPink.withValues(alpha: 0.05),
+                    width: 84,
+                    height: 84,
+                    decoration: const BoxDecoration(
+                      color: KioskTheme.lunaBlushPaper,
                       shape: BoxShape.circle,
                     ),
                     child: Center(
                       child: Text(
                         '$_secondsRemaining',
                         style: KioskTheme.font(
-                          fontSize: 36,
+                          fontSize: 34,
                           fontWeight: FontWeight.w800,
-                          color: KioskTheme.lunaPink,
+                          color: KioskTheme.pinkInk,
+                          fontFeatures: const [FontFeature.tabularFigures()],
                         ),
                       ),
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
                 ],
               ),
               actions: [
-                Center(
-                  child: JuicyFeedback(
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
                     onPressed: () {
                       _countdownTimer?.cancel();
                       Navigator.of(context).pop();
@@ -141,27 +155,7 @@ class _InactivityWatcherState extends State<InactivityWatcher> {
                       });
                       _resetInactivityTimer();
                     },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 40,
-                        vertical: 16,
-                      ),
-                      decoration: BoxDecoration(
-                        color: KioskTheme.lunaPink,
-                        borderRadius: BorderRadius.circular(
-                          KioskTheme.radiusMd,
-                        ),
-                      ),
-                      child: Text(
-                        'YES, I AM HERE',
-                        style: KioskTheme.font(
-                          color: KioskTheme.textOnPrimary,
-                          fontWeight: FontWeight.w800,
-                          fontSize: 14,
-                          letterSpacing: 1,
-                        ),
-                      ),
-                    ),
+                    child: const Text('YES, I AM HERE'),
                   ),
                 ),
               ],

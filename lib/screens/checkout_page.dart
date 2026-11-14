@@ -347,11 +347,13 @@ class _CheckoutPageState extends State<CheckoutPage> {
                 ),
               )
             : SingleChildScrollView(
+                keyboardDismissBehavior:
+                    ScrollViewKeyboardDismissBehavior.onDrag,
                 padding: EdgeInsets.fromLTRB(
                   isMobile ? 16 : 32,
                   isMobile ? 16 : 32,
                   isMobile ? 16 : 32,
-                  bottomInset + 32,
+                  bottomInset + (isMobile ? 24 : 32),
                 ),
                 child: Center(
                   child: ConstrainedBox(
@@ -369,6 +371,8 @@ class _CheckoutPageState extends State<CheckoutPage> {
                                 (item) => Padding(
                                   padding: const EdgeInsets.only(bottom: 12),
                                   child: Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         '${item.quantity}x',
@@ -380,16 +384,21 @@ class _CheckoutPageState extends State<CheckoutPage> {
                                       Expanded(
                                         child: Text(
                                           '${item.name}${item.variant.isNotEmpty ? ' (${item.variant})' : ''}',
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
                                           style: KioskTheme.bodyLarge.copyWith(
                                             fontSize: 15,
                                           ),
-                                          overflow: TextOverflow.ellipsis,
                                         ),
                                       ),
+                                      const SizedBox(width: 8),
                                       Text(
                                         '₱${item.price * item.quantity}',
                                         style: KioskTheme.titleMedium.copyWith(
                                           fontSize: 15,
+                                          fontFeatures: const [
+                                            FontFeature.tabularFigures(),
+                                          ],
                                         ),
                                       ),
                                     ],
@@ -420,7 +429,10 @@ class _CheckoutPageState extends State<CheckoutPage> {
                                   Text(
                                     '₱${cartNotifier.totalPrice}',
                                     style: KioskTheme.headerLarge.copyWith(
-                                      fontSize: 32,
+                                      fontSize: isMobile ? 28 : 32,
+                                      fontFeatures: const [
+                                        FontFeature.tabularFigures(),
+                                      ],
                                     ),
                                   ),
                                 ],
@@ -428,9 +440,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
                             ],
                           ),
                         ),
-                        const SizedBox(height: 32),
+                        SizedBox(height: isMobile ? 20 : 32),
                         _buildSectionLabel('ORDER TYPE'),
-                        const SizedBox(height: 16),
+                        SizedBox(height: isMobile ? 12 : 16),
                         Row(
                           children: [
                             if (session.isStaff) ...[
@@ -445,7 +457,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                                   }),
                                 ),
                               ),
-                              const SizedBox(width: 16),
+                              SizedBox(width: isMobile ? 10 : 16),
                             ],
                             Expanded(
                               child: _typeBtn(
@@ -458,7 +470,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                                 }),
                               ),
                             ),
-                            const SizedBox(width: 16),
+                            SizedBox(width: isMobile ? 10 : 16),
                             Expanded(
                               child: _typeBtn(
                                 label: 'Delivery',
@@ -472,9 +484,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
                             ),
                           ],
                         ),
-                        const SizedBox(height: 32),
+                        SizedBox(height: isMobile ? 20 : 32),
                         _buildSectionLabel('PAYMENT METHOD'),
-                        const SizedBox(height: 16),
+                        SizedBox(height: isMobile ? 12 : 16),
                         Row(
                           children: [
                             Expanded(
@@ -488,7 +500,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                                 }),
                               ),
                             ),
-                            const SizedBox(width: 16),
+                            SizedBox(width: isMobile ? 10 : 16),
                             Expanded(
                               child: _typeBtn(
                                 label: 'GCash',
@@ -597,14 +609,14 @@ class _CheckoutPageState extends State<CheckoutPage> {
                                   ),
                                 ),
                         ),
-                        const SizedBox(height: 32),
+                        SizedBox(height: isMobile ? 20 : 32),
                         Text(
                           _needsCoordinates
                               ? 'DELIVERY DETAILS'
                               : 'CUSTOMER DETAILS',
                           style: KioskTheme.labelLarge.copyWith(fontSize: 16),
                         ),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 14),
                         _field(
                           ctrl: _nameCtrl,
                           label: session.isStaff
@@ -614,6 +626,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
                           hint: session.isStaff
                               ? 'e.g. Walk-in Customer (Default)'
                               : 'e.g. Juan Dela Cruz',
+                          textCapitalization: TextCapitalization.words,
+                          textInputAction: TextInputAction.next,
+                          autofillHints: const [AutofillHints.name],
                         ),
                         const SizedBox(height: 16),
                         AnimatedSize(
@@ -624,64 +639,69 @@ class _CheckoutPageState extends State<CheckoutPage> {
                               : Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    GestureDetector(
-                                      onTap: _openMapPicker,
-                                      child: AnimatedContainer(
-                                        duration: const Duration(
-                                          milliseconds: 200,
-                                        ),
-                                        width: double.infinity,
-                                        padding: const EdgeInsets.symmetric(
-                                          vertical: 20,
-                                          horizontal: 20,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: _locationPinned
-                                              ? KioskTheme.lunaPink.withValues(
-                                                  alpha: 0.05,
-                                                )
-                                              : Colors.white,
+                                    Semantics(
+                                      button: true,
+                                      label: _locationPinned
+                                          ? 'Location pinned on map, tap to change'
+                                          : 'Tap to pin your location on map',
+                                      child: Material(
+                                        color: _locationPinned
+                                            ? KioskTheme.lunaBlushPaper
+                                            : Colors.white,
+                                        shape: RoundedRectangleBorder(
                                           borderRadius: BorderRadius.circular(
                                             KioskTheme.radiusMd,
                                           ),
-                                          border: Border.all(
+                                          side: BorderSide(
                                             color: _locationPinned
                                                 ? KioskTheme.lunaPink
-                                                : Colors.grey[200]!,
+                                                : KioskTheme.rule,
                                             width: 2,
                                           ),
                                         ),
-                                        child: Row(
-                                          children: [
-                                            Icon(
-                                              _locationPinned
-                                                  ? Icons.location_on
-                                                  : Icons
-                                                        .add_location_alt_outlined,
-                                              color: KioskTheme.lunaPink,
-                                              size: 24,
+                                        clipBehavior: Clip.antiAlias,
+                                        child: InkWell(
+                                          onTap: _openMapPicker,
+                                          child: Container(
+                                            width: double.infinity,
+                                            padding: const EdgeInsets.symmetric(
+                                              vertical: 16,
+                                              horizontal: 16,
                                             ),
-                                            const SizedBox(width: 16),
-                                            Expanded(
-                                              child: Text(
-                                                _locationPinned
-                                                    ? 'Location pinned on map'
-                                                    : 'Tap to pin your location on map',
-                                                style: KioskTheme.font(
-                                                  color: KioskTheme.lunaPink,
-                                                  fontSize: 15,
-                                                  fontWeight: _locationPinned
-                                                      ? FontWeight.w800
-                                                      : FontWeight.w600,
+                                            child: Row(
+                                              children: [
+                                                Icon(
+                                                  _locationPinned
+                                                      ? Icons.location_on
+                                                      : Icons
+                                                            .add_location_alt_outlined,
+                                                  color: KioskTheme.pinkInk,
+                                                  size: 24,
                                                 ),
-                                              ),
+                                                const SizedBox(width: 14),
+                                                Expanded(
+                                                  child: Text(
+                                                    _locationPinned
+                                                        ? 'Location pinned on map'
+                                                        : 'Tap to pin your location on map',
+                                                    style: KioskTheme.font(
+                                                      color: KioskTheme.pinkInk,
+                                                      fontSize: 15,
+                                                      fontWeight:
+                                                          _locationPinned
+                                                          ? FontWeight.w800
+                                                          : FontWeight.w600,
+                                                    ),
+                                                  ),
+                                                ),
+                                                const Icon(
+                                                  Icons.chevron_right,
+                                                  color: KioskTheme.pinkInk,
+                                                  size: 20,
+                                                ),
+                                              ],
                                             ),
-                                            const Icon(
-                                              Icons.chevron_right,
-                                              color: KioskTheme.lunaPink,
-                                              size: 20,
-                                            ),
-                                          ],
+                                          ),
                                         ),
                                       ),
                                     ),
@@ -689,6 +709,12 @@ class _CheckoutPageState extends State<CheckoutPage> {
                                     TextField(
                                       controller: _addressCtrl,
                                       maxLines: 2,
+                                      textCapitalization:
+                                          TextCapitalization.sentences,
+                                      textInputAction: TextInputAction.next,
+                                      autofillHints: const [
+                                        AutofillHints.fullStreetAddress,
+                                      ],
                                       style: KioskTheme.font(
                                         fontWeight: FontWeight.w600,
                                         color: KioskTheme.textPrimary,
@@ -701,7 +727,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                                           ).copyWith(
                                             prefixIcon: const Icon(
                                               Icons.edit_location_alt,
-                                              color: KioskTheme.lunaPink,
+                                              color: KioskTheme.pinkInk,
                                               size: 20,
                                             ),
                                           ),
@@ -718,8 +744,10 @@ class _CheckoutPageState extends State<CheckoutPage> {
                           icon: Icons.phone_rounded,
                           hint: 'e.g. 09XX XXX XXXX',
                           keyboard: TextInputType.phone,
+                          textInputAction: TextInputAction.done,
+                          autofillHints: const [AutofillHints.telephoneNumber],
                         ),
-                        const SizedBox(height: 48),
+                        SizedBox(height: isMobile ? 28 : 40),
                         Builder(
                           builder: (context) {
                             final isBlocked =
@@ -731,26 +759,28 @@ class _CheckoutPageState extends State<CheckoutPage> {
                                       : 'PLACE DELIVERY ORDER');
 
                             return JuicyFeedback(
-                              onPressed: (_loading || isBlocked)
-                                  ? null
-                                  : _submitOrder,
-                              child: Container(
+                              child: SizedBox(
                                 width: double.infinity,
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 24,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: (_loading || isBlocked)
-                                      ? Colors.grey[400]
-                                      : KioskTheme.lunaPink,
-                                  borderRadius: BorderRadius.circular(
-                                    KioskTheme.radiusFull,
+                                child: FilledButton(
+                                  onPressed: (_loading || isBlocked)
+                                      ? null
+                                      : _submitOrder,
+                                  style: FilledButton.styleFrom(
+                                    backgroundColor: KioskTheme.lunaPink,
+                                    foregroundColor: KioskTheme.textOnPrimary,
+                                    disabledBackgroundColor: _loading
+                                        ? KioskTheme.lunaPink
+                                        : KioskTheme.lunaBlushPaper,
+                                    disabledForegroundColor: _loading
+                                        ? KioskTheme.textOnPrimary
+                                        : KioskTheme.textSecondary,
+                                    minimumSize: const Size(48, 54),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(
+                                        KioskTheme.radiusMd,
+                                      ),
+                                    ),
                                   ),
-                                  boxShadow: (_loading || isBlocked)
-                                      ? []
-                                      : KioskTheme.shadowPrimary,
-                                ),
-                                child: Center(
                                   child: _loading
                                       ? const SizedBox(
                                           width: 24,
@@ -767,8 +797,10 @@ class _CheckoutPageState extends State<CheckoutPage> {
                                       : Text(
                                           label,
                                           style: KioskTheme.labelLarge.copyWith(
-                                            color: KioskTheme.textOnPrimary,
-                                            fontSize: isMobile ? 16 : 18,
+                                            color: isBlocked
+                                                ? KioskTheme.textSecondary
+                                                : KioskTheme.textOnPrimary,
+                                            fontSize: isMobile ? 15 : 17,
                                           ),
                                         ),
                                 ),
@@ -776,7 +808,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                             );
                           },
                         ),
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 16),
                       ],
                     ),
                   ),
@@ -816,43 +848,52 @@ class _CheckoutPageState extends State<CheckoutPage> {
     required VoidCallback onTap,
   }) {
     final isMobile = MediaQuery.sizeOf(context).width < 600;
-    return JuicyFeedback(
-      onPressed: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: EdgeInsets.symmetric(
-          vertical: isMobile ? 14 : 20,
-          horizontal: 6,
-        ),
-        decoration: BoxDecoration(
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: label,
+      child: JuicyFeedback(
+        child: Material(
           color: selected ? KioskTheme.lunaPink : Colors.white,
-          borderRadius: BorderRadius.circular(KioskTheme.radiusLg),
-          border: Border.all(
-            color: selected ? KioskTheme.lunaPink : Colors.grey[200]!,
-            width: 2,
-          ),
-        ),
-        child: Column(
-          children: [
-            Icon(
-              icon,
-              size: isMobile ? 26 : 32,
-              color: selected ? Colors.white : KioskTheme.lunaPink,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(KioskTheme.radiusLg),
+            side: BorderSide(
+              color: selected ? KioskTheme.lunaPink : KioskTheme.rule,
+              width: 2,
             ),
-            const SizedBox(height: 8),
-            FittedBox(
-              fit: BoxFit.scaleDown,
-              child: Text(
-                label.toUpperCase(),
-                style: KioskTheme.font(
-                  color: selected ? Colors.white : KioskTheme.lunaPink,
-                  fontWeight: FontWeight.w800,
-                  fontSize: isMobile ? 12 : 14,
-                  letterSpacing: isMobile ? 0.8 : 2,
-                ),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: onTap,
+            child: Padding(
+              padding: EdgeInsets.symmetric(
+                vertical: isMobile ? 14 : 20,
+                horizontal: 6,
+              ),
+              child: Column(
+                children: [
+                  Icon(
+                    icon,
+                    size: isMobile ? 24 : 30,
+                    color: selected ? Colors.white : KioskTheme.pinkInk,
+                  ),
+                  const SizedBox(height: 6),
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      label.toUpperCase(),
+                      style: KioskTheme.font(
+                        color: selected ? Colors.white : KioskTheme.pinkInk,
+                        fontWeight: FontWeight.w800,
+                        fontSize: isMobile ? 12 : 14,
+                        letterSpacing: isMobile ? 0.6 : 1.5,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
-          ],
+          ),
         ),
       ),
     );
@@ -864,6 +905,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
     required IconData icon,
     required String hint,
     TextInputType keyboard = TextInputType.text,
+    TextInputAction textInputAction = TextInputAction.next,
+    TextCapitalization textCapitalization = TextCapitalization.none,
+    Iterable<String>? autofillHints,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -873,6 +917,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
         TextField(
           controller: ctrl,
           keyboardType: keyboard,
+          textInputAction: textInputAction,
+          textCapitalization: textCapitalization,
+          autofillHints: autofillHints,
           style: KioskTheme.font(
             fontWeight: FontWeight.w600,
             color: KioskTheme.textPrimary,
