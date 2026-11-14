@@ -1,0 +1,45 @@
+== npm run test:site
+✔ both pages inline their script and stylesheet with no external CSS/JS or cache-busting params (1.0686ms)
+✔ inline style blocks have valid balanced CSS (0.2825ms)
+✔ the menu page keeps the bar and reveal behaviour (123.7562ms)
+✔ the bar only sticks once the page has scrolled (57.9767ms)
+✔ reduced motion hides nothing and writes no reveal state (31.6123ms)
+✔ without IntersectionObserver the menu and photos appear at once (28.9236ms)
+✔ with IntersectionObserver the reveal waits for the section to arrive (25.9751ms)
+✔ a section that never intersects stays unrevealed (26.3155ms)
+✔ the map and street view swap one at a time (26.9563ms)
+✔ a weak device keeps every line visible and starts no observers (25.1075ms)
+✔ both pages flag weak devices before the stylesheet (0.1978ms)
+✔ font preloads match the inline stylesheet so each font is fetched once (0.162ms)
+✔ the hero logo is responsive and the hidden bar logo is not preloaded (0.1518ms)
+✔ the street view embed is fetched only when its tab is chosen (25.2556ms)
+✔ without script the street view still offers a way out (0.1656ms)
+✔ staff login link remains visible in the header and is not hidden in CSS (0.1679ms)
+✔ the bar publishes its measured height to --bar-h for scroll-margin-top (19.8391ms)
+✔ the hero, bar, and footer logos share the 240px AVIF sized for the hero slot (0.1447ms)
+✔ the pruned Bricolage kerning covers every character pair the pages render (31.1023ms)
+✔ both pages define metric-matched fallback fonts and avoid high fetchpriority on mobile-below-fold hero photo (0.2812ms)
+ℹ tests 20
+ℹ pass 20
+ℹ fail 0
+== flutter analyze
+Try `flutter pub outdated` for more information.
+Analyzing t3-800077b3-515d97aaf905b049...                       
+No issues found! (ran in 42.1s)
+Analyzer issues: 0 (baseline 0).
+== flutter test
+00:02 +51: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-800077b3-515d97aaf905b049/test/staff_kds_test.dart: Staff Session & Audio Alert Tests AdminDashboard, AnalyticsPage, and LifetimeAnalyticsPage require staff login and render cleanly on mobile
+00:02 +52: All tests passed!
+== functions: npm run build
+> tsc
+
+exit 0
+== functions: npm audit --audit-level=high
+exit 0 (17 vulnerabilities: 1 low, 16 moderate; none high/critical)
+== functions: npm run test:rules (JAVA_HOME = Android Studio JBR 21.0.10)
+exit 0
+ℹ tests 8
+ℹ pass 8
+ℹ fail 0
+== check:rules-drift
+not run: needs Google credentials. firestore.rules and firebase.json are untouched by this change.
