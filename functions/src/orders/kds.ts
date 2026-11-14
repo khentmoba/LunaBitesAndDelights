@@ -6,7 +6,7 @@ import { requireStaff, validDocId, cleanStr, optStr } from '../util/security';
 const VALID_STATUSES = ['Pending', 'Preparing', 'Ready', 'Completed', 'Cancelled'];
 
 // #17: trimmed projection — only what the KDS screen renders. Never ...data.
-const projectOrder = (id: string, d: FirebaseFirestore.DocumentData) => ({
+export const projectOrder = (id: string, d: FirebaseFirestore.DocumentData) => ({
   id,
   orderNumber: d.orderId || d.orderNumber || id,
   customerName: d.customerName || '',

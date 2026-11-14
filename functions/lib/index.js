@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.paymongoWebhook = exports.createCheckoutSession = exports.getLifetimeSalesReport = exports.getSalesAnalytics = exports.updateOrderStatus = exports.getActiveOrders = exports.sendOrderNotification = exports.updateStaffPin = exports.verifyStaff = exports.triggerManualReport = exports.dailySalesReport = exports.googleMapsApiKey = exports.paymongoSecret = exports.telegramChatIds = exports.telegramToken = void 0;
+exports.paymongoWebhook = exports.createCheckoutSession = exports.getLifetimeSalesReport = exports.getSalesAnalytics = exports.onOrderWritten = exports.updateOrderStatus = exports.getActiveOrders = exports.sendOrderNotification = exports.updateStaffPin = exports.verifyStaff = exports.triggerManualReport = exports.dailySalesReport = exports.googleMapsApiKey = exports.paymongoSecret = exports.telegramChatIds = exports.telegramToken = void 0;
 const app_1 = require("firebase-admin/app");
 const params_1 = require("firebase-functions/params");
 (0, app_1.initializeApp)();
@@ -25,6 +25,8 @@ Object.defineProperty(exports, "sendOrderNotification", { enumerable: true, get:
 var kds_1 = require("./orders/kds");
 Object.defineProperty(exports, "getActiveOrders", { enumerable: true, get: function () { return kds_1.getActiveOrders; } });
 Object.defineProperty(exports, "updateOrderStatus", { enumerable: true, get: function () { return kds_1.updateOrderStatus; } });
+var derived_1 = require("./orders/derived");
+Object.defineProperty(exports, "onOrderWritten", { enumerable: true, get: function () { return derived_1.onOrderWritten; } });
 var analytics_1 = require("./reporting/analytics");
 Object.defineProperty(exports, "getSalesAnalytics", { enumerable: true, get: function () { return analytics_1.getSalesAnalytics; } });
 var lifetime_report_1 = require("./reporting/lifetime_report");

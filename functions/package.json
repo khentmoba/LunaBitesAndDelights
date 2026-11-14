@@ -9,9 +9,10 @@
     "start": "npm run shell",
     "deploy": "firebase deploy --only functions",
     "logs": "firebase functions:log",
-    "test": "npm run build && node --test test/telegram_notification.test.js test/payment_reconciliation.test.js test/staff_auth.test.js",
+    "test": "npm run build && node --test test/telegram_notification.test.js test/payment_reconciliation.test.js test/staff_auth.test.js test/daily_stats.test.js",
     "test:rules": "npx --yes firebase-tools emulators:exec --only firestore \"node --test test/firestore-rules.test.js\"",
-    "check:rules-drift": "node scripts/check-firestore-rules-drift.js"
+    "check:rules-drift": "node scripts/check-firestore-rules-drift.js",
+    "test:derived": "npm run build && npx --yes firebase-tools emulators:exec --project demo-lunaexpress --only functions,firestore \"node --test test/derived_views.emulator.test.js\""
   },
   "engines": {
     "node": "22"

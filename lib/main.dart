@@ -13,10 +13,7 @@ import 'screens/splash_screen.dart';
 import 'screens/menu_page.dart';
 import 'screens/cart_page.dart';
 import 'screens/checkout_page.dart';
-import 'screens/kds_page.dart';
-import 'screens/analytics_page.dart';
-import 'screens/lifetime_analytics_page.dart';
-import 'screens/admin_dashboard.dart';
+import 'screens/staff_screens.dart';
 
 /// #12 bot protection: Firebase App Check (reCAPTCHA Enterprise on web).
 /// Site key is injected at build time so it never lands in git:
@@ -161,12 +158,16 @@ class LunaExpressApp extends StatelessWidget {
         '/menu': (context) => const KioskMenuPage(),
         '/cart': (context) => const KioskCartPage(),
         '/checkout_process': (context) => const CheckoutPage(),
-        '/kds': (context) => const KdsPage(),
-        '/staff': (context) => const KdsPage(),
-        '/orders': (context) => const KdsPage(),
-        '/dashboard': (context) => const AdminDashboard(),
-        '/analytics': (context) => const AnalyticsPage(),
-        '/lifetime-analytics': (context) => const LifetimeAnalyticsPage(),
+        // Staff screens load on demand (separate JS part on web).
+        '/kds': (context) => const DeferredStaffScreen(StaffScreen.kds),
+        '/staff': (context) => const DeferredStaffScreen(StaffScreen.kds),
+        '/orders': (context) => const DeferredStaffScreen(StaffScreen.kds),
+        '/dashboard': (context) =>
+            const DeferredStaffScreen(StaffScreen.dashboard),
+        '/analytics': (context) =>
+            const DeferredStaffScreen(StaffScreen.analytics),
+        '/lifetime-analytics': (context) =>
+            const DeferredStaffScreen(StaffScreen.lifetimeAnalytics),
       },
     );
   }
