@@ -44,6 +44,21 @@ jobs:
           projectId: lunaexpress
           target: app-site
 
+      # Fails the deploy if a live entry URL loops or does not end in a 200.
+      # A redirect loop on /kiosk/ shipped once (Safari: "Load cannot follow
+      # more than 20 redirections"); the local emulator did not catch it.
+      - name: Smoke-test live URLs (no redirect loops)
+        run: |
+          set -u
+          fail=0
+          for path in / /menu /menu/ /kiosk /kiosk/ /payment/success/ /payment/cancel/; do
+            url="https://lunabitesanddelights.web.app$path"
+            code=$(curl -sS -o /dev/null -L --max-redirs 3 -w '%{http_code}' "$url" || echo loop)
+            echo "$url -> $code"
+            [ "$code" = "200" ] || fail=1
+          done
+          exit $fail
+
       # The legacy `lunaexpress` site now only serves 301 redirects to the
       # canonical `lunabitesanddelights` site, so it is deployed separately.
       - name: Deploy legacy redirect site

@@ -2,7 +2,7 @@
   "name": "luna_bites_and_delights",
   "private": true,
   "scripts": {
-    "test:site": "node --test test/site/app.test.mjs"
+    "test:site": "node --test test/site/app.test.mjs test/site/hosting.test.mjs"
   },
   "devDependencies": {
     "firebase-tools": "^15.15.0",
