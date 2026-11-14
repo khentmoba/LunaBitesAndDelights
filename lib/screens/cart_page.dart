@@ -20,17 +20,20 @@ class KioskCartPage extends StatelessWidget {
           title: Text(
             'Your order',
             style: KioskTheme.headerSmall.copyWith(
-              letterSpacing: isMobile ? 1 : 2,
+              letterSpacing: isMobile ? 0.5 : 1.5,
             ),
           ),
           centerTitle: true,
-          backgroundColor: Colors.transparent,
+          backgroundColor: KioskTheme.lunaPaper,
           elevation: 0,
+          shape: const Border(
+            bottom: BorderSide(color: KioskTheme.lunaLogoPink, width: 2),
+          ),
           leading: IconButton(
             tooltip: 'Back',
             icon: Icon(
               Icons.adaptive.arrow_back,
-              color: KioskTheme.lunaPink,
+              color: KioskTheme.pinkInk,
               size: isMobile ? 20 : 24,
             ),
             onPressed: () => Navigator.pop(context),
@@ -41,6 +44,10 @@ class KioskCartPage extends StatelessWidget {
               builder: (context, _) {
                 if (cartNotifier.items.isEmpty) return const SizedBox.shrink();
                 return TextButton(
+                  style: TextButton.styleFrom(
+                    minimumSize: const Size(48, 44),
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                  ),
                   onPressed: () {
                     cartNotifier.clear();
                     kioskSession.reset();
@@ -53,56 +60,50 @@ class KioskCartPage extends StatelessWidget {
                     style: KioskTheme.font(
                       color: KioskTheme.error,
                       fontWeight: FontWeight.w800,
-                      fontSize: isMobile ? 11 : 13,
-                      letterSpacing: 1,
+                      fontSize: isMobile ? 12 : 13,
+                      letterSpacing: 0.6,
                     ),
                   ),
                 );
               },
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 4),
           ],
         ),
         body: ListenableBuilder(
           listenable: cartNotifier,
           builder: (context, _) {
             if (cartNotifier.items.isEmpty) {
-              return Center(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 40),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.shopping_cart_outlined,
-                        size: isMobile ? 60 : 100,
-                        color: KioskTheme.lunaPink.withValues(alpha: 0.3),
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'Your order slip is empty',
-                        textAlign: TextAlign.center,
-                        style: KioskTheme.headerMedium.copyWith(
-                          fontSize: isMobile ? 18 : 24,
+              return SafeArea(
+                child: Center(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 32,
+                      vertical: 24,
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.shopping_cart_outlined,
+                          size: isMobile ? 60 : 96,
+                          color: KioskTheme.lunaPink.withValues(alpha: 0.35),
                         ),
-                      ),
-                      SizedBox(height: isMobile ? 24 : 32),
-                      ElevatedButton(
-                        onPressed: () => Navigator.pop(context),
-                        style: KioskTheme.primaryButton.copyWith(
-                          padding: WidgetStateProperty.all(
-                            EdgeInsets.symmetric(
-                              horizontal: isMobile ? 32 : 40,
-                              vertical: isMobile ? 16 : 20,
-                            ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Your order slip is empty',
+                          textAlign: TextAlign.center,
+                          style: KioskTheme.headerMedium.copyWith(
+                            fontSize: isMobile ? 20 : 24,
                           ),
                         ),
-                        child: Text(
-                          'Browse the menu',
-                          style: KioskTheme.font(fontWeight: FontWeight.w800),
+                        SizedBox(height: isMobile ? 20 : 28),
+                        FilledButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: const Text('Browse the menu'),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               );
@@ -127,159 +128,139 @@ class KioskCartPage extends StatelessWidget {
                   ),
                 ),
                 Container(
-                  padding: EdgeInsets.fromLTRB(
-                    isMobile ? 20 : 60,
-                    isMobile ? 24 : 40,
-                    isMobile ? 20 : 60,
-                    isMobile
-                        ? (MediaQuery.of(context).padding.bottom + 20)
-                        : 60,
-                  ),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: KioskTheme.lunaPaper,
                     border: const Border(
                       top: BorderSide(color: KioskTheme.lunaLogoPink, width: 2),
                     ),
                     boxShadow: KioskTheme.shadowLg,
                   ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'TOTAL',
-                            style: KioskTheme.labelMedium.copyWith(
-                              fontSize: isMobile ? 14 : 18,
-                              color: KioskTheme.textMuted,
-                            ),
+                  child: SafeArea(
+                    top: false,
+                    child: Center(
+                      heightFactor: 1,
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 760),
+                        child: Padding(
+                          padding: EdgeInsets.fromLTRB(
+                            isMobile ? 16 : 32,
+                            isMobile ? 14 : 24,
+                            isMobile ? 16 : 32,
+                            isMobile ? 14 : 24,
                           ),
-                          Text(
-                            '\u20B1${cartNotifier.totalPrice}',
-                            style: KioskTheme.displayMedium.copyWith(
-                              fontSize: isMobile ? 32 : 48,
-                            ),
-                          ),
-                        ],
-                      ),
-                      SizedBox(height: isMobile ? 20 : 40),
-                      if (isMobile)
-                        Column(
-                          children: [
-                            _buildMobileAction(
-                              context,
-                              'Checkout',
-                              onPressed: () => Navigator.pushNamed(
-                                context,
-                                '/checkout_process',
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    'TOTAL',
+                                    style: KioskTheme.labelMedium.copyWith(
+                                      fontSize: isMobile ? 13 : 16,
+                                      color: KioskTheme.textSecondary,
+                                    ),
+                                  ),
+                                  Text(
+                                    '\u20B1${cartNotifier.totalPrice}',
+                                    style: KioskTheme.displayMedium.copyWith(
+                                      fontSize: isMobile ? 28 : 40,
+                                      fontFeatures: const [
+                                        FontFeature.tabularFigures(),
+                                      ],
+                                    ),
+                                  ),
+                                ],
                               ),
-                              isPrimary: true,
-                            ),
-                            const SizedBox(height: 10),
-                            _buildMobileAction(
-                              context,
-                              'Add more food',
-                              onPressed: () => Navigator.pop(context),
-                              isPrimary: false,
-                            ),
-                          ],
-                        )
-                      else
-                        Row(
-                          children: [
-                            Expanded(
-                              child: JuicyFeedback(
-                                child: OutlinedButton(
-                                  onPressed: () => Navigator.pop(context),
-                                  style: OutlinedButton.styleFrom(
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 24,
-                                    ),
-                                    side: const BorderSide(
-                                      color: KioskTheme.pinkInk,
-                                      width: 2,
-                                    ),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(
-                                        KioskTheme.radiusFull,
+                              SizedBox(height: isMobile ? 12 : 20),
+                              LayoutBuilder(
+                                builder: (context, constraints) {
+                                  final stackButtons =
+                                      constraints.maxWidth < 310;
+                                  final addMore = OutlinedButton(
+                                    onPressed: () => Navigator.pop(context),
+                                    style: OutlinedButton.styleFrom(
+                                      foregroundColor: KioskTheme.pinkInk,
+                                      minimumSize: const Size(48, 50),
+                                      side: const BorderSide(
+                                        color: KioskTheme.pinkInk,
+                                        width: 2,
+                                      ),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(
+                                          KioskTheme.radiusMd,
+                                        ),
                                       ),
                                     ),
-                                  ),
-                                  child: Text(
-                                    'Add more food',
-                                    style: KioskTheme.titleLarge.copyWith(
-                                      color: KioskTheme.pinkInk,
+                                    child: Text(
+                                      isMobile ? 'Add more' : 'Add more food',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: KioskTheme.font(
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 15,
+                                        color: KioskTheme.pinkInk,
+                                      ),
                                     ),
-                                  ),
-                                ),
+                                  );
+                                  final checkout = JuicyFeedback(
+                                    child: FilledButton(
+                                      onPressed: () => Navigator.pushNamed(
+                                        context,
+                                        '/checkout_process',
+                                      ),
+                                      style: FilledButton.styleFrom(
+                                        backgroundColor: KioskTheme.lunaPink,
+                                        foregroundColor:
+                                            KioskTheme.textOnPrimary,
+                                        minimumSize: const Size(48, 50),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            KioskTheme.radiusMd,
+                                          ),
+                                        ),
+                                      ),
+                                      child: Text(
+                                        'Checkout',
+                                        style: KioskTheme.font(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w800,
+                                          color: KioskTheme.textOnPrimary,
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                  if (stackButtons) {
+                                    return Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.stretch,
+                                      children: [
+                                        checkout,
+                                        const SizedBox(height: 8),
+                                        addMore,
+                                      ],
+                                    );
+                                  }
+                                  return Row(
+                                    children: [
+                                      Expanded(child: addMore),
+                                      const SizedBox(width: 12),
+                                      Expanded(flex: 2, child: checkout),
+                                    ],
+                                  );
+                                },
                               ),
-                            ),
-                            const SizedBox(width: 24),
-                            Expanded(
-                              child: JuicyFeedback(
-                                child: ElevatedButton(
-                                  onPressed: () => Navigator.pushNamed(
-                                    context,
-                                    '/checkout_process',
-                                  ),
-                                  style: KioskTheme.primaryButton.copyWith(
-                                    padding: WidgetStateProperty.all(
-                                      const EdgeInsets.symmetric(vertical: 24),
-                                    ),
-                                  ),
-                                  child: Text(
-                                    'Checkout',
-                                    style: KioskTheme.font(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.w800,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
-                    ],
+                      ),
+                    ),
                   ),
                 ),
               ],
             );
           },
-        ),
-      ),
-    );
-  }
-
-  Widget _buildMobileAction(
-    BuildContext context,
-    String label, {
-    required VoidCallback onPressed,
-    bool isPrimary = false,
-  }) {
-    return JuicyFeedback(
-      child: SizedBox(
-        width: double.infinity,
-        child: ElevatedButton(
-          onPressed: onPressed,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: isPrimary ? KioskTheme.lunaPink : Colors.white,
-            foregroundColor: isPrimary
-                ? KioskTheme.textOnPrimary
-                : KioskTheme.pinkInk,
-            padding: const EdgeInsets.symmetric(vertical: 18),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(KioskTheme.radiusFull),
-              side: isPrimary
-                  ? BorderSide.none
-                  : const BorderSide(color: KioskTheme.pinkInk, width: 2),
-            ),
-            elevation: 0,
-          ),
-          child: Text(
-            label,
-            style: KioskTheme.font(fontSize: 16, fontWeight: FontWeight.w800),
-          ),
         ),
       ),
     );
@@ -450,17 +431,19 @@ class KioskCartPage extends StatelessWidget {
   Widget _buildStepper(CartItem item) {
     Widget step(IconData icon, String label, VoidCallback onPressed) =>
         SizedBox(
-          width: 40,
-          height: 36,
+          width: 44,
+          height: 44,
           child: IconButton(
             tooltip: label,
             padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
             onPressed: onPressed,
-            icon: Icon(icon, size: 18, color: KioskTheme.pinkInk),
+            icon: Icon(icon, size: 20, color: KioskTheme.pinkInk),
           ),
         );
     return Container(
       decoration: BoxDecoration(
+        color: KioskTheme.lunaBlushPaper,
         borderRadius: BorderRadius.circular(KioskTheme.radiusMd),
         border: Border.all(color: KioskTheme.rule, width: 1.5),
       ),
@@ -472,12 +455,15 @@ class KioskCartPage extends StatelessWidget {
             'One less ${item.name}',
             () => cartNotifier.decrement(item.id),
           ),
-          SizedBox(
-            width: 26,
-            child: Text(
-              '${item.quantity}',
-              textAlign: TextAlign.center,
-              style: KioskTheme.hand(fontSize: 22),
+          ConstrainedBox(
+            constraints: const BoxConstraints(minWidth: 28),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: Text(
+                '${item.quantity}',
+                textAlign: TextAlign.center,
+                style: KioskTheme.hand(fontSize: 22),
+              ),
             ),
           ),
           step(

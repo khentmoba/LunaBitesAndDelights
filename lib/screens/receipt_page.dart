@@ -316,33 +316,34 @@ class ReceiptPage extends StatelessWidget {
                     ],
                   ),
                 ),
-                const SizedBox(height: 48),
-                GestureDetector(
-                  onTap: () => Navigator.of(context).popUntil((r) => r.isFirst),
-                  child: Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(vertical: 24),
-                    decoration: BoxDecoration(
-                      color: KioskTheme.lunaPink,
-                      borderRadius: BorderRadius.circular(
-                        KioskTheme.radiusFull,
-                      ),
-                      boxShadow: KioskTheme.shadowPrimary,
-                    ),
-                    child: Center(
-                      child: Text(
-                        isWalkIn ? 'NEW WALK-IN ORDER' : 'ORDER AGAIN',
-                        style: KioskTheme.font(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w800,
-                          fontSize: 18,
-                          letterSpacing: 2,
+                SizedBox(height: isMobile ? 28 : 40),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed: () =>
+                        Navigator.of(context).popUntil((r) => r.isFirst),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: KioskTheme.lunaPink,
+                      foregroundColor: KioskTheme.textOnPrimary,
+                      minimumSize: const Size(48, 54),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(
+                          KioskTheme.radiusMd,
                         ),
+                      ),
+                    ),
+                    child: Text(
+                      isWalkIn ? 'NEW WALK-IN ORDER' : 'ORDER AGAIN',
+                      style: KioskTheme.font(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w800,
+                        fontSize: isMobile ? 16 : 18,
+                        letterSpacing: 1.5,
                       ),
                     ),
                   ),
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 16),
               ],
             ),
           ),

@@ -134,76 +134,84 @@ class _GCashCheckoutPageState extends State<GCashCheckoutPage> {
         foregroundColor: KioskTheme.textOnPrimary,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded),
+          tooltip: 'Back',
+          icon: Icon(Icons.adaptive.arrow_back),
           onPressed: () => _onPaymentResult(false),
         ),
       ),
-      body: _error != null
-          ? Center(
-              child: Padding(
-                padding: const EdgeInsets.all(32),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(
-                      Icons.error_outline_rounded,
-                      size: 64,
-                      color: KioskTheme.error,
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Payment Error',
-                      style: KioskTheme.headerSmall.copyWith(
+      body: SafeArea(
+        top: false,
+        child: _error != null
+            ? Center(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(32),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.error_outline_rounded,
+                        size: 64,
                         color: KioskTheme.error,
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      _error!,
-                      textAlign: TextAlign.center,
-                      style: KioskTheme.bodyMedium.copyWith(fontSize: 13),
-                    ),
-                    const SizedBox(height: 24),
-                    FilledButton.icon(
-                      onPressed: () => _onPaymentResult(false),
-                      icon: const Icon(Icons.arrow_back),
-                      label: const Text('GO BACK'),
-                      style: FilledButton.styleFrom(
-                        backgroundColor: KioskTheme.lunaPink,
+                      const SizedBox(height: 16),
+                      Text(
+                        'Payment Error',
+                        style: KioskTheme.headerSmall.copyWith(
+                          color: KioskTheme.error,
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-              ),
-            )
-          : kIsWeb
-          ? _buildWebCheckoutBody()
-          : Stack(
-              children: [
-                if (_controller != null)
-                  WebViewWidget(controller: _controller!),
-                if (_loading)
-                  Container(
-                    color: Colors.white,
-                    child: const Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          CircularProgressIndicator(color: KioskTheme.lunaPink),
-                          SizedBox(height: 16),
-                          Text(
-                            'Connecting to GCash...',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: KioskTheme.textSecondary,
-                            ),
-                          ),
-                        ],
+                      const SizedBox(height: 8),
+                      Text(
+                        _error!,
+                        textAlign: TextAlign.center,
+                        style: KioskTheme.bodyMedium.copyWith(fontSize: 13),
                       ),
-                    ),
+                      const SizedBox(height: 24),
+                      FilledButton.icon(
+                        onPressed: () => _onPaymentResult(false),
+                        icon: Icon(Icons.adaptive.arrow_back),
+                        label: const Text('GO BACK'),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: KioskTheme.lunaPink,
+                        ),
+                      ),
+                    ],
                   ),
-              ],
-            ),
+                ),
+              )
+            : kIsWeb
+            ? _buildWebCheckoutBody()
+            : Stack(
+                children: [
+                  if (_controller != null)
+                    WebViewWidget(controller: _controller!),
+                  if (_loading)
+                    Container(
+                      color: Colors.white,
+                      child: const Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            CircularProgressIndicator.adaptive(
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                KioskTheme.lunaPink,
+                              ),
+                            ),
+                            SizedBox(height: 16),
+                            Text(
+                              'Connecting to GCash...',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: KioskTheme.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+      ),
     );
   }
 
@@ -213,7 +221,9 @@ class _GCashCheckoutPageState extends State<GCashCheckoutPage> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            CircularProgressIndicator(color: KioskTheme.lunaPink),
+            CircularProgressIndicator.adaptive(
+              valueColor: AlwaysStoppedAnimation<Color>(KioskTheme.lunaPink),
+            ),
             SizedBox(height: 16),
             Text(
               'Preparing GCash checkout...',
@@ -225,10 +235,10 @@ class _GCashCheckoutPageState extends State<GCashCheckoutPage> {
     }
 
     return Center(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 460),
-        child: Padding(
-          padding: const EdgeInsets.all(24),
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 460),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [

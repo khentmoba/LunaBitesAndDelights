@@ -27,115 +27,122 @@ class _StaffMenuDialogState extends State<StaffMenuDialog> {
           top: Radius.circular(KioskTheme.radiusXl),
         ),
       ),
-      padding: const EdgeInsets.all(32),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: Colors.grey[200],
-              borderRadius: BorderRadius.circular(KioskTheme.radiusSm),
-            ),
-          ),
-          const SizedBox(height: 24),
-          Text(
-            'STAFF CONTROL CONSOLE',
-            style: KioskTheme.headerSmall.copyWith(letterSpacing: 2),
-          ),
-          const SizedBox(height: 24),
-          Row(
+      child: SafeArea(
+        top: false,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Expanded(
-                child: _buildConsoleButton(
-                  context,
-                  icon: Icons.outdoor_grill_rounded,
-                  title: 'LIVE ORDERS',
-                  color: Colors.orange,
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.pushNamed(context, '/kds');
-                  },
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: KioskTheme.rule,
+                  borderRadius: BorderRadius.circular(KioskTheme.radiusSm),
                 ),
               ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: _buildConsoleButton(
-                  context,
-                  icon: Icons.dashboard_rounded,
-                  title: 'DASHBOARD',
-                  color: Colors.purple,
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.push(
+              const SizedBox(height: 20),
+              Text(
+                'STAFF CONTROL CONSOLE',
+                style: KioskTheme.headerSmall.copyWith(letterSpacing: 2),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildConsoleButton(
                       context,
-                      MaterialPageRoute(builder: (_) => const AdminDashboard()),
-                    );
-                  },
-                ),
+                      icon: Icons.outdoor_grill_rounded,
+                      title: 'LIVE ORDERS',
+                      color: Colors.orange,
+                      onTap: () {
+                        Navigator.pop(context);
+                        Navigator.pushNamed(context, '/kds');
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: _buildConsoleButton(
+                      context,
+                      icon: Icons.dashboard_rounded,
+                      title: 'DASHBOARD',
+                      color: Colors.purple,
+                      onTap: () {
+                        Navigator.pop(context);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const AdminDashboard(),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
               ),
+              const SizedBox(height: 16),
+              _buildActionItem(
+                context,
+                icon: Icons.point_of_sale_rounded,
+                title: 'WALK-IN ORDER',
+                subtitle: 'Take a walk-in order',
+                color: KioskTheme.success,
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const KioskMenuPage()),
+                  );
+                },
+              ),
+              const SizedBox(height: 12),
+              _buildActionItem(
+                context,
+                icon: _isGenerating
+                    ? Icons.hourglass_empty_rounded
+                    : Icons.telegram_rounded,
+                title: _isGenerating
+                    ? 'GENERATING SUMMARY...'
+                    : 'TELEGRAM DAILY SUMMARY',
+                subtitle: _isGenerating
+                    ? 'Sending report...'
+                    : 'Send today\'s sales metrics to Telegram',
+                color: _isGenerating ? KioskTheme.textMuted : KioskTheme.info,
+                onTap: _isGenerating
+                    ? () {}
+                    : () {
+                        _triggerManualReport();
+                      },
+              ),
+              const SizedBox(height: 12),
+              _buildActionItem(
+                context,
+                icon: Icons.logout_rounded,
+                title: 'LOGOUT STAFF PORTAL',
+                subtitle: 'Exit staff mode and clear active POS state',
+                color: KioskTheme.error,
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.pop(context);
+                  session.logout();
+                  cartNotifier.clear();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        'STAFF LOGGED OUT',
+                        style: KioskTheme.font(fontWeight: FontWeight.w800),
+                      ),
+                      backgroundColor: KioskTheme.lunaPink,
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: 12),
             ],
           ),
-          const SizedBox(height: 16),
-          _buildActionItem(
-            context,
-            icon: Icons.point_of_sale_rounded,
-            title: 'WALK-IN ORDER',
-            subtitle: 'Take a walk-in order',
-            color: KioskTheme.success,
-            onTap: () {
-              Navigator.pop(context);
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const KioskMenuPage()),
-              );
-            },
-          ),
-          const SizedBox(height: 12),
-          _buildActionItem(
-            context,
-            icon: _isGenerating
-                ? Icons.hourglass_empty_rounded
-                : Icons.telegram_rounded,
-            title: _isGenerating
-                ? 'GENERATING SUMMARY...'
-                : 'TELEGRAM DAILY SUMMARY',
-            subtitle: _isGenerating
-                ? 'Sending report...'
-                : 'Send today\'s sales metrics to Telegram',
-            color: _isGenerating ? KioskTheme.textMuted : KioskTheme.info,
-            onTap: _isGenerating
-                ? () {}
-                : () {
-                    _triggerManualReport();
-                  },
-          ),
-          const SizedBox(height: 12),
-          _buildActionItem(
-            context,
-            icon: Icons.logout_rounded,
-            title: 'LOGOUT STAFF PORTAL',
-            subtitle: 'Exit staff mode and clear active POS state',
-            color: KioskTheme.error,
-            onTap: () {
-              Navigator.pop(context);
-              Navigator.pop(context);
-              session.logout();
-              cartNotifier.clear();
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    'STAFF LOGGED OUT',
-                    style: KioskTheme.font(fontWeight: FontWeight.w800),
-                  ),
-                  backgroundColor: KioskTheme.lunaPink,
-                ),
-              );
-            },
-          ),
-          const SizedBox(height: 24),
-        ],
+        ),
       ),
     );
   }

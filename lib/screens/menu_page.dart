@@ -26,6 +26,7 @@ class KioskMenuPage extends StatelessWidget {
             child: Scaffold(
               backgroundColor: MenuTheme.ground,
               body: SafeArea(
+                bottom: false,
                 child: Row(
                   children: [
                     if (wide) const KioskSidebar(),
@@ -85,35 +86,39 @@ class KioskMenuPage extends StatelessWidget {
             builder: (context, _) {
               if (!session.isStaff) return const SizedBox.shrink();
               return Padding(
-                padding: const EdgeInsets.only(right: 6),
-                child: GestureDetector(
-                  onTap: () => Navigator.pushNamed(context, '/kds'),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 5,
-                    ),
-                    decoration: const BoxDecoration(
-                      color: MenuTheme.plate,
-                      borderRadius: MenuTheme.radius,
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(
-                          Icons.outdoor_grill_rounded,
-                          color: MenuTheme.onPlate,
-                          size: 14,
+                padding: const EdgeInsets.only(right: 4),
+                child: Material(
+                  color: MenuTheme.plate,
+                  borderRadius: MenuTheme.radius,
+                  child: InkWell(
+                    borderRadius: MenuTheme.radius,
+                    onTap: () => Navigator.pushNamed(context, '/kds'),
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(minHeight: 44),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 8,
                         ),
-                        const SizedBox(width: 4),
-                        Text(
-                          'ORDERS',
-                          style: MenuTheme.body(
-                            size: 11,
-                            color: MenuTheme.onPlate,
-                          ).copyWith(fontWeight: FontWeight.w800),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.outdoor_grill_rounded,
+                              color: MenuTheme.onPlate,
+                              size: 16,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              'ORDERS',
+                              style: MenuTheme.body(
+                                size: 11,
+                                color: MenuTheme.onPlate,
+                              ).copyWith(fontWeight: FontWeight.w800),
+                            ),
+                          ],
                         ),
-                      ],
+                      ),
                     ),
                   ),
                 ),
@@ -140,11 +145,21 @@ class KioskMenuPage extends StatelessWidget {
     );
   }
 
-  Widget _buildSectionHeader(MenuSection section, double gutter) {
+  Widget _buildSectionHeader(MenuSection section, double gutter, bool compact) {
     return Padding(
-      padding: EdgeInsets.fromLTRB(gutter, 22, gutter, 8),
+      padding: EdgeInsets.fromLTRB(
+        gutter,
+        compact ? 14 : 22,
+        gutter,
+        compact ? 6 : 8,
+      ),
       child: Container(
-        padding: const EdgeInsets.fromLTRB(18, 16, 18, 14),
+        padding: EdgeInsets.fromLTRB(
+          compact ? 16 : 18,
+          compact ? 12 : 16,
+          compact ? 16 : 18,
+          compact ? 10 : 14,
+        ),
         decoration: const BoxDecoration(
           color: MenuTheme.paper,
           borderRadius: MenuTheme.radius,
@@ -155,10 +170,13 @@ class KioskMenuPage extends StatelessWidget {
           children: [
             Semantics(
               header: true,
-              child: Text(section.title, style: MenuTheme.heading(34)),
+              child: Text(
+                section.title,
+                style: MenuTheme.heading(compact ? 26 : 34),
+              ),
             ),
             if (section.subtitle.isNotEmpty) ...[
-              const SizedBox(height: 6),
+              const SizedBox(height: 4),
               Text(
                 section.subtitle,
                 style: MenuTheme.body(size: 14, color: MenuTheme.inkSoft),
@@ -176,7 +194,7 @@ class KioskMenuPage extends StatelessWidget {
       listenable: session,
       builder: (context, _) => PopupMenuButton<String>(
         tooltip: 'Menu options',
-        icon: const Icon(Icons.more_horiz),
+        icon: Icon(Icons.adaptive.more),
         onSelected: (value) {
           if (value == 'staff') {
             showModalBottomSheet(
@@ -205,13 +223,18 @@ class KioskMenuPage extends StatelessWidget {
   Widget _buildProductGrid(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
+        final compact = constraints.maxWidth < 600;
         final columns = (constraints.maxWidth / 260).floor().clamp(2, 4);
-        final gutter = constraints.maxWidth < 600 ? 16.0 : 28.0;
+        final gutter = compact ? 16.0 : 28.0;
         const gap = 16.0;
         final cardWidth =
             (constraints.maxWidth - gutter * 2 - gap * (columns - 1)) / columns;
         final textScale = MediaQuery.textScalerOf(context).scale(16) / 16;
-        final cardHeight = cardWidth * .8 + 144 * textScale;
+        final cardHeight =
+            cardWidth * .8 + 148 * (textScale < 1 ? 1 : textScale);
+        final bottomSafePad = cartNotifier.totalCount == 0
+            ? MediaQuery.paddingOf(context).bottom
+            : 0.0;
         return Consumer<KioskSession>(
           builder: (context, session, child) {
             final section = kMenuSections.firstWhere(
@@ -220,13 +243,23 @@ class KioskMenuPage extends StatelessWidget {
             return CustomScrollView(
               key: ValueKey(session.currentCategoryId),
               slivers: [
-                SliverToBoxAdapter(child: _buildSectionHeader(section, gutter)),
+                SliverToBoxAdapter(
+                  child: _buildSectionHeader(section, gutter, compact),
+                ),
                 ..._buildDynamicSlivers(
                   section.items,
                   context,
                   columns,
                   cardHeight,
                   gutter,
+                ),
+                SliverToBoxAdapter(
+                  child: ListenableBuilder(
+                    listenable: cartNotifier,
+                    builder: (context, _) => SizedBox(
+                      height: cartNotifier.totalCount == 0 ? bottomSafePad : 0,
+                    ),
+                  ),
                 ),
               ],
             );

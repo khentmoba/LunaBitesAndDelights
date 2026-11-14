@@ -680,14 +680,16 @@ class _KdsPageState extends State<KdsPage> with SingleTickerProviderStateMixin {
               IconButton(
                 tooltip: 'Sync Orders Now',
                 padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(minWidth: 38, minHeight: 38),
+                constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
                 icon: _loading
                     ? const SizedBox(
                         width: 16,
                         height: 16,
-                        child: CircularProgressIndicator(
+                        child: CircularProgressIndicator.adaptive(
                           strokeWidth: 2,
-                          color: MenuTheme.pinkInk,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            MenuTheme.pinkInk,
+                          ),
                         ),
                       )
                     : const Icon(
@@ -710,7 +712,7 @@ class _KdsPageState extends State<KdsPage> with SingleTickerProviderStateMixin {
                   );
                 },
                 child: Container(
-                  margin: const EdgeInsets.symmetric(vertical: 10),
+                  margin: const EdgeInsets.symmetric(vertical: 8),
                   padding: const EdgeInsets.symmetric(
                     horizontal: 10,
                     vertical: 6,
@@ -747,8 +749,8 @@ class _KdsPageState extends State<KdsPage> with SingleTickerProviderStateMixin {
               ),
               PopupMenuButton<String>(
                 tooltip: 'Staff Menu',
-                icon: const Icon(
-                  Icons.more_vert_rounded,
+                icon: Icon(
+                  Icons.adaptive.more,
                   color: MenuTheme.pinkInk,
                   size: 20,
                 ),
@@ -875,16 +877,18 @@ class _KdsPageState extends State<KdsPage> with SingleTickerProviderStateMixin {
                 tooltip: 'Sync Orders Now',
                 padding: isCompact ? EdgeInsets.zero : null,
                 constraints: isCompact
-                    ? const BoxConstraints(minWidth: 34, minHeight: 34)
+                    ? const BoxConstraints(minWidth: 44, minHeight: 44)
                     : null,
                 visualDensity: isCompact ? VisualDensity.compact : null,
                 icon: _loading
                     ? const SizedBox(
                         width: 16,
                         height: 16,
-                        child: CircularProgressIndicator(
+                        child: CircularProgressIndicator.adaptive(
                           strokeWidth: 2,
-                          color: MenuTheme.pinkInk,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            MenuTheme.pinkInk,
+                          ),
                         ),
                       )
                     : Icon(

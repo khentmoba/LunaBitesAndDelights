@@ -87,19 +87,37 @@ class _KioskProductSheetState extends State<KioskProductSheet> {
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.sizeOf(context);
-    final height = !widget.item.hasVariants && size.width >= 700
+    final isCompact = size.width < 700;
+    final maxHeight = !widget.item.hasVariants && !isCompact
         ? math.min(460.0, size.height * .9)
         : size.height * .9;
     return Theme(
       data: MenuTheme.data,
       child: Material(
         color: MenuTheme.paper,
-        child: SizedBox(
-          height: height,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(10)),
+        clipBehavior: Clip.antiAlias,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxHeight: maxHeight),
           child: SafeArea(
             top: false,
             child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
+                if (isCompact)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 10, bottom: 2),
+                    child: Center(
+                      child: Container(
+                        width: 36,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: MenuTheme.rule,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                  ),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(20, 4, 8, 4),
                   child: Row(
@@ -116,7 +134,7 @@ class _KioskProductSheetState extends State<KioskProductSheet> {
                   ),
                 ),
                 const Divider(height: 2, thickness: 2, color: MenuTheme.pink),
-                Expanded(
+                Flexible(
                   child: SingleChildScrollView(
                     padding: const EdgeInsets.all(20),
                     child: LayoutBuilder(
@@ -295,7 +313,7 @@ class _KioskProductSheetState extends State<KioskProductSheet> {
       child: Material(
         color: Colors.transparent,
         child: widget.item.allowMultiSelect
-            ? CheckboxListTile(
+            ? CheckboxListTile.adaptive(
                 value: selected,
                 onChanged: (_) => _selectVariant(index),
                 activeColor: MenuTheme.plate,
@@ -307,7 +325,7 @@ class _KioskProductSheetState extends State<KioskProductSheet> {
                 ),
                 title: label,
               )
-            : RadioListTile<int>(
+            : RadioListTile<int>.adaptive(
                 value: index,
                 activeColor: MenuTheme.plate,
                 contentPadding: const EdgeInsets.symmetric(

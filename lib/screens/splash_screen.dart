@@ -71,6 +71,21 @@ class _KioskSplashScreenState extends State<KioskSplashScreen>
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _pulseController.stop();
+      _pulseController.value = 0;
+      _floatController.stop();
+      _floatController.value = 0;
+      _dotsController.stop();
+      _dotsController.value = 0;
+      _scaleController.value = 1;
+      _fadeController.value = 1;
+    }
+  }
+
+  @override
   void dispose() {
     _pulseController.dispose();
     _floatController.dispose();
@@ -96,6 +111,7 @@ class _KioskSplashScreenState extends State<KioskSplashScreen>
 
   @override
   Widget build(BuildContext context) {
+    final reduceMotion = MediaQuery.disableAnimationsOf(context);
     return Scaffold(
       backgroundColor: KioskTheme.lunaBlush,
       body: Stack(
@@ -107,64 +123,104 @@ class _KioskSplashScreenState extends State<KioskSplashScreen>
               excludeFromSemantics: true,
             ),
           ),
-          FadeTransition(
-            opacity: _fadeAnimation,
-            child: Column(
-              children: [
-                const Spacer(flex: 2),
-                AnimatedBuilder(
-                  animation: _floatAnimation,
-                  builder: (context, child) {
-                    return Transform.translate(
-                      offset: _floatAnimation.value,
-                      child: child,
-                    );
-                  },
-                  child: FadeTransition(
-                    opacity: _scaleAnimation,
-                    child: SizedBox(
-                      width: 260,
-                      height: 312,
-                      child: Image.asset(
-                        'images/luna_logo.png',
-                        semanticLabel: 'Luna Bites & Delights',
-                        errorBuilder: (context, error, stackTrace) =>
-                            const Icon(
-                              Icons.nightlight_round,
-                              size: 100,
-                              color: KioskTheme.lunaPink,
+          SafeArea(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final compact = constraints.maxHeight < 620;
+                final logoSize = compact
+                    ? (constraints.maxHeight * 0.28).clamp(120.0, 200.0)
+                    : 240.0;
+                return SingleChildScrollView(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: compact ? 16 : 28,
+                  ),
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      minHeight: (constraints.maxHeight - (compact ? 32 : 56))
+                          .clamp(0.0, double.infinity),
+                    ),
+                    child: FadeTransition(
+                      opacity: _fadeAnimation,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const SizedBox(height: 8),
+                          Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              AnimatedBuilder(
+                                animation: _floatAnimation,
+                                builder: (context, child) {
+                                  return Transform.translate(
+                                    offset: reduceMotion
+                                        ? Offset.zero
+                                        : _floatAnimation.value,
+                                    child: child,
+                                  );
+                                },
+                                child: FadeTransition(
+                                  opacity: _scaleAnimation,
+                                  child: SizedBox(
+                                    width: logoSize,
+                                    height: logoSize * 1.2,
+                                    child: Image.asset(
+                                      'images/luna_logo.png',
+                                      semanticLabel: 'Luna Bites & Delights',
+                                      errorBuilder:
+                                          (context, error, stackTrace) =>
+                                              const Icon(
+                                                Icons.nightlight_round,
+                                                size: 100,
+                                                color: KioskTheme.lunaPink,
+                                              ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              SizedBox(height: compact ? 16 : 24),
+                              FadeTransition(
+                                opacity: _scaleAnimation,
+                                child: Container(
+                                  padding: const EdgeInsets.fromLTRB(
+                                    22,
+                                    14,
+                                    22,
+                                    16,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: KioskTheme.lunaPaper,
+                                    borderRadius: BorderRadius.circular(
+                                      KioskTheme.radiusSm,
+                                    ),
+                                    boxShadow: KioskTheme.shadowMd,
+                                  ),
+                                  child: Text(
+                                    'Good food, sweet drinks, moonlit vibes.',
+                                    textAlign: TextAlign.center,
+                                    style: KioskTheme.hand(
+                                      fontSize: compact ? 24 : 28,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              SizedBox(height: compact ? 18 : 28),
+                              _buildLoadingDots(),
+                            ],
+                          ),
+                          Padding(
+                            padding: EdgeInsets.only(
+                              top: compact ? 20 : 32,
+                              bottom: compact ? 12 : 32,
                             ),
+                            child: _buildStartButton(reduceMotion),
+                          ),
+                        ],
                       ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 24),
-                FadeTransition(
-                  opacity: _scaleAnimation,
-                  child: Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 24),
-                    padding: const EdgeInsets.fromLTRB(22, 14, 22, 16),
-                    decoration: BoxDecoration(
-                      color: KioskTheme.lunaPaper,
-                      borderRadius: BorderRadius.circular(KioskTheme.radiusSm),
-                      boxShadow: KioskTheme.shadowMd,
-                    ),
-                    child: Text(
-                      'Good food, sweet drinks, moonlit vibes.',
-                      textAlign: TextAlign.center,
-                      style: KioskTheme.hand(fontSize: 28),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 32),
-                _buildLoadingDots(),
-                const Spacer(),
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 100),
-                  child: _buildStartButton(),
-                ),
-                const SizedBox(height: 20),
-              ],
+                );
+              },
             ),
           ),
         ],
@@ -203,20 +259,22 @@ class _KioskSplashScreenState extends State<KioskSplashScreen>
     );
   }
 
-  Widget _buildStartButton() {
-    return ScaleTransition(
-      scale: _pulseAnimation,
-      child: JuicyFeedback(
-        onPressed: _onStart,
-        child: Container(
-          padding: const EdgeInsets.all(4),
-          decoration: BoxDecoration(
-            color: KioskTheme.lunaPink,
-            borderRadius: BorderRadius.circular(KioskTheme.radiusMd),
-            boxShadow: KioskTheme.shadowPrimary,
-          ),
+  Widget _buildStartButton(bool reduceMotion) {
+    final button = Container(
+      decoration: BoxDecoration(
+        color: KioskTheme.lunaPink,
+        borderRadius: BorderRadius.circular(KioskTheme.radiusMd),
+        boxShadow: KioskTheme.shadowPrimary,
+      ),
+      padding: const EdgeInsets.all(4),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(KioskTheme.radiusSm),
+          onTap: _onStart,
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 18),
+            constraints: const BoxConstraints(minHeight: 52),
+            padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 16),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(KioskTheme.radiusSm),
               border: Border.all(
@@ -226,9 +284,10 @@ class _KioskSplashScreenState extends State<KioskSplashScreen>
             ),
             child: Text(
               'Start my order',
+              textAlign: TextAlign.center,
               style: KioskTheme.font(
                 color: KioskTheme.textOnPrimary,
-                fontSize: 22,
+                fontSize: 21,
                 fontWeight: FontWeight.w800,
               ),
             ),
@@ -236,5 +295,12 @@ class _KioskSplashScreenState extends State<KioskSplashScreen>
         ),
       ),
     );
+    final semanticButton = Semantics(
+      button: true,
+      label: 'Start my order',
+      child: JuicyFeedback(child: button),
+    );
+    if (reduceMotion) return semanticButton;
+    return ScaleTransition(scale: _pulseAnimation, child: semanticButton);
   }
 }

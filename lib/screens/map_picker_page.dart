@@ -1,9 +1,7 @@
 import 'dart:async';
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:webview_flutter/webview_flutter.dart';
 import '../services/geocoding.dart';
 import '../services/location.dart';
 import '../widgets/kiosk/kiosk_theme.dart';
@@ -25,11 +23,10 @@ class MapPickerPage extends StatefulWidget {
 
 class _MapPickerPageState extends State<MapPickerPage>
     with TickerProviderStateMixin {
-  WebViewController? _webCtrl;
   late MapController _mapController;
   String _address = '';
   String _addressShort = '';
-  bool _loading = true;
+  bool _loading = false;
   double _lat = 0, _lng = 0;
 
   late AnimationController _pulseCtrl;
@@ -59,6 +56,15 @@ class _MapPickerPageState extends State<MapPickerPage>
     _initLocation();
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _pulseCtrl.stop();
+      _pulseCtrl.value = 0.5;
+    }
+  }
+
   Future<void> _initLocation() async {
     final pos = await currentPosition();
     if (pos != null && mounted) {
@@ -67,47 +73,24 @@ class _MapPickerPageState extends State<MapPickerPage>
         _lng = pos.longitude;
       });
     }
-    _initMapWithLocation(_lat, _lng);
+    if (!mounted) return;
+    setState(() => _loading = false);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _mapController.move(LatLng(_lat, _lng), 17);
+      _fetchAddress(_lat, _lng);
+    });
   }
 
   Future<void> _goToMyLocation() async {
     final pos = await currentPosition();
-    if (pos == null) return;
-    if (kIsWeb) {
-      _mapController.move(LatLng(pos.latitude, pos.longitude), 17);
-      _fetchAddress(pos.latitude, pos.longitude);
-    } else {
-      _webCtrl?.runJavaScript('moveMapTo(${pos.latitude}, ${pos.longitude});');
-    }
-  }
-
-  void _initMapWithLocation(double lat, double lng) {
-    if (!kIsWeb) {
-      _webCtrl = WebViewController()
-        ..setJavaScriptMode(JavaScriptMode.unrestricted)
-        ..addJavaScriptChannel(
-          'AddressChannel',
-          onMessageReceived: (msg) {
-            final parts = msg.message.split('||');
-            if (parts.length >= 4) {
-              setState(() {
-                _address = parts[0];
-                _addressShort = parts[1];
-                _lat = double.tryParse(parts[2]) ?? _lat;
-                _lng = double.tryParse(parts[3]) ?? _lng;
-                _loading = false;
-              });
-            }
-          },
-        )
-        ..loadHtmlString(_buildMapHtml(lat, lng));
-    } else {
-      setState(() => _loading = false);
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _mapController.move(LatLng(lat, lng), 17);
-        _fetchAddress(lat, lng);
-      });
-    }
+    if (pos == null || !mounted) return;
+    setState(() {
+      _lat = pos.latitude;
+      _lng = pos.longitude;
+    });
+    _mapController.move(LatLng(pos.latitude, pos.longitude), 17);
+    await _fetchAddress(pos.latitude, pos.longitude);
   }
 
   Future<void> _fetchAddress(double lat, double lng) async {
@@ -115,7 +98,12 @@ class _MapPickerPageState extends State<MapPickerPage>
     if (!mounted) return;
     setState(() {
       if (addr.full.isNotEmpty) _address = addr.full;
-      _addressShort = addr.short;
+      if (addr.short.isNotEmpty) {
+        _addressShort = addr.short;
+      } else if (_address.isEmpty) {
+        _address = '${lat.toStringAsFixed(6)}, ${lng.toStringAsFixed(6)}';
+        _addressShort = _address;
+      }
     });
   }
 
@@ -156,11 +144,7 @@ class _MapPickerPageState extends State<MapPickerPage>
       _searchFocus.unfocus();
     });
 
-    if (kIsWeb) {
-      _mapController.move(LatLng(lat, lng), 17);
-    } else if (_webCtrl != null) {
-      _webCtrl!.runJavaScript('moveMapTo($lat, $lng);');
-    }
+    _mapController.move(LatLng(lat, lng), 17);
   }
 
   void _clearSearch() {
@@ -173,124 +157,17 @@ class _MapPickerPageState extends State<MapPickerPage>
     });
   }
 
-  String _buildMapHtml(double lat, double lng) =>
-      '''
-<!DOCTYPE html>
-<html>
-<head>
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<style>
-* { margin:0; padding:0; box-sizing:border-box; }
-html, body { height:100%; width:100%; overflow:hidden; }
-#map { height:100%; width:100%; background:#e9e3d9; }
-#crosshair {
-  position:fixed; top:50%; left:50%;
-  transform:translate(-50%,-100%);
-  z-index:9999; pointer-events:none;
-  display:flex; flex-direction:column; align-items:center;
-}
-@keyframes pinPulse {
-  0%,100% { transform: scale(1); }
-  50% { transform: scale(1.06); }
-}
-.pin-container {
-  animation: pinPulse 1.6s ease-in-out infinite;
-}
-.pin-body {
-  width:36px; height:44px;
-  background:#4A3728; border-radius:50% 50% 50% 0;
-  transform:rotate(-45deg); border:3px solid #fff;
-  box-shadow:0 3px 10px rgba(0,0,0,0.35);
-  position:relative;
-}
-.pin-dot {
-  position:absolute; top:50%; left:50%;
-  transform:translate(-50%,-50%);
-  width:12px; height:12px;
-  background:#fff; border-radius:50%;
-  box-shadow:inset 0 1px 2px rgba(0,0,0,0.15);
-}
-.pin-shadow {
-  width:14px; height:7px;
-  background:rgba(0,0,0,0.18);
-  border-radius:50%; margin-top:2px;
-  filter:blur(3px);
-}
-</style>
-</head>
-<body>
-<div id="map"></div>
-<div id="crosshair">
-  <div class="pin-container">
-    <div class="pin-body"><div class="pin-dot"></div></div>
-    <div class="pin-shadow"></div>
-  </div>
-</div>
-<script>
-var map = L.map('map', { zoomControl:true, attributionControl:false }).setView([$lat, $lng], 17);
-var TILES = '$tileUrl';
-if (TILES) { L.tileLayer(TILES, { maxZoom:19 }).addTo(map); }
-
-var debounce;
-function fetchAddressAt(lat, lng) {
-  clearTimeout(debounce);
-  debounce = setTimeout(function() {
-    var url = '$reverseUrl&lat=' + lat + '&lon=' + lng;
-    fetch(url, { headers: { 'Accept-Language': 'en' } })
-      .then(function(r){ return r.json(); })
-      .then(function(d) {
-        var display = d.display_name || (lat.toFixed(6) + ', ' + lng.toFixed(6));
-        var short = display;
-        var a = d.address || {};
-        var parts = [];
-        if (a.road) parts.push(a.road);
-        if (a.suburb) parts.push(a.suburb);
-        var city = a.city || a.town || a.village;
-        if (city) parts.push(city);
-        if (a.state && parts.length < 2) parts.push(a.state);
-        if (parts.length > 0) short = parts.join(', ');
-        AddressChannel.postMessage(display + '||' + short + '||' + lat + '||' + lng);
-      })
-      .catch(function() {
-        var fb = lat.toFixed(6) + ', ' + lng.toFixed(6);
-        AddressChannel.postMessage(fb + '||' + fb + '||' + lat + '||' + lng);
-      });
-  }, 600);
-}
-
-map.on('moveend', function() {
-  var c = map.getCenter();
-  fetchAddressAt(c.lat, c.lng);
-});
-
-function moveMapTo(lat, lng) {
-  map.setView([lat, lng], 17);
-}
-
-fetchAddressAt($lat, $lng);
-</script>
-</body>
-</html>
-''';
-
   Future<void> _confirmLocation() async {
-    if (kIsWeb) {
-      setState(() => _loading = true);
-      final center = _mapController.camera.center;
-      setState(() {
-        _lat = center.latitude;
-        _lng = center.longitude;
-      });
-      await _fetchAddress(_lat, _lng);
-      setState(() => _loading = false);
-      if (mounted) {
-        Navigator.pop(context, {'address': _address, 'lat': _lat, 'lng': _lng});
-      }
-    } else {
-      Navigator.pop(context, {'address': _address, 'lat': _lat, 'lng': _lng});
-    }
+    setState(() => _loading = true);
+    final center = _mapController.camera.center;
+    setState(() {
+      _lat = center.latitude;
+      _lng = center.longitude;
+    });
+    await _fetchAddress(_lat, _lng);
+    if (!mounted) return;
+    setState(() => _loading = false);
+    Navigator.pop(context, {'address': _address, 'lat': _lat, 'lng': _lng});
   }
 
   @override
@@ -306,6 +183,7 @@ fetchAddressAt($lat, $lng);
 
   @override
   Widget build(BuildContext context) {
+    final bottomInset = MediaQuery.paddingOf(context).bottom;
     return Scaffold(
       backgroundColor: KioskTheme.lunaBlushPaper,
       appBar: AppBar(
@@ -322,7 +200,11 @@ fetchAddressAt($lat, $lng);
         elevation: 0,
         actions: [
           TextButton(
-            onPressed: _address.isEmpty ? null : _confirmLocation,
+            style: TextButton.styleFrom(
+              minimumSize: const Size(48, 44),
+              foregroundColor: KioskTheme.textOnPrimary,
+            ),
+            onPressed: _address.isEmpty || _loading ? null : _confirmLocation,
             child: Text(
               'CONFIRM',
               style: KioskTheme.labelLarge.copyWith(
@@ -337,7 +219,7 @@ fetchAddressAt($lat, $lng);
         children: [
           _buildSearchBar(),
           if (_showResults && _searchResults.isNotEmpty) _buildSearchResults(),
-          Expanded(child: _buildMapContent()),
+          Expanded(child: _buildMapContent(bottomInset)),
         ],
       ),
     );
@@ -359,7 +241,9 @@ fetchAddressAt($lat, $lng);
       child: TextField(
         controller: _searchCtrl,
         focusNode: _searchFocus,
+        textInputAction: TextInputAction.search,
         onChanged: _onSearchChanged,
+        onSubmitted: _onSearchChanged,
         onTap: () {
           if (_searchResults.isNotEmpty) {
             setState(() => _showResults = true);
@@ -372,7 +256,7 @@ fetchAddressAt($lat, $lng);
           ),
           prefixIcon: const Icon(
             Icons.search,
-            color: KioskTheme.lunaPink,
+            color: KioskTheme.pinkInk,
             size: 20,
           ),
           suffixIcon: _searching
@@ -381,14 +265,17 @@ fetchAddressAt($lat, $lng);
                   child: SizedBox(
                     width: 18,
                     height: 18,
-                    child: CircularProgressIndicator(
+                    child: CircularProgressIndicator.adaptive(
                       strokeWidth: 2,
-                      color: KioskTheme.lunaPink,
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        KioskTheme.pinkInk,
+                      ),
                     ),
                   ),
                 )
               : _searchCtrl.text.isNotEmpty
               ? IconButton(
+                  tooltip: 'Clear search',
                   icon: const Icon(Icons.clear, size: 18),
                   color: KioskTheme.textMuted,
                   onPressed: _clearSearch,
@@ -406,9 +293,9 @@ fetchAddressAt($lat, $lng);
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(KioskTheme.radiusMd),
-            borderSide: BorderSide(
-              color: KioskTheme.lunaPink.withValues(alpha: 0.3),
-              width: 1,
+            borderSide: const BorderSide(
+              color: KioskTheme.lunaPink,
+              width: 1.5,
             ),
           ),
         ),
@@ -424,8 +311,8 @@ fetchAddressAt($lat, $lng);
         color: KioskTheme.lunaWhite,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
-            blurRadius: 8,
+            color: KioskTheme.pinkInk.withValues(alpha: 0.12),
+            blurRadius: 10,
             offset: const Offset(0, 4),
           ),
         ],
@@ -434,15 +321,16 @@ fetchAddressAt($lat, $lng);
         shrinkWrap: true,
         padding: EdgeInsets.zero,
         itemCount: _searchResults.length,
-        separatorBuilder: (_, _) => KioskTheme.divider(opacity: 0.05),
+        separatorBuilder: (_, _) => KioskTheme.divider(opacity: 0.1),
         itemBuilder: (context, index) {
           final r = _searchResults[index];
           final name = r['display_name'] as String? ?? '';
           return ListTile(
             dense: true,
+            minVerticalPadding: 10,
             leading: const Icon(
               Icons.location_on,
-              color: KioskTheme.lunaPink,
+              color: KioskTheme.pinkInk,
               size: 20,
             ),
             title: Text(
@@ -458,12 +346,7 @@ fetchAddressAt($lat, $lng);
     );
   }
 
-  Widget _buildMapContent() {
-    if (kIsWeb) return _buildWebMap();
-    return _buildNativeMap();
-  }
-
-  Widget _buildWebMap() {
+  Widget _buildMapContent(double bottomInset) {
     return Stack(
       children: [
         ColoredBox(
@@ -492,7 +375,7 @@ fetchAddressAt($lat, $lng);
               if (tileUrl.isNotEmpty)
                 TileLayer(
                   urlTemplate: tileUrl,
-                  userAgentPackageName: 'com.example.app',
+                  userAgentPackageName: 'com.lunabitesanddelights.app',
                   maxZoom: 19,
                 ),
             ],
@@ -500,20 +383,23 @@ fetchAddressAt($lat, $lng);
         ),
         _buildTilesNotice(),
         _buildPinOverlay(),
-        _buildMyLocationButton(),
-        _buildAddressCard(),
-        if (_loading) _buildLoadingOverlay(),
-      ],
-    );
-  }
-
-  Widget _buildNativeMap() {
-    return Stack(
-      children: [
-        if (_webCtrl != null) WebViewWidget(controller: _webCtrl!),
-        _buildTilesNotice(),
-        _buildMyLocationButton(),
-        _buildAddressCard(),
+        Positioned(
+          left: 16,
+          right: 16,
+          bottom: bottomInset + 16,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Align(
+                alignment: Alignment.centerRight,
+                child: _buildMyLocationButton(),
+              ),
+              const SizedBox(height: 12),
+              _buildAddressCard(),
+            ],
+          ),
+        ),
         if (_loading) _buildLoadingOverlay(),
       ],
     );
@@ -536,11 +422,7 @@ fetchAddressAt($lat, $lng);
         ),
         child: Row(
           children: [
-            const Icon(
-              Icons.map_outlined,
-              size: 18,
-              color: KioskTheme.lunaPink,
-            ),
+            const Icon(Icons.map_outlined, size: 18, color: KioskTheme.pinkInk),
             const SizedBox(width: 8),
             Expanded(
               child: Text(
@@ -559,70 +441,59 @@ fetchAddressAt($lat, $lng);
   }
 
   Widget _buildPinOverlay() {
-    return Positioned(
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 120,
+    return Positioned.fill(
       child: IgnorePointer(
-        child: Center(
-          child: AnimatedBuilder(
-            animation: _pulseCtrl,
-            builder: (context, child) {
-              return Transform.scale(
-                scale: 0.94 + (_pulseCtrl.value * 0.06),
-                child: child,
-              );
-            },
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 36,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: KioskTheme.lunaPink,
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(36),
-                      topRight: Radius.circular(36),
-                      bottomRight: Radius.circular(36),
-                    ),
-                    border: Border.all(color: Colors.white, width: 3),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.35),
-                        blurRadius: 10,
-                        offset: const Offset(0, 3),
+        child: Align(
+          alignment: Alignment.center,
+          child: FractionalTranslation(
+            translation: const Offset(0, -0.5),
+            child: AnimatedBuilder(
+              animation: _pulseCtrl,
+              builder: (context, child) {
+                return Transform.scale(
+                  scale: 0.94 + (_pulseCtrl.value * 0.06),
+                  child: child,
+                );
+              },
+              child: Column(
+                key: const Key('map_center_pin'),
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 36,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: KioskTheme.lunaPink,
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(36),
+                        topRight: Radius.circular(36),
+                        bottomRight: Radius.circular(36),
                       ),
-                    ],
-                  ),
-                  child: Center(
-                    child: Container(
-                      width: 12,
-                      height: 12,
-                      decoration: BoxDecoration(
-                        color: KioskTheme.lunaWhite,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.15),
-                            blurRadius: 2,
-                          ),
-                        ],
+                      border: Border.all(color: Colors.white, width: 3),
+                      boxShadow: KioskTheme.shadowMd,
+                    ),
+                    child: Center(
+                      child: Container(
+                        width: 12,
+                        height: 12,
+                        decoration: const BoxDecoration(
+                          color: KioskTheme.lunaWhite,
+                          shape: BoxShape.circle,
+                        ),
                       ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 2),
-                Container(
-                  width: 14,
-                  height: 7,
-                  decoration: BoxDecoration(
-                    color: KioskTheme.lunaPink.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(7),
+                  const SizedBox(height: 2),
+                  Container(
+                    width: 14,
+                    height: 7,
+                    decoration: BoxDecoration(
+                      color: KioskTheme.lunaPink.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(7),
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -631,31 +502,21 @@ fetchAddressAt($lat, $lng);
   }
 
   Widget _buildMyLocationButton() {
-    return Positioned(
-      right: 16,
-      bottom: 110,
+    return Semantics(
+      button: true,
+      label: 'Use my current location',
       child: Material(
         color: KioskTheme.lunaWhite,
-        borderRadius: BorderRadius.circular(KioskTheme.radiusFull),
+        shape: const CircleBorder(side: BorderSide(color: KioskTheme.rule)),
         elevation: 4,
-        shadowColor: Colors.black.withValues(alpha: 0.2),
+        shadowColor: KioskTheme.pinkInk.withValues(alpha: 0.25),
         child: InkWell(
-          borderRadius: BorderRadius.circular(KioskTheme.radiusFull),
+          customBorder: const CircleBorder(),
           onTap: _goToMyLocation,
-          child: Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: KioskTheme.lunaPink.withValues(alpha: 0.1),
-              ),
-            ),
-            child: const Icon(
-              Icons.my_location,
-              color: KioskTheme.lunaPink,
-              size: 22,
-            ),
+          child: const SizedBox(
+            width: 48,
+            height: 48,
+            child: Icon(Icons.my_location, color: KioskTheme.pinkInk, size: 22),
           ),
         ),
       ),
@@ -664,57 +525,66 @@ fetchAddressAt($lat, $lng);
 
   Widget _buildAddressCard() {
     final hasAddress = _addressShort.isNotEmpty;
-    return Positioned(
-      bottom: 16,
-      left: 16,
-      right: 16,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        decoration: BoxDecoration(
-          color: KioskTheme.lunaWhite,
-          borderRadius: BorderRadius.circular(KioskTheme.radiusLg),
-          boxShadow: KioskTheme.shadowLg,
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Row(
-              children: [
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+      decoration: BoxDecoration(
+        color: KioskTheme.lunaWhite,
+        borderRadius: BorderRadius.circular(KioskTheme.radiusLg),
+        border: Border.all(color: KioskTheme.rule),
+        boxShadow: KioskTheme.shadowLg,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.location_on,
+                color: KioskTheme.pinkInk,
+                size: 18,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                'PINNED LOCATION',
+                style: KioskTheme.labelSmall.copyWith(fontSize: 11),
+              ),
+              const Spacer(),
+              if (hasAddress)
                 const Icon(
-                  Icons.location_on,
-                  color: KioskTheme.lunaPink,
+                  Icons.check_circle,
+                  color: KioskTheme.success,
                   size: 18,
                 ),
-                const SizedBox(width: 6),
-                Text(
-                  'PINNED LOCATION',
-                  style: KioskTheme.labelSmall.copyWith(fontSize: 11),
-                ),
-                const Spacer(),
-                if (hasAddress)
-                  const Icon(
-                    Icons.check_circle,
-                    color: KioskTheme.success,
-                    size: 18,
-                  ),
-              ],
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            hasAddress ? _addressShort : 'Move the map to pin your location',
+            style: KioskTheme.bodyMedium.copyWith(
+              fontSize: 14,
+              color: hasAddress ? KioskTheme.textPrimary : KioskTheme.textMuted,
+              height: 1.4,
             ),
-            const SizedBox(height: 6),
-            Text(
-              hasAddress ? _addressShort : 'Move the map to pin your location',
-              style: KioskTheme.bodyMedium.copyWith(
-                fontSize: 14,
-                color: hasAddress
-                    ? KioskTheme.textPrimary
-                    : KioskTheme.textMuted,
-                height: 1.4,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 12),
+          FilledButton(
+            onPressed: _address.isEmpty || _loading ? null : _confirmLocation,
+            style: FilledButton.styleFrom(
+              backgroundColor: KioskTheme.lunaPink,
+              foregroundColor: KioskTheme.textOnPrimary,
+              disabledBackgroundColor: KioskTheme.lunaBlushPaper,
+              disabledForegroundColor: KioskTheme.textSecondary,
+              minimumSize: const Size(48, 48),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(KioskTheme.radiusMd),
               ),
-              maxLines: 3,
-              overflow: TextOverflow.ellipsis,
             ),
-          ],
-        ),
+            child: const Text('CONFIRM LOCATION'),
+          ),
+        ],
       ),
     );
   }
@@ -723,7 +593,9 @@ fetchAddressAt($lat, $lng);
     return Container(
       color: KioskTheme.lunaWhite.withValues(alpha: 0.85),
       child: const Center(
-        child: CircularProgressIndicator(color: KioskTheme.lunaPink),
+        child: CircularProgressIndicator.adaptive(
+          valueColor: AlwaysStoppedAnimation<Color>(KioskTheme.lunaPink),
+        ),
       ),
     );
   }
