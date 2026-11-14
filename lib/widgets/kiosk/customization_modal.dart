@@ -191,7 +191,7 @@ class _KioskProductSheetState extends State<KioskProductSheet> {
             : Image.asset(
                 widget.item.imageUrl.isNotEmpty
                     ? widget.item.imageUrl
-                    : 'images/placeholder.png',
+                    : 'images/luna_logo.png',
                 fit: BoxFit.cover,
                 errorBuilder: fallback,
               ),

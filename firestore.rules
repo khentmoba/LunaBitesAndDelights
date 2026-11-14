@@ -29,7 +29,15 @@ service cloud.firestore {
         && request.resource.data.items.size() <= 50
         && request.resource.data.totalAmount is number
         && request.resource.data.totalAmount >= 0
-        && request.resource.data.totalAmount <= 1000000;
+        && request.resource.data.totalAmount <= 1000000
+        && (
+          isStaff()
+          || (
+            (!('status' in request.resource.data) || request.resource.data.status == 'Pending')
+            && (!('paymentStatus' in request.resource.data) || request.resource.data.paymentStatus in ['NOT PAID', 'AWAITING_PAYMENT'])
+            && (!('entryType' in request.resource.data) || request.resource.data.entryType == 'Kiosk')
+          )
+        );
       allow read, update, delete: if false;
     }
 

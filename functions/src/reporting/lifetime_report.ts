@@ -1,7 +1,7 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { getFirestore } from 'firebase-admin/firestore';
 import { logger } from 'firebase-functions';
-import { phtDateLabel, itemKey, emptyChannel, addToChannel, ChannelBucket } from '../util';
+import { phtDateLabel, itemKey, emptyChannel, addToChannel, isCountableOrder, ChannelBucket } from '../util';
 import { requireStaff } from '../util/security';
 
 interface LifeTimeReportParams {
@@ -41,6 +41,7 @@ export const getLifetimeSalesReport = onCall(async (request) => {
 
     let totalRevenue = 0;
     let totalItemsSold = 0;
+    let orderCount = 0;
     const channel = emptyChannel();
     const kiosk = zero();
     const staff = zero();
@@ -58,6 +59,8 @@ export const getLifetimeSalesReport = onCall(async (request) => {
 
     for (const doc of snapshot.docs) {
       const data = doc.data();
+      if (!isCountableOrder(data)) continue;
+      orderCount += 1;
       const totalAmount = data.totalAmount || 0;
       const dateLabel = data.dateLabel || 'unknown';
 
@@ -84,7 +87,6 @@ export const getLifetimeSalesReport = onCall(async (request) => {
       }
     }
 
-    const orderCount = snapshot.size;
     const topItems = Object.values(itemCounts)
       .sort((a, b) => b.quantity - a.quantity)
       .slice(0, 20)
@@ -129,6 +131,7 @@ export const getLifetimeSalesReport = onCall(async (request) => {
       dailySeries,
     };
   } catch (error: any) {
+    if (error instanceof HttpsError) throw error;
     logger.error('Error getting lifetime sales report:', error);
     throw new HttpsError('internal', 'Failed to retrieve lifetime sales report');
   }

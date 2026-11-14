@@ -65,35 +65,6 @@ export const verifyStaff = onCall(async (request) => {
       }
     }
 
-    // Default fallbacks for kiosk PINs: 0524 (Admin) and 8888 (Staff)
-    if (!matchedUser) {
-      if (pin === '0524') {
-        const adminRef = db.collection('staff_accounts').doc('admin');
-        const snap = await adminRef.get();
-        if (!snap.exists || !snap.data()?.pinHash) {
-          await adminRef.set({
-            username: 'admin',
-            role: 'admin',
-            pinHash: hashPassword('0524'),
-            createdAt: new Date(),
-          }, { merge: true });
-        }
-        matchedUser = { id: 'admin', username: 'admin', role: 'admin' };
-      } else if (pin === '8888') {
-        const staffRef = db.collection('staff_accounts').doc('staff1');
-        const snap = await staffRef.get();
-        if (!snap.exists || !snap.data()?.pinHash) {
-          await staffRef.set({
-            username: 'staff1',
-            role: 'staff',
-            pinHash: hashPassword('8888'),
-            createdAt: new Date(),
-          }, { merge: true });
-        }
-        matchedUser = { id: 'staff1', username: 'staff1', role: 'staff' };
-      }
-    }
-
     if (!matchedUser) {
       logger.info('Staff PIN login failed: bad PIN');
       return failPin();
@@ -154,7 +125,7 @@ export const verifyStaff = onCall(async (request) => {
   const role = data.role === 'admin' ? 'admin' : 'staff';
   const customToken = await getAuth().createCustomToken(`staff_${username}`, { role });
   logger.info('Staff login successful');
-  return { success: true, username: data.username || username, customToken };
+  return { success: true, username: data.username || username, role, customToken };
 });
 
 export const updateStaffPin = onCall(async (request) => {

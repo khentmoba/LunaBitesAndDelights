@@ -1,6 +1,7 @@
 const { describe, test } = require('node:test');
 const assert = require('node:assert/strict');
 const { hashPassword, verifyPassword } = require('../lib/util/security');
+const { isCountableOrder } = require('../lib/util');
 
 describe('staff auth: scrypt PIN and password verification', () => {
   test('hashes and verifies a 4-digit PIN', () => {
@@ -27,5 +28,13 @@ describe('staff auth: scrypt PIN and password verification', () => {
     const hash = hashPassword('1234');
     const tampered = hash.slice(0, -4) + '0000';
     assert.equal(verifyPassword('1234', tampered), 'bad');
+  });
+
+  test('isCountableOrder excludes cancelled and unpaid/failed GCash orders', () => {
+    assert.equal(isCountableOrder({ status: 'Pending', paymentMethod: 'Cash', paymentStatus: 'NOT PAID' }), true);
+    assert.equal(isCountableOrder({ status: 'Completed', paymentMethod: 'GCash', paymentStatus: 'PAID' }), true);
+    assert.equal(isCountableOrder({ status: 'Cancelled', paymentMethod: 'Cash', paymentStatus: 'NOT PAID' }), false);
+    assert.equal(isCountableOrder({ status: 'Pending', paymentMethod: 'GCash', paymentStatus: 'AWAITING_PAYMENT' }), false);
+    assert.equal(isCountableOrder({ status: 'Pending', paymentMethod: 'GCash', paymentStatus: 'PAYMENT_FAILED' }), false);
   });
 });

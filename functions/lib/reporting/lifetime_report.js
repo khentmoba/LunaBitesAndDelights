@@ -32,6 +32,7 @@ exports.getLifetimeSalesReport = (0, https_1.onCall)(async (request) => {
         const snapshot = await query.get();
         let totalRevenue = 0;
         let totalItemsSold = 0;
+        let orderCount = 0;
         const channel = (0, util_1.emptyChannel)();
         const kiosk = zero();
         const staff = zero();
@@ -46,6 +47,9 @@ exports.getLifetimeSalesReport = (0, https_1.onCall)(async (request) => {
         };
         for (const doc of snapshot.docs) {
             const data = doc.data();
+            if (!(0, util_1.isCountableOrder)(data))
+                continue;
+            orderCount += 1;
             const totalAmount = data.totalAmount || 0;
             const dateLabel = data.dateLabel || 'unknown';
             totalRevenue += totalAmount;
@@ -67,7 +71,6 @@ exports.getLifetimeSalesReport = (0, https_1.onCall)(async (request) => {
                 itemCounts[key].revenue += (item.price || 0) * qty;
             }
         }
-        const orderCount = snapshot.size;
         const topItems = Object.values(itemCounts)
             .sort((a, b) => b.quantity - a.quantity)
             .slice(0, 20)
@@ -111,6 +114,8 @@ exports.getLifetimeSalesReport = (0, https_1.onCall)(async (request) => {
         };
     }
     catch (error) {
+        if (error instanceof https_1.HttpsError)
+            throw error;
         firebase_functions_1.logger.error('Error getting lifetime sales report:', error);
         throw new https_1.HttpsError('internal', 'Failed to retrieve lifetime sales report');
     }

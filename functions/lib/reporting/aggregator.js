@@ -15,9 +15,13 @@ async function aggregateDailySales(dateLabel) {
     let totalSales = 0;
     let kioskSales = 0;
     let staffSales = 0;
+    let totalOrders = 0;
     const itemCounts = {};
     snapshot.forEach(doc => {
         const data = doc.data();
+        if (!(0, util_1.isCountableOrder)(data))
+            return;
+        totalOrders += 1;
         const amount = data.totalAmount || 0;
         totalSales += amount;
         if (data.entryType === 'Staff')
@@ -29,12 +33,14 @@ async function aggregateDailySales(dateLabel) {
             itemCounts[key] = (itemCounts[key] || 0) + (item.quantity || 1);
         }
     });
+    if (totalOrders === 0)
+        return null;
     return {
         date: dateLabel,
         totalSales,
         kioskSales,
         staffSales,
-        totalOrders: snapshot.size,
+        totalOrders,
         topItems: Object.entries(itemCounts)
             .map(([name, qty]) => ({ name, qty }))
             .sort((a, b) => b.qty - a.qty)

@@ -1,7 +1,7 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { getFirestore } from 'firebase-admin/firestore';
 import { logger } from 'firebase-functions';
-import { phtDateLabel, emptyChannel, addToChannel } from '../util';
+import { phtDateLabel, emptyChannel, addToChannel, isCountableOrder } from '../util';
 import { requireStaff } from '../util/security';
 
 export const getSalesAnalytics = onCall(async (request) => {
@@ -17,11 +17,14 @@ export const getSalesAnalytics = onCall(async (request) => {
 
     let totalRevenue = 0;
     let totalItemsSold = 0;
+    let orderCount = 0;
     const channel = emptyChannel();
     const itemCounts: { [key: string]: number } = {};
 
     for (const doc of snapshot.docs) {
       const data = doc.data();
+      if (!isCountableOrder(data)) continue;
+      orderCount += 1;
       const totalAmount = data.totalAmount || 0;
       totalRevenue += totalAmount;
       addToChannel(channel, data.type || 'Pickup', totalAmount);
@@ -34,7 +37,6 @@ export const getSalesAnalytics = onCall(async (request) => {
       }
     }
 
-    const orderCount = snapshot.size;
     const topItems = Object.entries(itemCounts)
       .map(([name, count]) => ({ name, count }))
       .sort((a, b) => b.count - a.count)

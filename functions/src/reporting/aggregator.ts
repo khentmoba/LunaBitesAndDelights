@@ -1,5 +1,5 @@
 import { getFirestore } from 'firebase-admin/firestore';
-import { itemKey } from '../util';
+import { itemKey, isCountableOrder } from '../util';
 import { escapeMd } from '../telegram_api';
 
 export interface DailySales {
@@ -22,10 +22,13 @@ export async function aggregateDailySales(dateLabel: string): Promise<DailySales
   let totalSales = 0;
   let kioskSales = 0;
   let staffSales = 0;
+  let totalOrders = 0;
   const itemCounts: { [key: string]: number } = {};
 
   snapshot.forEach(doc => {
     const data = doc.data();
+    if (!isCountableOrder(data)) return;
+    totalOrders += 1;
     const amount = data.totalAmount || 0;
     totalSales += amount;
 
@@ -38,12 +41,14 @@ export async function aggregateDailySales(dateLabel: string): Promise<DailySales
     }
   });
 
+  if (totalOrders === 0) return null;
+
   return {
     date: dateLabel,
     totalSales,
     kioskSales,
     staffSales,
-    totalOrders: snapshot.size,
+    totalOrders,
     topItems: Object.entries(itemCounts)
       .map(([name, qty]) => ({ name, qty }))
       .sort((a, b) => b.qty - a.qty)

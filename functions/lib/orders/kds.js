@@ -67,12 +67,16 @@ exports.updateOrderStatus = (0, https_1.onCall)(async (request) => {
     const status = (0, security_1.cleanStr)(request.data?.status, 32, 'status'); // #14
     if (!VALID_STATUSES.includes(status))
         throw new https_1.HttpsError('invalid-argument', 'Invalid status'); // #8
+    const cancellationReason = status === 'Cancelled' ? (0, security_1.optStr)(request.data?.cancellationReason, 200) : '';
     const db = (0, firestore_1.getFirestore)();
     try {
         const orderRef = db.collection('orders').doc(orderId);
         if (!(await orderRef.get()).exists)
             throw new https_1.HttpsError('not-found', 'Order not found');
-        await orderRef.update({ status });
+        const update = { status };
+        if (cancellationReason)
+            update.cancellationReason = cancellationReason;
+        await orderRef.update(update);
         firebase_functions_1.logger.info(`Order ${orderId} status updated to ${status}`);
         return { success: true };
     }

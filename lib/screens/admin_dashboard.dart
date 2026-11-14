@@ -130,6 +130,9 @@ class _AdminDashboardState extends State<AdminDashboard> {
       if (!mounted) return;
       final isAuthError =
           e.code == 'unauthenticated' || e.code == 'permission-denied';
+      if (isAuthError) {
+        session.logout();
+      }
       setState(() {
         _error = isAuthError
             ? 'Staff session expired (${e.code}). Please sign in again.'

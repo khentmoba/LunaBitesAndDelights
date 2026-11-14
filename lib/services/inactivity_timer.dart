@@ -35,7 +35,15 @@ class _InactivityWatcherState extends State<InactivityWatcher> {
   void _resetInactivityTimer() {
     if (_dialogOpen) return;
     _inactivityTimer?.cancel();
-    _inactivityTimer = Timer(const Duration(minutes: 2), _showWarningDialog);
+    _inactivityTimer = Timer(const Duration(minutes: 2), () {
+      if (!mounted) return;
+      final isCurrent = ModalRoute.of(context)?.isCurrent ?? true;
+      if (!isCurrent) {
+        _resetInactivityTimer();
+        return;
+      }
+      _showWarningDialog();
+    });
   }
 
   void _showWarningDialog() {
@@ -45,26 +53,32 @@ class _InactivityWatcherState extends State<InactivityWatcher> {
       _secondsRemaining = 15;
     });
 
+    StateSetter? dialogSetState;
     _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (!mounted) return;
-      setState(() {
-        if (_secondsRemaining > 1) {
-          _secondsRemaining--;
-        } else {
-          timer.cancel();
-          _dialogOpen = false;
-          Navigator.of(context).pop(); // close dialog
-          _performReset();
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      if (_secondsRemaining > 1) {
+        _secondsRemaining--;
+        dialogSetState?.call(() {});
+      } else {
+        timer.cancel();
+        _dialogOpen = false;
+        if (Navigator.of(context).canPop()) {
+          Navigator.of(context).pop();
         }
-      });
+        _performReset();
+      }
     });
 
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (BuildContext context) {
+      builder: (BuildContext dialogContext) {
         return StatefulBuilder(
           builder: (context, setDialogState) {
+            dialogSetState = setDialogState;
             return AlertDialog(
               backgroundColor: Colors.white,
               shape: RoundedRectangleBorder(
