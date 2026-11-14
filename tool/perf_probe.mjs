@@ -57,20 +57,39 @@ const MIME = {
 
 // Firebase Hosting applies matching header rules in declaration order.
 function globToRegExp(glob) {
-  let out = '';
-  for (let i = 0; i < glob.length; i += 1) {
-    const c = glob[i];
-    if (c === '*') {
-      if (glob[i + 1] === '*') { out += '.*'; i += 1; } else { out += '[^/]*'; }
-    } else if (c === '{') {
-      const end = glob.indexOf('}', i);
-      out += `(?:${glob.slice(i + 1, end).split(',').join('|')})`;
-      i = end;
-    } else if ('.+?^$()[]|\\'.includes(c)) {
-      out += `\\${c}`;
-    } else out += c;
+  function convert(s) {
+    let out = '';
+    for (let i = 0; i < s.length; i += 1) {
+      const c = s[i];
+      if (c === '*') {
+        if (s[i + 1] === '*') { out += '.*'; i += 1; } else { out += '[^/]*'; }
+      } else if (c === '@' && s[i + 1] === '(') {
+        let depth = 1, j = i + 2;
+        while (j < s.length && depth > 0) {
+          if (s[j] === '(') depth += 1;
+          else if (s[j] === ')') depth -= 1;
+          j += 1;
+        }
+        const inner = s.slice(i + 2, j - 1);
+        out += `(?:${inner.split('|').map(convert).join('|')})`;
+        i = j - 1;
+      } else if (c === '{') {
+        let depth = 1, j = i + 1;
+        while (j < s.length && depth > 0) {
+          if (s[j] === '{') depth += 1;
+          else if (s[j] === '}') depth -= 1;
+          j += 1;
+        }
+        const inner = s.slice(i + 1, j - 1);
+        out += `(?:${inner.split(',').map(convert).join('|')})`;
+        i = j - 1;
+      } else if ('.+?^$()[]|\\'.includes(c)) {
+        out += `\\${c}`;
+      } else out += c;
+    }
+    return out;
   }
-  return new RegExp(`^${out}$`);
+  return new RegExp(`^${convert(glob)}$`);
 }
 
 const hosting = readJson(firebasePath)
@@ -282,7 +301,9 @@ async function screenshot({ send }, { width, height, dpr, name, scrollTo, hash }
   if (scrollTo && !hash) {
     await send('Runtime.evaluate', {
       expression: `(() => { const el = document.querySelector(${JSON.stringify(scrollTo)});
-        const y = el.getBoundingClientRect().top + window.scrollY - 70;
+        const bar = document.querySelector('.bar');
+        const offset = (bar ? Math.ceil(bar.getBoundingClientRect().height) : 70) + 12;
+        const y = el.getBoundingClientRect().top + window.scrollY - offset;
         window.scrollTo({ top: y, behavior: 'instant' }); return y; })()`,
     });
     await sleep(700);
