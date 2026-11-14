@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { JSDOM } from 'jsdom';
+import { pagePairs, kernPairsFile } from '../../tool/kern_pairs.mjs';
 
 /// `site/app.js` is the storefront's behaviour script: the sticky bar, the
 /// scroll reveals, and the map/street-view swap. A tiny inline probe in each
@@ -342,6 +343,24 @@ test('the bar publishes its measured height to --bar-h for scroll-margin-top', (
 
   assert.equal(doc.documentElement.style.getPropertyValue('--bar-h'), '110px');
   assert.match(inlineStyleOf(storefront), /scroll-margin-top:\s*calc\(var\(--bar-h,/);
+});
+
+test('the hero, bar, and footer logos share the 240px AVIF sized for the hero slot', () => {
+  for (const [name, html] of Object.entries(pages)) {
+    assert.doesNotMatch(html, /luna-logo-320\.avif/, `${name} must not fetch the larger 320px AVIF`);
+    assert.match(html, /<source srcset="\/img\/luna-logo-240\.avif" type="image\/avif">/, `${name} bar/footer logo uses the 240px AVIF`);
+  }
+  assert.match(storefront, /<source srcset="\/img\/luna-logo-240\.avif 240w, \/img\/luna-logo-640\.avif 640w" sizes="\(max-width: 700px\) 112px, 236px"/);
+});
+
+test('the pruned Bricolage kerning covers every character pair the pages render', () => {
+  const covered = new Set(JSON.parse(readFileSync(kernPairsFile, 'utf8')));
+  const missing = pagePairs([storefront, menuPage]).filter((pair) => !covered.has(pair));
+  assert.deepEqual(
+    missing,
+    [],
+    'page copy gained character pairs the pruned font may not kern: run `node tool/kern_pairs.mjs` then `python tool/prune_kerning.py`',
+  );
 });
 
 test('both pages define metric-matched fallback fonts and avoid high fetchpriority on mobile-below-fold hero photo', () => {
