@@ -17,10 +17,14 @@ exports.getSalesAnalytics = (0, https_1.onCall)(async (request) => {
             .get();
         let totalRevenue = 0;
         let totalItemsSold = 0;
+        let orderCount = 0;
         const channel = (0, util_1.emptyChannel)();
         const itemCounts = {};
         for (const doc of snapshot.docs) {
             const data = doc.data();
+            if (!(0, util_1.isCountableOrder)(data))
+                continue;
+            orderCount += 1;
             const totalAmount = data.totalAmount || 0;
             totalRevenue += totalAmount;
             (0, util_1.addToChannel)(channel, data.type || 'Pickup', totalAmount);
@@ -31,7 +35,6 @@ exports.getSalesAnalytics = (0, https_1.onCall)(async (request) => {
                 itemCounts[name] = (itemCounts[name] || 0) + qty;
             }
         }
-        const orderCount = snapshot.size;
         const topItems = Object.entries(itemCounts)
             .map(([name, count]) => ({ name, count }))
             .sort((a, b) => b.count - a.count)

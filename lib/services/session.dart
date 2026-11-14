@@ -44,6 +44,18 @@ class Session extends ChangeNotifier {
     }
     _role = _username?.toLowerCase() == 'admin' ? 'admin' : 'staff';
     notifyListeners();
+    user
+        .getIdTokenResult()
+        .then((tokenResult) {
+          final claimRole = tokenResult.claims?['role'] as String?;
+          if (claimRole == 'admin' || claimRole == 'staff') {
+            if (_role != claimRole) {
+              _role = claimRole;
+              notifyListeners();
+            }
+          }
+        })
+        .catchError((_) {});
   }
 
   void login(String username, {String role = 'staff'}) {

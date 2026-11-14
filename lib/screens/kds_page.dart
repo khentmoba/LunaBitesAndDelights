@@ -169,12 +169,18 @@ class _KdsPageState extends State<KdsPage> with SingleTickerProviderStateMixin {
     _hasInitialFetchDone = true;
   }
 
-  Future<void> _updateStatus(String orderId, String newStatus) async {
+  Future<void> _updateStatus(
+    String orderId,
+    String newStatus, {
+    String? cancellationReason,
+  }) async {
     setState(() => _loading = true);
     try {
       final data = await callFn('updateOrderStatus', {
         'orderId': orderId,
         'status': newStatus,
+        if (cancellationReason != null && cancellationReason.isNotEmpty)
+          'cancellationReason': cancellationReason,
       });
 
       if (!mounted) return;
@@ -2067,7 +2073,11 @@ class _KdsPageState extends State<KdsPage> with SingleTickerProviderStateMixin {
               ),
               onPressed: () {
                 Navigator.pop(ctx);
-                _updateStatus(orderId, 'Cancelled');
+                _updateStatus(
+                  orderId,
+                  'Cancelled',
+                  cancellationReason: selectedReason,
+                );
               },
               child: Text(
                 'CONFIRM CANCEL',

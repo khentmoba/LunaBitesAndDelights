@@ -22,9 +22,10 @@ export const verifyStaff = onCall(async (request) => {
   // Never seed well-known defaults; they end up in git/history forever.
   if ((await db.collection('staff_accounts').limit(1).get()).empty) {
     const mk = () => crypto.randomBytes(9).toString('base64url');
+    const mkPin = () => String(crypto.randomInt(100000, 1000000));
     const seeds = [
-      { username: 'admin', role: 'admin', pin: '0524' },
-      { username: 'staff1', role: 'staff', pin: '8888' },
+      { username: 'admin', role: 'admin', pin: mkPin() },
+      { username: 'staff1', role: 'staff', pin: mkPin() },
     ];
     const batch = db.batch();
     for (const s of seeds) {
@@ -62,35 +63,6 @@ export const verifyStaff = onCall(async (request) => {
           matchedUser = { id: doc.id, ...d };
           break;
         }
-      }
-    }
-
-    // Default fallbacks for kiosk PINs: 0524 (Admin) and 8888 (Staff)
-    if (!matchedUser) {
-      if (pin === '0524') {
-        const adminRef = db.collection('staff_accounts').doc('admin');
-        const snap = await adminRef.get();
-        if (!snap.exists || !snap.data()?.pinHash) {
-          await adminRef.set({
-            username: 'admin',
-            role: 'admin',
-            pinHash: hashPassword('0524'),
-            createdAt: new Date(),
-          }, { merge: true });
-        }
-        matchedUser = { id: 'admin', username: 'admin', role: 'admin' };
-      } else if (pin === '8888') {
-        const staffRef = db.collection('staff_accounts').doc('staff1');
-        const snap = await staffRef.get();
-        if (!snap.exists || !snap.data()?.pinHash) {
-          await staffRef.set({
-            username: 'staff1',
-            role: 'staff',
-            pinHash: hashPassword('8888'),
-            createdAt: new Date(),
-          }, { merge: true });
-        }
-        matchedUser = { id: 'staff1', username: 'staff1', role: 'staff' };
       }
     }
 
@@ -154,7 +126,7 @@ export const verifyStaff = onCall(async (request) => {
   const role = data.role === 'admin' ? 'admin' : 'staff';
   const customToken = await getAuth().createCustomToken(`staff_${username}`, { role });
   logger.info('Staff login successful');
-  return { success: true, username: data.username || username, customToken };
+  return { success: true, username: data.username || username, role, customToken };
 });
 
 export const updateStaffPin = onCall(async (request) => {

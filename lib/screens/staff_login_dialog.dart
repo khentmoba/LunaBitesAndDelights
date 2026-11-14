@@ -4,7 +4,6 @@ import 'package:flutter/material.dart' hide MenuTheme;
 import '../services/functions.dart';
 import '../services/session.dart';
 import '../widgets/kiosk/menu_theme.dart';
-import 'kds_page.dart';
 
 enum StaffLoginMode { pin, password }
 
@@ -35,14 +34,22 @@ class _StaffLoginDialogState extends State<StaffLoginDialog> {
 
   void _onKeypadTap(String value) {
     if (_loading) return;
-    if (_pin.length < 4) {
+    if (_pin.length < 8) {
       setState(() {
         _error = null;
         _pin += value;
       });
-      if (_pin.length == 4) {
-        _submitPin();
-      }
+    }
+  }
+
+  void _closeOrGoMenu() {
+    final isPopup = ModalRoute.of(context) is PopupRoute;
+    if (isPopup && Navigator.canPop(context)) {
+      Navigator.pop(context);
+    } else if (Navigator.canPop(context)) {
+      Navigator.pop(context);
+    } else {
+      Navigator.pushReplacementNamed(context, '/menu');
     }
   }
 
@@ -182,13 +189,21 @@ class _StaffLoginDialogState extends State<StaffLoginDialog> {
             data['role'] as String? ??
             (actualUser.toLowerCase() == 'admin' ? 'admin' : 'staff');
         final token = data['customToken'] as String?;
-        if (token != null && token.isNotEmpty) {
-          await FirebaseAuth.instance.signInWithCustomToken(token);
+        if (token == null || token.isEmpty) {
+          setState(() {
+            _error = 'Staff authentication token missing. Please try again.';
+            _loading = false;
+          });
+          return;
         }
+        await FirebaseAuth.instance.signInWithCustomToken(token);
         session.login(actualUser, role: actualRole);
 
         if (!mounted) return;
-        Navigator.pop(context);
+        final isPopup = ModalRoute.of(context) is PopupRoute;
+        if (isPopup && Navigator.canPop(context)) {
+          Navigator.pop(context);
+        }
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -213,12 +228,12 @@ class _StaffLoginDialogState extends State<StaffLoginDialog> {
           ),
         );
 
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => widget.destinationPage ?? const KdsPage(),
-          ),
-        );
+        if (widget.destinationPage != null) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => widget.destinationPage!),
+          );
+        }
       } else {
         setState(() {
           _error =
@@ -463,7 +478,7 @@ class _StaffLoginDialogState extends State<StaffLoginDialog> {
                     // Mode 1: Quick PIN keypad
                     if (_mode == StaffLoginMode.pin) ...[
                       Text(
-                        'ENTER 4-DIGIT PIN',
+                        'ENTER 4–8 DIGIT PIN',
                         style:
                             MenuTheme.body(
                               size: 12,
@@ -475,35 +490,40 @@ class _StaffLoginDialogState extends State<StaffLoginDialog> {
                       ),
                       const SizedBox(height: 14),
 
-                      // Square PIN indicators
+                      // PIN indicators (4 base slots, expands up to 8)
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
-                        children: List.generate(4, (index) {
-                          final filled = index < _pin.length;
-                          return Container(
-                            margin: const EdgeInsets.symmetric(horizontal: 8),
-                            width: 20,
-                            height: 20,
-                            decoration: BoxDecoration(
-                              color: filled ? MenuTheme.plate : MenuTheme.paper,
-                              border: Border.all(
+                        children: List.generate(
+                          _pin.length > 4 ? _pin.length : 4,
+                          (index) {
+                            final filled = index < _pin.length;
+                            return Container(
+                              margin: const EdgeInsets.symmetric(horizontal: 6),
+                              width: 20,
+                              height: 20,
+                              decoration: BoxDecoration(
                                 color: filled
-                                    ? MenuTheme.pinkInk
-                                    : MenuTheme.rule,
-                                width: 1.5,
+                                    ? MenuTheme.plate
+                                    : MenuTheme.paper,
+                                border: Border.all(
+                                  color: filled
+                                      ? MenuTheme.pinkInk
+                                      : MenuTheme.rule,
+                                  width: 1.5,
+                                ),
                               ),
-                            ),
-                            child: filled
-                                ? const Center(
-                                    child: Icon(
-                                      Icons.square,
-                                      size: 8,
-                                      color: MenuTheme.onPlate,
-                                    ),
-                                  )
-                                : null,
-                          );
-                        }),
+                              child: filled
+                                  ? const Center(
+                                      child: Icon(
+                                        Icons.square,
+                                        size: 8,
+                                        color: MenuTheme.onPlate,
+                                      ),
+                                    )
+                                  : null,
+                            );
+                          },
+                        ),
                       ),
                       const SizedBox(height: 22),
 
@@ -621,9 +641,7 @@ class _StaffLoginDialogState extends State<StaffLoginDialog> {
                         children: [
                           Expanded(
                             child: InkWell(
-                              onTap: _loading
-                                  ? null
-                                  : () => Navigator.pop(context),
+                              onTap: _loading ? null : _closeOrGoMenu,
                               child: Container(
                                 padding: const EdgeInsets.symmetric(
                                   vertical: 14,
@@ -692,9 +710,7 @@ class _StaffLoginDialogState extends State<StaffLoginDialog> {
                     // Cancel / Return button
                     if (_mode == StaffLoginMode.pin)
                       TextButton(
-                        onPressed: _loading
-                            ? null
-                            : () => Navigator.pop(context),
+                        onPressed: _loading ? null : _closeOrGoMenu,
                         child: Text(
                           'CANCEL & RETURN TO KIOSK',
                           style:
@@ -809,7 +825,7 @@ class _StaffLoginDialogState extends State<StaffLoginDialog> {
   }
 
   Widget _buildSubmitButton() {
-    final canSubmit = _pin.length == 4;
+    final canSubmit = _pin.length >= 4;
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: _loading || !canSubmit ? null : _submitPin,

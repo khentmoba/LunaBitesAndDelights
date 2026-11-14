@@ -133,7 +133,10 @@
         setTimeout(function() { screen.style.display = 'none'; }, 500);
       }
     }
-    setTimeout(hideLoadingScreen, 8000);
+    setTimeout(function() {
+      var title = document.querySelector('#loading-screen .loading-title');
+      if (title) title.textContent = 'Still loading the menu…';
+    }, 8000);
 
     // ─────────────────────────────────────────
     //  UPDATE BANNER
@@ -337,26 +340,12 @@
   </script>
 
   <!-- Flutter bootstrap -->
-  <script src="flutter.js" defer></script>
   <script>
+    window.addEventListener('flutter-first-frame', hideLoadingScreen);
     window.addEventListener('load', function() {
-      if (window._flutter && window._flutter.loader) {
-        // Modern Flutter 3.10+ loader
-        window._flutter.loader.loadEntrypoint({
-          onEntrypointLoaded: function(engineInitializer) {
-            engineInitializer.initializeEngine().then(function(appRunner) {
-              appRunner.runApp();
-              hideLoadingScreen();
-            });
-          }
-        });
-      } else {
-        // Fallback: flutter_bootstrap.js style build
-        var s = document.createElement('script');
-        s.src = 'flutter_bootstrap.js';
-        s.onload = function() { setTimeout(hideLoadingScreen, 1500); };
-        document.body.appendChild(s);
-      }
+      var s = document.createElement('script');
+      s.src = 'flutter_bootstrap.js';
+      document.body.appendChild(s);
     });
   </script>
 

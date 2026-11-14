@@ -39,21 +39,29 @@
         ]
       },
       {
-        "source": "**",
+        "source": "**/*.@(woff2|webp|avif|png|jpg|jpeg|svg|ico)",
         "headers": [
           {
             "key": "Cache-Control",
-            "value": "no-cache, no-store, must-revalidate"
-          },
-          {
-            "key": "Pragma",
-            "value": "no-cache"
-          },
-          {
-            "key": "Expires",
-            "value": "0"
+            "value": "public, max-age=86400, stale-while-revalidate=604800"
           }
         ]
+      },
+      {
+        "source": "{/,/index.html,/menu/**,/payment/**,/kiosk/,/kiosk/index.html,/kiosk/flutter_bootstrap.js,/kiosk/main.dart.js,/kiosk/sw.js,/kiosk/version.json,/kiosk/assets/*.json,/kiosk/canvaskit/**}",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-cache"
+          }
+        ]
+      }
+    ],
+    "redirects": [
+      {
+        "source": "/kiosk",
+        "destination": "/kiosk/",
+        "type": 301
       }
     ],
     "rewrites": [
@@ -62,12 +70,16 @@
         "destination": "/menu/index.html"
       },
       {
-        "source": "/kiosk/**",
-        "destination": "/kiosk/index.html"
+        "source": "/payment/success{,/**}",
+        "destination": "/payment/success/index.html"
       },
       {
-        "source": "**",
-        "destination": "/index.html"
+        "source": "/payment/cancel{,/**}",
+        "destination": "/payment/cancel/index.html"
+      },
+      {
+        "source": "/kiosk/**",
+        "destination": "/kiosk/index.html"
       }
     ]
   },

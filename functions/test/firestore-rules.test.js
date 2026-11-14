@@ -68,12 +68,15 @@ describe('orders: kiosk can only create (validated)', () => {
     payload.timestamp = Timestamp.fromDate(new Date(payload.timestamp));
     await assertFails(addDoc(collection(anon(), 'orders'), { ...payload, telegramSent: false }));
   });
-  test('create rejects missing/junk/oversized fields', async () => {
+  test('create rejects missing/junk/oversized/forged fields', async () => {
     const { customerName: _d, ...noName } = order();
     await assertFails(addDoc(collection(anon(), 'orders'), noName));
     await assertFails(addDoc(collection(anon(), 'orders'), order({ items: [] })));
     await assertFails(addDoc(collection(anon(), 'orders'), order({ totalAmount: -5 })));
     await assertFails(addDoc(collection(anon(), 'orders'), order({ injected: true })));
+    await assertFails(addDoc(collection(anon(), 'orders'), order({ paymentStatus: 'PAID' })));
+    await assertFails(addDoc(collection(anon(), 'orders'), order({ status: 'Completed' })));
+    await assertFails(addDoc(collection(anon(), 'orders'), order({ entryType: 'Staff' })));
   });
   test('nobody can read/update/delete via client', async () => {
     await seed('orders/o1', order());

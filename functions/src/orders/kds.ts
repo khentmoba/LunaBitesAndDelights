@@ -1,7 +1,7 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { getFirestore } from 'firebase-admin/firestore';
 import { logger } from 'firebase-functions';
-import { requireStaff, validDocId, cleanStr } from '../util/security';
+import { requireStaff, validDocId, cleanStr, optStr } from '../util/security';
 
 const VALID_STATUSES = ['Pending', 'Preparing', 'Ready', 'Completed', 'Cancelled'];
 
@@ -67,12 +67,15 @@ export const updateOrderStatus = onCall(async (request) => {
   const orderId = validDocId(request.data?.orderId, 'orderId'); // #13
   const status = cleanStr(request.data?.status, 32, 'status'); // #14
   if (!VALID_STATUSES.includes(status)) throw new HttpsError('invalid-argument', 'Invalid status'); // #8
+  const cancellationReason = status === 'Cancelled' ? optStr(request.data?.cancellationReason, 200) : '';
 
   const db = getFirestore();
   try {
     const orderRef = db.collection('orders').doc(orderId);
     if (!(await orderRef.get()).exists) throw new HttpsError('not-found', 'Order not found');
-    await orderRef.update({ status });
+    const update: Record<string, any> = { status };
+    if (cancellationReason) update.cancellationReason = cancellationReason;
+    await orderRef.update(update);
     logger.info(`Order ${orderId} status updated to ${status}`);
     return { success: true };
   } catch (error: any) {

@@ -68,7 +68,7 @@ void main() {
       expect(find.text('STAFF OPERATIONS'), findsOneWidget);
       expect(find.text('QUICK PIN'), findsOneWidget);
       expect(find.text('PASSWORD'), findsOneWidget);
-      expect(find.text('ENTER 4-DIGIT PIN'), findsOneWidget);
+      expect(find.text('ENTER 4–8 DIGIT PIN'), findsOneWidget);
 
       // Check keypad digits exist
       expect(find.text('1'), findsOneWidget);

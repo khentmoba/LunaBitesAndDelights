@@ -1,7 +1,8 @@
 const test = require('node:test');
 const assert = require('node:assert');
+const crypto = require('node:crypto');
 
-const { resolveOrderDocId } = require('../lib/payments/webhook');
+const { resolveOrderDocId, verifyPaymongoSignature } = require('../lib/payments/webhook');
 
 // A paid session must land on the order document the kiosk wrote. PayMongo
 // echoes our metadata back on the webhook, so the document id travels there
@@ -41,4 +42,14 @@ test('returns null when the payload has no usable id', () => {
     resolveOrderDocId({ metadata: { order_doc_id: 'has spaces' } }),
     null,
   );
+});
+
+test('verifyPaymongoSignature validates HMAC-SHA256 when secret is set', () => {
+  const secret = 'whsec_test_123';
+  const rawBody = JSON.stringify({ data: { id: 'cs_1' } });
+  const t = '1700000000';
+  const sig = crypto.createHmac('sha256', secret).update(`${t}.${rawBody}`).digest('hex');
+  assert.strictEqual(verifyPaymongoSignature(`t=${t},te=${sig}`, rawBody, secret), true);
+  assert.strictEqual(verifyPaymongoSignature(`t=${t},te=${'0'.repeat(64)}`, rawBody, secret), false);
+  assert.strictEqual(verifyPaymongoSignature(undefined, rawBody, secret), false);
 });

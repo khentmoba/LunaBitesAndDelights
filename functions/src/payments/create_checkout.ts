@@ -56,6 +56,13 @@ const MENU_PRICES: Record<string, number[]> = {
   'Creamy Cheese Poppers': [99], 'Mango Habanero Poppers': [99],
 };
 
+// Variant-specific price map for multi-price items so a client cannot pay
+// the lower variant price while labelling the order with the higher tier.
+const VARIANT_PRICES: Record<string, Record<string, number>> = {
+  'Shawarma Wrap': { 'Buy 1 Take 1': 99, 'Solo': 60 },
+  'Nachos & Fries Overload': { 'Buddy (1–2 pax)': 99, 'Barkada (3–5 pax)': 150 },
+};
+
 export const createCheckoutSession = onCall(
   { secrets: [paymongoSecret] }, // #1
   async (request) => {
@@ -84,12 +91,17 @@ export const createCheckoutSession = onCall(
     let itemsTotal = 0;
     const lineItems = d.items.map((i: any) => {
       const name = cleanStr(i?.name, 120, 'item name');
+      const variant = optStr(i?.variant, 120);
       const qty = cleanInt(i?.quantity ?? 1, 99, 'quantity') || 1;
       const allowed = MENU_PRICES[name];
       if (!allowed) throw new HttpsError('invalid-argument', `Unknown item: ${name}`);
       const price = Number(i?.price);
       if (!allowed.includes(price)) {
         throw new HttpsError('invalid-argument', `Price mismatch for ${name}`);
+      }
+      const variantMap = VARIANT_PRICES[name];
+      if (variantMap && variant && variantMap[variant] !== undefined && variantMap[variant] !== price) {
+        throw new HttpsError('invalid-argument', `Price mismatch for ${name} (${variant})`);
       }
       itemsTotal += price * qty;
       return { name, amount: price * 100, currency: 'PHP', quantity: qty };
@@ -140,6 +152,7 @@ export const createCheckoutSession = onCall(
         checkoutUrl: checkout.attributes.checkout_url,
         paymentMethod: 'GCash',
         paymentStatus: 'AWAITING_PAYMENT',
+        totalAmount: itemsTotal,
         verifiedTotal: itemsTotal,
       }, { merge: true });
 

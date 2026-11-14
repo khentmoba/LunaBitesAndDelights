@@ -56,6 +56,12 @@ const MENU_PRICES = {
     'Lemon Glaze Poppers': [99], 'Teriyaki Gloss Poppers': [99],
     'Creamy Cheese Poppers': [99], 'Mango Habanero Poppers': [99],
 };
+// Variant-specific price map for multi-price items so a client cannot pay
+// the lower variant price while labelling the order with the higher tier.
+const VARIANT_PRICES = {
+    'Shawarma Wrap': { 'Buy 1 Take 1': 99, 'Solo': 60 },
+    'Nachos & Fries Overload': { 'Buddy (1–2 pax)': 99, 'Barkada (3–5 pax)': 150 },
+};
 exports.createCheckoutSession = (0, https_1.onCall)({ secrets: [index_1.paymongoSecret] }, // #1
 async (request) => {
     const d = request.data || {};
@@ -80,6 +86,7 @@ async (request) => {
     let itemsTotal = 0;
     const lineItems = d.items.map((i) => {
         const name = (0, security_1.cleanStr)(i?.name, 120, 'item name');
+        const variant = (0, security_1.optStr)(i?.variant, 120);
         const qty = (0, security_1.cleanInt)(i?.quantity ?? 1, 99, 'quantity') || 1;
         const allowed = MENU_PRICES[name];
         if (!allowed)
@@ -87,6 +94,10 @@ async (request) => {
         const price = Number(i?.price);
         if (!allowed.includes(price)) {
             throw new https_1.HttpsError('invalid-argument', `Price mismatch for ${name}`);
+        }
+        const variantMap = VARIANT_PRICES[name];
+        if (variantMap && variant && variantMap[variant] !== undefined && variantMap[variant] !== price) {
+            throw new https_1.HttpsError('invalid-argument', `Price mismatch for ${name} (${variant})`);
         }
         itemsTotal += price * qty;
         return { name, amount: price * 100, currency: 'PHP', quantity: qty };
@@ -133,6 +144,7 @@ async (request) => {
             checkoutUrl: checkout.attributes.checkout_url,
             paymentMethod: 'GCash',
             paymentStatus: 'AWAITING_PAYMENT',
+            totalAmount: itemsTotal,
             verifiedTotal: itemsTotal,
         }, { merge: true });
         firebase_functions_1.logger.info(`Checkout session created for order ${orderId}: ${checkout.id}`);
