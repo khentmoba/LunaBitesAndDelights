@@ -343,3 +343,18 @@ test('the bar publishes its measured height to --bar-h for scroll-margin-top', (
   assert.equal(doc.documentElement.style.getPropertyValue('--bar-h'), '110px');
   assert.match(inlineStyleOf(storefront), /scroll-margin-top:\s*calc\(var\(--bar-h,/);
 });
+
+test('both pages define metric-matched fallback fonts and avoid high fetchpriority on mobile-below-fold hero photo', () => {
+  for (const [name, html] of Object.entries(pages)) {
+    const css = inlineStyleOf(html);
+    assert.match(css, /font-family:'Bricolage Fallback'[^}]*size-adjust:107%;ascent-override:87%;descent-override:25%;line-gap-override:0%/, `${name} must define metric-matched Bricolage Fallback`);
+    assert.match(css, /font-family:'Caveat Fallback'[^}]*size-adjust:71\.4%;ascent-override:135%;descent-override:40%;line-gap-override:0%/, `${name} must define metric-matched Caveat Fallback`);
+    assert.match(css, /--print:'Bricolage Grotesque','Bricolage Fallback'/, `${name} must wire Bricolage Fallback in --print`);
+    assert.match(css, /--hand:'Caveat','Caveat Fallback'/, `${name} must wire Caveat Fallback in --hand`);
+  }
+  assert.doesNotMatch(
+    storefront,
+    /<figure class="snap snap--hero">[\s\S]*?fetchpriority="high"[\s\S]*?<\/figure>/,
+    'desktop preload already prioritizes shawarma-wrap.avif; mobile should not mark it fetchpriority=high',
+  );
+});

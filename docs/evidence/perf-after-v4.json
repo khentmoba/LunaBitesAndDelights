@@ -1,151 +1,125 @@
 {
   "label": "after-v4",
-  "capturedAt": "2026-11-13T06:17:31.732Z",
+  "capturedAt": "2026-11-14T02:52:06.297Z",
   "cacheControl": {
-    "/": "(Firebase default: max-age=3600)",
-    "/menu/": "(Firebase default: max-age=3600)",
-    "/styles.css": "public, max-age=604800, stale-while-revalidate=604800",
-    "/app.js": "public, max-age=604800, stale-while-revalidate=604800",
-    "/img/luna-logo-640.webp": "public, max-age=604800, stale-while-revalidate=604800",
-    "/fonts/bricolage.woff2": "public, max-age=2592000, stale-while-revalidate=604800",
-    "/kiosk/main.dart.js": "public, no-cache"
+    "/": "no-cache",
+    "/menu/": "no-cache",
+    "/styles.css": "(Firebase default: max-age=3600)",
+    "/app.js": "(Firebase default: max-age=3600)",
+    "/img/luna-logo-640.webp": "public, max-age=86400, stale-while-revalidate=604800",
+    "/fonts/bricolage.woff2": "public, max-age=86400, stale-while-revalidate=604800",
+    "/kiosk/main.dart.js": "no-cache"
   },
-  "url": "http://127.0.0.1:49152/",
+  "url": "http://127.0.0.1:64504/",
   "profile": "slow 3G: 400 kbps down/up, 400 ms RTT, 4x CPU slowdown",
   "viewports": {
     "mobile": "390x844@2x",
     "desktop": "1440x900@1x"
   },
   "cold": {
-    "lcp": 992,
-    "lcpEl": "H1#hero-title",
-    "cls": 0.029669386181521082,
-    "fcp": 992,
-    "tbt": 171,
+    "lcp": 1560,
+    "lcpEl": "P",
+    "cls": 0,
+    "fcp": 1560,
+    "tbt": 129,
     "longTasks": 2,
-    "interactionMs": 101.4,
-    "interactionUs": 101400,
-    "domNodes": 323,
+    "interactionMs": 6.8,
+    "interactionUs": 6800,
+    "domNodes": 383,
     "title": "Luna Bites & Delights — Shawarma & Burgers in Magallanes",
     "h1": "Shawarma, burgers & coolers in Magallanes.",
-    "font": "\"Bricolage Grotesque\", ui-sans-serif, system-ui, -apple-system, \"Segoe UI\", sans-serif",
-    "sheets": 2,
+    "font": "\"Bricolage Grotesque\", \"Bricolage Fallback\", ui-sans-serif, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+    "sheets": 1,
     "resources": [
       {
         "name": "/fonts/bricolage.woff2",
-        "transferSize": 24764,
-        "encodedBodySize": 24464,
-        "duration": 1932
+        "transferSize": 17348,
+        "encodedBodySize": 17048,
+        "duration": 1337
       },
       {
         "name": "/manifest.webmanifest",
-        "transferSize": 1356,
-        "encodedBodySize": 1056,
-        "duration": 634
-      },
-      {
-        "name": "/styles.css",
-        "transferSize": 5410,
-        "encodedBodySize": 5110,
-        "duration": 928
-      },
-      {
-        "name": "/app.js",
-        "transferSize": 1659,
-        "encodedBodySize": 1359,
-        "duration": 675
+        "transferSize": 1063,
+        "encodedBodySize": 763,
+        "duration": 462
       },
       {
         "name": "/img/luna-logo-320.avif",
-        "transferSize": 13033,
-        "encodedBodySize": 12733,
-        "duration": 1459
+        "transferSize": 10498,
+        "encodedBodySize": 10198,
+        "duration": 1112
       },
       {
         "name": "/img/shawarma-wrap.avif",
         "transferSize": 5880,
         "encodedBodySize": 5580,
-        "duration": 1132
+        "duration": 881
       },
       {
         "name": "/fonts/caveat.woff2",
-        "transferSize": 26484,
-        "encodedBodySize": 26184,
-        "duration": 1895
+        "transferSize": 9828,
+        "encodedBodySize": 9528,
+        "duration": 1175
       },
       {
         "name": "/img/favicon-32.png",
-        "transferSize": 2761,
-        "encodedBodySize": 2461,
-        "duration": 566
+        "transferSize": 1997,
+        "encodedBodySize": 1697,
+        "duration": 487
       },
       {
         "name": "/img/apple-touch-icon.png",
-        "transferSize": 8221,
-        "encodedBodySize": 7921,
-        "duration": 675
+        "transferSize": 4058,
+        "encodedBodySize": 3758,
+        "duration": 549
       }
     ],
     "nav": {
-      "responseEnd": 685,
-      "domContentLoaded": 1303,
-      "load": 2639
+      "responseEnd": 1312,
+      "domContentLoaded": 1547,
+      "load": 2575
     },
-    "bytesOnWire": 100846,
-    "requests": 10,
+    "bytesOnWire": 64674,
+    "requests": 8,
     "conditionalRequests": 0,
     "cachedRequests": 0,
-    "fullResponses": 10,
+    "fullResponses": 8,
     "statusByUrl": [
       "200 /",
-      "200 /app.js",
       "200 /fonts/bricolage.woff2",
       "200 /fonts/caveat.woff2",
       "200 /img/apple-touch-icon.png",
       "200 /img/favicon-32.png",
       "200 /img/luna-logo-320.avif",
       "200 /img/shawarma-wrap.avif",
-      "200 /manifest.webmanifest",
-      "200 /styles.css"
+      "200 /manifest.webmanifest"
     ]
   },
   "warm": {
-    "lcp": 108,
+    "lcp": 524,
     "lcpEl": "P",
     "cls": 0,
-    "fcp": 108,
+    "fcp": 524,
     "tbt": 0,
     "longTasks": 0,
-    "interactionMs": 4.1,
-    "interactionUs": 4100,
-    "domNodes": 323,
+    "interactionMs": 14.8,
+    "interactionUs": 14800,
+    "domNodes": 383,
     "title": "Luna Bites & Delights — Shawarma & Burgers in Magallanes",
     "h1": "Shawarma, burgers & coolers in Magallanes.",
-    "font": "\"Bricolage Grotesque\", ui-sans-serif, system-ui, -apple-system, \"Segoe UI\", sans-serif",
-    "sheets": 2,
+    "font": "\"Bricolage Grotesque\", \"Bricolage Fallback\", ui-sans-serif, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+    "sheets": 1,
     "resources": [
       {
         "name": "/fonts/bricolage.woff2",
         "transferSize": 0,
-        "encodedBodySize": 24464,
-        "duration": 0
-      },
-      {
-        "name": "/styles.css",
-        "transferSize": 0,
-        "encodedBodySize": 5110,
-        "duration": 0
-      },
-      {
-        "name": "/app.js",
-        "transferSize": 0,
-        "encodedBodySize": 1359,
+        "encodedBodySize": 17048,
         "duration": 0
       },
       {
         "name": "/img/luna-logo-320.avif",
         "transferSize": 0,
-        "encodedBodySize": 12733,
+        "encodedBodySize": 10198,
         "duration": 0
       },
       {
@@ -157,274 +131,232 @@
       {
         "name": "/fonts/caveat.woff2",
         "transferSize": 0,
-        "encodedBodySize": 26184,
+        "encodedBodySize": 9528,
         "duration": 0
       },
       {
         "name": "/manifest.webmanifest",
-        "transferSize": 0,
-        "encodedBodySize": 1056,
-        "duration": 1
+        "transferSize": 300,
+        "encodedBodySize": 763,
+        "duration": 447
       },
       {
         "name": "/img/apple-touch-icon.png",
         "transferSize": 0,
-        "encodedBodySize": 7921,
+        "encodedBodySize": 3758,
         "duration": 1
       }
     ],
     "nav": {
-      "responseEnd": 2,
-      "domContentLoaded": 65,
-      "load": 90
+      "responseEnd": 442,
+      "domContentLoaded": 521,
+      "load": 534
     },
-    "bytesOnWire": 0,
-    "requests": 9,
+    "bytesOnWire": 1058,
+    "requests": 7,
     "conditionalRequests": 0,
-    "cachedRequests": 3,
-    "fullResponses": 9,
+    "cachedRequests": 1,
+    "fullResponses": 7,
     "statusByUrl": [
       "200 /",
-      "200 /app.js",
       "200 /fonts/bricolage.woff2",
       "200 /fonts/caveat.woff2",
       "200 /img/apple-touch-icon.png",
       "200 /img/luna-logo-320.avif",
       "200 /img/shawarma-wrap.avif",
-      "200 /manifest.webmanifest",
-      "200 /styles.css"
+      "200 /manifest.webmanifest"
     ]
   },
   "desktopCold": {
-    "lcp": 672,
+    "lcp": 700,
     "lcpEl": "H1#hero-title",
-    "cls": 0.0009931780718853663,
-    "fcp": 672,
-    "tbt": 7,
+    "cls": 0.005229694425207756,
+    "fcp": 700,
+    "tbt": 60,
     "longTasks": 2,
-    "interactionMs": 11.8,
-    "interactionUs": 11800,
-    "domNodes": 323,
+    "interactionMs": 9.2,
+    "interactionUs": 9200,
+    "domNodes": 383,
     "title": "Luna Bites & Delights — Shawarma & Burgers in Magallanes",
     "h1": "Shawarma, burgers & coolers in Magallanes.",
-    "font": "\"Bricolage Grotesque\", ui-sans-serif, system-ui, -apple-system, \"Segoe UI\", sans-serif",
-    "sheets": 2,
+    "font": "\"Bricolage Grotesque\", \"Bricolage Fallback\", ui-sans-serif, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+    "sheets": 1,
     "resources": [
       {
         "name": "/img/shawarma-wrap.avif",
         "transferSize": 5880,
         "encodedBodySize": 5580,
-        "duration": 1023
+        "duration": 849
       },
       {
         "name": "/fonts/bricolage.woff2",
-        "transferSize": 24764,
-        "encodedBodySize": 24464,
-        "duration": 1978
+        "transferSize": 17348,
+        "encodedBodySize": 17048,
+        "duration": 1365
       },
       {
         "name": "/manifest.webmanifest",
-        "transferSize": 1356,
-        "encodedBodySize": 1056,
-        "duration": 657
-      },
-      {
-        "name": "/styles.css",
-        "transferSize": 5410,
-        "encodedBodySize": 5110,
-        "duration": 1007
-      },
-      {
-        "name": "/app.js",
-        "transferSize": 1659,
-        "encodedBodySize": 1359,
-        "duration": 739
+        "transferSize": 1063,
+        "encodedBodySize": 763,
+        "duration": 486
       },
       {
         "name": "/img/luna-logo-320.avif",
-        "transferSize": 13033,
-        "encodedBodySize": 12733,
-        "duration": 1488
+        "transferSize": 10498,
+        "encodedBodySize": 10198,
+        "duration": 1173
       },
       {
         "name": "/fonts/caveat.woff2",
-        "transferSize": 26484,
-        "encodedBodySize": 26184,
-        "duration": 1943
+        "transferSize": 9828,
+        "encodedBodySize": 9528,
+        "duration": 1122
       },
       {
         "name": "/img/favicon-32.png",
-        "transferSize": 2761,
-        "encodedBodySize": 2461,
-        "duration": 546
+        "transferSize": 1997,
+        "encodedBodySize": 1697,
+        "duration": 505
       },
       {
         "name": "/img/apple-touch-icon.png",
-        "transferSize": 8221,
-        "encodedBodySize": 7921,
-        "duration": 653
+        "transferSize": 4058,
+        "encodedBodySize": 3758,
+        "duration": 552
       }
     ],
     "nav": {
-      "responseEnd": 585,
-      "domContentLoaded": 1265,
-      "load": 2568
+      "responseEnd": 655,
+      "domContentLoaded": 696,
+      "load": 1818
     },
-    "bytesOnWire": 100846,
-    "requests": 10,
+    "bytesOnWire": 64674,
+    "requests": 8,
     "conditionalRequests": 0,
     "cachedRequests": 0,
-    "fullResponses": 10,
+    "fullResponses": 8,
     "statusByUrl": [
       "200 /",
-      "200 /app.js",
       "200 /fonts/bricolage.woff2",
       "200 /fonts/caveat.woff2",
       "200 /img/apple-touch-icon.png",
       "200 /img/favicon-32.png",
       "200 /img/luna-logo-320.avif",
       "200 /img/shawarma-wrap.avif",
-      "200 /manifest.webmanifest",
-      "200 /styles.css"
+      "200 /manifest.webmanifest"
     ]
   },
   "lowEndLite": {
-    "lcp": 664,
+    "lcp": 688,
     "lcpEl": "H1#hero-title",
-    "cls": 0.001916164822048611,
-    "fcp": 664,
-    "tbt": 109,
-    "longTasks": 1,
-    "interactionMs": 15.2,
-    "interactionUs": 15200,
-    "domNodes": 323,
+    "cls": 0,
+    "fcp": 688,
+    "tbt": 158,
+    "longTasks": 2,
+    "interactionMs": 10.6,
+    "interactionUs": 10600,
+    "domNodes": 383,
     "title": "Luna Bites & Delights — Shawarma & Burgers in Magallanes",
     "h1": "Shawarma, burgers & coolers in Magallanes.",
-    "font": "\"Bricolage Grotesque\", ui-sans-serif, system-ui, -apple-system, \"Segoe UI\", sans-serif",
-    "sheets": 2,
+    "font": "\"Bricolage Grotesque\", \"Bricolage Fallback\", ui-sans-serif, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+    "sheets": 1,
     "resources": [
       {
         "name": "/fonts/bricolage.woff2",
-        "transferSize": 24764,
-        "encodedBodySize": 24464,
-        "duration": 1963
+        "transferSize": 17348,
+        "encodedBodySize": 17048,
+        "duration": 1346
       },
       {
         "name": "/manifest.webmanifest",
-        "transferSize": 1356,
-        "encodedBodySize": 1056,
-        "duration": 515
-      },
-      {
-        "name": "/styles.css",
-        "transferSize": 5410,
-        "encodedBodySize": 5110,
-        "duration": 954
-      },
-      {
-        "name": "/app.js",
-        "transferSize": 1659,
-        "encodedBodySize": 1359,
-        "duration": 689
+        "transferSize": 1063,
+        "encodedBodySize": 763,
+        "duration": 431
       },
       {
         "name": "/img/luna-logo-320.avif",
-        "transferSize": 13033,
-        "encodedBodySize": 12733,
-        "duration": 1515
+        "transferSize": 10498,
+        "encodedBodySize": 10198,
+        "duration": 1177
       },
       {
         "name": "/img/shawarma-wrap.avif",
         "transferSize": 5880,
         "encodedBodySize": 5580,
-        "duration": 1155
+        "duration": 911
       },
       {
         "name": "/fonts/caveat.woff2",
-        "transferSize": 26484,
-        "encodedBodySize": 26184,
-        "duration": 1936
+        "transferSize": 9828,
+        "encodedBodySize": 9528,
+        "duration": 1146
       },
       {
         "name": "/img/favicon-32.png",
-        "transferSize": 2761,
-        "encodedBodySize": 2461,
-        "duration": 543
+        "transferSize": 1997,
+        "encodedBodySize": 1697,
+        "duration": 495
       },
       {
         "name": "/img/apple-touch-icon.png",
-        "transferSize": 8221,
-        "encodedBodySize": 7921,
-        "duration": 652
+        "transferSize": 4058,
+        "encodedBodySize": 3758,
+        "duration": 556
       }
     ],
     "nav": {
-      "responseEnd": 584,
-      "domContentLoaded": 1235,
-      "load": 2562
+      "responseEnd": 653,
+      "domContentLoaded": 672,
+      "load": 1801
     },
-    "bytesOnWire": 100846,
-    "requests": 10,
+    "bytesOnWire": 64674,
+    "requests": 8,
     "conditionalRequests": 0,
     "cachedRequests": 0,
-    "fullResponses": 10,
+    "fullResponses": 8,
     "statusByUrl": [
       "200 /",
-      "200 /app.js",
       "200 /fonts/bricolage.woff2",
       "200 /fonts/caveat.woff2",
       "200 /img/apple-touch-icon.png",
       "200 /img/favicon-32.png",
       "200 /img/luna-logo-320.avif",
       "200 /img/shawarma-wrap.avif",
-      "200 /manifest.webmanifest",
-      "200 /styles.css"
+      "200 /manifest.webmanifest"
     ]
   },
   "wifiMobile": {
-    "lcp": 60,
+    "lcp": 56,
     "lcpEl": "P",
     "cls": 0,
-    "fcp": 60,
+    "fcp": 56,
     "tbt": 0,
     "longTasks": 0,
-    "interactionMs": 27.8,
-    "interactionUs": 27800,
-    "domNodes": 323,
+    "interactionMs": 28.5,
+    "interactionUs": 28500,
+    "domNodes": 383,
     "title": "Luna Bites & Delights — Shawarma & Burgers in Magallanes",
     "h1": "Shawarma, burgers & coolers in Magallanes.",
-    "font": "\"Bricolage Grotesque\", ui-sans-serif, system-ui, -apple-system, \"Segoe UI\", sans-serif",
-    "sheets": 2,
+    "font": "\"Bricolage Grotesque\", \"Bricolage Fallback\", ui-sans-serif, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+    "sheets": 1,
     "resources": [
       {
         "name": "/fonts/bricolage.woff2",
-        "transferSize": 24764,
-        "encodedBodySize": 24464,
-        "duration": 3
-      },
-      {
-        "name": "/styles.css",
-        "transferSize": 5410,
-        "encodedBodySize": 5110,
+        "transferSize": 17348,
+        "encodedBodySize": 17048,
         "duration": 2
       },
       {
         "name": "/img/luna-logo-320.avif",
-        "transferSize": 13033,
-        "encodedBodySize": 12733,
-        "duration": 4
+        "transferSize": 10498,
+        "encodedBodySize": 10198,
+        "duration": 2
       },
       {
         "name": "/img/shawarma-wrap.avif",
         "transferSize": 5880,
         "encodedBodySize": 5580,
-        "duration": 4
-      },
-      {
-        "name": "/app.js",
-        "transferSize": 1659,
-        "encodedBodySize": 1359,
-        "duration": 5
+        "duration": 2
       },
       {
         "name": "/img/pink-wash.webp",
@@ -434,42 +366,41 @@
       },
       {
         "name": "/fonts/caveat.woff2",
-        "transferSize": 26484,
-        "encodedBodySize": 26184,
-        "duration": 12
+        "transferSize": 9828,
+        "encodedBodySize": 9528,
+        "duration": 5
       },
       {
         "name": "/manifest.webmanifest",
-        "transferSize": 1356,
-        "encodedBodySize": 1056,
-        "duration": 3
+        "transferSize": 1063,
+        "encodedBodySize": 763,
+        "duration": 1
       },
       {
         "name": "/img/favicon-32.png",
-        "transferSize": 2761,
-        "encodedBodySize": 2461,
-        "duration": 2
+        "transferSize": 1997,
+        "encodedBodySize": 1697,
+        "duration": 1
       },
       {
         "name": "/img/apple-touch-icon.png",
-        "transferSize": 8221,
-        "encodedBodySize": 7921,
+        "transferSize": 4058,
+        "encodedBodySize": 3758,
         "duration": 2
       }
     ],
     "nav": {
       "responseEnd": 3,
-      "domContentLoaded": 24,
-      "load": 29
+      "domContentLoaded": 27,
+      "load": 27
     },
-    "bytesOnWire": 117040,
-    "requests": 11,
+    "bytesOnWire": 80867,
+    "requests": 9,
     "conditionalRequests": 0,
     "cachedRequests": 0,
-    "fullResponses": 11,
+    "fullResponses": 9,
     "statusByUrl": [
       "200 /",
-      "200 /app.js",
       "200 /fonts/bricolage.woff2",
       "200 /fonts/caveat.woff2",
       "200 /img/apple-touch-icon.png",
@@ -477,103 +408,98 @@
       "200 /img/luna-logo-320.avif",
       "200 /img/pink-wash.webp",
       "200 /img/shawarma-wrap.avif",
-      "200 /manifest.webmanifest",
-      "200 /styles.css"
+      "200 /manifest.webmanifest"
     ]
   },
   "menuCold": {
-    "lcp": 768,
+    "lcp": 872,
     "lcpEl": "P",
-    "cls": 0.13825147009096542,
-    "fcp": 768,
-    "tbt": 33,
+    "cls": 0.01708274343147054,
+    "fcp": 872,
+    "tbt": 31,
     "longTasks": 1,
     "interactionMs": null,
     "interactionUs": null,
-    "domNodes": 238,
+    "domNodes": 293,
     "title": "Menu & Prices — Luna Bites & Delights, Magallanes",
     "h1": "Menu & prices",
-    "font": "\"Bricolage Grotesque\", ui-sans-serif, system-ui, -apple-system, \"Segoe UI\", sans-serif",
-    "sheets": 2,
+    "font": "\"Bricolage Grotesque\", \"Bricolage Fallback\", ui-sans-serif, system-ui, -apple-system, \"Segoe UI\", sans-serif",
+    "sheets": 1,
     "resources": [
       {
         "name": "/fonts/bricolage.woff2",
-        "transferSize": 24764,
-        "encodedBodySize": 24464,
-        "duration": 1398
+        "transferSize": 17348,
+        "encodedBodySize": 17048,
+        "duration": 1025
       },
       {
         "name": "/manifest.webmanifest",
-        "transferSize": 1356,
-        "encodedBodySize": 1056,
-        "duration": 608
-      },
-      {
-        "name": "/styles.css",
-        "transferSize": 5410,
-        "encodedBodySize": 5110,
-        "duration": 816
-      },
-      {
-        "name": "/app.js",
-        "transferSize": 1659,
-        "encodedBodySize": 1359,
-        "duration": 642
+        "transferSize": 1063,
+        "encodedBodySize": 763,
+        "duration": 469
       },
       {
         "name": "/img/luna-logo-320.avif",
-        "transferSize": 13033,
-        "encodedBodySize": 12733,
-        "duration": 1131
+        "transferSize": 10498,
+        "encodedBodySize": 10198,
+        "duration": 865
       },
       {
         "name": "/img/favicon-32.png",
-        "transferSize": 2761,
-        "encodedBodySize": 2461,
-        "duration": 606
+        "transferSize": 1997,
+        "encodedBodySize": 1697,
+        "duration": 517
       },
       {
         "name": "/img/apple-touch-icon.png",
-        "transferSize": 8221,
-        "encodedBodySize": 7921,
-        "duration": 822
+        "transferSize": 4058,
+        "encodedBodySize": 3758,
+        "duration": 609
       },
       {
         "name": "/fonts/caveat.woff2",
-        "transferSize": 26484,
-        "encodedBodySize": 26184,
-        "duration": 1184
+        "transferSize": 9828,
+        "encodedBodySize": 9528,
+        "duration": 748
       }
     ],
     "nav": {
-      "responseEnd": 569,
-      "domContentLoaded": 1152,
-      "load": 1876
+      "responseEnd": 585,
+      "domContentLoaded": 601,
+      "load": 1504
     },
-    "bytesOnWire": 92329,
-    "requests": 9,
+    "bytesOnWire": 55210,
+    "requests": 7,
     "conditionalRequests": 0,
     "cachedRequests": 0,
-    "fullResponses": 9,
+    "fullResponses": 7,
     "statusByUrl": [
-      "200 /app.js",
       "200 /fonts/bricolage.woff2",
       "200 /fonts/caveat.woff2",
       "200 /img/apple-touch-icon.png",
       "200 /img/favicon-32.png",
       "200 /img/luna-logo-320.avif",
       "200 /manifest.webmanifest",
-      "200 /menu/",
-      "200 /styles.css"
+      "200 /menu/"
     ]
   },
-  "screenshots": [],
+  "screenshots": [
+    "docs/evidence/low-end-after-v4-320-top.png",
+    "docs/evidence/low-end-after-v4-320-menu.png",
+    "docs/evidence/low-end-after-v4-320-photos.png",
+    "docs/evidence/low-end-after-v4-390-top.png",
+    "docs/evidence/low-end-after-v4-390-menu.png",
+    "docs/evidence/low-end-after-v4-390-photos.png",
+    "docs/evidence/low-end-after-v4-768-top.png",
+    "docs/evidence/low-end-after-v4-768-menu.png",
+    "docs/evidence/low-end-after-v4-768-photos.png",
+    "docs/evidence/low-end-after-v4-1440-top.png",
+    "docs/evidence/low-end-after-v4-1440-menu.png",
+    "docs/evidence/low-end-after-v4-1440-photos.png"
+  ],
   "headerRules": [
     "**",
-    "**/*.{html,js,wasm,css,json,svg,ico}",
-    "**/*.{png,jpg,jpeg,gif,webp,avif}",
-    "**/*.{ttf,otf,woff,woff2}",
-    "/{styles.css,app.js,manifest.webmanifest}",
-    "**/*.{bin,frag,symbols}"
+    "**/*.@(woff2|webp|avif|png|jpg|jpeg|svg|ico)",
+    "{/,/index.html,/menu/**,/payment/**,/kiosk/,/kiosk/index.html,/kiosk/flutter_bootstrap.js,/kiosk/main.dart.js,/kiosk/sw.js,/kiosk/version.json,/kiosk/assets/*.json,/kiosk/canvaskit/**}"
   ]
 }
