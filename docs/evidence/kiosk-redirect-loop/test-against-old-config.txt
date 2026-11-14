@@ -1,0 +1,61 @@
+✖ app-site: redirect /kiosk does not loop (1.7698ms)
+✔ lunaexpress: redirect /kiosk{,/**} does not loop (0.1847ms)
+✔ lunaexpress: redirect /** does not loop (0.0929ms)
+✖ app-site serves /kiosk/ without an explicit redirect rule (1.1482ms)
+✔ globToRegExp handles the patterns used in firebase.json (0.2041ms)
+✔ the loop check catches the rule that broke production (0.1276ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 4
+ℹ fail 2
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 77.7746
+
+✖ failing tests:
+
+test at test\site\hosting.test.mjs:56:5
+✖ app-site: redirect /kiosk does not loop (1.7698ms)
+  AssertionError [ERR_ASSERTION]: /kiosk -> /kiosk/: the destination /kiosk matches the source again, so production Hosting loops.
+      at TestContext.<anonymous> (file:///C:/Users/Admin/.t3/worktrees/LunaBites%20and%20Delights/t3-f6c9c580-b04ff649180e2ad8/test/site/hosting.test.mjs:61:16)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.start (node:internal/test_runner/test:1262:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:387:17) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at test\site\hosting.test.mjs:70:1
+✖ app-site serves /kiosk/ without an explicit redirect rule (1.1482ms)
+  AssertionError [ERR_ASSERTION]: Hosting already adds the trailing slash to /kiosk; a redirect rule here loops /kiosk/.
+  + actual - expected
+  
+  + [
+  +   {
+  +     destination: '/kiosk/',
+  +     source: '/kiosk',
+  +     type: 301
+  +   }
+  + ]
+  - []
+  
+      at TestContext.<anonymous> (file:///C:/Users/Admin/.t3/worktrees/LunaBites%20and%20Delights/t3-f6c9c580-b04ff649180e2ad8/test/site/hosting.test.mjs:75:10)
+      at Test.runInAsyncScope (node:async_hooks:227:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+      at Test.postRun (node:internal/test_runner/test:1542:19)
+      at Test.run (node:internal/test_runner/test:1467:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: [ { source: '/kiosk', destination: '/kiosk/', type: 301 } ],
+    expected: [],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }

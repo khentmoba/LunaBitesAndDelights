@@ -57,13 +57,6 @@
         ]
       }
     ],
-    "redirects": [
-      {
-        "source": "/kiosk",
-        "destination": "/kiosk/",
-        "type": 301
-      }
-    ],
     "rewrites": [
       {
         "source": "/menu{,/**}",

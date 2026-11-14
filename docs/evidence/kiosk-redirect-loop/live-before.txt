@@ -1,0 +1,15 @@
+# Live production, before fix (Sat Nov 14 08:41:18 UTC 2026)
+== /kiosk
+HTTP/1.1 301 Moved Permanently
+Location: /kiosk/
+== /kiosk/
+HTTP/1.1 301 Moved Permanently
+Location: /kiosk/
+== /menu
+HTTP/1.1 301 Moved Permanently
+Location: /menu/
+== /menu/
+HTTP/1.1 200 OK
+== follow /kiosk/ (max 20)
+curl: (47) Maximum (20) redirects followed
+301

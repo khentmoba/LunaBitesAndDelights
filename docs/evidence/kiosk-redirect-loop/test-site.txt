@@ -1,0 +1,36 @@
+
+> test:site
+> node --test test/site/app.test.mjs test/site/hosting.test.mjs
+
+✔ both pages inline their script and stylesheet with no external CSS/JS or cache-busting params (1.3659ms)
+✔ inline style blocks have valid balanced CSS (0.3496ms)
+✔ the menu page keeps the bar and reveal behaviour (159.5618ms)
+✔ the bar only sticks once the page has scrolled (104.8091ms)
+✔ reduced motion hides nothing and writes no reveal state (44.9236ms)
+✔ without IntersectionObserver the menu and photos appear at once (49.2435ms)
+✔ with IntersectionObserver the reveal waits for the section to arrive (62.6042ms)
+✔ a section that never intersects stays unrevealed (69.8525ms)
+✔ the map and street view swap one at a time (44.1732ms)
+✔ a weak device keeps every line visible and starts no observers (50.2159ms)
+✔ both pages flag weak devices before the stylesheet (0.2266ms)
+✔ font preloads match the inline stylesheet so each font is fetched once (0.2124ms)
+✔ the hero logo is responsive and the hidden bar logo is not preloaded (0.2273ms)
+✔ the street view embed is fetched only when its tab is chosen (44.3381ms)
+✔ without script the street view still offers a way out (0.2121ms)
+✔ staff login link remains visible in the header and is not hidden in CSS (0.2001ms)
+✔ the bar publishes its measured height to --bar-h for scroll-margin-top (32.9318ms)
+✔ both pages define metric-matched fallback fonts and avoid high fetchpriority on mobile-below-fold hero photo (0.3085ms)
+✔ lunaexpress: redirect /kiosk{,/**} does not loop (1.6805ms)
+✔ lunaexpress: redirect /** does not loop (0.2142ms)
+✔ app-site serves /kiosk/ without an explicit redirect rule (0.6141ms)
+✔ globToRegExp handles the patterns used in firebase.json (0.5721ms)
+✔ the loop check catches the rule that broke production (0.4191ms)
+ℹ tests 23
+ℹ suites 0
+ℹ pass 23
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1370.1922
+test:site exit=0
