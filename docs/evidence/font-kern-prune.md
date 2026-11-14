@@ -21,18 +21,18 @@ node tool/font_render_diff.mjs site tool/fonts/bricolage-source.woff2 site/fonts
 python tool/png_diff.py <out>
 ```
 
-Headless Chrome, full-page, animations off, iframes hidden, `content-visibility` forced visible, font confirmed `loaded`:
+Headless Chrome, full-page, counting a pixel as different if any RGB channel differs, animations off, iframes hidden, `content-visibility` forced visible, font confirmed `loaded`:
 
 | Page | Width | Size (px) | Differing pixels (pruned) | Differing pixels (no-kern control) |
 |---|---:|---|---:|---:|
 | `/` | 320 @2x | 640×18482 | **0** | page height changed (+42 px) |
-| `/` | 390 @2x | 780×17756 | **0** | 271,451 |
-| `/` | 768 @2x | 1536×16028 | **0** | 302,522 |
-| `/` | 1440 @1x | 1440×5982 | **0** | 105,182 |
+| `/` | 390 @2x | 780×17756 | **0** | 272,485 |
+| `/` | 768 @2x | 1536×16028 | **0** | 302,221 |
+| `/` | 1440 @1x | 1440×5982 | **0** | 105,101 |
 | `/menu/` | 320 @2x | 640×11878 | **0** | page height changed (+42 px) |
-| `/menu/` | 390 @2x | 780×10642 | **0** | 243,347 |
-| `/menu/` | 768 @2x | 1536×9796 | **0** | 265,041 |
-| `/menu/` | 1440 @1x | 1440×3565 | **0** | 88,271 |
+| `/menu/` | 390 @2x | 780×10642 | **0** | 243,675 |
+| `/menu/` | 768 @2x | 1536×9796 | **0** | 265,504 |
+| `/menu/` | 1440 @1x | 1440×3565 | **0** | 88,460 |
 
 The control (same font with `GPOS` deleted) proves the diff detects kerning loss; the pruned font renders identically to its source.
 

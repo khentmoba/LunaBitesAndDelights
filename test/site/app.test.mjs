@@ -41,7 +41,6 @@ function load({
   reducedMotion = false,
   intersectionObserver = true,
   lite = false,
-  beforeRun,
 } = {}) {
   const dom = new JSDOM(pages[page], {
     runScripts: 'outside-only',
@@ -84,7 +83,6 @@ function load({
   }
 
   if (lite) window.document.documentElement.setAttribute('data-lite', '');
-  if (beforeRun) beforeRun(window);
   window.eval(inlineScriptOf(pages[page]));
   return { window, observers };
 }
