@@ -52,13 +52,20 @@ class ReportScaffold extends StatelessWidget {
           const SizedBox(width: 8),
         ],
       ),
-      body: loading
-          ? const Center(
-              child: CircularProgressIndicator(color: KioskTheme.lunaPink),
-            )
-          : error != null
-          ? ReportError(message: error!, onRetry: onRetry)
-          : body,
+      body: SafeArea(
+        top: false,
+        child: loading
+            ? const Center(
+                child: CircularProgressIndicator.adaptive(
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    KioskTheme.lunaPink,
+                  ),
+                ),
+              )
+            : error != null
+            ? ReportError(message: error!, onRetry: onRetry)
+            : body,
+      ),
     );
   }
 }

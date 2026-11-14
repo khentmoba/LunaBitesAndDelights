@@ -272,8 +272,9 @@ class _AdminDashboardState extends State<AdminDashboard> {
   }
 
   Widget _buildHeader() {
+    final isNarrow = MediaQuery.sizeOf(context).width < 460;
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: EdgeInsets.all(isNarrow ? 16 : 24),
       decoration: BoxDecoration(
         gradient: KioskTheme.brandGradient,
         borderRadius: BorderRadius.circular(KioskTheme.radiusLg),
@@ -285,8 +286,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
           Row(
             children: [
               Container(
-                width: 48,
-                height: 48,
+                width: isNarrow ? 42 : 48,
+                height: isNarrow ? 42 : 48,
                 decoration: BoxDecoration(
                   color: Colors.white.withValues(alpha: 0.15),
                   shape: BoxShape.circle,
@@ -299,27 +300,31 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 child: Center(
                   child: Image.asset(
                     'images/luna_logo.png',
-                    height: 36,
+                    height: isNarrow ? 32 : 36,
                     excludeFromSemantics: true,
                   ),
                 ),
               ),
-              const SizedBox(width: 14),
+              const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       'Luna Bites & Delights',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: KioskTheme.font(
                         color: KioskTheme.textOnPrimary,
-                        fontSize: 18,
+                        fontSize: isNarrow ? 16 : 18,
                         fontWeight: FontWeight.w800,
                       ),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       'Welcome, ${session.username}!',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: KioskTheme.font(
                         color: KioskTheme.textOnPrimary.withValues(alpha: 0.85),
                         fontSize: 13,
@@ -334,41 +339,50 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 onPressed: _loading ? null : _fetchDashboardData,
                 icon: const Icon(Icons.refresh_rounded, color: Colors.white),
               ),
-              JuicyFeedback(
-                onPressed: _logout,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 9,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(KioskTheme.radiusFull),
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.3),
+              if (isNarrow)
+                IconButton(
+                  tooltip: 'Logout',
+                  onPressed: _logout,
+                  icon: const Icon(Icons.logout_rounded, color: Colors.white),
+                )
+              else
+                JuicyFeedback(
+                  onPressed: _logout,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 9,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(
+                        KioskTheme.radiusFull,
+                      ),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.3),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.logout_rounded,
+                          color: Colors.white.withValues(alpha: 0.9),
+                          size: 16,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          'Logout',
+                          style: KioskTheme.font(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.logout_rounded,
-                        color: Colors.white.withValues(alpha: 0.9),
-                        size: 16,
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        'Logout',
-                        style: KioskTheme.font(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w800,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
-                  ),
                 ),
-              ),
             ],
           ),
           const SizedBox(height: 16),
@@ -470,7 +484,14 @@ class _AdminDashboardState extends State<AdminDashboard> {
             child: Icon(icon, color: color, size: 22),
           ),
           const SizedBox(height: 14),
-          Text(value, style: KioskTheme.headerMedium.copyWith(fontSize: 24)),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              value,
+              style: KioskTheme.headerMedium.copyWith(fontSize: 24),
+            ),
+          ),
           const SizedBox(height: 2),
           Text(
             label,
@@ -920,57 +941,60 @@ class _AdminDashboardState extends State<AdminDashboard> {
             top: Radius.circular(KioskTheme.radiusXl),
           ),
         ),
-        child: Column(
-          children: [
-            Container(
-              width: 40,
-              height: 4,
-              margin: const EdgeInsets.only(top: 14, bottom: 10),
-              decoration: BoxDecoration(
-                color: Colors.grey[300],
-                borderRadius: BorderRadius.circular(2),
+        child: SafeArea(
+          top: false,
+          child: Column(
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(top: 14, bottom: 10),
+                decoration: BoxDecoration(
+                  color: KioskTheme.rule,
+                  borderRadius: BorderRadius.circular(2),
+                ),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(24, 8, 24, 8),
-              child: Row(
-                children: [
-                  Text(
-                    'All orders',
-                    style: KioskTheme.headerSmall.copyWith(fontSize: 18),
-                  ),
-                  const Spacer(),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 5,
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 8, 24, 8),
+                child: Row(
+                  children: [
+                    Text(
+                      'All orders',
+                      style: KioskTheme.headerSmall.copyWith(fontSize: 18),
                     ),
-                    decoration: BoxDecoration(
-                      color: KioskTheme.lunaPink.withValues(alpha: 0.08),
-                      borderRadius: BorderRadius.circular(
-                        KioskTheme.radiusFull,
+                    const Spacer(),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 5,
+                      ),
+                      decoration: BoxDecoration(
+                        color: KioskTheme.lunaPink.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(
+                          KioskTheme.radiusFull,
+                        ),
+                      ),
+                      child: Text(
+                        '${orders.length} total',
+                        style: KioskTheme.labelSmall.copyWith(
+                          color: KioskTheme.lunaPink,
+                          fontSize: 11,
+                        ),
                       ),
                     ),
-                    child: Text(
-                      '${orders.length} total',
-                      style: KioskTheme.labelSmall.copyWith(
-                        color: KioskTheme.lunaPink,
-                        fontSize: 11,
-                      ),
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-            KioskTheme.divider(),
-            Expanded(
-              child: ListView.builder(
-                padding: const EdgeInsets.all(20),
-                itemCount: orders.length,
-                itemBuilder: (_, i) => _buildOrderTile(orders[i]),
+              KioskTheme.divider(),
+              Expanded(
+                child: ListView.builder(
+                  padding: const EdgeInsets.all(20),
+                  itemCount: orders.length,
+                  itemBuilder: (_, i) => _buildOrderTile(orders[i]),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

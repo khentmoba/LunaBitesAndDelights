@@ -92,8 +92,14 @@ class MenuTheme {
   static ThemeData get data => ThemeData(
     useMaterial3: true,
     brightness: Brightness.light,
+    visualDensity: VisualDensity.adaptivePlatformDensity,
     fontFamily: printFamily,
     scaffoldBackgroundColor: ground,
+    textSelectionTheme: TextSelectionThemeData(
+      cursorColor: plate,
+      selectionColor: butter.withValues(alpha: .6),
+      selectionHandleColor: plate,
+    ),
     colorScheme: const ColorScheme.light(
       primary: plate,
       onPrimary: onPlate,
