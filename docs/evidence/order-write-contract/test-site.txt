@@ -1,0 +1,38 @@
+
+> test:site
+> node --test test/site/app.test.mjs test/site/hosting.test.mjs
+
+✔ both pages inline their script and stylesheet with no external CSS/JS or cache-busting params (1.2123ms)
+✔ inline style blocks have valid balanced CSS (0.3113ms)
+✔ the menu page keeps the bar and reveal behaviour (130.9763ms)
+✔ the bar only sticks once the page has scrolled (60.2147ms)
+✔ reduced motion hides nothing and writes no reveal state (34.9423ms)
+✔ without IntersectionObserver the menu and photos appear at once (31.9156ms)
+✔ with IntersectionObserver the reveal waits for the section to arrive (28.9536ms)
+✔ a section that never intersects stays unrevealed (32.5005ms)
+✔ the map and street view swap one at a time (33.0899ms)
+✔ a weak device keeps every line visible and starts no observers (28.3942ms)
+✔ both pages flag weak devices before the stylesheet (0.2068ms)
+✔ font preloads match the inline stylesheet so each font is fetched once (0.1671ms)
+✔ the hero logo is responsive and the hidden bar logo is not preloaded (0.1639ms)
+✔ the street view embed is fetched only when its tab is chosen (29.5659ms)
+✔ without script the street view still offers a way out (0.2519ms)
+✔ staff login link remains visible in the header and is not hidden in CSS (0.1879ms)
+✔ the bar publishes its measured height to --bar-h for scroll-margin-top (24.2824ms)
+✔ the hero, bar, and footer logos share the 240px AVIF sized for the hero slot (0.2772ms)
+✔ the pruned Bricolage kerning covers every character pair the pages render (39.2011ms)
+✔ both pages define metric-matched fallback fonts and avoid high fetchpriority on mobile-below-fold hero photo (0.2741ms)
+✔ lunaexpress: redirect /kiosk{,/**} does not loop (1.3408ms)
+✔ lunaexpress: redirect /** does not loop (0.1411ms)
+✔ app-site serves /kiosk/ without an explicit redirect rule (0.608ms)
+✔ globToRegExp handles the patterns used in firebase.json (0.3853ms)
+✔ the loop check catches the rule that broke production (0.1992ms)
+ℹ tests 25
+ℹ suites 0
+ℹ pass 25
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1083.7069
+exit=0

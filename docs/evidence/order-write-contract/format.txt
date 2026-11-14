@@ -1,0 +1,2 @@
+Formatted 3 files (0 changed) in 0.04 seconds.
+exit=0

@@ -88,6 +88,52 @@ describe('orders: kiosk can only create (validated)', () => {
   });
 });
 
+// Fixtures are the exact writes checkout makes, produced by
+// test/order_service_test.dart. If one fails here, real orders fail in production.
+describe('orders: every checkout combination saves', () => {
+  const dir = resolve(__dirname, 'fixtures/checkout');
+  const load = (name) => {
+    const payload = JSON.parse(readFileSync(resolve(dir, `${name}.json`), 'utf8'));
+    payload.timestamp = Timestamp.fromDate(new Date(payload.timestamp));
+    return payload;
+  };
+  const staff = () => user('staff_ana', { role: 'staff' });
+  const admin = () => user('staff_admin', { role: 'admin' });
+
+  for (const name of ['kiosk-cash', 'kiosk-gcash']) {
+    test(`${name}: a signed-out customer can place it`, async () => {
+      await assertSucceeds(addDoc(collection(anon(), 'orders'), load(name)));
+    });
+    test(`${name}: a signed-in non-staff user can place it`, async () => {
+      await assertSucceeds(addDoc(collection(user('rider1'), 'orders'), load(name)));
+    });
+    test(`${name}: staff can place it`, async () => {
+      await assertSucceeds(addDoc(collection(staff(), 'orders'), load(name)));
+    });
+  }
+
+  for (const name of ['staff-cash', 'staff-gcash']) {
+    test(`${name}: staff and admin can place it`, async () => {
+      await assertSucceeds(addDoc(collection(staff(), 'orders'), load(name)));
+      await assertSucceeds(addDoc(collection(admin(), 'orders'), load(name)));
+    });
+    test(`${name}: rejected without a staff role claim`, async () => {
+      await assertFails(addDoc(collection(anon(), 'orders'), load(name)));
+      await assertFails(addDoc(collection(user('staff_ana'), 'orders'), load(name)));
+      await assertFails(addDoc(collection(user('rider1', { role: 'rider' }), 'orders'), load(name)));
+    });
+  }
+
+  test('the limits checkout enforces match the rules', async () => {
+    const base = load('kiosk-cash');
+    const line = base.items[0];
+    await assertSucceeds(addDoc(collection(anon(), 'orders'), { ...base, customerName: 'a'.repeat(100) }));
+    await assertFails(addDoc(collection(anon(), 'orders'), { ...base, customerName: 'a'.repeat(101) }));
+    await assertSucceeds(addDoc(collection(anon(), 'orders'), { ...base, items: Array(50).fill(line) }));
+    await assertFails(addDoc(collection(anon(), 'orders'), { ...base, items: Array(51).fill(line) }));
+  });
+});
+
 describe('config: public read-only', () => {
   test('anon can read, cannot write', async () => {
     await seed('config/app', { open: true });
