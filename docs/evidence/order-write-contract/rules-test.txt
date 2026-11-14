@@ -1,0 +1,97 @@
+
+> test:rules
+> npx --yes firebase-tools emulators:exec --only firestore "node --test test/firestore-rules.test.js"
+
+i  emulators: Starting emulators: firestore
+i  firestore: Firestore Emulator logging to firestore-debug.log
++  firestore: Firestore Emulator was started in standard edition.
++  firestore: Firestore Emulator UI websocket is running on 9150.
+i  Running script: node --test test/firestore-rules.test.js
+▶ orders: kiosk can only create (validated)
+  ✔ anon can create a valid order (711.5094ms)
+  ✔ anon can create the complete checkout payload (86.7395ms)
+[2026-11-14T09:07:25.007Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x6f54a677 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'create' @ L17, false for 'create' @ L169
+  ✔ create rejects telegramSent (the field that broke checkout) (87.4775ms)
+[2026-11-14T09:07:25.185Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x6f54a678 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+Property customerName is undefined on object. for 'create' @ L17, false for 'create' @ L169, Property customerName is undefined on object. for 'create' @ L17, false for 'create' @ L169
+[2026-11-14T09:07:25.244Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x6f54a679 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'create' @ L17, false for 'create' @ L169
+[2026-11-14T09:07:25.314Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x6f54a67a error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'create' @ L17, false for 'create' @ L169
+[2026-11-14T09:07:25.375Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x6f54a67b error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'create' @ L17, false for 'create' @ L169
+[2026-11-14T09:07:25.447Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x6f54a67c error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'create' @ L17, false for 'create' @ L169
+[2026-11-14T09:07:25.498Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x6f54a67d error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'create' @ L17, false for 'create' @ L169
+[2026-11-14T09:07:25.546Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x6f54a67e error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'create' @ L17, false for 'create' @ L169
+  ✔ create rejects missing/junk/oversized/forged fields (536.9259ms)
+[2026-11-14T09:07:25.750Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x6f54a681 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'update' @ L41, false for 'update' @ L169
+[2026-11-14T09:07:25.770Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x6f54a682 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'delete' @ L41, false for 'delete' @ L169
+  ✔ nobody can read/update/delete via client (272.0451ms)
+✔ orders: kiosk can only create (validated) (3599.7283ms)
+▶ orders: every checkout combination saves
+  ✔ kiosk-cash: a signed-out customer can place it (61.4877ms)
+  ✔ kiosk-cash: a signed-in non-staff user can place it (66.3757ms)
+  ✔ kiosk-cash: staff can place it (67.4705ms)
+  ✔ kiosk-gcash: a signed-out customer can place it (63.7701ms)
+  ✔ kiosk-gcash: a signed-in non-staff user can place it (60.5334ms)
+  ✔ kiosk-gcash: staff can place it (51.7492ms)
+  ✔ staff-cash: staff and admin can place it (120.1669ms)
+[2026-11-14T09:07:26.403Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x6f54a68c error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'create' @ L17, false for 'create' @ L169
+[2026-11-14T09:07:26.456Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x6f54a68d error. Code: 7 Message: 7 PERMISSION_DENIED: 
+Property role is undefined on object. for 'create' @ L17, false for 'create' @ L169, Property role is undefined on object. for 'create' @ L17, false for 'create' @ L169
+[2026-11-14T09:07:26.513Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x6f54a68e error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'create' @ L17, false for 'create' @ L169
+  ✔ staff-cash: rejected without a staff role claim (200.6337ms)
+  ✔ staff-gcash: staff and admin can place it (99.6662ms)
+[2026-11-14T09:07:26.658Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x6f54a691 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'create' @ L17, false for 'create' @ L169
+[2026-11-14T09:07:26.699Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x6f54a692 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+Property role is undefined on object. for 'create' @ L17, false for 'create' @ L169, Property role is undefined on object. for 'create' @ L17, false for 'create' @ L169
+[2026-11-14T09:07:26.736Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x6f54a693 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'create' @ L17, false for 'create' @ L169
+  ✔ staff-gcash: rejected without a staff role claim (123.222ms)
+[2026-11-14T09:07:26.874Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x6f54a695 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'create' @ L17, false for 'create' @ L169
+[2026-11-14T09:07:26.986Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x6f54a697 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'create' @ L17, false for 'create' @ L169
+  ✔ the limits checkout enforces match the rules (250.9618ms)
+✔ orders: every checkout combination saves (1167.6866ms)
+[2026-11-14T09:07:27.126Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x6f54a69a error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'create' @ L47, false for 'create' @ L169, false for 'update' @ L47, false for 'update' @ L169
+[2026-11-14T09:07:27.178Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x6f54a69b error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'update' @ L47, false for 'update' @ L169
+▶ config: public read-only
+  ✔ anon can read, cannot write (190.7868ms)
+✔ config: public read-only (191.1906ms)
+[2026-11-14T09:07:27.384Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x6f54a69f error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'create' @ L57, false for 'create' @ L169, false for 'update' @ L57, false for 'update' @ L169
+▶ staff_accounts + login_attempts: server only
+  ✔ everyone denied, even staff (255.8585ms)
+✔ staff_accounts + login_attempts: server only (256.2659ms)
+[2026-11-14T09:07:27.555Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x6f54a6a2 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'create' @ L169, false for 'update' @ L169
+▶ default deny
+  ✔ unknown collections denied (120.2128ms)
+✔ default deny (120.5043ms)
+ℹ tests 19
+ℹ suites 5
+ℹ pass 19
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 5913.7974
++  Script exited successfully (code 0)
+i  emulators: Shutting down emulators.
+i  firestore: Stopping Firestore Emulator
+!  Firestore Emulator has exited upon receiving signal: SIGINT
+i  hub: Stopping emulator hub
+i  logging: Stopping Logging Emulator
+exit=0

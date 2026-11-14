@@ -1,0 +1,119 @@
+Resolving dependencies...
+Downloading packages...
+  _flutterfire_internals 1.3.77 (1.3.79 available)
+  archive 4.0.9 (4.7.1 available)
+  async 2.13.0 (2.13.1 available)
+  clock 1.1.2 (1.1.3 available)
+  cloud_firestore 6.10.0 (7.1.0 available)
+  cloud_firestore_platform_interface 8.0.7 (8.1.0 available)
+  cloud_firestore_web 5.7.3 (5.8.0 available)
+  cloud_functions 6.5.0 (7.0.1 available)
+  cloud_functions_platform_interface 6.0.7 (6.1.1 available)
+  cloud_functions_web 5.1.13 (5.1.15 available)
+  crypto 3.0.7 (3.0.8 available)
+  cupertino_icons 1.0.8 (2.0.0 available)
+  firebase_app_check 0.4.8 (0.5.1 available)
+  firebase_app_check_platform_interface 0.4.2+1 (0.5.1+3 available)
+  firebase_app_check_web 0.2.6+1 (0.3.1+3 available)
+  firebase_auth 6.7.0 (7.0.1 available)
+  firebase_auth_platform_interface 9.1.0 (9.1.2 available)
+  firebase_auth_web 6.3.0 (6.3.2 available)
+  firebase_core 4.15.0 (5.1.0 available)
+  firebase_core_web 3.12.0 (4.1.0 available)
+  flutter_map 6.2.1 (8.3.2 available)
+  geolocator 13.0.4 (14.1.2 available)
+  geolocator_android 4.6.2 (5.2.1 available)
+  geolocator_apple 2.3.13 (2.4.3 available)
+  geolocator_platform_interface 4.2.6 (4.4.1 available)
+  geolocator_web 4.1.3 (4.1.4 available)
+  image 4.8.0 (4.12.0 available)
+  intl 0.20.2 (0.20.3 available)
+  latlong2 0.9.1 (0.10.1 available)
+  logger 2.7.0 (2.8.0 available)
+  material_color_utilities 0.13.0 (0.13.1 available)
+  mgrs_dart 2.0.0 (3.0.0 available)
+  petitparser 7.0.2 (7.1.0 available)
+  posix 6.5.0 (6.5.4 available)
+  proj4dart 2.1.0 (3.0.0 available)
+  stack_trace 1.12.1 (1.12.2 available)
+  test_api 0.7.12 (0.7.15 available)
+  unicode 0.3.1 (1.1.9 available)
+  uuid 4.5.3 (4.6.0 available)
+  vector_math 2.4.3 (2.4.4 available)
+  vm_service 15.0.2 (15.4.0 available)
+  web 1.1.1 (1.1.2 available)
+  webview_flutter 4.13.1 (4.14.1 available)
+  webview_flutter_android 4.10.13 (4.14.1 available)
+  webview_flutter_platform_interface 2.14.0 (2.15.1 available)
+  webview_flutter_wkwebview 3.24.1 (3.27.2 available)
+  xml 6.6.1 (7.1.0 available)
+Got dependencies!
+47 packages have newer versions incompatible with dependency constraints.
+Try `flutter pub outdated` for more information.
+00:00 +0: loading test/adaptive_layout_test.dart
+00:00 +0: test/adaptive_layout_test.dart: LunaExpressApp configures adaptive density and platform transitions
+00:00 +1: test/brand_identity_test.dart: Brand identity receipt header carries the current brand, not Luna Express
+00:00 +2: test/brand_identity_test.dart: Brand identity receipt header carries the current brand, not Luna Express
+00:00 +3: test/brand_identity_test.dart: Brand identity receipt header carries the current brand, not Luna Express
+00:00 +4: test/brand_identity_test.dart: Brand identity receipt header carries the current brand, not Luna Express
+00:00 +5: test/adaptive_layout_test.dart: CheckoutPage renders cleanly at 320px phone and constrains at 1280px
+00:01 +6: test/adaptive_layout_test.dart: ReceiptPage renders cleanly at 320px phone and constrains at 1280px
+00:01 +7: test/menu_kiosk_test.dart: KioskMenuPage displays Sulit Meals and Chicken Poppers categories
+00:02 +8: test/menu_ordering_test.dart: single option and quantity reach cart with the exact price
+00:03 +9: test/menu_ordering_test.dart: multi-select keeps its cap and preserves the fixed bundle price
+00:03 +10: test/menu_ordering_test.dart: Barkada overload size and quantity reach cart at poster price
+00:04 +11: test/menu_ordering_test.dart: fd4 poster item reaches cart at 320px
+00:04 +12: test/menu_ordering_test.dart: s10 poster item reaches cart at 320px
+00:04 +13: test/menu_ordering_test.dart: e7 poster item reaches cart at 320px
+00:04 +14: test/menu_ordering_test.dart: closing item details does not add an order
+00:04 +15: test/menu_ordering_test.dart: 320px menu supports large text without layout exceptions
+00:04 +16: test/menu_ordering_test.dart: cart order slip updates quantities and cancels back to /
+00:05 +17: test/menu_price_parity_test.dart: server price list is not empty
+00:05 +18: test/menu_price_parity_test.dart: every orderable menu item has a server price that matches
+00:05 +19: test/menu_price_parity_test.dart: order numbers are PHT timestamps, not random
+00:05 +20: test/menu_price_parity_test.dart: order numbers for the same second are stable
+00:06 +21: test/order_service_test.dart: every checkout combination matches a rules fixture kiosk-cash
+Order LU-261114-120000 saved to Firestore as testOrderReference
+00:06 +22: test/order_service_test.dart: every checkout combination matches a rules fixture kiosk-gcash
+Order LU-261114-120000 saved to Firestore as testOrderReference
+00:06 +23: test/order_service_test.dart: every checkout combination matches a rules fixture staff-cash
+Order LU-261114-120000 saved to Firestore as testOrderReference
+00:06 +24: test/order_service_test.dart: every checkout combination matches a rules fixture staff-gcash
+Order LU-261114-120000 saved to Firestore as testOrderReference
+00:06 +25: test/order_service_test.dart: customer orders only use values customers may send
+00:06 +26: test/order_service_test.dart: checkout blocks orders the rules would reject
+00:06 +27: test/order_service_test.dart: only verifyStaff users with a staff claim get staff mode
+00:06 +28: test/order_service_test.dart: initial order write leaves notification status to the server
+Order LU-261029-120000 saved to Firestore as testOrderReference
+00:07 +29: test/regression_test.dart: delivery math same point = zero distance
+00:07 +30: test/regression_test.dart: delivery math known distance sane (~11km between kitchens)
+00:07 +31: test/regression_test.dart: delivery math distance uses the nearer kitchen
+00:07 +32: test/regression_test.dart: cart add merges same name+variant, totals correct
+00:07 +33: test/regression_test.dart: cart increment/decrement/remove/clear
+00:07 +34: test/regression_test.dart: format phtDateLabel pads correctly
+00:07 +35: test/regression_test.dart: format localStamp format
+00:07 +36: test/regression_test.dart: format timeAgo buckets
+00:07 +37: test/regression_test.dart: order serialization generateOrderNumber generates a PHT timestamp number
+00:07 +38: test/regression_test.dart: order serialization OrderItem total = price * qty
+00:07 +39: test/regression_test.dart: order serialization OrderModel round-trips all fields
+00:07 +40: test/regression_test.dart: menu sections and new meals menu keeps Korean Spam Musubi and S3 shawarma rice while standalone rice bowl is retired
+00:07 +41: test/regression_test.dart: menu sections and new meals drinks section has no large promo indicator on any drink
+00:07 +42: test/regression_test.dart: menu sections and new meals retired items are gone and the owner price board is enforced
+00:07 +43: test/regression_test.dart: menu sections and new meals soda pop is retired and the Strawberry cooler stays
+00:07 +44: test/regression_test.dart: menu sections and new meals Blue Lemonade joins the Lemon Series at ₱49
+00:07 +45: test/regression_test.dart: menu sections and new meals contains sulit_meals and chicken_poppers sections
+00:07 +46: test/regression_test.dart: menu sections and new meals sulit_meals contains S1-S5 and Pork Sisig with valid assets
+00:07 +47: test/regression_test.dart: menu sections and new meals chicken_poppers contains all 6 signature flavors with valid assets
+00:11 +48: test/site_price_parity_test.dart: the storefront still prints prices at all
+00:11 +49: test/site_price_parity_test.dart: every printed price is the price the menu charges
+00:11 +50: test/site_price_parity_test.dart: both storefront pages print the same rows
+00:11 +51: test/site_price_parity_test.dart: the price source map has no dead entries
+00:11 +52: test/staff_kds_test.dart: Staff Session & Audio Alert Tests Session initializes and transitions login/logout state
+00:11 +53: test/staff_kds_test.dart: Staff Session & Audio Alert Tests Session tracks staff vs admin role properly
+00:11 +54: test/staff_kds_test.dart: Staff Session & Audio Alert Tests AudioAlertService toggles sound state reliably
+00:11 +55: test/staff_kds_test.dart: Staff Session & Audio Alert Tests StaffLoginDialog displays Quick PIN keypad by default
+00:12 +56: test/staff_kds_test.dart: Staff Session & Audio Alert Tests KdsPage renders operations board when staff is logged in
+00:12 +57: test/staff_kds_test.dart: Staff Session & Audio Alert Tests KdsPage mobile layout (390x844 & 320x640) renders without overflow or mock orders
+00:12 +58: test/staff_kds_test.dart: Staff Session & Audio Alert Tests AdminDashboard, AnalyticsPage, and LifetimeAnalyticsPage require staff login and render cleanly on mobile
+00:12 +59: All tests passed!
+exit=0

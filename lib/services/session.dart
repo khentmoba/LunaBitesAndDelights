@@ -35,27 +35,47 @@ class Session extends ChangeNotifier {
     }
   }
 
+  /// The staff username for a Firebase uid minted by `verifyStaff`, or null.
+  static String? staffUsernameFor(String uid) =>
+      uid.startsWith('staff_') && uid.length > 6 ? uid.substring(6) : null;
+
+  /// The role from token claims if `firestore.rules` treats it as staff.
+  static String? staffRoleFor(Map<String, dynamic>? claims) {
+    final role = claims?['role'];
+    return role == 'admin' || role == 'staff' ? role as String : null;
+  }
+
+  /// Staff mode writes `Staff`/`PAID` orders, which the rules accept only
+  /// from a `staff_` user with a staff role claim. Any other signed-in user
+  /// stays in customer mode so their orders still save.
   void _extractUser(User user) {
-    final uid = user.uid;
-    if (uid.startsWith('staff_')) {
-      _username = uid.substring(6);
-    } else {
-      _username = user.displayName ?? 'Staff';
+    final username = staffUsernameFor(user.uid);
+    if (username == null) {
+      _clear();
+      return;
     }
-    _role = _username?.toLowerCase() == 'admin' ? 'admin' : 'staff';
+    _username = username;
+    _role = username.toLowerCase() == 'admin' ? 'admin' : 'staff';
     notifyListeners();
     user
         .getIdTokenResult()
         .then((tokenResult) {
-          final claimRole = tokenResult.claims?['role'] as String?;
-          if (claimRole == 'admin' || claimRole == 'staff') {
-            if (_role != claimRole) {
-              _role = claimRole;
-              notifyListeners();
-            }
+          final claimRole = staffRoleFor(tokenResult.claims);
+          if (claimRole == null) {
+            logout();
+          } else if (_role != claimRole) {
+            _role = claimRole;
+            notifyListeners();
           }
         })
         .catchError((_) {});
+  }
+
+  void _clear() {
+    if (_username == null && _role == null) return;
+    _username = null;
+    _role = null;
+    notifyListeners();
   }
 
   void login(String username, {String role = 'staff'}) {

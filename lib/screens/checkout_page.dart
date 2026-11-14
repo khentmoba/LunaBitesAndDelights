@@ -8,6 +8,7 @@ import '../services/delivery.dart';
 import '../services/inactivity_timer.dart';
 import '../services/telegram_service.dart';
 import '../services/order_service.dart';
+import '../services/order_policy.dart';
 import '../services/session.dart';
 import '../utils/format.dart';
 import '../utils/validate.dart';
@@ -114,6 +115,10 @@ class _CheckoutPageState extends State<CheckoutPage> {
     if (!session.isStaff) {
       validationError = V.name(name) ?? V.phone(phone);
     }
+    validationError ??= OrderPolicy.rejectionFor(
+      customerName: name,
+      itemCount: cartNotifier.items.length,
+    );
     if (validationError == null && _needsCoordinates && address.isEmpty) {
       validationError = 'Please pin your delivery address on the map.';
     }
@@ -133,9 +138,10 @@ class _CheckoutPageState extends State<CheckoutPage> {
     final total = cartNotifier.totalPrice;
     final now = DateTime.now();
     final timeStr = localStamp(now);
-    final paymentStatus = session.isStaff
-        ? 'PAID'
-        : (_paymentMethod == 'GCash' ? 'AWAITING_PAYMENT' : 'NOT PAID');
+    final statuses = OrderPolicy.statusesFor(
+      isStaff: session.isStaff,
+      paymentMethod: _paymentMethod,
+    );
 
     String? orderDocId = _pendingOrderDocId;
     String orderNumber =
@@ -161,7 +167,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
           timestamp: now,
           dateLabel: phtDateLabel(),
           type: _orderType,
-          entryType: session.isStaff ? 'Staff' : 'Kiosk',
+          entryType: statuses.entryType,
           customerName: name,
           customerPhone: phone,
           customerAddress: address,
@@ -169,8 +175,8 @@ class _CheckoutPageState extends State<CheckoutPage> {
           lng: _needsCoordinates ? _pinnedLng : null,
           totalDistance: _needsCoordinates ? _distance : 0.0,
           paymentMethod: _paymentMethod,
-          paymentStatus: paymentStatus,
-          status: 'Pending',
+          paymentStatus: statuses.paymentStatus,
+          status: statuses.status,
         ),
         timeStr,
       );
