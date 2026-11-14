@@ -3,7 +3,7 @@ import '../widgets/kiosk/kiosk_theme.dart';
 import '../widgets/kiosk/juicy_feedback.dart';
 import '../services/session.dart';
 import 'menu_page.dart';
-import 'admin_dashboard.dart';
+import 'staff_screens.dart';
 
 class KioskSplashScreen extends StatefulWidget {
   const KioskSplashScreen({super.key});
@@ -99,8 +99,9 @@ class _KioskSplashScreenState extends State<KioskSplashScreen>
     Navigator.pushReplacement(
       context,
       PageRouteBuilder(
-        pageBuilder: (context, animation, secondaryAnimation) =>
-            session.isStaff ? const AdminDashboard() : const KioskMenuPage(),
+        pageBuilder: (context, animation, secondaryAnimation) => session.isStaff
+            ? const DeferredStaffScreen(StaffScreen.dashboard)
+            : const KioskMenuPage(),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           return FadeTransition(opacity: animation, child: child);
         },
@@ -165,7 +166,7 @@ class _KioskSplashScreenState extends State<KioskSplashScreen>
                                     width: logoSize,
                                     height: logoSize * 1.2,
                                     child: Image.asset(
-                                      'images/luna_logo.png',
+                                      'images/luna_logo.webp',
                                       semanticLabel: 'Luna Bites & Delights',
                                       errorBuilder:
                                           (context, error, stackTrace) =>

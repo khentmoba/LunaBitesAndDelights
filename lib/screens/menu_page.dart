@@ -69,7 +69,7 @@ class KioskMenuPage extends StatelessWidget {
       child: Row(
         children: [
           Image.asset(
-            'images/luna_logo.png',
+            'images/luna_logo.webp',
             height: wide ? 56 : 48,
             excludeFromSemantics: true,
           ),

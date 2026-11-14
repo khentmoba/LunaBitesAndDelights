@@ -298,7 +298,7 @@ class _StaffLoginDialogState extends State<StaffLoginDialog> {
                         ),
                         child: Center(
                           child: Image.asset(
-                            'images/luna_logo.png',
+                            'images/luna_logo.webp',
                             height: 50,
                             excludeFromSemantics: true,
                           ),

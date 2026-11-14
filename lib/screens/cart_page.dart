@@ -375,13 +375,15 @@ class KioskCartPage extends StatelessWidget {
               boxShadow: KioskTheme.shadowSm,
             ),
             child: Image.asset(
-              item.imageUrl.isNotEmpty ? item.imageUrl : 'images/luna_logo.png',
+              item.imageUrl.isNotEmpty
+                  ? item.imageUrl
+                  : 'images/luna_logo.webp',
               width: imageSize,
               height: imageSize,
               fit: BoxFit.cover,
               excludeFromSemantics: true,
               errorBuilder: (_, _, _) => Image.asset(
-                'images/luna_logo.png',
+                'images/luna_logo.webp',
                 width: imageSize,
                 height: imageSize,
                 fit: BoxFit.cover,

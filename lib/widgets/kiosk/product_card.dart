@@ -68,7 +68,7 @@ class KioskProductCard extends StatelessWidget {
                               : Image.asset(
                                   item.imageUrl.isNotEmpty
                                       ? item.imageUrl
-                                      : 'images/luna_logo.png',
+                                      : 'images/luna_logo.webp',
                                   fit: BoxFit.cover,
                                   errorBuilder: fallback,
                                 ),
