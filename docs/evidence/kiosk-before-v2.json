@@ -1,0 +1,1139 @@
+{
+  "label": "kiosk-before-v2",
+  "build": "C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-45ea8c3f-7cbeaa387605e4ce/build/web",
+  "capturedAt": "2026-11-15T04:59:35.538Z",
+  "viewport": "390x844@2x",
+  "note": "gzip -9 on html/js/mjs/wasm/json; service worker bypassed; Google/Firebase APIs blocked; CanvasKit from gstatic counted",
+  "profiles": {
+    "fast4g": {
+      "profile": "4G: 4 Mbps down, 1.5 Mbps up, 100 ms RTT, 4x CPU",
+      "medianFirstFrameMs": 7418,
+      "medianBytesOnWire": 3199814,
+      "samples": [
+        {
+          "firstFrameMs": 7433,
+          "bytesOnWire": 3199809,
+          "requests": 29,
+          "urls": [
+            "/kiosk/ 4767",
+            "/kiosk/icons/Icon-512.png 0",
+            "/kiosk/version.json 580",
+            "/kiosk/manifest.json 867",
+            "/kiosk/flutter_bootstrap.js 5832",
+            "/kiosk/favicon.png 0",
+            "/kiosk/icons/Icon-192.png 0",
+            "gstatic:canvaskit.wasm 1556698",
+            "gstatic:canvaskit.js 24277",
+            "/kiosk/main.dart.js 893967",
+            "/kiosk/assets/FontManifest.json 749",
+            "/kiosk/assets/fonts/MaterialIcons-Regular.otf 12654",
+            "/kiosk/assets/assets/fonts/Bricolage-400.ttf 27967",
+            "/kiosk/assets/assets/fonts/Bricolage-500.ttf 27915",
+            "/kiosk/assets/assets/fonts/Bricolage-600.ttf 27960",
+            "/kiosk/assets/assets/fonts/Bricolage-700.ttf 27736",
+            "/kiosk/assets/assets/fonts/Bricolage-800.ttf 27243",
+            "/kiosk/assets/assets/fonts/Caveat-600.ttf 62592",
+            "/kiosk/assets/assets/fonts/Caveat-700.ttf 62335",
+            "/kiosk/assets/packages/cupertino_icons/assets/CupertinoIcons.ttf 1527",
+            "gstatic:KFOmCnqEu92Fr1Me4GZLCzYlKw.woff2 63558",
+            "gstatic:firebase-app.js 23849",
+            "gstatic:firebase-firestore-pipelines.js 188358",
+            "gstatic:firebase-functions.js 5601",
+            "gstatic:firebase-app-check.js 8255",
+            "gstatic:firebase-auth.js 41752",
+            "/kiosk/assets/AssetManifest.bin.json 3325",
+            "/kiosk/assets/images/pink_wash.jpg 18759",
+            "/kiosk/assets/images/luna_logo.webp 80686"
+          ],
+          "timeline": [
+            [
+              135,
+              137,
+              "icons/Icon-512.png"
+            ],
+            [
+              147,
+              268,
+              "kiosk/version.json"
+            ],
+            [
+              152,
+              287,
+              "kiosk/flutter_bootstrap.js"
+            ],
+            [
+              154,
+              285,
+              "kiosk/manifest.json"
+            ],
+            [
+              287,
+              287,
+              "icons/Icon-192.png"
+            ],
+            [
+              301,
+              6136,
+              "chromium/canvaskit.wasm"
+            ],
+            [
+              301,
+              567,
+              "chromium/canvaskit.js"
+            ],
+            [
+              303,
+              4079,
+              "kiosk/main.dart.js"
+            ],
+            [
+              4245,
+              4376,
+              "assets/FontManifest.json"
+            ],
+            [
+              4385,
+              4672,
+              "fonts/MaterialIcons-Regular.otf"
+            ],
+            [
+              4385,
+              4926,
+              "fonts/Bricolage-400.ttf"
+            ],
+            [
+              4386,
+              4926,
+              "fonts/Bricolage-500.ttf"
+            ],
+            [
+              4387,
+              4927,
+              "fonts/Bricolage-600.ttf"
+            ],
+            [
+              4387,
+              4929,
+              "fonts/Bricolage-700.ttf"
+            ],
+            [
+              4388,
+              4942,
+              "fonts/Bricolage-800.ttf"
+            ],
+            [
+              4389,
+              5303,
+              "fonts/Caveat-600.ttf"
+            ],
+            [
+              4390,
+              5412,
+              "fonts/Caveat-700.ttf"
+            ],
+            [
+              4390,
+              5069,
+              "assets/CupertinoIcons.ttf"
+            ],
+            [
+              4391,
+              5193,
+              "v32/KFOmCnqEu92Fr1Me4GZLCzYlKw.woff2"
+            ],
+            [
+              6343,
+              6499,
+              "12.19.0/firebase-app.js"
+            ],
+            [
+              6505,
+              7145,
+              "12.19.0/firebase-firestore-pipelines.js"
+            ],
+            [
+              6506,
+              6686,
+              "12.19.0/firebase-functions.js"
+            ],
+            [
+              6508,
+              6709,
+              "12.19.0/firebase-app-check.js"
+            ],
+            [
+              6509,
+              6848,
+              "12.19.0/firebase-auth.js"
+            ],
+            [
+              7288,
+              7412,
+              "assets/AssetManifest.bin.json"
+            ],
+            [
+              7859,
+              8041,
+              "images/pink_wash.jpg"
+            ],
+            [
+              7861,
+              8163,
+              "images/luna_logo.webp"
+            ]
+          ],
+          "blocked": [],
+          "engine": [
+            "gstatic:canvaskit.wasm 1556698",
+            "gstatic:canvaskit.js 24277",
+            "/kiosk/main.dart.js 893967"
+          ],
+          "env": {
+            "crossOriginIsolated": false,
+            "renderer": [
+              "dart2js:canvaskit",
+              "undefined:"
+            ]
+          }
+        },
+        {
+          "firstFrameMs": 7418,
+          "bytesOnWire": 3199814,
+          "requests": 29,
+          "urls": [
+            "/kiosk/ 4767",
+            "/kiosk/icons/Icon-512.png 0",
+            "/kiosk/version.json 580",
+            "/kiosk/manifest.json 867",
+            "/kiosk/flutter_bootstrap.js 5832",
+            "/kiosk/favicon.png 0",
+            "/kiosk/icons/Icon-192.png 0",
+            "gstatic:canvaskit.wasm 1556703",
+            "gstatic:canvaskit.js 24277",
+            "/kiosk/main.dart.js 893967",
+            "/kiosk/assets/FontManifest.json 749",
+            "/kiosk/assets/fonts/MaterialIcons-Regular.otf 12654",
+            "/kiosk/assets/assets/fonts/Bricolage-400.ttf 27967",
+            "/kiosk/assets/assets/fonts/Bricolage-500.ttf 27915",
+            "/kiosk/assets/assets/fonts/Bricolage-600.ttf 27960",
+            "/kiosk/assets/assets/fonts/Bricolage-700.ttf 27736",
+            "/kiosk/assets/assets/fonts/Bricolage-800.ttf 27243",
+            "/kiosk/assets/assets/fonts/Caveat-600.ttf 62592",
+            "/kiosk/assets/assets/fonts/Caveat-700.ttf 62335",
+            "/kiosk/assets/packages/cupertino_icons/assets/CupertinoIcons.ttf 1527",
+            "gstatic:KFOmCnqEu92Fr1Me4GZLCzYlKw.woff2 63558",
+            "gstatic:firebase-app.js 23849",
+            "gstatic:firebase-firestore-pipelines.js 188358",
+            "gstatic:firebase-functions.js 5601",
+            "gstatic:firebase-app-check.js 8255",
+            "gstatic:firebase-auth.js 41752",
+            "/kiosk/assets/AssetManifest.bin.json 3325",
+            "/kiosk/assets/images/pink_wash.jpg 18759",
+            "/kiosk/assets/images/luna_logo.webp 80686"
+          ],
+          "timeline": [
+            [
+              144,
+              146,
+              "icons/Icon-512.png"
+            ],
+            [
+              158,
+              261,
+              "kiosk/version.json"
+            ],
+            [
+              165,
+              279,
+              "kiosk/flutter_bootstrap.js"
+            ],
+            [
+              167,
+              275,
+              "kiosk/manifest.json"
+            ],
+            [
+              277,
+              278,
+              "icons/Icon-192.png"
+            ],
+            [
+              292,
+              6087,
+              "chromium/canvaskit.wasm"
+            ],
+            [
+              293,
+              603,
+              "chromium/canvaskit.js"
+            ],
+            [
+              294,
+              4042,
+              "kiosk/main.dart.js"
+            ],
+            [
+              4215,
+              4320,
+              "assets/FontManifest.json"
+            ],
+            [
+              4328,
+              4614,
+              "fonts/MaterialIcons-Regular.otf"
+            ],
+            [
+              4329,
+              4849,
+              "fonts/Bricolage-400.ttf"
+            ],
+            [
+              4329,
+              4860,
+              "fonts/Bricolage-500.ttf"
+            ],
+            [
+              4330,
+              4881,
+              "fonts/Bricolage-600.ttf"
+            ],
+            [
+              4331,
+              4881,
+              "fonts/Bricolage-700.ttf"
+            ],
+            [
+              4332,
+              4881,
+              "fonts/Bricolage-800.ttf"
+            ],
+            [
+              4333,
+              5267,
+              "fonts/Caveat-600.ttf"
+            ],
+            [
+              4333,
+              5359,
+              "fonts/Caveat-700.ttf"
+            ],
+            [
+              4334,
+              4989,
+              "assets/CupertinoIcons.ttf"
+            ],
+            [
+              4335,
+              5142,
+              "v32/KFOmCnqEu92Fr1Me4GZLCzYlKw.woff2"
+            ],
+            [
+              6284,
+              6461,
+              "12.19.0/firebase-app.js"
+            ],
+            [
+              6466,
+              7086,
+              "12.19.0/firebase-firestore-pipelines.js"
+            ],
+            [
+              6468,
+              6618,
+              "12.19.0/firebase-functions.js"
+            ],
+            [
+              6469,
+              6634,
+              "12.19.0/firebase-app-check.js"
+            ],
+            [
+              6471,
+              6791,
+              "12.19.0/firebase-auth.js"
+            ],
+            [
+              7269,
+              7399,
+              "assets/AssetManifest.bin.json"
+            ],
+            [
+              7844,
+              8025,
+              "images/pink_wash.jpg"
+            ],
+            [
+              7846,
+              8151,
+              "images/luna_logo.webp"
+            ]
+          ],
+          "blocked": [],
+          "engine": [
+            "gstatic:canvaskit.wasm 1556703",
+            "gstatic:canvaskit.js 24277",
+            "/kiosk/main.dart.js 893967"
+          ],
+          "env": {
+            "crossOriginIsolated": false,
+            "renderer": [
+              "dart2js:canvaskit",
+              "undefined:"
+            ]
+          }
+        },
+        {
+          "firstFrameMs": 7381,
+          "bytesOnWire": 3199814,
+          "requests": 29,
+          "urls": [
+            "/kiosk/ 4767",
+            "/kiosk/icons/Icon-512.png 0",
+            "/kiosk/version.json 580",
+            "/kiosk/manifest.json 867",
+            "/kiosk/flutter_bootstrap.js 5832",
+            "/kiosk/favicon.png 0",
+            "/kiosk/icons/Icon-192.png 0",
+            "gstatic:canvaskit.wasm 1556703",
+            "gstatic:canvaskit.js 24277",
+            "/kiosk/main.dart.js 893967",
+            "/kiosk/assets/FontManifest.json 749",
+            "/kiosk/assets/fonts/MaterialIcons-Regular.otf 12654",
+            "/kiosk/assets/assets/fonts/Bricolage-400.ttf 27967",
+            "/kiosk/assets/assets/fonts/Bricolage-500.ttf 27915",
+            "/kiosk/assets/assets/fonts/Bricolage-600.ttf 27960",
+            "/kiosk/assets/assets/fonts/Bricolage-700.ttf 27736",
+            "/kiosk/assets/assets/fonts/Bricolage-800.ttf 27243",
+            "/kiosk/assets/assets/fonts/Caveat-600.ttf 62592",
+            "/kiosk/assets/assets/fonts/Caveat-700.ttf 62335",
+            "/kiosk/assets/packages/cupertino_icons/assets/CupertinoIcons.ttf 1527",
+            "gstatic:KFOmCnqEu92Fr1Me4GZLCzYlKw.woff2 63558",
+            "gstatic:firebase-app.js 23849",
+            "gstatic:firebase-firestore-pipelines.js 188358",
+            "gstatic:firebase-functions.js 5601",
+            "gstatic:firebase-app-check.js 8255",
+            "gstatic:firebase-auth.js 41752",
+            "/kiosk/assets/AssetManifest.bin.json 3325",
+            "/kiosk/assets/images/pink_wash.jpg 18759",
+            "/kiosk/assets/images/luna_logo.webp 80686"
+          ],
+          "timeline": [
+            [
+              137,
+              138,
+              "icons/Icon-512.png"
+            ],
+            [
+              148,
+              269,
+              "kiosk/version.json"
+            ],
+            [
+              153,
+              287,
+              "kiosk/flutter_bootstrap.js"
+            ],
+            [
+              155,
+              285,
+              "kiosk/manifest.json"
+            ],
+            [
+              287,
+              287,
+              "icons/Icon-192.png"
+            ],
+            [
+              300,
+              6126,
+              "chromium/canvaskit.wasm"
+            ],
+            [
+              301,
+              567,
+              "chromium/canvaskit.js"
+            ],
+            [
+              302,
+              4074,
+              "kiosk/main.dart.js"
+            ],
+            [
+              4224,
+              4353,
+              "assets/FontManifest.json"
+            ],
+            [
+              4360,
+              4636,
+              "fonts/MaterialIcons-Regular.otf"
+            ],
+            [
+              4361,
+              4903,
+              "fonts/Bricolage-400.ttf"
+            ],
+            [
+              4362,
+              4903,
+              "fonts/Bricolage-500.ttf"
+            ],
+            [
+              4362,
+              4903,
+              "fonts/Bricolage-600.ttf"
+            ],
+            [
+              4363,
+              4907,
+              "fonts/Bricolage-700.ttf"
+            ],
+            [
+              4364,
+              4918,
+              "fonts/Bricolage-800.ttf"
+            ],
+            [
+              4364,
+              5279,
+              "fonts/Caveat-600.ttf"
+            ],
+            [
+              4365,
+              5389,
+              "fonts/Caveat-700.ttf"
+            ],
+            [
+              4366,
+              5045,
+              "assets/CupertinoIcons.ttf"
+            ],
+            [
+              4367,
+              5170,
+              "v32/KFOmCnqEu92Fr1Me4GZLCzYlKw.woff2"
+            ],
+            [
+              6324,
+              6503,
+              "12.19.0/firebase-app.js"
+            ],
+            [
+              6509,
+              7118,
+              "12.19.0/firebase-firestore-pipelines.js"
+            ],
+            [
+              6511,
+              6645,
+              "12.19.0/firebase-functions.js"
+            ],
+            [
+              6513,
+              6691,
+              "12.19.0/firebase-app-check.js"
+            ],
+            [
+              6514,
+              6833,
+              "12.19.0/firebase-auth.js"
+            ],
+            [
+              7253,
+              7370,
+              "assets/AssetManifest.bin.json"
+            ],
+            [
+              7806,
+              7995,
+              "images/pink_wash.jpg"
+            ],
+            [
+              7808,
+              8131,
+              "images/luna_logo.webp"
+            ]
+          ],
+          "blocked": [],
+          "engine": [
+            "gstatic:canvaskit.wasm 1556703",
+            "gstatic:canvaskit.js 24277",
+            "/kiosk/main.dart.js 893967"
+          ],
+          "env": {
+            "crossOriginIsolated": false,
+            "renderer": [
+              "dart2js:canvaskit",
+              "undefined:"
+            ]
+          }
+        }
+      ]
+    },
+    "wifi": {
+      "profile": "unthrottled, 1x CPU",
+      "medianFirstFrameMs": 392,
+      "medianBytesOnWire": 3177891,
+      "samples": [
+        {
+          "firstFrameMs": 413,
+          "bytesOnWire": 3177874,
+          "requests": 29,
+          "urls": [
+            "/kiosk/ 4767",
+            "/kiosk/icons/Icon-512.png 0",
+            "/kiosk/version.json 580",
+            "/kiosk/manifest.json 867",
+            "/kiosk/flutter_bootstrap.js 5832",
+            "gstatic:canvaskit.wasm 1556052",
+            "gstatic:canvaskit.js 0",
+            "/kiosk/main.dart.js 893967",
+            "/kiosk/favicon.png 2988",
+            "/kiosk/icons/Icon-192.png 0",
+            "/kiosk/assets/FontManifest.json 749",
+            "/kiosk/assets/fonts/MaterialIcons-Regular.otf 12654",
+            "/kiosk/assets/assets/fonts/Bricolage-400.ttf 27967",
+            "/kiosk/assets/assets/fonts/Bricolage-500.ttf 27915",
+            "/kiosk/assets/assets/fonts/Bricolage-600.ttf 27960",
+            "/kiosk/assets/assets/fonts/Bricolage-700.ttf 27736",
+            "/kiosk/assets/assets/fonts/Bricolage-800.ttf 27243",
+            "/kiosk/assets/assets/fonts/Caveat-600.ttf 62592",
+            "/kiosk/assets/assets/fonts/Caveat-700.ttf 62335",
+            "/kiosk/assets/packages/cupertino_icons/assets/CupertinoIcons.ttf 1527",
+            "gstatic:KFOmCnqEu92Fr1Me4GZLCzYlKw.woff2 63558",
+            "gstatic:firebase-app.js 23849",
+            "gstatic:firebase-firestore-pipelines.js 188358",
+            "gstatic:firebase-functions.js 5601",
+            "gstatic:firebase-app-check.js 8255",
+            "gstatic:firebase-auth.js 41752",
+            "/kiosk/assets/AssetManifest.bin.json 3325",
+            "/kiosk/assets/images/pink_wash.jpg 18759",
+            "/kiosk/assets/images/luna_logo.webp 80686"
+          ],
+          "timeline": [
+            [
+              14,
+              15,
+              "icons/Icon-512.png"
+            ],
+            [
+              17,
+              18,
+              "kiosk/version.json"
+            ],
+            [
+              19,
+              20,
+              "kiosk/flutter_bootstrap.js"
+            ],
+            [
+              20,
+              23,
+              "kiosk/manifest.json"
+            ],
+            [
+              29,
+              31,
+              "chromium/canvaskit.js"
+            ],
+            [
+              29,
+              161,
+              "chromium/canvaskit.wasm"
+            ],
+            [
+              29,
+              65,
+              "kiosk/main.dart.js"
+            ],
+            [
+              30,
+              32,
+              "icons/Icon-192.png"
+            ],
+            [
+              161,
+              163,
+              "assets/FontManifest.json"
+            ],
+            [
+              191,
+              194,
+              "fonts/MaterialIcons-Regular.otf"
+            ],
+            [
+              191,
+              195,
+              "fonts/Bricolage-400.ttf"
+            ],
+            [
+              191,
+              196,
+              "fonts/Bricolage-500.ttf"
+            ],
+            [
+              192,
+              196,
+              "fonts/Bricolage-600.ttf"
+            ],
+            [
+              192,
+              198,
+              "fonts/Bricolage-700.ttf"
+            ],
+            [
+              192,
+              199,
+              "fonts/Bricolage-800.ttf"
+            ],
+            [
+              192,
+              200,
+              "fonts/Caveat-600.ttf"
+            ],
+            [
+              192,
+              200,
+              "fonts/Caveat-700.ttf"
+            ],
+            [
+              193,
+              199,
+              "assets/CupertinoIcons.ttf"
+            ],
+            [
+              193,
+              228,
+              "v32/KFOmCnqEu92Fr1Me4GZLCzYlKw.woff2"
+            ],
+            [
+              242,
+              269,
+              "12.19.0/firebase-app.js"
+            ],
+            [
+              272,
+              320,
+              "12.19.0/firebase-firestore-pipelines.js"
+            ],
+            [
+              272,
+              316,
+              "12.19.0/firebase-functions.js"
+            ],
+            [
+              274,
+              316,
+              "12.19.0/firebase-app-check.js"
+            ],
+            [
+              274,
+              318,
+              "12.19.0/firebase-auth.js"
+            ],
+            [
+              398,
+              400,
+              "assets/AssetManifest.bin.json"
+            ],
+            [
+              476,
+              478,
+              "images/pink_wash.jpg"
+            ],
+            [
+              477,
+              480,
+              "images/luna_logo.webp"
+            ]
+          ],
+          "blocked": [],
+          "engine": [
+            "gstatic:canvaskit.wasm 1556052",
+            "gstatic:canvaskit.js 0",
+            "/kiosk/main.dart.js 893967"
+          ],
+          "env": {
+            "crossOriginIsolated": false,
+            "renderer": [
+              "dart2js:canvaskit",
+              "undefined:"
+            ]
+          }
+        },
+        {
+          "firstFrameMs": 336,
+          "bytesOnWire": 3177891,
+          "requests": 29,
+          "urls": [
+            "/kiosk/ 4767",
+            "/kiosk/icons/Icon-512.png 0",
+            "/kiosk/version.json 580",
+            "/kiosk/manifest.json 867",
+            "/kiosk/flutter_bootstrap.js 5832",
+            "/kiosk/favicon.png 2988",
+            "/kiosk/icons/Icon-192.png 0",
+            "gstatic:canvaskit.wasm 1556052",
+            "gstatic:canvaskit.js 0",
+            "/kiosk/main.dart.js 893967",
+            "/kiosk/assets/FontManifest.json 749",
+            "/kiosk/assets/fonts/MaterialIcons-Regular.otf 12654",
+            "/kiosk/assets/assets/fonts/Bricolage-400.ttf 27967",
+            "/kiosk/assets/assets/fonts/Bricolage-500.ttf 27915",
+            "/kiosk/assets/assets/fonts/Bricolage-600.ttf 27960",
+            "/kiosk/assets/assets/fonts/Bricolage-700.ttf 27736",
+            "/kiosk/assets/assets/fonts/Bricolage-800.ttf 27243",
+            "/kiosk/assets/assets/fonts/Caveat-600.ttf 62592",
+            "/kiosk/assets/assets/fonts/Caveat-700.ttf 62335",
+            "/kiosk/assets/packages/cupertino_icons/assets/CupertinoIcons.ttf 1527",
+            "gstatic:KFOmCnqEu92Fr1Me4GZLCzYlKw.woff2 63557",
+            "gstatic:firebase-app.js 23851",
+            "gstatic:firebase-firestore-pipelines.js 188361",
+            "gstatic:firebase-functions.js 5605",
+            "gstatic:firebase-app-check.js 8259",
+            "gstatic:firebase-auth.js 41757",
+            "/kiosk/assets/AssetManifest.bin.json 3325",
+            "/kiosk/assets/images/pink_wash.jpg 18759",
+            "/kiosk/assets/images/luna_logo.webp 80686"
+          ],
+          "timeline": [
+            [
+              13,
+              14,
+              "icons/Icon-512.png"
+            ],
+            [
+              15,
+              16,
+              "kiosk/version.json"
+            ],
+            [
+              16,
+              18,
+              "kiosk/flutter_bootstrap.js"
+            ],
+            [
+              17,
+              21,
+              "kiosk/manifest.json"
+            ],
+            [
+              24,
+              86,
+              "chromium/canvaskit.wasm"
+            ],
+            [
+              25,
+              26,
+              "chromium/canvaskit.js"
+            ],
+            [
+              25,
+              41,
+              "kiosk/main.dart.js"
+            ],
+            [
+              26,
+              27,
+              "icons/Icon-192.png"
+            ],
+            [
+              143,
+              145,
+              "assets/FontManifest.json"
+            ],
+            [
+              148,
+              150,
+              "fonts/MaterialIcons-Regular.otf"
+            ],
+            [
+              148,
+              151,
+              "fonts/Bricolage-400.ttf"
+            ],
+            [
+              148,
+              152,
+              "fonts/Bricolage-500.ttf"
+            ],
+            [
+              148,
+              152,
+              "fonts/Bricolage-600.ttf"
+            ],
+            [
+              148,
+              153,
+              "fonts/Bricolage-700.ttf"
+            ],
+            [
+              148,
+              154,
+              "fonts/Bricolage-800.ttf"
+            ],
+            [
+              149,
+              154,
+              "fonts/Caveat-600.ttf"
+            ],
+            [
+              149,
+              155,
+              "fonts/Caveat-700.ttf"
+            ],
+            [
+              149,
+              155,
+              "assets/CupertinoIcons.ttf"
+            ],
+            [
+              149,
+              185,
+              "v32/KFOmCnqEu92Fr1Me4GZLCzYlKw.woff2"
+            ],
+            [
+              195,
+              218,
+              "12.19.0/firebase-app.js"
+            ],
+            [
+              221,
+              259,
+              "12.19.0/firebase-firestore-pipelines.js"
+            ],
+            [
+              221,
+              246,
+              "12.19.0/firebase-functions.js"
+            ],
+            [
+              221,
+              246,
+              "12.19.0/firebase-app-check.js"
+            ],
+            [
+              222,
+              251,
+              "12.19.0/firebase-auth.js"
+            ],
+            [
+              324,
+              325,
+              "assets/AssetManifest.bin.json"
+            ],
+            [
+              394,
+              395,
+              "images/pink_wash.jpg"
+            ],
+            [
+              394,
+              396,
+              "images/luna_logo.webp"
+            ]
+          ],
+          "blocked": [],
+          "engine": [
+            "gstatic:canvaskit.wasm 1556052",
+            "gstatic:canvaskit.js 0",
+            "/kiosk/main.dart.js 893967"
+          ],
+          "env": {
+            "crossOriginIsolated": false,
+            "renderer": [
+              "dart2js:canvaskit",
+              "undefined:"
+            ]
+          }
+        },
+        {
+          "firstFrameMs": 392,
+          "bytesOnWire": 3202829,
+          "requests": 29,
+          "urls": [
+            "/kiosk/ 4767",
+            "/kiosk/icons/Icon-512.png 0",
+            "/kiosk/version.json 580",
+            "/kiosk/manifest.json 867",
+            "/kiosk/flutter_bootstrap.js 5832",
+            "/kiosk/favicon.png 2988",
+            "/kiosk/icons/Icon-192.png 0",
+            "gstatic:canvaskit.wasm 1556698",
+            "gstatic:canvaskit.js 24277",
+            "/kiosk/main.dart.js 893967",
+            "/kiosk/assets/FontManifest.json 749",
+            "/kiosk/assets/fonts/MaterialIcons-Regular.otf 12654",
+            "/kiosk/assets/assets/fonts/Bricolage-400.ttf 27967",
+            "/kiosk/assets/assets/fonts/Bricolage-500.ttf 27915",
+            "/kiosk/assets/assets/fonts/Bricolage-600.ttf 27960",
+            "/kiosk/assets/assets/fonts/Bricolage-700.ttf 27736",
+            "/kiosk/assets/assets/fonts/Bricolage-800.ttf 27243",
+            "/kiosk/assets/assets/fonts/Caveat-600.ttf 62592",
+            "/kiosk/assets/assets/fonts/Caveat-700.ttf 62335",
+            "/kiosk/assets/packages/cupertino_icons/assets/CupertinoIcons.ttf 1527",
+            "gstatic:KFOmCnqEu92Fr1Me4GZLCzYlKw.woff2 63558",
+            "gstatic:firebase-app.js 23856",
+            "gstatic:firebase-firestore-pipelines.js 188364",
+            "gstatic:firebase-functions.js 5607",
+            "gstatic:firebase-app-check.js 8261",
+            "gstatic:firebase-auth.js 41759",
+            "/kiosk/assets/AssetManifest.bin.json 3325",
+            "/kiosk/assets/images/pink_wash.jpg 18759",
+            "/kiosk/assets/images/luna_logo.webp 80686"
+          ],
+          "timeline": [
+            [
+              20,
+              21,
+              "icons/Icon-512.png"
+            ],
+            [
+              23,
+              25,
+              "kiosk/version.json"
+            ],
+            [
+              25,
+              28,
+              "kiosk/flutter_bootstrap.js"
+            ],
+            [
+              28,
+              30,
+              "kiosk/manifest.json"
+            ],
+            [
+              38,
+              98,
+              "chromium/canvaskit.wasm"
+            ],
+            [
+              38,
+              64,
+              "chromium/canvaskit.js"
+            ],
+            [
+              38,
+              85,
+              "kiosk/main.dart.js"
+            ],
+            [
+              40,
+              41,
+              "icons/Icon-192.png"
+            ],
+            [
+              195,
+              196,
+              "assets/FontManifest.json"
+            ],
+            [
+              199,
+              201,
+              "fonts/MaterialIcons-Regular.otf"
+            ],
+            [
+              199,
+              202,
+              "fonts/Bricolage-400.ttf"
+            ],
+            [
+              199,
+              202,
+              "fonts/Bricolage-500.ttf"
+            ],
+            [
+              199,
+              204,
+              "fonts/Bricolage-600.ttf"
+            ],
+            [
+              200,
+              204,
+              "fonts/Bricolage-700.ttf"
+            ],
+            [
+              200,
+              205,
+              "fonts/Bricolage-800.ttf"
+            ],
+            [
+              200,
+              206,
+              "fonts/Caveat-600.ttf"
+            ],
+            [
+              200,
+              207,
+              "fonts/Caveat-700.ttf"
+            ],
+            [
+              200,
+              207,
+              "assets/CupertinoIcons.ttf"
+            ],
+            [
+              200,
+              236,
+              "v32/KFOmCnqEu92Fr1Me4GZLCzYlKw.woff2"
+            ],
+            [
+              248,
+              274,
+              "12.19.0/firebase-app.js"
+            ],
+            [
+              277,
+              308,
+              "12.19.0/firebase-firestore-pipelines.js"
+            ],
+            [
+              278,
+              305,
+              "12.19.0/firebase-functions.js"
+            ],
+            [
+              278,
+              306,
+              "12.19.0/firebase-app-check.js"
+            ],
+            [
+              279,
+              307,
+              "12.19.0/firebase-auth.js"
+            ],
+            [
+              379,
+              380,
+              "assets/AssetManifest.bin.json"
+            ],
+            [
+              448,
+              449,
+              "images/pink_wash.jpg"
+            ],
+            [
+              448,
+              450,
+              "images/luna_logo.webp"
+            ]
+          ],
+          "blocked": [],
+          "engine": [
+            "gstatic:canvaskit.wasm 1556698",
+            "gstatic:canvaskit.js 24277",
+            "/kiosk/main.dart.js 893967"
+          ],
+          "env": {
+            "crossOriginIsolated": false,
+            "renderer": [
+              "dart2js:canvaskit",
+              "undefined:"
+            ]
+          }
+        }
+      ]
+    }
+  }
+}

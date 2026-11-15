@@ -14,7 +14,7 @@ final List<MenuSection> kMenuSections = [
         description:
             'Grilled Hungarian sausage, savory siomai, ham, sunny-side-up fried egg, and steamed rice. Comes with a refreshing cold drink.',
         price: 99,
-        imageUrl: 'images/sulit_hungarian_sausage.jpg',
+        imageUrl: 'images/sulit_hungarian_sausage.webp',
         promoLabel: '₱99 ONLY',
       ),
       MenuItem(
@@ -24,7 +24,7 @@ final List<MenuSection> kMenuSections = [
         description:
             'Sweet cured glazed pork tocino, savory siomai, ham, sunny-side-up fried egg, and steamed rice. Comes with a refreshing cold drink.',
         price: 99,
-        imageUrl: 'images/sulit_tocino.jpg',
+        imageUrl: 'images/sulit_tocino.webp',
         promoLabel: '₱99 ONLY',
       ),
       MenuItem(
@@ -34,7 +34,7 @@ final List<MenuSection> kMenuSections = [
         description:
             'Tender marinated shawarma meat with cucumber-tomato salsa and garlic sauce, savory siomai, ham, sunny-side-up fried egg, and steamed rice. Comes with a refreshing cold drink.',
         price: 99,
-        imageUrl: 'images/sulit_shawarma.jpg',
+        imageUrl: 'images/sulit_shawarma.webp',
         promoLabel: '₱99 ONLY',
       ),
       MenuItem(
@@ -44,7 +44,7 @@ final List<MenuSection> kMenuSections = [
         description:
             'Classic scored jumbo hotdog, savory siomai, ham, sunny-side-up fried egg, and steamed rice. Comes with a refreshing cold drink.',
         price: 99,
-        imageUrl: 'images/sulit_jumbo_hotdog.jpg',
+        imageUrl: 'images/sulit_jumbo_hotdog.webp',
         promoLabel: '₱99 ONLY',
       ),
       MenuItem(
@@ -54,7 +54,7 @@ final List<MenuSection> kMenuSections = [
         description:
             'Korean Spam Musubi with a fried egg and a refreshing cold drink.',
         price: 99,
-        imageUrl: 'images/sulit_spam.jpg',
+        imageUrl: 'images/sulit_spam.webp',
         promoLabel: '₱99 ONLY',
       ),
       MenuItem(
@@ -64,7 +64,7 @@ final List<MenuSection> kMenuSections = [
         description:
             'Savory minced pork sisig drizzled with creamy garlic sauce, fresh calamansi, chili, and sunny-side-up egg over warm rice.',
         price: 99,
-        imageUrl: 'images/pork_sisig.jpg',
+        imageUrl: 'images/pork_sisig.webp',
         promoLabel: '₱99 ONLY',
       ),
     ],
@@ -82,7 +82,7 @@ final List<MenuSection> kMenuSections = [
         description:
             'Crispy bite-sized chicken poppers glazed in smoky-sweet Korean BBQ sauce, sprinkled with toasted sesame seeds. Served with egg, rice, and a drink.',
         price: 99,
-        imageUrl: 'images/poppers_korean_bbq.jpg',
+        imageUrl: 'images/poppers_korean_bbq.webp',
         promoLabel: '₱99 ONLY',
       ),
       MenuItem(
@@ -92,7 +92,7 @@ final List<MenuSection> kMenuSections = [
         description:
             'Crispy chicken poppers tossed in authentic sweet and mildly spicy Korean yangnyeom sauce with sesame seeds. Served with egg, rice, and a drink.',
         price: 99,
-        imageUrl: 'images/poppers_korean_yangnyeom.jpg',
+        imageUrl: 'images/poppers_korean_yangnyeom.webp',
         promoLabel: '₱99 ONLY',
       ),
       MenuItem(
@@ -102,7 +102,7 @@ final List<MenuSection> kMenuSections = [
         description:
             'Crispy chicken poppers coated in a refreshing sweet and tangy lemon glaze with fresh lemon zest. Served with egg, rice, and a drink.',
         price: 99,
-        imageUrl: 'images/poppers_lemon_glaze.jpg',
+        imageUrl: 'images/poppers_lemon_glaze.webp',
         promoLabel: '₱99 ONLY',
       ),
       MenuItem(
@@ -112,7 +112,7 @@ final List<MenuSection> kMenuSections = [
         description:
             'Crispy chicken poppers coated in rich, savory-sweet Japanese teriyaki glaze and toasted sesame seeds. Served with egg, rice, and a drink.',
         price: 99,
-        imageUrl: 'images/poppers_teriyaki_gloss.jpg',
+        imageUrl: 'images/poppers_teriyaki_gloss.webp',
         promoLabel: '₱99 ONLY',
       ),
       MenuItem(
@@ -122,7 +122,7 @@ final List<MenuSection> kMenuSections = [
         description:
             'Crispy chicken poppers smothered in rich creamy cheddar cheese sauce and herbs. Served with egg, cucumber, rice, and a drink.',
         price: 99,
-        imageUrl: 'images/poppers_creamy_cheese.jpg',
+        imageUrl: 'images/poppers_creamy_cheese.webp',
         promoLabel: '₱99 ONLY',
       ),
       MenuItem(
@@ -132,7 +132,7 @@ final List<MenuSection> kMenuSections = [
         description:
             'Crispy chicken poppers tossed in sweet tropical mango glaze with a fiery habanero kick and sesame seeds. Served with egg, rice, and a drink.',
         price: 99,
-        imageUrl: 'images/poppers_mango_habanero.jpg',
+        imageUrl: 'images/poppers_mango_habanero.webp',
         promoLabel: '₱99 ONLY',
       ),
     ],
@@ -148,7 +148,7 @@ final List<MenuSection> kMenuSections = [
         emoji: '🌯',
         description:
             'Tender marinated shawarma meat wrapped in warm flatbread with garlic sauce and fresh veggies.',
-        imageUrl: 'images/poster_shawarma_wrap.jpg',
+        imageUrl: 'images/poster_shawarma_wrap.webp',
         optionHeader: 'CHOOSE OPTION',
         variants: [
           MenuVariant(label: 'Buy 1 Take 1', price: 99, isBuy1Take1: true),
@@ -162,7 +162,7 @@ final List<MenuSection> kMenuSections = [
         description:
             'Extra-loaded shawarma wrap packed with all-meat goodness and special sauce.',
         price: 80,
-        imageUrl: 'images/shawarma_all_meat.jpg',
+        imageUrl: 'images/shawarma_all_meat.webp',
       ),
       MenuItem(
         id: 's4',
@@ -171,7 +171,7 @@ final List<MenuSection> kMenuSections = [
         description:
             'Juicy shawarma patty on a soft bun with sauce and veggies.',
         price: 95,
-        imageUrl: 'images/poster_shawarma_burger.jpg',
+        imageUrl: 'images/poster_shawarma_burger.webp',
         isBuy1Take1: true,
       ),
       MenuItem(
@@ -181,7 +181,7 @@ final List<MenuSection> kMenuSections = [
         description:
             'Crispy fries loaded with shawarma toppings, cheese, and garlic sauce.',
         price: 99,
-        imageUrl: 'images/poster_shawarma_fries.jpg',
+        imageUrl: 'images/poster_shawarma_fries.webp',
       ),
       MenuItem(
         id: 's6',
@@ -190,7 +190,7 @@ final List<MenuSection> kMenuSections = [
         description:
             'Crunchy nachos topped with shawarma meat, salsa, and melted cheese.',
         price: 99,
-        imageUrl: 'images/poster_shawarma_nachos.jpg',
+        imageUrl: 'images/poster_shawarma_nachos.webp',
       ),
       MenuItem(
         id: 's7',
@@ -199,7 +199,7 @@ final List<MenuSection> kMenuSections = [
         description:
             'Crispy quesadilla filled with shawarma meat and melted cheese.',
         price: 99,
-        imageUrl: 'images/poster_shawarma_quesadilla.jpg',
+        imageUrl: 'images/poster_shawarma_quesadilla.webp',
       ),
       MenuItem(
         id: 's8',
@@ -207,7 +207,7 @@ final List<MenuSection> kMenuSections = [
         emoji: '🧀',
         description:
             'Fries and nachos loaded with shawarma toppings. Buddy size serves 1–2; Barkada size serves 3–5.',
-        imageUrl: 'images/poster_overload.jpg',
+        imageUrl: 'images/poster_overload.webp',
         optionHeader: 'CHOOSE SIZE',
         variants: [
           MenuVariant(label: 'Buddy (1–2 pax)', price: 99),
@@ -228,7 +228,7 @@ final List<MenuSection> kMenuSections = [
         emoji: '🍟',
         description: 'Fries served above a cold drink.',
         price: 55,
-        imageUrl: 'images/owner_d1.jpg',
+        imageUrl: 'images/owner_d1.webp',
       ),
       MenuItem(
         id: 'fd2',
@@ -236,7 +236,7 @@ final List<MenuSection> kMenuSections = [
         emoji: '🍟',
         description: 'Fries and sliced hotdog served above a cold drink.',
         price: 65,
-        imageUrl: 'images/owner_d2.jpg',
+        imageUrl: 'images/owner_d2.webp',
       ),
       MenuItem(
         id: 'fd3',
@@ -244,7 +244,7 @@ final List<MenuSection> kMenuSections = [
         emoji: '🍟',
         description: 'Fries, sliced hotdog, cheesestick, and a cold drink.',
         price: 75,
-        imageUrl: 'images/owner_d3.jpg',
+        imageUrl: 'images/owner_d3.webp',
       ),
       MenuItem(
         id: 'fd4',
@@ -253,7 +253,7 @@ final List<MenuSection> kMenuSections = [
         description:
             'Fries, sliced hotdog, cheesestick, fried siomai, and a cold drink.',
         price: 89,
-        imageUrl: 'images/owner_d4.jpg',
+        imageUrl: 'images/owner_d4.webp',
       ),
       MenuItem(
         id: 'f4',
@@ -261,7 +261,7 @@ final List<MenuSection> kMenuSections = [
         emoji: '🍟',
         description: 'Double the crispy goodness! Pick two flavors.',
         price: 50,
-        imageUrl: 'images/poster_fries_b1t1.jpg',
+        imageUrl: 'images/poster_fries_b1t1.webp',
         isBuy1Take1: true,
         allowMultiSelect: true,
         maxSelect: 2,
@@ -278,7 +278,7 @@ final List<MenuSection> kMenuSections = [
         emoji: '🍟',
         description: 'Crispy golden fries. Choose your favorite flavor!',
         price: 75,
-        imageUrl: 'images/poster_fries_large.jpg',
+        imageUrl: 'images/poster_fries_large.webp',
         allowMultiSelect: true,
         maxSelect: 1,
         optionHeader: 'CHOOSE FLAVOR',
@@ -294,7 +294,7 @@ final List<MenuSection> kMenuSections = [
         emoji: '🍟',
         description: 'A massive bucket of crispy fries. Choose your flavor!',
         price: 99,
-        imageUrl: 'images/poster_fries_bucket.jpg',
+        imageUrl: 'images/poster_fries_bucket.webp',
         allowMultiSelect: true,
         maxSelect: 1,
         optionHeader: 'CHOOSE FLAVOR',
@@ -310,7 +310,7 @@ final List<MenuSection> kMenuSections = [
         emoji: '🍟',
         description: 'Our massive Terra-sized fries! Choose up to 3 flavors.',
         price: 150,
-        imageUrl: 'images/poster_fries_terra.jpg',
+        imageUrl: 'images/poster_fries_terra.webp',
         allowMultiSelect: true,
         maxSelect: 3,
         optionHeader: 'CHOOSE 3 FLAVORS',
@@ -333,7 +333,7 @@ final List<MenuSection> kMenuSections = [
         emoji: '🍔',
         description: 'Classic burger paired with crispy golden fries.',
         price: 60,
-        imageUrl: 'images/owner_combo_1.jpg',
+        imageUrl: 'images/owner_combo_1.webp',
       ),
       MenuItem(
         id: 'c2',
@@ -341,7 +341,7 @@ final List<MenuSection> kMenuSections = [
         emoji: '🌯',
         description: 'Shawarma wrap paired with crispy fries.',
         price: 99,
-        imageUrl: 'images/owner_combo_2.jpg',
+        imageUrl: 'images/owner_combo_2.webp',
       ),
       MenuItem(
         id: 'sc1',
@@ -349,7 +349,7 @@ final List<MenuSection> kMenuSections = [
         emoji: '🍔',
         description: 'Burger, fries, and one cold drink.',
         price: 99,
-        imageUrl: 'images/owner_super_combo_1.jpg',
+        imageUrl: 'images/owner_super_combo_1.webp',
       ),
       MenuItem(
         id: 'sc2',
@@ -357,7 +357,7 @@ final List<MenuSection> kMenuSections = [
         emoji: '🌯',
         description: 'Shawarma wrap, fries, and one cold drink.',
         price: 128,
-        imageUrl: 'images/owner_super_combo_2.jpg',
+        imageUrl: 'images/owner_super_combo_2.webp',
       ),
       MenuItem(
         id: 'c3',
@@ -365,7 +365,7 @@ final List<MenuSection> kMenuSections = [
         emoji: '🍔🍟🥤',
         description: 'Combo 3: two burgers, one regular fries, and two drinks.',
         price: 169,
-        imageUrl: 'images/owner_combo_3.jpg',
+        imageUrl: 'images/owner_combo_3.webp',
       ),
       MenuItem(
         id: 'c4_wrap_burger',
@@ -373,7 +373,7 @@ final List<MenuSection> kMenuSections = [
         emoji: '🌯🍔🍟',
         description: 'Shawarma wrap, burger, and fries.',
         price: 139,
-        imageUrl: 'images/owner_combo_4.jpg',
+        imageUrl: 'images/owner_combo_4.webp',
       ),
       MenuItem(
         id: 's10',
@@ -381,7 +381,7 @@ final List<MenuSection> kMenuSections = [
         emoji: '🌯🍔🥤',
         description: 'Shawarma wrap, shawarma burger, and one cold drink.',
         price: 150,
-        imageUrl: 'images/owner_combo_6.jpg',
+        imageUrl: 'images/owner_combo_6.webp',
       ),
       MenuItem(
         id: 'c4',
@@ -390,7 +390,7 @@ final List<MenuSection> kMenuSections = [
         description:
             'A perfect trio of ice cream halo halo, cheesy fries, and a delicious shawarma wrap.',
         price: 149,
-        imageUrl: 'images/combo_promo_halo_fries_wrap.jpg',
+        imageUrl: 'images/combo_promo_halo_fries_wrap.webp',
       ),
     ],
   ),
@@ -405,7 +405,7 @@ final List<MenuSection> kMenuSections = [
         emoji: '🫓',
         description: 'Crispy golden quesadilla with melted cheese filling.',
         price: 75,
-        imageUrl: 'images/quesadilla_extra.png',
+        imageUrl: 'images/quesadilla_extra.webp',
       ),
       MenuItem(
         id: 'e3',
@@ -413,7 +413,7 @@ final List<MenuSection> kMenuSections = [
         emoji: '🍨',
         description: 'Mango ice cream dessert with graham and toppings.',
         price: 65,
-        imageUrl: 'images/owner_mango_graham.jpg',
+        imageUrl: 'images/owner_mango_graham.webp',
       ),
       MenuItem(
         id: 'e4',
@@ -421,7 +421,7 @@ final List<MenuSection> kMenuSections = [
         emoji: '🍮',
         description: 'Traditional caramel custard.',
         price: 20,
-        imageUrl: 'images/owner_leche_flan.jpg',
+        imageUrl: 'images/owner_leche_flan.webp',
       ),
       MenuItem(
         id: 'e5',
@@ -429,7 +429,7 @@ final List<MenuSection> kMenuSections = [
         emoji: '🍨',
         description: 'Ube halo dessert topped with ice cream.',
         price: 65,
-        imageUrl: 'images/owner_ube_halo.jpg',
+        imageUrl: 'images/owner_ube_halo.webp',
       ),
       MenuItem(
         id: 'e6',
@@ -437,7 +437,7 @@ final List<MenuSection> kMenuSections = [
         emoji: '🍨',
         description: 'Ice cream with Oreo cookies and chocolate toppings.',
         price: 65,
-        imageUrl: 'images/owner_choco_oreo.jpg',
+        imageUrl: 'images/owner_choco_oreo.webp',
       ),
       MenuItem(
         id: 'e7',
@@ -445,7 +445,7 @@ final List<MenuSection> kMenuSections = [
         emoji: '🍨',
         description: 'Ice cream dessert with cheese, cookies, and wafers.',
         price: 65,
-        imageUrl: 'images/owner_vanilla_cheese.jpg',
+        imageUrl: 'images/owner_vanilla_cheese.webp',
       ),
     ],
   ),
@@ -467,7 +467,7 @@ final List<MenuSection> kMenuSections = [
         emoji: '🥤',
         description: 'Creamy Purple Taro cooler. Refreshing and cold!',
         price: 39,
-        imageUrl: 'images/purple_taro.png',
+        imageUrl: 'images/purple_taro.webp',
       ),
       MenuItem(
         id: 'c_cnc',
@@ -475,7 +475,7 @@ final List<MenuSection> kMenuSections = [
         emoji: '🥤',
         description: 'Classic Cookies N Cream delight. Refreshing and cold!',
         price: 39,
-        imageUrl: 'images/cookies_n_cream_cooler.png',
+        imageUrl: 'images/cookies_n_cream_cooler.webp',
       ),
       MenuItem(
         id: 'c_dark',
@@ -483,7 +483,7 @@ final List<MenuSection> kMenuSections = [
         emoji: '🥤',
         description: 'Rich Dark Chocolate treat. Refreshing and cold!',
         price: 39,
-        imageUrl: 'images/dark_chocolate_cooler.png',
+        imageUrl: 'images/dark_chocolate_cooler.webp',
       ),
       MenuItem(
         id: 'c_forest',
@@ -491,7 +491,7 @@ final List<MenuSection> kMenuSections = [
         emoji: '🥤',
         description: 'Indulgent Black Forest flavor. Refreshing and cold!',
         price: 39,
-        imageUrl: 'images/black_forest_cooler.png',
+        imageUrl: 'images/black_forest_cooler.webp',
       ),
       MenuItem(
         id: 'c_flan',
@@ -499,7 +499,7 @@ final List<MenuSection> kMenuSections = [
         emoji: '🥤',
         description: 'Sweet Leche Flan dessert drink. Refreshing and cold!',
         price: 39,
-        imageUrl: 'images/leche_flan_cooler.png',
+        imageUrl: 'images/leche_flan_cooler.webp',
       ),
       MenuItem(
         id: 'c_straw',
@@ -507,7 +507,7 @@ final List<MenuSection> kMenuSections = [
         emoji: '🥤',
         description: 'Sweet Strawberry refreshment. Refreshing and cold!',
         price: 39,
-        imageUrl: 'images/strawberry_cooler.png',
+        imageUrl: 'images/strawberry_cooler.webp',
       ),
       MenuItem(
         id: 'c_rocky',
@@ -515,7 +515,7 @@ final List<MenuSection> kMenuSections = [
         emoji: '🥤',
         description: 'Chocolaty Rocky Road with a crunch. Refreshing and cold!',
         price: 39,
-        imageUrl: 'images/rocky_road_cooler.png',
+        imageUrl: 'images/rocky_road_cooler.webp',
       ),
       MenuItem(
         id: 'c_kisses',
@@ -523,7 +523,7 @@ final List<MenuSection> kMenuSections = [
         emoji: '🥤',
         description: 'Sweet Choco Kisses delight. Refreshing and cold!',
         price: 39,
-        imageUrl: 'images/choco_kisses_cooler.png',
+        imageUrl: 'images/choco_kisses_cooler.webp',
       ),
 
       MenuItem(
@@ -533,7 +533,7 @@ final List<MenuSection> kMenuSections = [
         description:
             'Mix and match any 3 coolers for only ₱100! Choose your favorites.',
         price: 100,
-        imageUrl: 'images/coolers_3_for_100.png',
+        imageUrl: 'images/coolers_3_for_100.webp',
         allowMultiSelect: true,
         maxSelect: 3,
         optionHeader: 'CHOOSE 3 FLAVORS',
@@ -562,7 +562,7 @@ final List<MenuSection> kMenuSections = [
         emoji: '🍋',
         description: 'Freshly squeezed classic lemonade.',
         price: 49,
-        imageUrl: 'images/lemon_classic.png',
+        imageUrl: 'images/lemon_classic.webp',
       ),
       MenuItem(
         id: 'ls5',
@@ -570,7 +570,7 @@ final List<MenuSection> kMenuSections = [
         emoji: '🫐🍋',
         description: 'Bright blue lemonade with a refreshing citrus kick.',
         price: 49,
-        imageUrl: 'images/blue_lemonade.png',
+        imageUrl: 'images/blue_lemonade.webp',
       ),
       MenuItem(
         id: 'ls3',
@@ -578,7 +578,7 @@ final List<MenuSection> kMenuSections = [
         emoji: '🍋🍓',
         description: 'Sweet strawberry and zesty lemon blend.',
         price: 49,
-        imageUrl: 'images/lemon_strawberry.png',
+        imageUrl: 'images/lemon_strawberry.webp',
       ),
       MenuItem(
         id: 'ls4',
@@ -586,7 +586,7 @@ final List<MenuSection> kMenuSections = [
         emoji: '🍋🥒',
         description: 'Cool cucumber and refreshing lemon.',
         price: 49,
-        imageUrl: 'images/lemon_cucumber.png',
+        imageUrl: 'images/lemon_cucumber.webp',
       ),
 
       MenuItem(
@@ -602,7 +602,7 @@ final List<MenuSection> kMenuSections = [
         emoji: '🍦',
         description: 'Creamy Cookies & Cream Oreo delight.',
         price: 65,
-        imageUrl: 'images/oreo_cookies_cream.png',
+        imageUrl: 'images/oreo_cookies_cream.webp',
       ),
       MenuItem(
         id: 'oc2',
@@ -610,7 +610,7 @@ final List<MenuSection> kMenuSections = [
         emoji: '🍫',
         description: 'Rich chocolate blended with Oreo goodness.',
         price: 65,
-        imageUrl: 'images/oreo_chocolate.png',
+        imageUrl: 'images/oreo_chocolate.webp',
       ),
       MenuItem(
         id: 'oc3',
@@ -618,7 +618,7 @@ final List<MenuSection> kMenuSections = [
         emoji: '🍓',
         description: 'Sweet strawberry and Oreo cookie blend.',
         price: 65,
-        imageUrl: 'images/oreo_strawberry.png',
+        imageUrl: 'images/oreo_strawberry.webp',
       ),
       MenuItem(
         id: 'oc4',
@@ -626,7 +626,7 @@ final List<MenuSection> kMenuSections = [
         emoji: '🥤',
         description: 'Chocolatey Milo with an ice cream float and Oreo crunch.',
         price: 65,
-        imageUrl: 'images/oreo_milo_float.png',
+        imageUrl: 'images/oreo_milo_float.webp',
       ),
 
       MenuItem(
@@ -643,7 +643,7 @@ final List<MenuSection> kMenuSections = [
         description:
             'Malted chocolate drink topped with a mountain of Milo powder.',
         price: 65,
-        imageUrl: 'images/milo_dinosaur.jpg',
+        imageUrl: 'images/milo_dinosaur.webp',
       ),
       MenuItem(
         id: 'mc2',
@@ -651,7 +651,7 @@ final List<MenuSection> kMenuSections = [
         emoji: '🍦',
         description: 'Classic Milo with a creamy vanilla ice cream float.',
         price: 65,
-        imageUrl: 'images/milo_float.png',
+        imageUrl: 'images/milo_float.webp',
       ),
       MenuItem(
         id: 'mc3',
@@ -659,7 +659,7 @@ final List<MenuSection> kMenuSections = [
         emoji: '🥣',
         description: 'Milo chocolate drink topped with crunchy Milo cereal.',
         price: 65,
-        imageUrl: 'images/milo_crunch.jpg',
+        imageUrl: 'images/milo_crunch.webp',
       ),
       MenuItem(
         id: 'mc4',
@@ -667,7 +667,7 @@ final List<MenuSection> kMenuSections = [
         emoji: '🍪',
         description: 'The perfect blend of Milo and crushed Oreo cookies.',
         price: 65,
-        imageUrl: 'images/milo_oreo.png',
+        imageUrl: 'images/milo_oreo.webp',
       ),
 
       MenuItem(
@@ -684,7 +684,7 @@ final List<MenuSection> kMenuSections = [
         description:
             'Refreshing Coca-Cola topped with creamy vanilla soft serve ice cream.',
         price: 49,
-        imageUrl: 'images/coke_float.png',
+        imageUrl: 'images/coke_float.webp',
       ),
       MenuItem(
         id: 'cf_chuckie',
@@ -693,7 +693,7 @@ final List<MenuSection> kMenuSections = [
         description:
             'Classic Chuckie with a creamy vanilla soft serve ice cream float.',
         price: 65,
-        imageUrl: 'images/chuckie_float.png',
+        imageUrl: 'images/chuckie_float.webp',
       ),
       MenuItem(
         id: 'cf_milo',
@@ -701,7 +701,7 @@ final List<MenuSection> kMenuSections = [
         emoji: '🍦',
         description: 'Classic Milo with a creamy vanilla ice cream float.',
         price: 65,
-        imageUrl: 'images/milo_float_premium.png',
+        imageUrl: 'images/milo_float_premium.webp',
       ),
       MenuItem(
         id: 'cf_cnc',
@@ -710,7 +710,7 @@ final List<MenuSection> kMenuSections = [
         description:
             'Creamy cookies and cream blend topped with a vanilla soft serve float.',
         price: 65,
-        imageUrl: 'images/cookies_cream_float.png',
+        imageUrl: 'images/cookies_cream_float.webp',
       ),
 
       MenuItem(
@@ -727,7 +727,7 @@ final List<MenuSection> kMenuSections = [
         description:
             'Smooth espresso with creamy steamed milk and a light foam.',
         price: 49,
-        imageUrl: 'images/cafe_latte.png',
+        imageUrl: 'images/cafe_latte.webp',
       ),
       MenuItem(
         id: 'cf_macchiato',
@@ -735,7 +735,7 @@ final List<MenuSection> kMenuSections = [
         emoji: '🍮',
         description: 'Rich espresso with dulce de leche and creamy foam.',
         price: 49,
-        imageUrl: 'images/caramel_macchiato.png',
+        imageUrl: 'images/caramel_macchiato.webp',
       ),
       MenuItem(
         id: 'cf_cappuccino',
@@ -744,7 +744,7 @@ final List<MenuSection> kMenuSections = [
         description:
             'Chilled espresso with airy milk foam and a dash of cocoa.',
         price: 49,
-        imageUrl: 'images/ice_cappuccino.png',
+        imageUrl: 'images/ice_cappuccino.webp',
       ),
       MenuItem(
         id: 'cf_choc_coffee',
@@ -752,7 +752,7 @@ final List<MenuSection> kMenuSections = [
         emoji: '🍫☕',
         description: 'The perfect blend of rich chocolate and bold espresso.',
         price: 49,
-        imageUrl: 'images/chocolate_coffee.png',
+        imageUrl: 'images/chocolate_coffee.webp',
       ),
     ],
   ),
@@ -768,7 +768,7 @@ final List<MenuSection> kMenuSections = [
         emoji: '🍔',
         description: 'Classic juicy burger patty.',
         price: 55,
-        imageUrl: 'images/poster_burger_patty.jpg',
+        imageUrl: 'images/poster_burger_patty.webp',
         isBuy1Take1: true,
       ),
       MenuItem(
@@ -777,7 +777,7 @@ final List<MenuSection> kMenuSections = [
         emoji: '🥪',
         description: 'Savory ham and melted cheese.',
         price: 55,
-        imageUrl: 'images/ham_cheese.png',
+        imageUrl: 'images/ham_cheese.webp',
         isBuy1Take1: true,
       ),
       MenuItem(
@@ -786,7 +786,7 @@ final List<MenuSection> kMenuSections = [
         emoji: '🧀🍔',
         description: 'Classic cheeseburger with extra melt.',
         price: 65,
-        imageUrl: 'images/poster_cheese_burger.jpg',
+        imageUrl: 'images/poster_cheese_burger.webp',
         isBuy1Take1: true,
       ),
       MenuItem(
@@ -795,7 +795,7 @@ final List<MenuSection> kMenuSections = [
         emoji: '🍳🍔',
         description: 'Hearty burger with a fresh egg.',
         price: 85,
-        imageUrl: 'images/burger_with_egg.png',
+        imageUrl: 'images/burger_with_egg.webp',
         isBuy1Take1: true,
       ),
       MenuItem(
@@ -804,7 +804,7 @@ final List<MenuSection> kMenuSections = [
         emoji: '🍳🧀',
         description: 'Burger topped with melted cheese and a fried egg.',
         price: 95,
-        imageUrl: 'images/poster_cheese_egg_burger.jpg',
+        imageUrl: 'images/poster_cheese_egg_burger.webp',
         isBuy1Take1: true,
       ),
     ],

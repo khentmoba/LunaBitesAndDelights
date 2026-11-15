@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart' hide MenuTheme;
+import '../services/firebase_init.dart';
 import '../widgets/kiosk/menu_theme.dart';
 import 'staff_bundle.dart' deferred as staff;
 
@@ -20,8 +21,11 @@ class _DeferredStaffScreenState extends State<DeferredStaffScreen> {
   static Future<void>? _loading;
   late Future<void> _load = _start();
 
-  static Future<void> _start() =>
-      _loading ??= staff.loadLibrary().catchError((Object e) {
+  static Future<void> _start() => _loading ??=
+      Future.wait([
+        staff.loadLibrary(),
+        ensureFirebaseInitialized(),
+      ]).then((_) {}).catchError((Object e) {
         _loading = null; // let RETRY start a fresh download
         throw e;
       });

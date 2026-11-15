@@ -232,7 +232,7 @@ void main() {
           .items
           .firstWhere((i) => i.name == 'Blue Lemonade');
       expect(lemon.price, 49);
-      expect(lemon.imageUrl, 'images/blue_lemonade.png');
+      expect(lemon.imageUrl, 'images/blue_lemonade.webp');
       expect(File(lemon.imageUrl).existsSync(), isTrue);
     });
 

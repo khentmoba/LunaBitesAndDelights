@@ -8,7 +8,7 @@
 // ═══════════════════════════════════════════════════
 
 // ── Change this version string every time you deploy ──
-const SW_VERSION = 'v1.1.3';
+const SW_VERSION = 'v1.1.4';
 const CACHE_NAME = 'luna-express-' + SW_VERSION;
 
 // Everything resolves against the worker's own scope, so the same file works
@@ -73,9 +73,10 @@ self.addEventListener('fetch', function(event) {
   var url = new URL(event.request.url);
   if (url.origin !== self.location.origin) return;
 
-  // Always fetch Flutter compiled assets fresh — never serve stale JS
+  // Always fetch Flutter compiled assets fresh — never serve stale JS/Wasm
   var isFlutterAsset = (
-    url.pathname.indexOf('main.dart.js') !== -1 ||
+    url.pathname.indexOf('main.dart.') !== -1 ||
+    url.pathname.indexOf('.wasm') !== -1 ||
     url.pathname.indexOf('flutter.js') !== -1 ||
     url.pathname.indexOf('flutter_bootstrap.js') !== -1 ||
     url.pathname.indexOf('canvaskit') !== -1 ||

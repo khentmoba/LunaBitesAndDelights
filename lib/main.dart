@@ -1,12 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/cupertino.dart' show CupertinoPageTransitionsBuilder;
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_app_check/firebase_app_check.dart';
-import 'package:flutter/foundation.dart';
-import 'firebase_options.dart';
 import 'widgets/kiosk/kiosk_theme.dart';
+import 'services/firebase_init.dart';
 import 'services/session.dart';
 import 'services/cart_notifier.dart';
 import 'services/navigation.dart';
@@ -16,38 +16,12 @@ import 'screens/cart_page.dart';
 import 'screens/checkout_page.dart';
 import 'screens/staff_screens.dart';
 
-/// #12 bot protection: Firebase App Check (reCAPTCHA Enterprise on web).
-/// Site key is injected at build time so it never lands in git:
-///   `flutter build web --dart-define=RECAPTCHA_SITE_KEY=<key>`
-/// Until the key is set, activation is skipped (requests still work).
-Future<void> _activateAppCheck() async {
-  const siteKey = String.fromEnvironment('RECAPTCHA_SITE_KEY');
-  try {
-    if (kDebugMode) {
-      await FirebaseAppCheck.instance.activate(
-        providerAndroid: const AndroidDebugProvider(),
-        providerApple: const AppleDebugProvider(),
-      );
-    } else if (siteKey.isNotEmpty) {
-      await FirebaseAppCheck.instance.activate(
-        providerAndroid: const AndroidPlayIntegrityProvider(),
-        providerApple: const AppleAppAttestProvider(),
-        providerWeb: ReCaptchaEnterpriseProvider(siteKey),
-      );
-    } else {
-      debugPrint('AppCheck skipped: no RECAPTCHA_SITE_KEY defined');
-    }
-  } catch (e) {
-    debugPrint('AppCheck activation failed: $e');
-  }
-}
-
-void main() async {
+void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  await _activateAppCheck();
 
-  await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+  if (!kIsWeb) {
+    unawaited(SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge));
+  }
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
@@ -69,6 +43,11 @@ void main() async {
       child: const LunaExpressApp(),
     ),
   );
+
+  // Initialize Firebase and App Check after the first frame paints.
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    startDeferredFirebaseInit(onReady: session.bindAuth);
+  });
 }
 
 class LunaExpressApp extends StatelessWidget {

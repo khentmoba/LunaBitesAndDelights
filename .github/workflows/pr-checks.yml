@@ -52,7 +52,7 @@ jobs:
         run: flutter pub outdated
 
       - name: Web build still compiles
-        run: flutter build web --release
+        run: flutter build web --release --wasm
 
   functions:
     runs-on: ubuntu-latest

@@ -2,10 +2,14 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import '../models/order.dart';
 import '../utils/format.dart';
+import 'firebase_init.dart';
 import 'telegram_service.dart';
 
 class OrderService {
-  static final FirebaseFirestore _db = FirebaseFirestore.instance;
+  static Future<FirebaseFirestore> _defaultDb() async {
+    await ensureFirebaseInitialized();
+    return FirebaseFirestore.instance;
+  }
 
   /// Full order pipeline: Firestore save → Telegram notify → in-memory
   /// history for the admin dashboard.
@@ -69,7 +73,8 @@ class OrderService {
     FirebaseFirestore? firestore,
   }) async {
     try {
-      final ref = (firestore ?? _db).collection('orders').doc();
+      final db = firestore ?? await _defaultDb();
+      final ref = db.collection('orders').doc();
       await ref.set(order.toJson());
       debugPrint('Order ${order.orderId} saved to Firestore as ${ref.id}');
       return ref.id;

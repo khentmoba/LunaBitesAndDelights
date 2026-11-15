@@ -10,11 +10,13 @@ class Session extends ChangeNotifier {
   bool get isAdmin => _role == 'admin' || _username?.toLowerCase() == 'admin';
   String get role => _role ?? (isAdmin ? 'admin' : 'staff');
 
-  Session() {
-    _initAuth();
-  }
+  bool _authBound = false;
 
-  void _initAuth() {
+  Session();
+
+  void bindAuth() {
+    if (_authBound) return;
+    _authBound = true;
     try {
       // Restore session if user was already signed in with a staff custom token
       final current = FirebaseAuth.instance.currentUser;
