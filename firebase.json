@@ -48,7 +48,7 @@
         ]
       },
       {
-        "source": "{/,/index.html,/menu/**,/payment/**,/kiosk/,/kiosk/index.html,/kiosk/flutter_bootstrap.js,/kiosk/main.dart.js,/kiosk/sw.js,/kiosk/version.json,/kiosk/assets/*.json,/kiosk/canvaskit/**}",
+        "source": "{/,/index.html,/menu/**,/payment/**,/kiosk/,/kiosk/index.html,/kiosk/flutter_bootstrap.js,/kiosk/main.dart.js,/kiosk/main.dart.js_*.part.js,/kiosk/sw.js,/kiosk/version.json,/kiosk/assets/*.json,/kiosk/canvaskit/**}",
         "headers": [
           {
             "key": "Cache-Control",

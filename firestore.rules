@@ -41,6 +41,17 @@ service cloud.firestore {
       allow read, update, delete: if false;
     }
 
+    // ──── Kitchen-screen mirror: staff read, server writes ────
+    // The onOrderWritten trigger copies each order's trimmed KDS projection
+    // here (no payment ids), so the kitchen screen can listen for changes
+    // instead of polling the getActiveOrders callable.
+    match /kds_orders/{orderId} {
+      allow read: if isStaff();
+      allow write: if false;
+    }
+
+    // dailyStats, stats_events and stats_meta are server-only (default deny).
+
     // Config: public read-only.
     match /config/{docId} {
       allow read: if true;

@@ -5,7 +5,7 @@ import '../services/session.dart';
 import '../services/cart_notifier.dart';
 import '../widgets/kiosk/kiosk_theme.dart';
 import '../widgets/kiosk/juicy_feedback.dart';
-import 'admin_dashboard.dart';
+import 'staff_screens.dart';
 import 'menu_page.dart';
 
 class StaffMenuDialog extends StatefulWidget {
@@ -74,7 +74,9 @@ class _StaffMenuDialogState extends State<StaffMenuDialog> {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => const AdminDashboard(),
+                            builder: (_) => const DeferredStaffScreen(
+                              StaffScreen.dashboard,
+                            ),
                           ),
                         );
                       },

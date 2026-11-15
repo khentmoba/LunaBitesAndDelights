@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.updateOrderStatus = exports.getActiveOrders = void 0;
+exports.updateOrderStatus = exports.getActiveOrders = exports.projectOrder = void 0;
 const https_1 = require("firebase-functions/v2/https");
 const firestore_1 = require("firebase-admin/firestore");
 const firebase_functions_1 = require("firebase-functions");
@@ -34,6 +34,7 @@ const projectOrder = (id, d) => ({
     status: String(d.status || 'Pending'),
     timestamp: d.timestamp?.toDate?.()?.toISOString?.() || (typeof d.timestamp === 'string' ? d.timestamp : new Date().toISOString()),
 });
+exports.projectOrder = projectOrder;
 exports.getActiveOrders = (0, https_1.onCall)(async (request) => {
     (0, security_1.requireStaff)(request); // #6 + #7
     const db = (0, firestore_1.getFirestore)();
@@ -51,7 +52,7 @@ exports.getActiveOrders = (0, https_1.onCall)(async (request) => {
             const data = doc.data();
             const status = data.status || 'Pending';
             if (includeCompleted || (status !== 'Completed' && status !== 'Cancelled')) {
-                orders.push(projectOrder(doc.id, data));
+                orders.push((0, exports.projectOrder)(doc.id, data));
             }
         }
         return { success: true, orders };

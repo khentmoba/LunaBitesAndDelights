@@ -1,9 +1,12 @@
 import 'dart:async';
+
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart' hide MenuTheme;
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+
 import '../services/functions.dart';
+import '../services/kds_feed.dart';
 import '../services/session.dart';
 import '../services/audio_alert_service.dart';
 import '../services/url_helper.dart';
@@ -13,7 +16,10 @@ import 'menu_page.dart';
 import 'staff_login_dialog.dart';
 
 class KdsPage extends StatefulWidget {
-  const KdsPage({super.key});
+  const KdsPage({super.key, this.feed = watchKdsOrders});
+
+  /// Live order source; tests pass a fake stream.
+  final KdsFeed feed;
 
   @override
   State<KdsPage> createState() => _KdsPageState();
@@ -22,11 +28,18 @@ class KdsPage extends StatefulWidget {
 class _KdsPageState extends State<KdsPage> with SingleTickerProviderStateMixin {
   bool _loading = false;
   List<dynamic> _orders = [];
+  List<Map<String, dynamic>> _polledOrders = [];
+  List<Map<String, dynamic>>? _liveOrders;
   String? _error;
-  Timer? _refreshTimer;
+  StreamSubscription<List<Map<String, dynamic>>>? _liveSub;
+
+  /// True while the Firestore listener is delivering. Until the
+  /// `kds_orders` rules are deployed it fails, and we poll instead.
+  bool _live = false;
+  Timer? _pollTimer;
   Timer? _clockTimer;
   DateTime _now = DateTime.now();
-  int _secondsUntilSync = 10;
+  static const _pollEvery = Duration(seconds: 10);
   String _typeFilter = 'ALL'; // ALL, Delivery, Pickup, Walk-In
   bool _showCompleted = false;
   String _searchQuery = '';
@@ -46,19 +59,8 @@ class _KdsPageState extends State<KdsPage> with SingleTickerProviderStateMixin {
     _wasStaff = session.isStaff;
     session.addListener(_onSessionChanged);
     if (_wasStaff) {
-      _fetchActiveOrders();
+      _startFeeds();
     }
-    _refreshTimer = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (!mounted || !session.isStaff) return;
-      setState(() {
-        if (_secondsUntilSync > 1) {
-          _secondsUntilSync--;
-        } else {
-          _secondsUntilSync = 10;
-          _fetchActiveOrders(silent: true);
-        }
-      });
-    });
 
     _clockTimer = Timer.periodic(const Duration(seconds: 30), (_) {
       if (!mounted) return;
@@ -76,13 +78,15 @@ class _KdsPageState extends State<KdsPage> with SingleTickerProviderStateMixin {
         _error = null;
         _hasInitialFetchDone = false;
         _knownPendingOrderIds = {};
-        _secondsUntilSync = 10;
       });
-      _fetchActiveOrders();
+      _startFeeds();
     } else if (!isStaffNow && _wasStaff) {
       _wasStaff = false;
+      _stopFeeds();
       setState(() {
         _orders = [];
+        _polledOrders = [];
+        _liveOrders = null;
         _error = null;
         _hasInitialFetchDone = false;
         _knownPendingOrderIds = {};
@@ -93,11 +97,61 @@ class _KdsPageState extends State<KdsPage> with SingleTickerProviderStateMixin {
   @override
   void dispose() {
     session.removeListener(_onSessionChanged);
-    _refreshTimer?.cancel();
+    _stopFeeds();
     _clockTimer?.cancel();
     _tabController?.dispose();
     _searchCtrl.dispose();
     super.dispose();
+  }
+
+  /// One callable load on open (covers orders placed before the mirror
+  /// existed), then the listener takes over. Polls only if it fails.
+  void _startFeeds() {
+    _fetchActiveOrders();
+    _liveSub?.cancel();
+    try {
+      _liveSub = widget.feed().listen((orders) {
+        if (!mounted) return;
+        _pollTimer?.cancel();
+        _pollTimer = null;
+        _live = true;
+        _liveOrders = orders;
+        _publishOrders();
+      }, onError: (Object _) => _fallBackToPolling());
+    } catch (_) {
+      _fallBackToPolling();
+    }
+  }
+
+  void _fallBackToPolling() {
+    _liveSub?.cancel();
+    _liveSub = null;
+    if (!mounted) return;
+    setState(() => _live = false);
+    _pollTimer ??= Timer.periodic(_pollEvery, (_) {
+      if (mounted && session.isStaff) _fetchActiveOrders(silent: true);
+    });
+  }
+
+  void _stopFeeds() {
+    _liveSub?.cancel();
+    _liveSub = null;
+    _pollTimer?.cancel();
+    _pollTimer = null;
+    _live = false;
+  }
+
+  /// Merges live + polled orders, hides closed ones unless HISTORY is on.
+  void _publishOrders() {
+    final all = mergeKdsOrders(_liveOrders ?? const [], _polledOrders);
+    final visible = _showCompleted
+        ? all
+        : all.where((o) => !isClosedKdsStatus(o['status'])).toList();
+    _checkNewOrdersAndChime(visible);
+    setState(() {
+      _orders = visible;
+      _loading = false;
+    });
   }
 
   Future<void> _fetchActiveOrders({bool silent = false}) async {
@@ -106,19 +160,15 @@ class _KdsPageState extends State<KdsPage> with SingleTickerProviderStateMixin {
     setState(() => _error = null);
 
     try {
-      final data = await callFn('getActiveOrders', {
-        'includeCompleted': _showCompleted,
-      });
+      final data = await callFn('getActiveOrders', {'includeCompleted': true});
 
       if (!mounted) return;
 
       if (data['success'] == true) {
-        final freshOrders = (data['orders'] as List<dynamic>?) ?? [];
-        _checkNewOrdersAndChime(freshOrders);
-        setState(() {
-          _orders = freshOrders;
-          _loading = false;
-        });
+        _polledOrders = ((data['orders'] as List<dynamic>?) ?? [])
+            .map((o) => Map<String, dynamic>.from(o as Map))
+            .toList();
+        _publishOrders();
       } else {
         setState(() {
           _error = data['message'] ?? 'Failed to load active orders.';
@@ -186,7 +236,12 @@ class _KdsPageState extends State<KdsPage> with SingleTickerProviderStateMixin {
       if (!mounted) return;
 
       if (data['success'] == true) {
-        await _fetchActiveOrders(silent: true);
+        // Live mode: the listener pushes the change itself.
+        if (_live) {
+          setState(() => _loading = false);
+        } else {
+          await _fetchActiveOrders(silent: true);
+        }
         if (mounted) {
           _snack('Order updated: $newStatus', const Color(0xFF1E7A3C));
         }
@@ -566,6 +621,32 @@ class _KdsPageState extends State<KdsPage> with SingleTickerProviderStateMixin {
     );
   }
 
+  /// Header status: live listener, waiting for it, or polling fallback.
+  ({Color color, String short, String long, String semantics}) get _feedState {
+    if (_live) {
+      return (
+        color: const Color(0xFF1E7A3C),
+        short: 'Live',
+        long: 'Live',
+        semantics: 'Orders update live',
+      );
+    }
+    if (_liveSub != null) {
+      return (
+        color: MenuTheme.inkSoft,
+        short: 'Connecting',
+        long: 'Connecting…',
+        semantics: 'Connecting to live orders',
+      );
+    }
+    return (
+      color: const Color(0xFFB45309),
+      short: '10s',
+      long: 'Auto-sync every 10s',
+      semantics: 'Live updates unavailable, refreshing every 10 seconds',
+    );
+  }
+
   PreferredSizeWidget _buildAppBar(
     BuildContext context,
     int pendingCount,
@@ -597,7 +678,7 @@ class _KdsPageState extends State<KdsPage> with SingleTickerProviderStateMixin {
             ),
             child: Center(
               child: Image.asset(
-                'images/luna_logo.png',
+                'images/luna_logo.webp',
                 height: isCompact ? 24 : 28,
                 excludeFromSemantics: true,
               ),
@@ -619,22 +700,22 @@ class _KdsPageState extends State<KdsPage> with SingleTickerProviderStateMixin {
                 ),
                 Row(
                   children: [
-                    Container(
-                      width: 6,
-                      height: 6,
-                      color: const Color(0xFF1E7A3C),
-                    ),
+                    Container(width: 6, height: 6, color: _feedState.color),
                     const SizedBox(width: 5),
                     Flexible(
-                      child: Text(
-                        isCompact
-                            ? '${_secondsUntilSync}s'
-                            : 'Purok 5 Kiosk · Sync in ${_secondsUntilSync}s',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: MenuTheme.body(
-                          size: 11,
-                          color: MenuTheme.inkSoft,
+                      child: Semantics(
+                        label: _feedState.semantics,
+                        excludeSemantics: true,
+                        child: Text(
+                          isCompact
+                              ? _feedState.short
+                              : 'Purok 5 Kiosk · ${_feedState.long}',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: MenuTheme.body(
+                            size: 11,
+                            color: MenuTheme.inkSoft,
+                          ),
                         ),
                       ),
                     ),
@@ -697,12 +778,7 @@ class _KdsPageState extends State<KdsPage> with SingleTickerProviderStateMixin {
                         color: MenuTheme.pinkInk,
                         size: 20,
                       ),
-                onPressed: _loading
-                    ? null
-                    : () {
-                        _secondsUntilSync = 10;
-                        _fetchActiveOrders();
-                      },
+                onPressed: _loading ? null : () => _fetchActiveOrders(),
               ),
               InkWell(
                 onTap: () {
@@ -896,12 +972,7 @@ class _KdsPageState extends State<KdsPage> with SingleTickerProviderStateMixin {
                         color: MenuTheme.pinkInk,
                         size: isCompact ? 18 : 20,
                       ),
-                onPressed: _loading
-                    ? null
-                    : () {
-                        _secondsUntilSync = 10;
-                        _fetchActiveOrders();
-                      },
+                onPressed: _loading ? null : () => _fetchActiveOrders(),
               ),
 
               SizedBox(width: isCompact ? 2 : 4),
@@ -1071,10 +1142,8 @@ class _KdsPageState extends State<KdsPage> with SingleTickerProviderStateMixin {
 
     final historyButton = InkWell(
       onTap: () {
-        setState(() {
-          _showCompleted = !_showCompleted;
-        });
-        _fetchActiveOrders();
+        _showCompleted = !_showCompleted;
+        _publishOrders();
       },
       child: Container(
         height: 36,

@@ -1,0 +1,18 @@
+{
+  "capturedAt": "2026-11-14T17:31:49.729Z",
+  "header": "Purok 5 Kiosk · Live",
+  "newOrderToScreenMs": [
+    131,
+    74,
+    77,
+    62,
+    64
+  ],
+  "statusChangeToScreenMs": [
+    57,
+    59,
+    64
+  ],
+  "newOrderMedianMs": 74,
+  "previousWorstCaseMs": "10,000 ms poll interval + callable round trip"
+}

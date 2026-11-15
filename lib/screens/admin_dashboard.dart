@@ -299,7 +299,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 padding: const EdgeInsets.all(3),
                 child: Center(
                   child: Image.asset(
-                    'images/luna_logo.png',
+                    'images/luna_logo.webp',
                     height: isNarrow ? 32 : 36,
                     excludeFromSemantics: true,
                   ),

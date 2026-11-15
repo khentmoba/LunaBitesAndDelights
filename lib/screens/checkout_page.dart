@@ -12,7 +12,7 @@ import '../services/order_policy.dart';
 import '../services/session.dart';
 import '../utils/format.dart';
 import '../utils/validate.dart';
-import 'map_picker_page.dart';
+import 'map_picker_page.dart' deferred as map_picker;
 import 'receipt_page.dart';
 import 'gcash_checkout_page.dart';
 
@@ -40,6 +40,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
   @override
   void initState() {
     super.initState();
+    // The map (flutter_map + tiles code) is a separate JS part on web;
+    // start fetching it now so it is ready when Delivery needs a pin.
+    _mapPickerReady = map_picker.loadLibrary()..ignore();
     if (session.isStaff) {
       _orderType = 'Walk-In';
       _paymentMethod = 'Cash';
@@ -66,11 +69,29 @@ class _CheckoutPageState extends State<CheckoutPage> {
 
   bool get _needsCoordinates => _orderType == 'Delivery';
 
+  late Future<void> _mapPickerReady;
+
   Future<void> _openMapPicker() async {
+    try {
+      await _mapPickerReady;
+    } catch (_) {
+      _mapPickerReady = map_picker.loadLibrary()..ignore(); // retry next tap
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Could not open the map. Check the connection and tap again.',
+          ),
+          backgroundColor: KioskTheme.error,
+        ),
+      );
+      return;
+    }
+    if (!mounted) return;
     final result = await Navigator.push<Map<String, dynamic>>(
       context,
       MaterialPageRoute(
-        builder: (_) => MapPickerPage(
+        builder: (_) => map_picker.MapPickerPage(
           initialAddress: _addressCtrl.text,
           initialLat: _pinnedLat,
           initialLng: _pinnedLng,

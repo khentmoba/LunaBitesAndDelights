@@ -1,0 +1,161 @@
+
+> test:derived
+> npm run build && npx --yes firebase-tools emulators:exec --project demo-lunaexpress --only functions,firestore "node --test test/derived_views.emulator.test.js"
+
+
+> build
+> tsc
+
+[36m[1mi  emulators:[22m[39m Starting emulators: functions, firestore
+[36m[1mi  emulators:[22m[39m Detected demo project ID "demo-lunaexpress", emulated services will use a demo configuration and attempts to access non-emulated services for this project will fail.
+[36m[1mi  firestore:[22m[39m Firestore Emulator logging to [1mfirestore-debug.log[22m
+[32m[1m+  firestore:[22m[39m Firestore Emulator was started in standard edition.
+[32m[1m+  firestore:[22m[39m Firestore Emulator UI websocket is running on 9150.
+[36m[1mi  functions:[22m[39m Watching "C:\Users\Admin\.t3\worktrees\LunaBites and Delights\t3-3960be75-8888886da71888b3\functions" for Cloud Functions...
+[33m[1m! [22m[39m [1m[33mfunctions: [39m[22mpackage.json indicates an outdated version of firebase-functions. Please upgrade using [1mnpm install --save firebase-functions@latest[22m in your functions directory.
+[33m[1m! [22m[39m [1m[33mfunctions: [39m[22mPlease note that there will be breaking changes when you upgrade.
+[33m[1m!  functions:[22m[39m Your requested "node" version "22" doesn't match your global version "24". Using node@24 from host.
+Serving at port 8372
+
+[32m[1m+  functions:[22m[39m Loaded functions definitions from source: dailySalesReport, triggerManualReport, verifyStaff, updateStaffPin, sendOrderNotification, getActiveOrders, updateOrderStatus, onOrderWritten, getSalesAnalytics, getLifetimeSalesReport, createCheckoutSession, paymongoWebhook.
+[36m[1mi  functions[us-central1-dailySalesReport]:[22m[39m function ignored because the pubsub emulator does not exist or is not running.
+[32m[1m+  functions[us-central1-triggerManualReport]:[22m[39m [1mhttp[22m function initialized (http://127.0.0.1:5001/demo-lunaexpress/us-central1/triggerManualReport).
+[32m[1m+  functions[us-central1-verifyStaff]:[22m[39m [1mhttp[22m function initialized (http://127.0.0.1:5001/demo-lunaexpress/us-central1/verifyStaff).
+[32m[1m+  functions[us-central1-updateStaffPin]:[22m[39m [1mhttp[22m function initialized (http://127.0.0.1:5001/demo-lunaexpress/us-central1/updateStaffPin).
+[32m[1m+  functions[us-central1-sendOrderNotification]:[22m[39m [1mhttp[22m function initialized (http://127.0.0.1:5001/demo-lunaexpress/us-central1/sendOrderNotification).
+[32m[1m+  functions[us-central1-getActiveOrders]:[22m[39m [1mhttp[22m function initialized (http://127.0.0.1:5001/demo-lunaexpress/us-central1/getActiveOrders).
+[32m[1m+  functions[us-central1-updateOrderStatus]:[22m[39m [1mhttp[22m function initialized (http://127.0.0.1:5001/demo-lunaexpress/us-central1/updateOrderStatus).
+[32m[1m+  functions[us-central1-onOrderWritten]:[22m[39m [1mfirestore[22m function initialized.
+[32m[1m+  functions[us-central1-getSalesAnalytics]:[22m[39m [1mhttp[22m function initialized (http://127.0.0.1:5001/demo-lunaexpress/us-central1/getSalesAnalytics).
+[32m[1m+  functions[us-central1-getLifetimeSalesReport]:[22m[39m [1mhttp[22m function initialized (http://127.0.0.1:5001/demo-lunaexpress/us-central1/getLifetimeSalesReport).
+[32m[1m+  functions[us-central1-createCheckoutSession]:[22m[39m [1mhttp[22m function initialized (http://127.0.0.1:5001/demo-lunaexpress/us-central1/createCheckoutSession).
+[32m[1m+  functions[us-central1-paymongoWebhook]:[22m[39m [1mhttp[22m function initialized (http://127.0.0.1:5001/demo-lunaexpress/us-central1/paymongoWebhook).
+[36m[1mi [22m[39m Running script: [1mnode --test test/derived_views.emulator.test.js[22m
+[36m[1mi  functions:[22m[39m Beginning execution of "us-central1-getLifetimeSalesReport"
+[90m> [39m {"verifications":{"app":"MISSING","auth":"VALID"},"logging.googleapis.com/labels":{"firebase-log-type":"callable-request-verification"},"severity":"DEBUG","message":"Callable request verification passed"}
+[90m> [39m {"severity":"INFO","message":"Lifetime report 2020-01-01..2026-11-15 from 0 orders (dailyStats not backfilled)"}
+[36m[1mi  functions:[22m[39m Finished "us-central1-getLifetimeSalesReport" in 310.0547ms
+[36m[1mi  functions:[22m[39m Beginning execution of "us-central1-onOrderWritten"
+[36m[1mi  functions:[22m[39m Finished "us-central1-onOrderWritten" in 247.4533ms
+[36m[1mi  functions:[22m[39m Beginning execution of "us-central1-onOrderWritten"
+[36m[1mi  functions:[22m[39m Finished "us-central1-onOrderWritten" in 26.4099ms
+[36m[1mi  functions:[22m[39m Beginning execution of "us-central1-onOrderWritten"
+[36m[1mi  functions:[22m[39m Finished "us-central1-onOrderWritten" in 7.6881ms
+[36m[1mi  functions:[22m[39m Beginning execution of "us-central1-onOrderWritten"
+[36m[1mi  functions:[22m[39m Finished "us-central1-onOrderWritten" in 6.2061ms
+[36m[1mi  functions:[22m[39m Beginning execution of "us-central1-onOrderWritten"
+[36m[1mi  functions:[22m[39m Finished "us-central1-onOrderWritten" in 17.5528ms
+[36m[1mi  functions:[22m[39m Beginning execution of "us-central1-onOrderWritten"
+[36m[1mi  functions:[22m[39m Finished "us-central1-onOrderWritten" in 25.135ms
+[36m[1mi  functions:[22m[39m Beginning execution of "us-central1-onOrderWritten"
+[36m[1mi  functions:[22m[39m Finished "us-central1-onOrderWritten" in 11.2871ms
+[36m[1mi  functions:[22m[39m Beginning execution of "us-central1-getLifetimeSalesReport"
+[90m> [39m {"verifications":{"app":"MISSING","auth":"VALID"},"logging.googleapis.com/labels":{"firebase-log-type":"callable-request-verification"},"severity":"DEBUG","message":"Callable request verification passed"}
+[90m> [39m {"severity":"INFO","message":"Lifetime report 2020-01-01..2026-11-15 from 2 orders (dailyStats not backfilled)"}
+[36m[1mi  functions:[22m[39m Finished "us-central1-getLifetimeSalesReport" in 37.2357ms
+[36m[1mi  functions:[22m[39m Beginning execution of "us-central1-getLifetimeSalesReport"
+[90m> [39m {"verifications":{"app":"MISSING","auth":"VALID"},"logging.googleapis.com/labels":{"firebase-log-type":"callable-request-verification"},"severity":"DEBUG","message":"Callable request verification passed"}
+[90m> [39m {"severity":"INFO","message":"Lifetime report 2020-01-01..2026-11-15 from 1 dailyStats docs"}
+[36m[1mi  functions:[22m[39m Finished "us-central1-getLifetimeSalesReport" in 33.2408ms
+[36m[1mi  functions:[22m[39m Beginning execution of "us-central1-getLifetimeSalesReport"
+[90m> [39m {"verifications":{"app":"MISSING","auth":"VALID"},"logging.googleapis.com/labels":{"firebase-log-type":"callable-request-verification"},"severity":"DEBUG","message":"Callable request verification passed"}
+[90m> [39m {"severity":"INFO","message":"Lifetime report 2026-11-15..2026-11-15 from 1 dailyStats docs"}
+[36m[1mi  functions:[22m[39m Finished "us-central1-getLifetimeSalesReport" in 43.2106ms
+{
+  "timings": [
+    "kds mirror for a new order: 1388 ms",
+    "dailyStats counts 2 countable orders: 137 ms",
+    "kds mirror shows Preparing: 133 ms",
+    "paid GCash order counted: 137 ms",
+    "cancelled order uncounted: 136 ms",
+    "deleted order leaves mirror: 138 ms",
+    "deleted order uncounted: 15 ms"
+  ],
+  "dailyStats": {
+    "date": "2026-11-15",
+    "entryType": {
+      "staff": {
+        "revenue": 0,
+        "count": 0
+      },
+      "kiosk": {
+        "revenue": 158,
+        "count": 1
+      }
+    },
+    "revenue": 158,
+    "channel": {
+      "walkIn": {
+        "revenue": 0,
+        "count": 0
+      },
+      "delivery": {
+        "revenue": 158,
+        "count": 1
+      }
+    },
+    "paymentMethod": {
+      "gcash": {
+        "revenue": 158,
+        "count": 1
+      },
+      "cash": {
+        "revenue": 0,
+        "count": 0
+      }
+    },
+    "orders": 1,
+    "items": {
+      "Burger B1T1": {
+        "name": "Burger B1T1",
+        "variant": "",
+        "revenue": 0,
+        "qty": 0
+      },
+      "Shawarma Wrap (Spicy)": {
+        "name": "Shawarma Wrap",
+        "variant": "Spicy",
+        "revenue": 158,
+        "qty": 2
+      }
+    },
+    "itemsSold": 2,
+    "updatedAt": {
+      "_seconds": 1794674454,
+      "_nanoseconds": 925000000
+    }
+  },
+  "report": {
+    "totalRevenue": 158,
+    "orderCount": 1,
+    "averageOrderValue": 158,
+    "totalItemsSold": 2
+  }
+}
+✔ trigger mirrors orders and keeps daily stats exact (4025.5295ms)
+[36m[1mi  functions:[22m[39m Beginning execution of "us-central1-getLifetimeSalesReport"
+[90m> [39m {"verifications":{"app":"MISSING","auth":"VALID"},"logging.googleapis.com/labels":{"firebase-log-type":"callable-request-verification"},"severity":"DEBUG","message":"Callable request verification passed"}
+[90m> [39m {"severity":"INFO","message":"Lifetime report 2020-01-01..2026-11-15 from 1 dailyStats docs"}
+[36m[1mi  functions:[22m[39m Finished "us-central1-getLifetimeSalesReport" in 30.0964ms
+[36m[1mi  functions:[22m[39m Beginning execution of "us-central1-getLifetimeSalesReport"
+[90m> [39m {"verifications":{"app":"MISSING","auth":"VALID"},"logging.googleapis.com/labels":{"firebase-log-type":"callable-request-verification"},"severity":"DEBUG","message":"Callable request verification passed"}
+[90m> [39m {"severity":"INFO","message":"Lifetime report 2020-01-01..2026-11-15 from 1 dailyStats docs"}
+[36m[1mi  functions:[22m[39m Finished "us-central1-getLifetimeSalesReport" in 30.0498ms
+✔ backfill rebuilds dailyStats and the mirror from orders alone (338.4762ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 2
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 4532.0891
+[32m[1m+ [22m[39m Script exited successfully (code 0)
+[36m[1mi  emulators:[22m[39m Shutting down emulators.
+[36m[1mi  functions:[22m[39m Stopping Functions Emulator
+[36m[1mi  firestore:[22m[39m Stopping Firestore Emulator
+[33m[1m! [22m[39m Firestore Emulator has exited upon receiving signal: SIGINT
+[36m[1mi  eventarc:[22m[39m Stopping Eventarc Emulator
+[36m[1mi  tasks:[22m[39m Stopping Cloud Tasks Emulator
+[36m[1mi  hub:[22m[39m Stopping emulator hub
+[36m[1mi  logging:[22m[39m Stopping Logging Emulator

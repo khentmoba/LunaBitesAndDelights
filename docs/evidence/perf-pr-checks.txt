@@ -1,0 +1,153 @@
+Local run of .github/workflows/pr-checks.yml on feature/perf-live-kds-daily-stats (base 338b627) — 2026-11-14T17:32:26Z
+## flutter job
+
+===== flutter pub get =====
+Resolving dependencies...
+Downloading packages...
+  _flutterfire_internals 1.3.77 (1.3.79 available)
+  archive 4.0.9 (4.7.1 available)
+  async 2.13.0 (2.13.1 available)
+  clock 1.1.2 (1.1.3 available)
+  cloud_firestore 6.10.0 (7.1.0 available)
+  cloud_firestore_platform_interface 8.0.7 (8.1.0 available)
+  cloud_firestore_web 5.7.3 (5.8.0 available)
+  cloud_functions 6.5.0 (7.0.1 available)
+  cloud_functions_platform_interface 6.0.7 (6.1.1 available)
+  cloud_functions_web 5.1.13 (5.1.15 available)
+  crypto 3.0.7 (3.0.8 available)
+  cupertino_icons 1.0.8 (2.0.0 available)
+  firebase_app_check 0.4.8 (0.5.1 available)
+  firebase_app_check_platform_interface 0.4.2+1 (0.5.1+3 available)
+  firebase_app_check_web 0.2.6+1 (0.3.1+3 available)
+  firebase_auth 6.7.0 (7.0.1 available)
+  firebase_auth_platform_interface 9.1.0 (9.1.2 available)
+  firebase_auth_web 6.3.0 (6.3.2 available)
+  firebase_core 4.15.0 (5.1.0 available)
+  firebase_core_web 3.12.0 (4.1.0 available)
+  flutter_map 6.2.1 (8.3.2 available)
+  geolocator 13.0.4 (14.1.2 available)
+  geolocator_android 4.6.2 (5.2.1 available)
+  geolocator_apple 2.3.13 (2.4.3 available)
+  geolocator_platform_interface 4.2.6 (4.4.1 available)
+  geolocator_web 4.1.3 (4.1.4 available)
+  image 4.8.0 (4.12.0 available)
+  intl 0.20.2 (0.20.3 available)
+  latlong2 0.9.1 (0.10.1 available)
+  logger 2.7.0 (2.8.0 available)
+  material_color_utilities 0.13.0 (0.13.1 available)
+  mgrs_dart 2.0.0 (3.0.0 available)
+  petitparser 7.0.2 (7.1.0 available)
+  posix 6.5.0 (6.5.4 available)
+  proj4dart 2.1.0 (3.0.0 available)
+  stack_trace 1.12.1 (1.12.2 available)
+  test_api 0.7.12 (0.7.15 available)
+  unicode 0.3.1 (1.1.9 available)
+  uuid 4.5.3 (4.6.0 available)
+  vector_math 2.4.3 (2.4.4 available)
+  vm_service 15.0.2 (15.4.0 available)
+  web 1.1.1 (1.1.2 available)
+  webview_flutter 4.13.1 (4.14.1 available)
+  webview_flutter_android 4.10.13 (4.14.1 available)
+  webview_flutter_platform_interface 2.14.0 (2.15.1 available)
+  webview_flutter_wkwebview 3.24.1 (3.27.2 available)
+  xml 6.6.1 (7.1.0 available)
+Got dependencies!
+47 packages have newer versions incompatible with dependency constraints.
+Try `flutter pub outdated` for more information.
+----- exit 0 -----
+
+===== flutter analyze =====
+Got dependencies!
+47 packages have newer versions incompatible with dependency constraints.
+Try `flutter pub outdated` for more information.
+Analyzing t3-3960be75-8888886da71888b3...                       
+No issues found! (ran in 8.8s)
+Analyzer issues: 0 (baseline 0).
+----- exit 0 -----
+
+===== dart format (changed + new files) =====
+warning: in the working copy of 'lib/screens/admin_dashboard.dart', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'lib/screens/cart_page.dart', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'lib/screens/kds_page.dart', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'lib/screens/menu_page.dart', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'lib/screens/splash_screen.dart', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'lib/screens/staff_login_dialog.dart', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'lib/widgets/kiosk/customization_modal.dart', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'lib/widgets/kiosk/product_card.dart', LF will be replaced by CRLF the next time Git touches it
+lib/main.dart
+lib/screens/admin_dashboard.dart
+lib/screens/cart_page.dart
+lib/screens/checkout_page.dart
+lib/screens/kds_page.dart
+lib/screens/menu_page.dart
+lib/screens/splash_screen.dart
+lib/screens/staff_bundle.dart
+lib/screens/staff_login_dialog.dart
+lib/screens/staff_menu.dart
+lib/screens/staff_screens.dart
+lib/services/kds_feed.dart
+lib/widgets/kiosk/customization_modal.dart
+lib/widgets/kiosk/product_card.dart
+test/kds_live_feed_test.dart
+tool/kds_live_preview.dart
+Formatted 16 files (0 changed) in 0.23 seconds.
+----- exit 0 -----
+
+===== flutter test =====
+00:03 +64: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-3960be75-8888886da71888b3/test/menu_ordering_test.dart: 320px menu supports large text without layout exceptions
+00:03 +65: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-3960be75-8888886da71888b3/test/staff_kds_test.dart: Staff Session & Audio Alert Tests AdminDashboard, AnalyticsPage, and LifetimeAnalyticsPage require staff login and render cleanly on mobile
+00:03 +66: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-3960be75-8888886da71888b3/test/menu_ordering_test.dart: cart order slip updates quantities and cancels back to /
+00:03 +67: All tests passed!
+----- exit 0 -----
+
+===== flutter build web --release =====
+Font asset "MaterialIcons-Regular.otf" was tree-shaken, reducing it from 1645184 to 21060 bytes (98.7% reduction). Tree-shaking can be disabled by providing the --no-tree-shake-icons flag when building your app.
+Compiling lib\main.dart for the Web...                             46.7s
+√ Built build\web
+----- exit 0 -----
+## functions job
+
+===== npm ci =====
+  npm audit fix --force
+
+Run `npm audit` for details.
+----- exit 0 -----
+
+===== npm run build =====
+> build
+> tsc
+
+----- exit 0 -----
+
+
+===== npm test (unit) =====
+ℹ tests 24
+ℹ pass 24
+ℹ fail 0
+----- exit 0 -----
+
+===== npm audit --audit-level=high =====
+  npm audit fix
+
+To address all issues (including breaking changes), run:
+  npm audit fix --force
+----- exit 0 -----
+## rules job
+
+===== npm run test:rules =====
+ℹ tests 23
+ℹ pass 23
+ℹ fail 0
+----- exit 0 -----
+## site job
+
+===== npm ci (root) =====
+
+Run `npm audit` for details.
+----- exit 0 -----
+
+===== npm run test:site =====
+ℹ tests 25
+ℹ pass 25
+ℹ fail 0
+----- exit 0 -----

@@ -134,6 +134,40 @@ describe('orders: every checkout combination saves', () => {
   });
 });
 
+describe('kds_orders: staff read the kitchen mirror, nobody writes', () => {
+  const mirror = { orderNumber: 'LU-1', status: 'Pending', ts: Timestamp.now() };
+  test('staff and admin can get and list', async () => {
+    await seed('kds_orders/o1', mirror);
+    for (const role of ['staff', 'admin']) {
+      const db = user(`staff_${role}`, { role });
+      await assertSucceeds(getDoc(doc(db, 'kds_orders/o1')));
+      await assertSucceeds(getDocs(collection(db, 'kds_orders')));
+    }
+  });
+  test('anon, customers and riders cannot read', async () => {
+    await seed('kds_orders/o1', mirror);
+    for (const db of [anon(), user('cust1'), user('rider1', { riderStatus: 'approved' }), user('x', { role: 'rider' })]) {
+      await assertFails(getDoc(doc(db, 'kds_orders/o1')));
+      await assertFails(getDocs(collection(db, 'kds_orders')));
+    }
+  });
+  test('even admins cannot write the mirror', async () => {
+    await seed('kds_orders/o1', mirror);
+    const db = user('staff_admin', { role: 'admin' });
+    await assertFails(setDoc(doc(db, 'kds_orders/o2'), mirror));
+    await assertFails(updateDoc(doc(db, 'kds_orders/o1'), { status: 'Ready' }));
+    await assertFails(deleteDoc(doc(db, 'kds_orders/o1')));
+  });
+  test('derived stats collections stay server-only', async () => {
+    const db = user('staff_admin', { role: 'admin' });
+    for (const path of ['dailyStats/2026-11-15', 'stats_events/e1', 'stats_meta/dailyStats']) {
+      await seed(path, { orders: 1 });
+      await assertFails(getDoc(doc(db, path)));
+      await assertFails(setDoc(doc(db, path), { orders: 2 }));
+    }
+  });
+});
+
 describe('config: public read-only', () => {
   test('anon can read, cannot write', async () => {
     await seed('config/app', { open: true });
