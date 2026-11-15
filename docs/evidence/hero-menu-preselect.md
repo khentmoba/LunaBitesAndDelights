@@ -27,7 +27,8 @@ Kiosk: ![](hero-menu-preselect/mobile-390-4-kiosk-choice-sheet.webp) ![](hero-me
 
 - flutter analyze + baseline: 0 issues (`ci-analyze.txt`)
 - dart format on changed files: clean (`ci-format.txt`)
-- flutter test: 88 passed. One early local run reported two `menu_ordering_test.dart` tests as "did not complete" with no error text (the test process stopped; no assertion or timeout). It never came back: 30 full-suite runs after it all passed, 6 of them two suites in parallel at `--concurrency=16` (`flutter-test-stress.txt`), the CI `flutter` job passed on `7ce782e` (a re-run of it was also requested), and no failed PR Checks run in the repo's last 40 shows it. Neither affected test touches the pick code path., including `test/menu_preselect_test.dart`, which checks that every storefront row resolves to its printed price (`ci-flutter-test.txt`)
+- flutter test: 88 passed, including `test/menu_preselect_test.dart`, which checks that every storefront row resolves to its printed price (`ci-flutter-test.txt`).
+- Flaky-run check: one early local run reported two `menu_ordering_test.dart` tests as "did not complete" with no error text (the test process stopped; no assertion or timeout). It never came back: 30 full-suite runs after it all passed, 6 of them two suites in parallel at `--concurrency=16` (`flutter-test-stress.txt`). The CI `flutter` job passed on `7ce782e`, and no failed PR Checks run in the repo's last 40 shows it. Neither affected test touches the pick code path.
 - flutter build web --release --wasm + assemble: built (`ci-web-build.txt`)
 - site tests: 28 passed, including tally/link, one-photo-at-a-time, and pick/photo attributes (`ci-site-tests.txt`)
 - functions build + npm audit: passed (`ci-functions.txt`)
