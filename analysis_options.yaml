@@ -32,10 +32,6 @@ analyzer:
     - "node_modules/**"
     - "build/**"
     - ".dart_tool/**"
-    - android/**
-    - ios/**
     - web/**
-    - windows/**
-    - macos/**
-    - linux/**
+    - android/**
 
