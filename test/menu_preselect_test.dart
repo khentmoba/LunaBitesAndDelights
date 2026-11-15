@@ -58,7 +58,9 @@ void main() {
       'Burger Patty||55',
     ]);
     expect(r.needsChoice.map((m) => m.id), ['f4', 's1']);
-    expect(r.sectionId, 'shawarma');
+    expect(r.sectionId, 'drinks', reason: 'a section pick decides the view');
+    expect(r.sectionPick, isTrue);
+    expect(resolvePicks(['b1']).sectionPick, isFalse);
   });
 
   test('picks are read once and only from the pick parameter', () {

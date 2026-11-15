@@ -23,10 +23,15 @@ class MenuPreselection {
   /// The section the menu should open on.
   final String? sectionId;
 
+  /// True when a picked row stands for a whole section (solo coolers), so the
+  /// visitor still has to choose the item there.
+  final bool sectionPick;
+
   const MenuPreselection({
     this.ready = const [],
     this.needsChoice = const [],
     this.sectionId,
+    this.sectionPick = false,
   });
 
   bool get isEmpty => ready.isEmpty && needsChoice.isEmpty && sectionId == null;
@@ -36,12 +41,13 @@ MenuPreselection resolvePicks(Iterable<String> picks) {
   final ready = <CartItem>[];
   final needsChoice = <MenuItem>[];
   String? sectionId;
+  String? pickedSection;
   var n = 0;
 
   for (final pick in picks.take(80)) {
     if (pick.startsWith('@')) {
       final id = pick.substring(1);
-      if (kMenuSections.any((s) => s.id == id)) sectionId ??= id;
+      if (kMenuSections.any((s) => s.id == id)) pickedSection ??= id;
       continue;
     }
     final hash = pick.indexOf('#');
@@ -86,7 +92,8 @@ MenuPreselection resolvePicks(Iterable<String> picks) {
   return MenuPreselection(
     ready: ready,
     needsChoice: needsChoice,
-    sectionId: sectionId,
+    sectionId: pickedSection ?? sectionId,
+    sectionPick: pickedSection != null,
   );
 }
 
@@ -158,11 +165,14 @@ class _MenuPreselectHostState extends State<MenuPreselectHost> {
 
     if (!mounted) return;
     final added = cartNotifier.totalCount - before;
+    final lead = added > 0 ? 'Added $added from the menu board. ' : '';
     ScaffoldMessenger.maybeOf(context)?.showSnackBar(
       SnackBar(
         content: Text(
-          added > 0
-              ? 'Added $added from the menu board. Keep adding, or tap View order.'
+          result.sectionPick
+              ? '${lead}Choose your drink below, then tap View order.'
+              : added > 0
+              ? '${lead}Keep adding, or tap View order.'
               : 'Pick what you want from the menu.',
         ),
       ),
