@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 
 import '../services/functions.dart';
 import '../services/kds_feed.dart';
+import '../services/navigation.dart';
 import '../services/session.dart';
 import '../services/audio_alert_service.dart';
 import '../services/url_helper.dart';
@@ -404,131 +405,150 @@ class _KdsPageState extends State<KdsPage> with SingleTickerProviderStateMixin {
           children: [
             const Icon(Icons.receipt_long_rounded, color: MenuTheme.pinkInk),
             const SizedBox(width: 10),
-            Text('KITCHEN TICKET', style: MenuTheme.heading(20)),
+            Flexible(
+              child: Text('KITCHEN TICKET', style: MenuTheme.heading(20)),
+            ),
           ],
         ),
-        content: Container(
-          width: 320,
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: MenuTheme.paper,
-            border: Border.all(color: MenuTheme.rule),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Center(
-                child: Column(
-                  children: [
-                    Text('LUNA BITES & DELIGHTS', style: MenuTheme.heading(18)),
-                    Text(
-                      'Purok 5, Magallanes · KITCHEN SLIP',
-                      style: MenuTheme.body(size: 11, color: MenuTheme.inkSoft),
-                    ),
-                    const SizedBox(height: 8),
-                    Text('#$orderNum', style: MenuTheme.heading(28)),
-                    Text(
-                      type,
-                      style: MenuTheme.body(
-                        size: 12,
-                        color: MenuTheme.pinkInk,
-                      ).copyWith(fontWeight: FontWeight.w800, letterSpacing: 1),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 10),
-              const Text(
-                '--------------------------------',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: MenuTheme.rule),
-              ),
-              Text(
-                'Customer: $name',
-                style: MenuTheme.body(
-                  size: 13,
-                  color: MenuTheme.ink,
-                ).copyWith(fontWeight: FontWeight.w700),
-              ),
-              if (phone.isNotEmpty)
-                Text(
-                  'Phone: $phone',
-                  style: MenuTheme.body(size: 12, color: MenuTheme.pinkInk),
-                ),
-              if (addr.isNotEmpty)
-                Text(
-                  'Address: $addr',
-                  style: MenuTheme.body(size: 12, color: MenuTheme.inkSoft),
-                ),
-              const Text(
-                '--------------------------------',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: MenuTheme.rule),
-              ),
-              const SizedBox(height: 6),
-              ...items.map(
-                (i) => Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 2),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+        content: SingleChildScrollView(
+          child: Container(
+            constraints: const BoxConstraints(maxWidth: 320),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: MenuTheme.paper,
+              border: Border.all(color: MenuTheme.rule),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Center(
+                  child: Column(
                     children: [
                       Text(
-                        '${i['quantity'] ?? i['qty'] ?? 1}x ',
-                        style: MenuTheme.heading(
-                          16,
-                        ).copyWith(color: MenuTheme.ink),
+                        'LUNA BITES & DELIGHTS',
+                        style: MenuTheme.heading(18),
                       ),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              i['name'] ?? '',
-                              style: MenuTheme.body(
-                                size: 13,
-                                color: MenuTheme.ink,
-                              ).copyWith(fontWeight: FontWeight.w700),
-                            ),
-                            if (i['variant'] != null &&
-                                (i['variant'] as String).isNotEmpty)
-                              Text(
-                                i['variant'],
-                                style: MenuTheme.body(
-                                  size: 11,
-                                  color: MenuTheme.inkSoft,
-                                ),
-                              ),
-                          ],
+                      Text(
+                        'Purok 5, Magallanes · KITCHEN SLIP',
+                        style: MenuTheme.body(
+                          size: 11,
+                          color: MenuTheme.inkSoft,
                         ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text('#$orderNum', style: MenuTheme.heading(28)),
+                      Text(
+                        type,
+                        style:
+                            MenuTheme.body(
+                              size: 12,
+                              color: MenuTheme.pinkInk,
+                            ).copyWith(
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 1,
+                            ),
                       ),
                     ],
                   ),
                 ),
-              ),
-              const SizedBox(height: 6),
-              const Text(
-                '--------------------------------',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: MenuTheme.rule),
-              ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text('TOTAL:', style: MenuTheme.heading(18)),
+                const SizedBox(height: 10),
+                const Text(
+                  '--------------------------------',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: MenuTheme.rule),
+                ),
+                Text(
+                  'Customer: $name',
+                  style: MenuTheme.body(
+                    size: 13,
+                    color: MenuTheme.ink,
+                  ).copyWith(fontWeight: FontWeight.w700),
+                ),
+                if (phone.isNotEmpty)
                   Text(
-                    '₱$total ($paymentStatus)',
-                    style: MenuTheme.heading(
-                      18,
-                    ).copyWith(color: MenuTheme.pinkInk),
+                    'Phone: $phone',
+                    style: MenuTheme.body(size: 12, color: MenuTheme.pinkInk),
                   ),
-                ],
-              ),
-              Text(
-                'Payment: $paymentMethod',
-                style: MenuTheme.body(size: 11, color: MenuTheme.inkSoft),
-              ),
-            ],
+                if (addr.isNotEmpty)
+                  Text(
+                    'Address: $addr',
+                    style: MenuTheme.body(size: 12, color: MenuTheme.inkSoft),
+                  ),
+                const Text(
+                  '--------------------------------',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: MenuTheme.rule),
+                ),
+                const SizedBox(height: 6),
+                ...items.map(
+                  (i) => Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 2),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '${i['quantity'] ?? i['qty'] ?? 1}x ',
+                          style: MenuTheme.heading(
+                            16,
+                          ).copyWith(color: MenuTheme.ink),
+                        ),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                i['name'] ?? '',
+                                style: MenuTheme.body(
+                                  size: 13,
+                                  color: MenuTheme.ink,
+                                ).copyWith(fontWeight: FontWeight.w700),
+                              ),
+                              if (i['variant'] != null &&
+                                  (i['variant'] as String).isNotEmpty)
+                                Text(
+                                  i['variant'],
+                                  style: MenuTheme.body(
+                                    size: 11,
+                                    color: MenuTheme.inkSoft,
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                const Text(
+                  '--------------------------------',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: MenuTheme.rule),
+                ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('TOTAL:', style: MenuTheme.heading(18)),
+                    const SizedBox(width: 8),
+                    Flexible(
+                      child: Text(
+                        '₱$total ($paymentStatus)',
+                        textAlign: TextAlign.end,
+                        overflow: TextOverflow.ellipsis,
+                        style: MenuTheme.heading(
+                          18,
+                        ).copyWith(color: MenuTheme.pinkInk),
+                      ),
+                    ),
+                  ],
+                ),
+                Text(
+                  'Payment: $paymentMethod',
+                  style: MenuTheme.body(size: 11, color: MenuTheme.inkSoft),
+                ),
+              ],
+            ),
           ),
         ),
         actions: [
@@ -547,8 +567,15 @@ class _KdsPageState extends State<KdsPage> with SingleTickerProviderStateMixin {
             ),
             onPressed: () {
               Navigator.pop(ctx);
-              openUrlInBrowser('javascript:window.print()');
-              _snack('Print dialog opened', const Color(0xFF1E7A3C));
+              final opened = printCurrentPage();
+              if (opened) {
+                _snack('Print dialog opened', const Color(0xFF1E7A3C));
+              } else {
+                _snack(
+                  'Printing is available in the web browser',
+                  MenuTheme.ink,
+                );
+              }
             },
             icon: const Icon(Icons.print_rounded, size: 16),
             label: Text(
@@ -781,12 +808,7 @@ class _KdsPageState extends State<KdsPage> with SingleTickerProviderStateMixin {
                 onPressed: _loading ? null : () => _fetchActiveOrders(),
               ),
               InkWell(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const KioskMenuPage()),
-                  );
-                },
+                onTap: _openMenu,
                 child: Container(
                   margin: const EdgeInsets.symmetric(vertical: 8),
                   padding: const EdgeInsets.symmetric(
@@ -846,10 +868,7 @@ class _KdsPageState extends State<KdsPage> with SingleTickerProviderStateMixin {
                       _snack('Audio Alert Muted', MenuTheme.inkSoft);
                     }
                   } else if (val == 'analytics') {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const AdminDashboard()),
-                    );
+                    _openDashboard();
                   } else if (val == 'logout') {
                     session.logout();
                     Navigator.pushNamedAndRemoveUntil(
@@ -872,15 +891,18 @@ class _KdsPageState extends State<KdsPage> with SingleTickerProviderStateMixin {
                           color: MenuTheme.pinkInk,
                         ),
                         const SizedBox(width: 10),
-                        Text(
-                          AudioAlertService.soundEnabled
-                              ? 'Mute Chime'
-                              : 'Enable Chime',
+                        Flexible(
+                          child: Text(
+                            AudioAlertService.soundEnabled
+                                ? 'Mute Chime'
+                                : 'Enable Chime',
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
                       ],
                     ),
                   ),
-                  PopupMenuItem(
+                  const PopupMenuItem(
                     value: 'analytics',
                     child: Row(
                       children: [
@@ -890,11 +912,16 @@ class _KdsPageState extends State<KdsPage> with SingleTickerProviderStateMixin {
                           color: MenuTheme.pinkInk,
                         ),
                         SizedBox(width: 10),
-                        Text('Sales & Admin'),
+                        Flexible(
+                          child: Text(
+                            'Sales & Admin',
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
                       ],
                     ),
                   ),
-                  PopupMenuItem(
+                  const PopupMenuItem(
                     value: 'logout',
                     child: Row(
                       children: [
@@ -904,7 +931,12 @@ class _KdsPageState extends State<KdsPage> with SingleTickerProviderStateMixin {
                           color: Color(0xFFB3261E),
                         ),
                         SizedBox(width: 10),
-                        Text('Exit Staff Portal'),
+                        Flexible(
+                          child: Text(
+                            'Exit Staff Portal',
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -979,12 +1011,7 @@ class _KdsPageState extends State<KdsPage> with SingleTickerProviderStateMixin {
 
               // Walk-in Order Button (Square Vermilion Plate)
               InkWell(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const KioskMenuPage()),
-                  );
-                },
+                onTap: _openMenu,
                 child: Container(
                   margin: const EdgeInsets.symmetric(vertical: 10),
                   padding: EdgeInsets.symmetric(
@@ -1037,12 +1064,7 @@ class _KdsPageState extends State<KdsPage> with SingleTickerProviderStateMixin {
                   color: MenuTheme.pinkInk,
                   size: isCompact ? 18 : 20,
                 ),
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const AdminDashboard()),
-                  );
-                },
+                onPressed: _openDashboard,
               ),
 
               // Logout
@@ -1069,6 +1091,28 @@ class _KdsPageState extends State<KdsPage> with SingleTickerProviderStateMixin {
               ),
               SizedBox(width: isCompact ? 4 : 8),
             ],
+    );
+  }
+
+  void _openMenu() {
+    pushOrPopToRoute(
+      Navigator.of(context),
+      '/menu',
+      () => MaterialPageRoute(
+        settings: const RouteSettings(name: '/menu'),
+        builder: (_) => const KioskMenuPage(),
+      ),
+    );
+  }
+
+  void _openDashboard() {
+    pushOrPopToRoute(
+      Navigator.of(context),
+      '/dashboard',
+      () => MaterialPageRoute(
+        settings: const RouteSettings(name: '/dashboard'),
+        builder: (_) => const AdminDashboard(),
+      ),
     );
   }
 
@@ -1516,6 +1560,8 @@ class _KdsPageState extends State<KdsPage> with SingleTickerProviderStateMixin {
                     ? 'No orders in queue.'
                     : columnStatus == 'Preparing'
                     ? 'Grill & fryer are clear.'
+                    : columnStatus == 'Completed'
+                    ? 'No completed orders yet.'
                     : 'No orders ready for pickup.',
                 textAlign: TextAlign.center,
                 style: MenuTheme.body(size: 13, color: MenuTheme.inkSoft),

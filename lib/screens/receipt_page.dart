@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/cart.dart';
 import '../widgets/kiosk/kiosk_theme.dart';
+import 'menu_page.dart';
 
 class ReceiptPage extends StatelessWidget {
   final String orderNumber,
@@ -320,8 +321,25 @@ class ReceiptPage extends StatelessWidget {
                 SizedBox(
                   width: double.infinity,
                   child: FilledButton(
-                    onPressed: () =>
-                        Navigator.of(context).popUntil((r) => r.isFirst),
+                    onPressed: () {
+                      final nav = Navigator.of(context);
+                      var foundMenu = false;
+                      nav.popUntil((r) {
+                        if (r.settings.name == '/menu') {
+                          foundMenu = true;
+                          return true;
+                        }
+                        return r.isFirst;
+                      });
+                      if (!foundMenu) {
+                        nav.pushReplacement(
+                          MaterialPageRoute(
+                            settings: const RouteSettings(name: '/menu'),
+                            builder: (_) => const KioskMenuPage(),
+                          ),
+                        );
+                      }
+                    },
                     style: FilledButton.styleFrom(
                       backgroundColor: KioskTheme.lunaPink,
                       foregroundColor: KioskTheme.textOnPrimary,

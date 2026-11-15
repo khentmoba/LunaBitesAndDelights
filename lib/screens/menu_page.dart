@@ -5,6 +5,7 @@ import '../models/menu.dart';
 import '../services/session.dart';
 import '../services/cart_notifier.dart';
 import '../services/inactivity_timer.dart';
+import '../services/navigation.dart';
 import '../widgets/kiosk/menu_theme.dart';
 import '../widgets/kiosk/sidebar.dart';
 import '../widgets/kiosk/category_bar.dart';
@@ -92,7 +93,8 @@ class KioskMenuPage extends StatelessWidget {
                   borderRadius: MenuTheme.radius,
                   child: InkWell(
                     borderRadius: MenuTheme.radius,
-                    onTap: () => Navigator.pushNamed(context, '/kds'),
+                    onTap: () =>
+                        pushNamedOrPopTo(Navigator.of(context), '/kds'),
                     child: ConstrainedBox(
                       constraints: const BoxConstraints(minHeight: 44),
                       child: Padding(
@@ -239,6 +241,7 @@ class KioskMenuPage extends StatelessWidget {
           builder: (context, session, child) {
             final section = kMenuSections.firstWhere(
               (s) => s.id == session.currentCategoryId,
+              orElse: () => kMenuSections.first,
             );
             return CustomScrollView(
               key: ValueKey(session.currentCategoryId),

@@ -9,6 +9,7 @@ import 'firebase_options.dart';
 import 'widgets/kiosk/kiosk_theme.dart';
 import 'services/session.dart';
 import 'services/cart_notifier.dart';
+import 'services/navigation.dart';
 import 'screens/splash_screen.dart';
 import 'screens/menu_page.dart';
 import 'screens/cart_page.dart';
@@ -153,6 +154,7 @@ class LunaExpressApp extends StatelessWidget {
         ),
       ),
       initialRoute: '/',
+      navigatorObservers: [appRouteObserver],
       routes: {
         '/': (context) => const KioskSplashScreen(),
         '/menu': (context) => const KioskMenuPage(),

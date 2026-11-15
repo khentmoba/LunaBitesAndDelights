@@ -26,16 +26,19 @@ class CartNotifier extends ChangeNotifier {
   }
 
   void increment(String id) {
-    _items.firstWhere((c) => c.id == id).quantity++;
+    final idx = _items.indexWhere((c) => c.id == id);
+    if (idx == -1) return;
+    _items[idx].quantity++;
     notifyListeners();
   }
 
   void decrement(String id) {
-    final item = _items.firstWhere((c) => c.id == id);
-    if (item.quantity <= 1) {
-      _items.removeWhere((c) => c.id == id);
+    final idx = _items.indexWhere((c) => c.id == id);
+    if (idx == -1) return;
+    if (_items[idx].quantity <= 1) {
+      _items.removeAt(idx);
     } else {
-      item.quantity--;
+      _items[idx].quantity--;
     }
     notifyListeners();
   }
