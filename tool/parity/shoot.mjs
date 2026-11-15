@@ -89,7 +89,8 @@ async function cdp(wsUrl) {
 
 // Fixed seed so both targets render identical data.
 const today = new Date();
-const dateLabel = today.toISOString().slice(0, 10);
+// Same PHT (UTC+8) day as phtDateLabel in functions/src/util.ts, or analytics finds no orders before 08:00 PHT.
+const dateLabel = new Date(today.getTime() + 8 * 60 * 60 * 1000).toISOString().slice(0, 10);
 const order = (n, name, over = {}) => ({
   orderId: `LU-261115-00${n}`, customerName: name, customerPhone: '09171234567', customerAddress: 'Purok 5, Poblacion Magallanes',
   items: [{ name: 'S3 – Shawarma Rice', variant: '', price: 99, quantity: 2 }, { name: 'Milo Craze', variant: 'Oreo', price: 65, quantity: 1 }],
@@ -112,7 +113,7 @@ try {
   const staff = await getAuth().createUser({ uid: 'staff_tester', email: 'staff@parity.test', password: 'parity-only' });
   await getAuth().setCustomUserClaims(staff.uid, { role: 'staff' });
   for (const [i, o] of SEED.entries()) await db.doc(`orders/seed${i + 1}`).set(o);
-  for (let i = 0; i < 100 && (await db.collection('kds_orders').count().get()).data().count < 3; i++) await sleep(100);
+  for (let i = 0; i < 100 && (await db.collection('kds_orders').count().get()).data().count < SEED.length; i++) await sleep(100);
 
   await new Promise((r) => server.listen(0, '127.0.0.1', r));
   const port = server.address().port;
