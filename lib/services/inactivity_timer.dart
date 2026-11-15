@@ -1,13 +1,25 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import '../services/cart_notifier.dart';
+import '../services/navigation.dart';
 import '../services/session.dart';
 import '../widgets/kiosk/kiosk_theme.dart';
 
 class InactivityWatcher extends StatefulWidget {
   final Widget child;
-  const InactivityWatcher({super.key, required this.child});
+  final Duration timeout;
+  final Duration warningCountdown;
+  final bool alwaysActive;
+
+  const InactivityWatcher({
+    super.key,
+    required this.child,
+    this.timeout = const Duration(minutes: 2),
+    this.warningCountdown = const Duration(seconds: 15),
+    this.alwaysActive = false,
+  });
 
   @override
   State<InactivityWatcher> createState() => _InactivityWatcherState();
@@ -19,10 +31,29 @@ class _InactivityWatcherState extends State<InactivityWatcher> {
   int _secondsRemaining = 15;
   bool _dialogOpen = false;
 
+  bool get _watcherEnabled => widget.alwaysActive || kIsWeb || session.isStaff;
+
+  bool _isActiveRoute() {
+    final route = ModalRoute.of(context);
+    if (route == null) return true;
+    final nav = Navigator.maybeOf(context);
+    if (nav == null) return route.isCurrent;
+    return appRouteObserver.isTopPageRoute(nav, route);
+  }
+
+  void _handleGlobalPointer(PointerEvent event) {
+    if (event is! PointerDownEvent && event is! PointerMoveEvent) return;
+    if (!mounted || _dialogOpen || !_watcherEnabled) return;
+    if (_isActiveRoute()) {
+      _resetInactivityTimer();
+    }
+  }
+
   @override
   void initState() {
     super.initState();
     session.addListener(_onSessionChanged);
+    GestureBinding.instance.pointerRouter.addGlobalRoute(_handleGlobalPointer);
     _resetInactivityTimer();
   }
 
@@ -34,6 +65,9 @@ class _InactivityWatcherState extends State<InactivityWatcher> {
   @override
   void dispose() {
     session.removeListener(_onSessionChanged);
+    GestureBinding.instance.pointerRouter.removeGlobalRoute(
+      _handleGlobalPointer,
+    );
     _inactivityTimer?.cancel();
     _countdownTimer?.cancel();
     super.dispose();
@@ -44,11 +78,10 @@ class _InactivityWatcherState extends State<InactivityWatcher> {
     _inactivityTimer?.cancel();
     // Keep the 2-minute unattended reset on web kiosk and staff POS sessions,
     // while letting personal native Android/iOS app users switch apps freely.
-    if (!kIsWeb && !session.isStaff) return;
-    _inactivityTimer = Timer(const Duration(minutes: 2), () {
-      if (!mounted || (!kIsWeb && !session.isStaff)) return;
-      final isCurrent = ModalRoute.of(context)?.isCurrent ?? true;
-      if (!isCurrent) {
+    if (!_watcherEnabled) return;
+    _inactivityTimer = Timer(widget.timeout, () {
+      if (!mounted || !_watcherEnabled) return;
+      if (!_isActiveRoute()) {
         _resetInactivityTimer();
         return;
       }
@@ -60,7 +93,7 @@ class _InactivityWatcherState extends State<InactivityWatcher> {
     if (!mounted) return;
     setState(() {
       _dialogOpen = true;
-      _secondsRemaining = 15;
+      _secondsRemaining = widget.warningCountdown.inSeconds;
     });
 
     StateSetter? dialogSetState;

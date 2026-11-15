@@ -8,6 +8,33 @@ import '../widgets/kiosk/kiosk_theme.dart';
 import '../widgets/report/report_widgets.dart';
 import 'staff_login_dialog.dart';
 
+const _monthsAbbr = [
+  'J',
+  'F',
+  'M',
+  'A',
+  'M',
+  'J',
+  'J',
+  'A',
+  'S',
+  'O',
+  'N',
+  'D',
+];
+
+/// Formats 'YYYY-MM' into a compact X-axis label such as "N '26".
+String formatMonthAxisLabel(String monthKey) {
+  final parts = monthKey.split('-');
+  if (parts.length < 2) return monthKey;
+  final monthNum = int.tryParse(parts[1]);
+  if (monthNum == null || monthNum < 1 || monthNum > 12) return monthKey;
+  final yr = parts[0].length >= 2
+      ? parts[0].substring(parts[0].length - 2)
+      : parts[0];
+  return "${_monthsAbbr[monthNum - 1]} '$yr";
+}
+
 /// Quick date-range preset for the lifetime report.
 enum DateRangePreset {
   allTime('All Time'),
@@ -69,6 +96,8 @@ class _LifetimeAnalyticsPageState extends State<LifetimeAnalyticsPage> {
     super.dispose();
   }
 
+  int _asInt(dynamic v) => (v as num?)?.toInt() ?? 0;
+
   String _computeStartDate() {
     if (_selectedPreset == DateRangePreset.custom && _customStart != null) {
       return phtDateLabel(_customStart);
@@ -103,10 +132,12 @@ class _LifetimeAnalyticsPageState extends State<LifetimeAnalyticsPage> {
       _error = null;
     });
     try {
-      final data = await callFn('getLifetimeSalesReport', {
-        'startDate': _computeStartDate(),
-        'endDate': _computeEndDate(),
-      });
+      final params = <String, dynamic>{};
+      if (_selectedPreset != DateRangePreset.allTime) {
+        params['startDate'] = _computeStartDate();
+        params['endDate'] = _computeEndDate();
+      }
+      final data = await callFn('getLifetimeSalesReport', params);
       if (!mounted) return;
       setState(() {
         if (data['success'] == true) {
@@ -328,7 +359,7 @@ class _LifetimeAnalyticsPageState extends State<LifetimeAnalyticsPage> {
 
   Widget _buildRangeHeader() {
     final summary = _data['summary'] as Map? ?? {};
-    final orderCount = summary['orderCount'] as int? ?? 0;
+    final orderCount = _asInt(summary['orderCount']);
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -373,28 +404,28 @@ class _LifetimeAnalyticsPageState extends State<LifetimeAnalyticsPage> {
       MetricCard(
         compact: true,
         title: 'TOTAL REVENUE',
-        value: '₱${_fmt(summary['totalRevenue'] as int? ?? 0)}',
+        value: '₱${_fmt(_asInt(summary['totalRevenue']))}',
         icon: Icons.monetization_on_rounded,
         color: KioskTheme.success,
       ),
       MetricCard(
         compact: true,
         title: 'TOTAL ORDERS',
-        value: _fmt(summary['orderCount'] as int? ?? 0),
+        value: _fmt(_asInt(summary['orderCount'])),
         icon: Icons.receipt_long_rounded,
         color: KioskTheme.info,
       ),
       MetricCard(
         compact: true,
         title: 'AVG ORDER',
-        value: '₱${_fmt(summary['averageOrderValue'] as int? ?? 0)}',
+        value: '₱${_fmt(_asInt(summary['averageOrderValue']))}',
         icon: Icons.analytics_rounded,
         color: Colors.purple,
       ),
       MetricCard(
         compact: true,
         title: 'ITEMS SOLD',
-        value: _fmt(summary['totalItemsSold'] as int? ?? 0),
+        value: _fmt(_asInt(summary['totalItemsSold'])),
         icon: Icons.shopping_bag_rounded,
         color: KioskTheme.warning,
       ),
@@ -445,14 +476,17 @@ class _LifetimeAnalyticsPageState extends State<LifetimeAnalyticsPage> {
     // Group by month for a manageable chart
     final monthlyData = <String, int>{};
     final monthlyOrders = <String, int>{};
+    final dateRe = RegExp(r'^\d{4}-\d{2}');
     for (final day in series) {
-      final date = day['date'] as String;
+      final date = (day['date'] ?? '').toString();
+      if (!dateRe.hasMatch(date)) continue;
       final month = date.substring(0, 7); // YYYY-MM
-      monthlyData[month] =
-          (monthlyData[month] ?? 0) + (day['revenue'] as int? ?? 0);
+      monthlyData[month] = (monthlyData[month] ?? 0) + _asInt(day['revenue']);
       monthlyOrders[month] =
-          (monthlyOrders[month] ?? 0) + (day['orders'] as int? ?? 0);
+          (monthlyOrders[month] ?? 0) + _asInt(day['orders']);
     }
+
+    if (monthlyData.isEmpty) return const SizedBox.shrink();
 
     final sortedMonths = monthlyData.keys.toList()..sort();
     final maxRev = monthlyData.values.reduce((a, b) => a > b ? a : b);
@@ -491,9 +525,7 @@ class _LifetimeAnalyticsPageState extends State<LifetimeAnalyticsPage> {
                 final heightFactor = maxRev > 0 ? rev / maxRev : 0.05;
                 final barHeight = 20.0 + (heightFactor * 100.0);
 
-                final parts = month.split('-');
-                final label =
-                    '${_monthsAbbr[int.parse(parts[1]) - 1]} ${parts.length > 1 ? "'${parts[1]}" : ""}';
+                final label = formatMonthAxisLabel(month);
 
                 return Container(
                   width: 60,
@@ -557,8 +589,8 @@ class _LifetimeAnalyticsPageState extends State<LifetimeAnalyticsPage> {
   Widget _buildChannelBreakdownCard() {
     final breakdown = _data['breakdown'] as Map? ?? {};
     final channel = breakdown['channel'] as Map? ?? {};
-    int rev(String key) => (channel[key] as Map?)?['revenue'] as int? ?? 0;
-    int count(String key) => (channel[key] as Map?)?['count'] as int? ?? 0;
+    int rev(String key) => _asInt((channel[key] as Map?)?['revenue']);
+    int count(String key) => _asInt((channel[key] as Map?)?['count']);
 
     final maxRev = [
       rev('walkIn'),
@@ -642,8 +674,8 @@ class _LifetimeAnalyticsPageState extends State<LifetimeAnalyticsPage> {
   Widget _buildEntryTypeCard() {
     final breakdown = _data['breakdown'] as Map? ?? {};
     final entry = breakdown['entryType'] as Map? ?? {};
-    int rev(String key) => (entry[key] as Map?)?['revenue'] as int? ?? 0;
-    int count(String key) => (entry[key] as Map?)?['count'] as int? ?? 0;
+    int rev(String key) => _asInt((entry[key] as Map?)?['revenue']);
+    int count(String key) => _asInt((entry[key] as Map?)?['count']);
     final totalRev = rev('kiosk') + rev('staff');
 
     return WhiteCard(
@@ -686,8 +718,8 @@ class _LifetimeAnalyticsPageState extends State<LifetimeAnalyticsPage> {
   Widget _buildPaymentMethodCard() {
     final breakdown = _data['breakdown'] as Map? ?? {};
     final pm = breakdown['paymentMethod'] as Map? ?? {};
-    int rev(String key) => (pm[key] as Map?)?['revenue'] as int? ?? 0;
-    int count(String key) => (pm[key] as Map?)?['count'] as int? ?? 0;
+    int rev(String key) => _asInt((pm[key] as Map?)?['revenue']);
+    int count(String key) => _asInt((pm[key] as Map?)?['count']);
     final totalRev = rev('cash') + rev('gcash');
 
     return WhiteCard(
@@ -785,9 +817,9 @@ class _LifetimeAnalyticsPageState extends State<LifetimeAnalyticsPage> {
             ...topItems.asMap().entries.map((entry) {
               final idx = entry.key;
               final item = entry.value;
-              final name = item['name'] as String;
-              final qty = item['quantity'] as int;
-              final rev = item['revenue'] as int? ?? 0;
+              final name = (item['name'] ?? 'Unknown').toString();
+              final qty = _asInt(item['quantity']);
+              final rev = _asInt(item['revenue']);
 
               return Padding(
                 padding: const EdgeInsets.only(bottom: 12),
@@ -879,19 +911,4 @@ class _LifetimeAnalyticsPageState extends State<LifetimeAnalyticsPage> {
     if (n >= 1000) return '${(n / 1000).toStringAsFixed(1)}K';
     return n.toString();
   }
-
-  static const _monthsAbbr = [
-    'J',
-    'F',
-    'M',
-    'A',
-    'M',
-    'J',
-    'J',
-    'A',
-    'S',
-    'O',
-    'N',
-    'D',
-  ];
 }

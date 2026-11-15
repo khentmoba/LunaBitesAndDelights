@@ -55,7 +55,7 @@ export function contributionOf(data: Record<string, any> | undefined): Contribut
   for (const item of data.items || []) {
     const name = item.name || 'Unknown';
     const variant = item.variant || '';
-    const qty = item.quantity || 1;
+    const qty = Number(item.quantity || item.qty) || 1;
     itemsSold += qty;
     const key = statsItemKey(name, variant);
     const slot = items[key] || (items[key] = { name, variant, qty: 0, revenue: 0 });

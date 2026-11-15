@@ -1,0 +1,812 @@
+=== flutter analyze + baseline ===
+Resolving dependencies...
+Downloading packages...
+  _flutterfire_internals 1.3.77 (1.3.79 available)
+  archive 4.0.9 (4.7.1 available)
+  async 2.13.0 (2.13.1 available)
+  clock 1.1.2 (1.1.3 available)
+  cloud_firestore 6.10.0 (7.1.0 available)
+  cloud_firestore_platform_interface 8.0.7 (8.1.0 available)
+  cloud_firestore_web 5.7.3 (5.8.0 available)
+  cloud_functions 6.5.0 (7.0.1 available)
+  cloud_functions_platform_interface 6.0.7 (6.1.1 available)
+  cloud_functions_web 5.1.13 (5.1.15 available)
+  crypto 3.0.7 (3.0.8 available)
+  cupertino_icons 1.0.8 (2.0.0 available)
+  firebase_app_check 0.4.8 (0.5.1 available)
+  firebase_app_check_platform_interface 0.4.2+1 (0.5.1+3 available)
+  firebase_app_check_web 0.2.6+1 (0.3.1+3 available)
+  firebase_auth 6.7.0 (7.0.1 available)
+  firebase_auth_platform_interface 9.1.0 (9.1.2 available)
+  firebase_auth_web 6.3.0 (6.3.2 available)
+  firebase_core 4.15.0 (5.1.0 available)
+  firebase_core_web 3.12.0 (4.1.0 available)
+  flutter_map 6.2.1 (8.3.2 available)
+  geolocator 13.0.4 (14.1.2 available)
+  geolocator_android 4.6.2 (5.2.1 available)
+  geolocator_apple 2.3.13 (2.4.3 available)
+  geolocator_platform_interface 4.2.6 (4.4.1 available)
+  geolocator_web 4.1.3 (4.1.4 available)
+  image 4.8.0 (4.12.0 available)
+  intl 0.20.2 (0.20.3 available)
+  latlong2 0.9.1 (0.10.1 available)
+  logger 2.7.0 (2.8.0 available)
+  material_color_utilities 0.13.0 (0.13.1 available)
+  mgrs_dart 2.0.0 (3.0.0 available)
+  petitparser 7.0.2 (7.1.0 available)
+  posix 6.5.0 (6.5.4 available)
+  proj4dart 2.1.0 (3.0.0 available)
+  stack_trace 1.12.1 (1.12.2 available)
+  test_api 0.7.12 (0.7.15 available)
+  unicode 0.3.1 (1.1.9 available)
+  uuid 4.5.3 (4.6.0 available)
+  vector_math 2.4.3 (2.4.4 available)
+  vm_service 15.0.2 (15.4.0 available)
+  web 1.1.1 (1.1.2 available)
+  webview_flutter 4.13.1 (4.14.1 available)
+  webview_flutter_android 4.10.13 (4.14.1 available)
+  webview_flutter_platform_interface 2.14.0 (2.15.1 available)
+  webview_flutter_wkwebview 3.24.1 (3.27.2 available)
+  xml 6.6.1 (7.1.0 available)
+Got dependencies!
+47 packages have newer versions incompatible with dependency constraints.
+Try `flutter pub outdated` for more information.
+Analyzing t3-b201be6b-a2986e077c1bc244...                       
+No issues found! (ran in 11.0s)
+Analyzer issues: 0 (baseline 0).
+=== dart format check ===
+Formatted 52 files (0 changed) in 0.40 seconds.
+=== flutter test ===
+Resolving dependencies...
+Downloading packages...
+  _flutterfire_internals 1.3.77 (1.3.79 available)
+  archive 4.0.9 (4.7.1 available)
+  async 2.13.0 (2.13.1 available)
+  clock 1.1.2 (1.1.3 available)
+  cloud_firestore 6.10.0 (7.1.0 available)
+  cloud_firestore_platform_interface 8.0.7 (8.1.0 available)
+  cloud_firestore_web 5.7.3 (5.8.0 available)
+  cloud_functions 6.5.0 (7.0.1 available)
+  cloud_functions_platform_interface 6.0.7 (6.1.1 available)
+  cloud_functions_web 5.1.13 (5.1.15 available)
+  crypto 3.0.7 (3.0.8 available)
+  cupertino_icons 1.0.8 (2.0.0 available)
+  firebase_app_check 0.4.8 (0.5.1 available)
+  firebase_app_check_platform_interface 0.4.2+1 (0.5.1+3 available)
+  firebase_app_check_web 0.2.6+1 (0.3.1+3 available)
+  firebase_auth 6.7.0 (7.0.1 available)
+  firebase_auth_platform_interface 9.1.0 (9.1.2 available)
+  firebase_auth_web 6.3.0 (6.3.2 available)
+  firebase_core 4.15.0 (5.1.0 available)
+  firebase_core_web 3.12.0 (4.1.0 available)
+  flutter_map 6.2.1 (8.3.2 available)
+  geolocator 13.0.4 (14.1.2 available)
+  geolocator_android 4.6.2 (5.2.1 available)
+  geolocator_apple 2.3.13 (2.4.3 available)
+  geolocator_platform_interface 4.2.6 (4.4.1 available)
+  geolocator_web 4.1.3 (4.1.4 available)
+  image 4.8.0 (4.12.0 available)
+  intl 0.20.2 (0.20.3 available)
+  latlong2 0.9.1 (0.10.1 available)
+  logger 2.7.0 (2.8.0 available)
+  material_color_utilities 0.13.0 (0.13.1 available)
+  mgrs_dart 2.0.0 (3.0.0 available)
+  petitparser 7.0.2 (7.1.0 available)
+  posix 6.5.0 (6.5.4 available)
+  proj4dart 2.1.0 (3.0.0 available)
+  stack_trace 1.12.1 (1.12.2 available)
+  test_api 0.7.12 (0.7.15 available)
+  unicode 0.3.1 (1.1.9 available)
+  uuid 4.5.3 (4.6.0 available)
+  vector_math 2.4.3 (2.4.4 available)
+  vm_service 15.0.2 (15.4.0 available)
+  web 1.1.1 (1.1.2 available)
+  webview_flutter 4.13.1 (4.14.1 available)
+  webview_flutter_android 4.10.13 (4.14.1 available)
+  webview_flutter_platform_interface 2.14.0 (2.15.1 available)
+  webview_flutter_wkwebview 3.24.1 (3.27.2 available)
+  xml 6.6.1 (7.1.0 available)
+Got dependencies!
+47 packages have newer versions incompatible with dependency constraints.
+Try `flutter pub outdated` for more information.
+00:00 +0: loading C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-b201be6b-a2986e077c1bc244/test/adaptive_layout_test.dart
+00:00 +0: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-b201be6b-a2986e077c1bc244/test/adaptive_layout_test.dart: LunaExpressApp configures adaptive density and platform transitions
+00:00 +1: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-b201be6b-a2986e077c1bc244/test/adaptive_layout_test.dart: LunaExpressApp configures adaptive density and platform transitions
+00:00 +2: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-b201be6b-a2986e077c1bc244/test/adaptive_layout_test.dart: LunaExpressApp configures adaptive density and platform transitions
+00:00 +3: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-b201be6b-a2986e077c1bc244/test/adaptive_layout_test.dart: LunaExpressApp configures adaptive density and platform transitions
+00:00 +4: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-b201be6b-a2986e077c1bc244/test/adaptive_layout_test.dart: LunaExpressApp configures adaptive density and platform transitions
+00:01 +5: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-b201be6b-a2986e077c1bc244/test/audit_bugfixes_test.dart: Audit bugfixes regression suite GCashCheckoutPage blocks receipt bypass until verifyCheckoutPayment confirms PAID
+00:01 +6: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-b201be6b-a2986e077c1bc244/test/audit_bugfixes_test.dart: Audit bugfixes regression suite GCashCheckoutPage blocks receipt bypass until verifyCheckoutPayment confirms PAID
+00:01 +7: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-b201be6b-a2986e077c1bc244/test/audit_bugfixes_test.dart: Audit bugfixes regression suite GCashCheckoutPage blocks receipt bypass until verifyCheckoutPayment confirms PAID
+00:01 +8: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-b201be6b-a2986e077c1bc244/test/audit_bugfixes_test.dart: Audit bugfixes regression suite GCashCheckoutPage blocks receipt bypass until verifyCheckoutPayment confirms PAID
+00:01 +9: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-b201be6b-a2986e077c1bc244/test/audit_bugfixes_test.dart: Audit bugfixes regression suite GCashCheckoutPage blocks receipt bypass until verifyCheckoutPayment confirms PAID
+00:01 +10: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-b201be6b-a2986e077c1bc244/test/audit_bugfixes_test.dart: Audit bugfixes regression suite GCashCheckoutPage blocks receipt bypass until verifyCheckoutPayment confirms PAID
+00:01 +11: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-b201be6b-a2986e077c1bc244/test/audit_bugfixes_test.dart: Audit bugfixes regression suite GCashCheckoutPage blocks receipt bypass until verifyCheckoutPayment confirms PAID
+00:01 +12: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-b201be6b-a2986e077c1bc244/test/kds_live_feed_test.dart: pushed orders appear without polling and header says Live
+00:01 +13: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-b201be6b-a2986e077c1bc244/test/kds_live_feed_test.dart: pushed orders appear without polling and header says Live
+00:02 +14: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-b201be6b-a2986e077c1bc244/test/kds_live_feed_test.dart: pushed orders appear without polling and header says Live
+00:02 +15: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-b201be6b-a2986e077c1bc244/test/kds_live_feed_test.dart: pushed orders appear without polling and header says Live
+00:02 +16: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-b201be6b-a2986e077c1bc244/test/kds_live_feed_test.dart: pushed orders appear without polling and header says Live
+00:02 +17: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-b201be6b-a2986e077c1bc244/test/kds_live_feed_test.dart: pushed orders appear without polling and header says Live
+00:02 +18: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-b201be6b-a2986e077c1bc244/test/kds_live_feed_test.dart: pushed orders appear without polling and header says Live
+00:02 +19: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-b201be6b-a2986e077c1bc244/test/kds_live_feed_test.dart: pushed orders appear without polling and header says Live
+00:02 +20: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-b201be6b-a2986e077c1bc244/test/kds_live_feed_test.dart: pushed orders appear without polling and header says Live
+00:02 +21: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-b201be6b-a2986e077c1bc244/test/kds_live_feed_test.dart: pushed orders appear without polling and header says Live
+00:02 +22: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-b201be6b-a2986e077c1bc244/test/kds_live_feed_test.dart: pushed orders appear without polling and header says Live
+00:02 +23: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-b201be6b-a2986e077c1bc244/test/kds_live_feed_test.dart: pushed orders appear without polling and header says Live
+00:02 +24: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-b201be6b-a2986e077c1bc244/test/menu_ordering_test.dart: single option and quantity reach cart with the exact price
+00:02 +25: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-b201be6b-a2986e077c1bc244/test/menu_ordering_test.dart: single option and quantity reach cart with the exact price
+00:02 +25: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-b201be6b-a2986e077c1bc244/test/order_service_test.dart: every checkout combination matches a rules fixture kiosk-cash
+Order LU-261114-120000 saved to Firestore as testOrderReference
+00:02 +26: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-b201be6b-a2986e077c1bc244/test/menu_ordering_test.dart: single option and quantity reach cart with the exact price
+00:02 +26: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-b201be6b-a2986e077c1bc244/test/order_service_test.dart: every checkout combination matches a rules fixture kiosk-gcash
+Order LU-261114-120000 saved to Firestore as testOrderReference
+00:02 +27: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-b201be6b-a2986e077c1bc244/test/menu_ordering_test.dart: single option and quantity reach cart with the exact price
+00:02 +27: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-b201be6b-a2986e077c1bc244/test/order_service_test.dart: every checkout combination matches a rules fixture staff-cash
+Order LU-261114-120000 saved to Firestore as testOrderReference
+00:02 +28: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-b201be6b-a2986e077c1bc244/test/menu_ordering_test.dart: single option and quantity reach cart with the exact price
+00:02 +28: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-b201be6b-a2986e077c1bc244/test/order_service_test.dart: every checkout combination matches a rules fixture staff-gcash
+Order LU-261114-120000 saved to Firestore as testOrderReference
+00:02 +29: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-b201be6b-a2986e077c1bc244/test/menu_ordering_test.dart: single option and quantity reach cart with the exact price
+00:02 +30: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-b201be6b-a2986e077c1bc244/test/menu_ordering_test.dart: single option and quantity reach cart with the exact price
+00:02 +31: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-b201be6b-a2986e077c1bc244/test/menu_ordering_test.dart: single option and quantity reach cart with the exact price
+00:02 +32: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-b201be6b-a2986e077c1bc244/test/menu_ordering_test.dart: single option and quantity reach cart with the exact price
+00:02 +32: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-b201be6b-a2986e077c1bc244/test/order_service_test.dart: initial order write leaves notification status to the server
+Order LU-261029-120000 saved to Firestore as testOrderReference
+00:02 +33: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-b201be6b-a2986e077c1bc244/test/menu_ordering_test.dart: single option and quantity reach cart with the exact price
+00:02 +34: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-b201be6b-a2986e077c1bc244/test/menu_ordering_test.dart: single option and quantity reach cart with the exact price
+00:02 +35: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-b201be6b-a2986e077c1bc244/test/menu_ordering_test.dart: single option and quantity reach cart with the exact price
+00:02 +36: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-b201be6b-a2986e077c1bc244/test/menu_ordering_test.dart: single option and quantity reach cart with the exact price
+00:02 +37: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-b201be6b-a2986e077c1bc244/test/menu_ordering_test.dart: single option and quantity reach cart with the exact price
+00:02 +38: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-b201be6b-a2986e077c1bc244/test/menu_ordering_test.dart: single option and quantity reach cart with the exact price
+00:02 +39: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-b201be6b-a2986e077c1bc244/test/menu_ordering_test.dart: single option and quantity reach cart with the exact price
+00:02 +40: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-b201be6b-a2986e077c1bc244/test/menu_ordering_test.dart: single option and quantity reach cart with the exact price
+00:02 +41: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-b201be6b-a2986e077c1bc244/test/menu_ordering_test.dart: single option and quantity reach cart with the exact price
+00:02 +42: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-b201be6b-a2986e077c1bc244/test/menu_ordering_test.dart: single option and quantity reach cart with the exact price
+00:02 +43: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-b201be6b-a2986e077c1bc244/test/navigation_flow_test.dart: StaffMenuDialog logout pops once, keeps menu mounted, and shows SnackBar safely
+00:02 +44: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-b201be6b-a2986e077c1bc244/test/navigation_flow_test.dart: StaffMenuDialog logout pops once, keeps menu mounted, and shows SnackBar safely
+00:02 +45: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-b201be6b-a2986e077c1bc244/test/navigation_flow_test.dart: StaffMenuDialog logout pops once, keeps menu mounted, and shows SnackBar safely
+00:02 +46: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-b201be6b-a2986e077c1bc244/test/navigation_flow_test.dart: StaffMenuDialog logout pops once, keeps menu mounted, and shows SnackBar safely
+00:02 +47: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-b201be6b-a2986e077c1bc244/test/navigation_flow_test.dart: StaffMenuDialog logout pops once, keeps menu mounted, and shows SnackBar safely
+00:02 +48: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-b201be6b-a2986e077c1bc244/test/navigation_flow_test.dart: StaffMenuDialog logout pops once, keeps menu mounted, and shows SnackBar safely
+00:02 +49: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-b201be6b-a2986e077c1bc244/test/navigation_flow_test.dart: StaffMenuDialog logout pops once, keeps menu mounted, and shows SnackBar safely
+00:02 +50: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-b201be6b-a2986e077c1bc244/test/navigation_flow_test.dart: StaffMenuDialog logout pops once, keeps menu mounted, and shows SnackBar safely
+00:02 +51: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-b201be6b-a2986e077c1bc244/test/navigation_flow_test.dart: StaffMenuDialog logout pops once, keeps menu mounted, and shows SnackBar safely
+00:02 +52: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-b201be6b-a2986e077c1bc244/test/navigation_flow_test.dart: StaffMenuDialog logout pops once, keeps menu mounted, and shows SnackBar safely
+00:02 +53: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-b201be6b-a2986e077c1bc244/test/navigation_flow_test.dart: StaffMenuDialog logout pops once, keeps menu mounted, and shows SnackBar safely
+00:02 +54: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-b201be6b-a2986e077c1bc244/test/navigation_flow_test.dart: StaffMenuDialog logout pops once, keeps menu mounted, and shows SnackBar safely
+00:03 +55: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-b201be6b-a2986e077c1bc244/test/navigation_flow_test.dart: StaffMenuDialog logout pops once, keeps menu mounted, and shows SnackBar safely
+00:03 +56: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-b201be6b-a2986e077c1bc244/test/navigation_flow_test.dart: StaffMenuDialog logout pops once, keeps menu mounted, and shows SnackBar safely
+00:03 +57: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-b201be6b-a2986e077c1bc244/test/navigation_flow_test.dart: StaffMenuDialog logout pops once, keeps menu mounted, and shows SnackBar safely
+00:03 +58: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-b201be6b-a2986e077c1bc244/test/navigation_flow_test.dart: StaffMenuDialog logout pops once, keeps menu mounted, and shows SnackBar safely
+00:03 +59: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-b201be6b-a2986e077c1bc244/test/navigation_flow_test.dart: StaffMenuDialog logout pops once, keeps menu mounted, and shows SnackBar safely
+00:03 +60: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-b201be6b-a2986e077c1bc244/test/navigation_flow_test.dart: StaffMenuDialog logout pops once, keeps menu mounted, and shows SnackBar safely
+00:03 +61: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-b201be6b-a2986e077c1bc244/test/navigation_flow_test.dart: StaffMenuDialog logout pops once, keeps menu mounted, and shows SnackBar safely
+00:03 +62: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-b201be6b-a2986e077c1bc244/test/navigation_flow_test.dart: StaffMenuDialog logout pops once, keeps menu mounted, and shows SnackBar safely
+00:03 +63: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-b201be6b-a2986e077c1bc244/test/navigation_flow_test.dart: StaffMenuDialog logout pops once, keeps menu mounted, and shows SnackBar safely
+00:03 +64: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-b201be6b-a2986e077c1bc244/test/navigation_flow_test.dart: StaffMenuDialog logout pops once, keeps menu mounted, and shows SnackBar safely
+00:03 +65: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-b201be6b-a2986e077c1bc244/test/navigation_flow_test.dart: StaffMenuDialog logout pops once, keeps menu mounted, and shows SnackBar safely
+00:03 +66: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-b201be6b-a2986e077c1bc244/test/navigation_flow_test.dart: StaffMenuDialog logout pops once, keeps menu mounted, and shows SnackBar safely
+00:04 +67: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-b201be6b-a2986e077c1bc244/test/staff_kds_test.dart: Staff Session & Audio Alert Tests StaffLoginDialog displays Quick PIN keypad by default
+00:04 +68: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-b201be6b-a2986e077c1bc244/test/staff_kds_test.dart: Staff Session & Audio Alert Tests StaffLoginDialog displays Quick PIN keypad by default
+00:04 +69: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-b201be6b-a2986e077c1bc244/test/staff_kds_test.dart: Staff Session & Audio Alert Tests StaffLoginDialog displays Quick PIN keypad by default
+00:04 +70: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-b201be6b-a2986e077c1bc244/test/staff_kds_test.dart: Staff Session & Audio Alert Tests StaffLoginDialog displays Quick PIN keypad by default
+00:04 +71: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-b201be6b-a2986e077c1bc244/test/staff_kds_test.dart: Staff Session & Audio Alert Tests StaffLoginDialog displays Quick PIN keypad by default
+00:04 +72: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-b201be6b-a2986e077c1bc244/test/staff_kds_test.dart: Staff Session & Audio Alert Tests StaffLoginDialog displays Quick PIN keypad by default
+00:04 +73: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-b201be6b-a2986e077c1bc244/test/staff_kds_test.dart: Staff Session & Audio Alert Tests StaffLoginDialog displays Quick PIN keypad by default
+00:04 +74: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-b201be6b-a2986e077c1bc244/test/staff_kds_test.dart: Staff Session & Audio Alert Tests StaffLoginDialog displays Quick PIN keypad by default
+00:04 +75: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-b201be6b-a2986e077c1bc244/test/staff_kds_test.dart: Staff Session & Audio Alert Tests StaffLoginDialog displays Quick PIN keypad by default
+00:04 +76: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-b201be6b-a2986e077c1bc244/test/staff_kds_test.dart: Staff Session & Audio Alert Tests StaffLoginDialog displays Quick PIN keypad by default
+00:04 +77: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-b201be6b-a2986e077c1bc244/test/navigation_flow_test.dart: CheckoutPage explains blocked Delivery button and reacts when cart clears
+00:05 +78: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-b201be6b-a2986e077c1bc244/test/staff_kds_test.dart: Staff Session & Audio Alert Tests KdsPage renders operations board when staff is logged in
+00:05 +79: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-b201be6b-a2986e077c1bc244/test/navigation_flow_test.dart: KdsPage mobile DONE tab shows completed-orders empty copy and safe print fallback
+00:05 +80: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-b201be6b-a2986e077c1bc244/test/navigation_flow_test.dart: KdsPage mobile DONE tab shows completed-orders empty copy and safe print fallback
+00:05 +81: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-b201be6b-a2986e077c1bc244/test/staff_kds_test.dart: Staff Session & Audio Alert Tests AdminDashboard, AnalyticsPage, and LifetimeAnalyticsPage require staff login and render cleanly on mobile
+00:05 +82: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-b201be6b-a2986e077c1bc244/test/navigation_flow_test.dart: Compact KdsPage POS and Sales & Admin actions pop back to existing named routes
+00:06 +83: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-b201be6b-a2986e077c1bc244/test/navigation_flow_test.dart: ReceiptPage ORDER AGAIN opens KioskMenuPage even when /menu is absent from stack
+00:06 +84: All tests passed!
+=== flutter build web --release ===
+Resolving dependencies...
+Downloading packages...
+  _flutterfire_internals 1.3.77 (1.3.79 available)
+  archive 4.0.9 (4.7.1 available)
+  async 2.13.0 (2.13.1 available)
+  clock 1.1.2 (1.1.3 available)
+  cloud_firestore 6.10.0 (7.1.0 available)
+  cloud_firestore_platform_interface 8.0.7 (8.1.0 available)
+  cloud_firestore_web 5.7.3 (5.8.0 available)
+  cloud_functions 6.5.0 (7.0.1 available)
+  cloud_functions_platform_interface 6.0.7 (6.1.1 available)
+  cloud_functions_web 5.1.13 (5.1.15 available)
+  crypto 3.0.7 (3.0.8 available)
+  cupertino_icons 1.0.8 (2.0.0 available)
+  firebase_app_check 0.4.8 (0.5.1 available)
+  firebase_app_check_platform_interface 0.4.2+1 (0.5.1+3 available)
+  firebase_app_check_web 0.2.6+1 (0.3.1+3 available)
+  firebase_auth 6.7.0 (7.0.1 available)
+  firebase_auth_platform_interface 9.1.0 (9.1.2 available)
+  firebase_auth_web 6.3.0 (6.3.2 available)
+  firebase_core 4.15.0 (5.1.0 available)
+  firebase_core_web 3.12.0 (4.1.0 available)
+  flutter_map 6.2.1 (8.3.2 available)
+  geolocator 13.0.4 (14.1.2 available)
+  geolocator_android 4.6.2 (5.2.1 available)
+  geolocator_apple 2.3.13 (2.4.3 available)
+  geolocator_platform_interface 4.2.6 (4.4.1 available)
+  geolocator_web 4.1.3 (4.1.4 available)
+  image 4.8.0 (4.12.0 available)
+  intl 0.20.2 (0.20.3 available)
+  latlong2 0.9.1 (0.10.1 available)
+  logger 2.7.0 (2.8.0 available)
+  material_color_utilities 0.13.0 (0.13.1 available)
+  mgrs_dart 2.0.0 (3.0.0 available)
+  petitparser 7.0.2 (7.1.0 available)
+  posix 6.5.0 (6.5.4 available)
+  proj4dart 2.1.0 (3.0.0 available)
+  stack_trace 1.12.1 (1.12.2 available)
+  test_api 0.7.12 (0.7.15 available)
+  unicode 0.3.1 (1.1.9 available)
+  uuid 4.5.3 (4.6.0 available)
+  vector_math 2.4.3 (2.4.4 available)
+  vm_service 15.0.2 (15.4.0 available)
+  web 1.1.1 (1.1.2 available)
+  webview_flutter 4.13.1 (4.14.1 available)
+  webview_flutter_android 4.10.13 (4.14.1 available)
+  webview_flutter_platform_interface 2.14.0 (2.15.1 available)
+  webview_flutter_wkwebview 3.24.1 (3.27.2 available)
+  xml 6.6.1 (7.1.0 available)
+Got dependencies!
+47 packages have newer versions incompatible with dependency constraints.
+Try `flutter pub outdated` for more information.
+Compiling lib\main.dart for the Web...                          
+flutter : Wasm dry run succeeded. Consider building and testing your application with the `--wasm` flag. See docs for 
+more info: https://docs.flutter.dev/platform-integration/web/wasm
+At line:34 char:42
++ ... og-Step "flutter build web --release" { flutter build web --release }
++                                             ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Wasm dry run su...ration/web/wasm:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+Use --no-wasm-dry-run to disable these warnings.
+Font asset "CupertinoIcons.ttf" was tree-shaken, reducing it from 257628 to 1472 bytes (99.4% reduction). Tree-shaking can be disabled by providing the --no-tree-shake-icons flag when building your app.
+Font asset "MaterialIcons-Regular.otf" was tree-shaken, reducing it from 1645184 to 21524 bytes (98.7% reduction). Tree-shaking can be disabled by providing the --no-tree-shake-icons flag when building your app.
+Compiling lib\main.dart for the Web...                             58.2s
+√ Built build\web
+=== flutter build web --base-href=/kiosk/ + assemble_site ===
+Resolving dependencies...
+Downloading packages...
+  _flutterfire_internals 1.3.77 (1.3.79 available)
+  archive 4.0.9 (4.7.1 available)
+  async 2.13.0 (2.13.1 available)
+  clock 1.1.2 (1.1.3 available)
+  cloud_firestore 6.10.0 (7.1.0 available)
+  cloud_firestore_platform_interface 8.0.7 (8.1.0 available)
+  cloud_firestore_web 5.7.3 (5.8.0 available)
+  cloud_functions 6.5.0 (7.0.1 available)
+  cloud_functions_platform_interface 6.0.7 (6.1.1 available)
+  cloud_functions_web 5.1.13 (5.1.15 available)
+  crypto 3.0.7 (3.0.8 available)
+  cupertino_icons 1.0.8 (2.0.0 available)
+  firebase_app_check 0.4.8 (0.5.1 available)
+  firebase_app_check_platform_interface 0.4.2+1 (0.5.1+3 available)
+  firebase_app_check_web 0.2.6+1 (0.3.1+3 available)
+  firebase_auth 6.7.0 (7.0.1 available)
+  firebase_auth_platform_interface 9.1.0 (9.1.2 available)
+  firebase_auth_web 6.3.0 (6.3.2 available)
+  firebase_core 4.15.0 (5.1.0 available)
+  firebase_core_web 3.12.0 (4.1.0 available)
+  flutter_map 6.2.1 (8.3.2 available)
+  geolocator 13.0.4 (14.1.2 available)
+  geolocator_android 4.6.2 (5.2.1 available)
+  geolocator_apple 2.3.13 (2.4.3 available)
+  geolocator_platform_interface 4.2.6 (4.4.1 available)
+  geolocator_web 4.1.3 (4.1.4 available)
+  image 4.8.0 (4.12.0 available)
+  intl 0.20.2 (0.20.3 available)
+  latlong2 0.9.1 (0.10.1 available)
+  logger 2.7.0 (2.8.0 available)
+  material_color_utilities 0.13.0 (0.13.1 available)
+  mgrs_dart 2.0.0 (3.0.0 available)
+  petitparser 7.0.2 (7.1.0 available)
+  posix 6.5.0 (6.5.4 available)
+  proj4dart 2.1.0 (3.0.0 available)
+  stack_trace 1.12.1 (1.12.2 available)
+  test_api 0.7.12 (0.7.15 available)
+  unicode 0.3.1 (1.1.9 available)
+  uuid 4.5.3 (4.6.0 available)
+  vector_math 2.4.3 (2.4.4 available)
+  vm_service 15.0.2 (15.4.0 available)
+  web 1.1.1 (1.1.2 available)
+  webview_flutter 4.13.1 (4.14.1 available)
+  webview_flutter_android 4.10.13 (4.14.1 available)
+  webview_flutter_platform_interface 2.14.0 (2.15.1 available)
+  webview_flutter_wkwebview 3.24.1 (3.27.2 available)
+  xml 6.6.1 (7.1.0 available)
+Got dependencies!
+47 packages have newer versions incompatible with dependency constraints.
+Try `flutter pub outdated` for more information.
+Compiling lib\main.dart for the Web...                          
+flutter : Wasm dry run succeeded. Consider building and testing your application with the `--wasm` flag. See docs for 
+more info: https://docs.flutter.dev/platform-integration/web/wasm
+At line:36 char:3
++   flutter build web --release --base-href=/kiosk/
++   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Wasm dry run su...ration/web/wasm:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+Use --no-wasm-dry-run to disable these warnings.
+Font asset "CupertinoIcons.ttf" was tree-shaken, reducing it from 257628 to 1472 bytes (99.4% reduction). Tree-shaking can be disabled by providing the --no-tree-shake-icons flag when building your app.
+Font asset "MaterialIcons-Regular.otf" was tree-shaken, reducing it from 1645184 to 21524 bytes (98.7% reduction). Tree-shaking can be disabled by providing the --no-tree-shake-icons flag when building your app.
+Compiling lib\main.dart for the Web...                             58.4s
+√ Built build\web
+storefront: build/web/index.html (+27 files)
+kiosk: build/web/kiosk/index.html
+=== npm run test:site ===
+
+> test:site
+> node --test test/site/app.test.mjs test/site/hosting.test.mjs
+
+✔ both pages inline their script and stylesheet with no external CSS/JS or cache-busting params (1.438ms)
+✔ inline style blocks have valid balanced CSS (0.3831ms)
+✔ the menu page keeps the bar and reveal behaviour (213.5285ms)
+✔ the bar only sticks once the page has scrolled (100.8349ms)
+✔ reduced motion hides nothing and writes no reveal state (51.3605ms)
+✔ without IntersectionObserver the menu and photos appear at once (49.286ms)
+✔ with IntersectionObserver the reveal waits for the section to arrive (42.7711ms)
+✔ a section that never intersects stays unrevealed (42.2249ms)
+✔ the map and street view swap one at a time (43.3597ms)
+✔ a weak device keeps every line visible and starts no observers (40.9418ms)
+✔ both pages flag weak devices before the stylesheet (0.2505ms)
+✔ font preloads match the inline stylesheet so each font is fetched once (0.2146ms)
+✔ the hero logo is responsive and the hidden bar logo is not preloaded (0.2026ms)
+✔ the street view embed is fetched only when its tab is chosen (41.885ms)
+✔ without script the street view still offers a way out (0.219ms)
+✔ staff login link remains visible in the header and is not hidden in CSS (0.2153ms)
+✔ the bar publishes its measured height to --bar-h for scroll-margin-top (33.3126ms)
+✔ the hero, bar, and footer logos share the 240px AVIF sized for the hero slot (0.1943ms)
+✔ the pruned Bricolage kerning covers every character pair the pages render (52.9474ms)
+✔ both pages define metric-matched fallback fonts and avoid high fetchpriority on mobile-below-fold hero photo (0.4529ms)
+✔ lunaexpress: redirect /kiosk{,/**} does not loop (1.8738ms)
+✔ lunaexpress: redirect /** does not loop (0.1658ms)
+✔ app-site serves /kiosk/ without an explicit redirect rule (0.7871ms)
+✔ globToRegExp handles the patterns used in firebase.json (0.4799ms)
+✔ the loop check catches the rule that broke production (0.2488ms)
+ℹ tests 25
+ℹ suites 0
+ℹ pass 25
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1704.5936
+=== functions lint ===
+
+> lint
+> eslint
+=== functions build ===
+
+> build
+> tsc
+=== functions test ===
+
+> test
+> npm run build && node --test test/telegram_notification.test.js test/payment_reconciliation.test.js test/staff_auth.test.js test/daily_stats.test.js
+
+
+> build
+> tsc
+
+✔ report from day summaries matches the old order scan (39.5603ms)
+✔ summing per-write deltas equals recounting the final orders (110.219ms)
+✔ status-only and bookkeeping writes produce no stats write (0.6398ms)
+✔ a date correction moves the order between days (0.3129ms)
+✔ unpaid GCash orders do not count until payment lands (0.2749ms)
+✔ stored docs round-trip and tolerate missing fields (0.6573ms)
+✔ prefers the order document id from metadata (1.0162ms)
+✔ falls back to reference_number for sessions created before this change (0.2445ms)
+✔ ignores metadata that is not a plain document id (0.2576ms)
+✔ returns null when the payload has no usable id (0.199ms)
+✔ verifyPaymongoSignature validates HMAC-SHA256 when secret is set (0.8691ms)
+✔ PayMongo payment status helpers identify paid vs failed sessions (0.3332ms)
+✔ KDS projection excludes unconfirmed GCash and handles invalid timestamps cleanly (0.6113ms)
+✔ hasMatchingCheckoutSession rejects unbound or mismatched orders (0.2186ms)
+▶ staff auth: scrypt PIN and password verification
+  ✔ hashes and verifies a 4-digit PIN (273.6181ms)
+  ✔ hashes and verifies a staff password (125.2124ms)
+  ✔ timing-safe comparison rejects tampered or mismatched-length hash cleanly (85.1251ms)
+  ✔ isCountableOrder excludes cancelled and unpaid/failed GCash orders (0.2362ms)
+✔ staff auth: scrypt PIN and password verification (485.9229ms)
+{"error":"ETELEGRAM: 400 Bad Request: can't parse entities: Character '(' is reserved","chatId":"111","severity":"WARNING","message":"sendToAll: MarkdownV2 parsing failed for chat 111; falling back to plain text"}
+{"error":"ETELEGRAM: 400 Bad Request: can't parse entities: Character '(' is reserved","chatId":"222","severity":"WARNING","message":"sendToAll: MarkdownV2 parsing failed for chat 222; falling back to plain text"}
+{"error":"ETELEGRAM: 400 Bad Request: can't parse entities","chatId":"333","severity":"WARNING","message":"sendPhotoToAll: MarkdownV2 parsing failed for chat 333; falling back to plain text caption"}
+{"error":"ETELEGRAM: 400 Bad Request: can't parse entities","chatId":"444","severity":"WARNING","message":"sendPhotoToAll: MarkdownV2 parsing failed for chat 444; falling back to plain text caption"}
+▶ Telegram MarkdownV2 escaping and order notifications
+  ✔ escapeMd escapes all Telegram MarkdownV2 reserved characters (1.2462ms)
+  ✔ escapeMd handles numbers, null, and undefined without throwing (0.2284ms)
+  ✔ item line with variant must have escaped parentheses in MarkdownV2 (1.1202ms)
+  ✔ full order notification messages must be valid MarkdownV2 (0.854ms)
+  ✔ stripMarkdownV2 removes backslash escapes cleanly for plain-text fallback (0.2379ms)
+  ✔ sendToAll falls back to plain text when Telegram rejects entity parsing (1.6454ms)
+  ✔ map URL helpers generate valid Google and MapTiler URLs (0.4123ms)
+  ✔ formatDeliverySummaryCaption generates valid MarkdownV2 under 1024 chars (0.273ms)
+  ✔ sendPhotoToAll sends photo with caption and reply_markup, and falls back to plain text on entity parse error (0.9435ms)
+  ✔ isMarkdownParseError matches Telegram entity parse errors without false-matching plain 400 text (0.2537ms)
+✔ Telegram MarkdownV2 escaping and order notifications (9.1449ms)
+ℹ tests 28
+ℹ suites 2
+ℹ pass 28
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1152.4009
+=== functions audit --audit-level=high ===
+# npm audit report
+
+fast-xml-parser  <=5.11.2
+fast-xml-parser: Quadratic CPU consumption scanning unterminated stop-node tags - https://github.com/advisories/GHSA-474x-hrwr-fgx4
+fix available via `npm audit fix`
+node_modules/fast-xml-parser
+
+qs  <=6.16.0
+Severity: moderate
+qs's arrayLimit bypass in its bracket notation allows DoS via memory exhaustion - https://github.com/advisories/GHSA-6rw7-vpxm-498p
+qs has a remotely triggerable DoS: qs.stringify crashes with TypeError on null/undefined entries in comma-format arrays when encodeValuesOnly is set - https://github.com/advisories/GHSA-q8mj-m7cp-5q26
+qs array-limit bypass via bracket-key comma parsing - https://github.com/advisories/GHSA-x5fp-wj9c-mxmx
+qs: Denial of Service via Attacker Controlled isBuffer - https://github.com/advisories/GHSA-4mjr-xmp4-gh2g
+qs : qs.stringify with arrayFormat 'comma' throws an uncaught TypeError on array elements carrying a non-callable own toString (DoS) - https://github.com/advisories/GHSA-6pq8-jhm2-2vcw
+fix available via `npm audit fix`
+node_modules/body-parser/node_modules/qs
+node_modules/qs
+node_modules/request/node_modules/qs
+  request  *
+  Depends on vulnerable versions of qs
+  Depends on vulnerable versions of tough-cookie
+  Depends on vulnerable versions of uuid
+  node_modules/request
+    request-promise-core  *
+    Depends on vulnerable versions of request
+    node_modules/request-promise-core
+
+
+tough-cookie  <4.1.3
+Severity: moderate
+tough-cookie Prototype Pollution vulnerability - https://github.com/advisories/GHSA-72xf-g2v4-qvf3
+fix available via `npm audit fix`
+node_modules/request/node_modules/tough-cookie
+
+uuid  <11.1.1
+Severity: moderate
+uuid: Missing buffer bounds check in v3/v5/v6 when buf is provided - https://github.com/advisories/GHSA-w5hq-g745-h8pq
+fix available via `npm audit fix --force`
+Will install node-telegram-bot-api@2.4.0, which is a breaking change
+node_modules/gaxios/node_modules/uuid
+node_modules/google-gax/node_modules/uuid
+node_modules/request/node_modules/uuid
+node_modules/teeny-request/node_modules/uuid
+node_modules/uuid
+  @cypress/request  <=3.0.10
+  Depends on vulnerable versions of uuid
+  node_modules/@cypress/request
+    @cypress/request-promise  *
+    Depends on vulnerable versions of @cypress/request
+    Depends on vulnerable versions of request-promise-core
+    node_modules/@cypress/request-promise
+    node-telegram-bot-api  0.64.0 - 0.67.0
+    Depends on vulnerable versions of @cypress/request
+    Depends on vulnerable versions of @cypress/request-promise
+    node_modules/node-telegram-bot-api
+  gaxios  6.4.0 - 6.7.1
+  Depends on vulnerable versions of uuid
+  node_modules/gaxios
+  google-gax  4.0.5-experimental - 4.6.1
+  Depends on vulnerable versions of retry-request
+  Depends on vulnerable versions of uuid
+  node_modules/google-gax
+    @google-cloud/firestore  7.5.0-pre.0 || 7.6.0 - 7.11.6
+    Depends on vulnerable versions of google-gax
+    node_modules/@google-cloud/firestore
+      firebase-admin  7.0.0 - 8.2.0 || 11.0.0 - 14.3.0
+      Depends on vulnerable versions of @google-cloud/firestore
+      Depends on vulnerable versions of @google-cloud/storage
+      node_modules/firebase-admin
+        firebase-functions  2.2.0 - 2.3.1 || 5.0.0 - 7.2.6-rc.0
+        Depends on vulnerable versions of firebase-admin
+        node_modules/firebase-functions
+  teeny-request  3.9.1 - 9.0.0
+  Depends on vulnerable versions of uuid
+  node_modules/teeny-request
+    @google-cloud/storage  2.2.0 - 2.5.0 || 5.19.0 - 8.0.0
+    Depends on vulnerable versions of retry-request
+    Depends on vulnerable versions of teeny-request
+    node_modules/@google-cloud/storage
+    retry-request  7.0.0 - 7.0.2
+    Depends on vulnerable versions of teeny-request
+    node_modules/retry-request
+
+17 vulnerabilities (1 low, 16 moderate)
+
+To address issues that do not require attention, run:
+  npm audit fix
+
+To address all issues (including breaking changes), run:
+  npm audit fix --force
+=== functions test:derived ===
+
+> test:derived
+> npm run build && npx --yes firebase-tools emulators:exec --project demo-lunaexpress --only functions,firestore "node --test test/derived_views.emulator.test.js"
+
+
+> build
+> tsc
+
+[36m[1mi  emulators:[22m[39m Starting emulators: functions, firestore
+[36m[1mi  emulators:[22m[39m Detected demo project ID "demo-lunaexpress", emulated services will use a demo configuration and attempts to access non-emulated services for this project will fail.
+[36m[1mi  firestore:[22m[39m Firestore Emulator logging to [1mfirestore-debug.log[22m
+[32m[1m+  firestore:[22m[39m Firestore Emulator was started in standard edition.
+[32m[1m+  firestore:[22m[39m Firestore Emulator UI websocket is running on 9150.
+[36m[1mi  functions:[22m[39m Watching "C:\Users\Admin\.t3\worktrees\LunaBites and Delights\t3-b201be6b-a2986e077c1bc244\functions" for Cloud Functions...
+[33m[1m! [22m[39m [1m[33mfunctions: [39m[22mpackage.json indicates an outdated version of firebase-functions. Please upgrade using [1mnpm install --save firebase-functions@latest[22m in your functions directory.
+[33m[1m! [22m[39m [1m[33mfunctions: [39m[22mPlease note that there will be breaking changes when you upgrade.
+[33m[1m!  functions:[22m[39m Your requested "node" version "22" doesn't match your global version "24". Using node@24 from host.
+Serving at port 8067
+
+[32m[1m+  functions:[22m[39m Loaded functions definitions from source: dailySalesReport, triggerManualReport, verifyStaff, updateStaffPin, sendOrderNotification, getActiveOrders, updateOrderStatus, onOrderWritten, getSalesAnalytics, getLifetimeSalesReport, createCheckoutSession, verifyCheckoutPayment, paymongoWebhook.
+[36m[1mi  functions[us-central1-dailySalesReport]:[22m[39m function ignored because the pubsub emulator does not exist or is not running.
+[32m[1m+  functions[us-central1-triggerManualReport]:[22m[39m [1mhttp[22m function initialized (http://127.0.0.1:5001/demo-lunaexpress/us-central1/triggerManualReport).
+[32m[1m+  functions[us-central1-verifyStaff]:[22m[39m [1mhttp[22m function initialized (http://127.0.0.1:5001/demo-lunaexpress/us-central1/verifyStaff).
+[32m[1m+  functions[us-central1-updateStaffPin]:[22m[39m [1mhttp[22m function initialized (http://127.0.0.1:5001/demo-lunaexpress/us-central1/updateStaffPin).
+[32m[1m+  functions[us-central1-sendOrderNotification]:[22m[39m [1mhttp[22m function initialized (http://127.0.0.1:5001/demo-lunaexpress/us-central1/sendOrderNotification).
+[32m[1m+  functions[us-central1-getActiveOrders]:[22m[39m [1mhttp[22m function initialized (http://127.0.0.1:5001/demo-lunaexpress/us-central1/getActiveOrders).
+[32m[1m+  functions[us-central1-updateOrderStatus]:[22m[39m [1mhttp[22m function initialized (http://127.0.0.1:5001/demo-lunaexpress/us-central1/updateOrderStatus).
+[32m[1m+  functions[us-central1-onOrderWritten]:[22m[39m [1mfirestore[22m function initialized.
+[32m[1m+  functions[us-central1-getSalesAnalytics]:[22m[39m [1mhttp[22m function initialized (http://127.0.0.1:5001/demo-lunaexpress/us-central1/getSalesAnalytics).
+[32m[1m+  functions[us-central1-getLifetimeSalesReport]:[22m[39m [1mhttp[22m function initialized (http://127.0.0.1:5001/demo-lunaexpress/us-central1/getLifetimeSalesReport).
+[32m[1m+  functions[us-central1-createCheckoutSession]:[22m[39m [1mhttp[22m function initialized (http://127.0.0.1:5001/demo-lunaexpress/us-central1/createCheckoutSession).
+[32m[1m+  functions[us-central1-verifyCheckoutPayment]:[22m[39m [1mhttp[22m function initialized (http://127.0.0.1:5001/demo-lunaexpress/us-central1/verifyCheckoutPayment).
+[32m[1m+  functions[us-central1-paymongoWebhook]:[22m[39m [1mhttp[22m function initialized (http://127.0.0.1:5001/demo-lunaexpress/us-central1/paymongoWebhook).
+[36m[1mi [22m[39m Running script: [1mnode --test test/derived_views.emulator.test.js[22m
+[36m[1mi  functions:[22m[39m Beginning execution of "us-central1-getLifetimeSalesReport"
+[90m> [39m {"verifications":{"app":"MISSING","auth":"VALID"},"logging.googleapis.com/labels":{"firebase-log-type":"callable-request-verification"},"severity":"DEBUG","message":"Callable request verification passed"}
+[90m> [39m {"severity":"INFO","message":"Lifetime report 2020-01-01..2026-11-15 from 0 orders (dailyStats not backfilled)"}
+[36m[1mi  functions:[22m[39m Finished "us-central1-getLifetimeSalesReport" in 542.4853ms
+[36m[1mi  functions:[22m[39m Beginning execution of "us-central1-onOrderWritten"
+[36m[1mi  functions:[22m[39m Finished "us-central1-onOrderWritten" in 369.2424ms
+[36m[1mi  functions:[22m[39m Beginning execution of "us-central1-onOrderWritten"
+[36m[1mi  functions:[22m[39m Finished "us-central1-onOrderWritten" in 27.564ms
+[36m[1mi  functions:[22m[39m Beginning execution of "us-central1-onOrderWritten"
+[36m[1mi  functions:[22m[39m Finished "us-central1-onOrderWritten" in 9.0215ms
+[36m[1mi  functions:[22m[39m Beginning execution of "us-central1-onOrderWritten"
+[36m[1mi  functions:[22m[39m Finished "us-central1-onOrderWritten" in 9.6611ms
+[36m[1mi  functions:[22m[39m Beginning execution of "us-central1-onOrderWritten"
+[36m[1mi  functions:[22m[39m Finished "us-central1-onOrderWritten" in 25.3308ms
+[36m[1mi  functions:[22m[39m Beginning execution of "us-central1-onOrderWritten"
+[36m[1mi  functions:[22m[39m Finished "us-central1-onOrderWritten" in 22.447ms
+[36m[1mi  functions:[22m[39m Beginning execution of "us-central1-onOrderWritten"
+[36m[1mi  functions:[22m[39m Finished "us-central1-onOrderWritten" in 16.5649ms
+[36m[1mi  functions:[22m[39m Beginning execution of "us-central1-getLifetimeSalesReport"
+[90m> [39m {"verifications":{"app":"MISSING","auth":"VALID"},"logging.googleapis.com/labels":{"firebase-log-type":"callable-request-verification"},"severity":"DEBUG","message":"Callable request verification passed"}
+[90m> [39m {"severity":"INFO","message":"Lifetime report 2020-01-01..2026-11-15 from 2 orders (dailyStats not backfilled)"}
+[36m[1mi  functions:[22m[39m Finished "us-central1-getLifetimeSalesReport" in 36.6249ms
+[36m[1mi  functions:[22m[39m Beginning execution of "us-central1-getLifetimeSalesReport"
+[90m> [39m {"verifications":{"app":"MISSING","auth":"VALID"},"logging.googleapis.com/labels":{"firebase-log-type":"callable-request-verification"},"severity":"DEBUG","message":"Callable request verification passed"}
+[90m> [39m {"severity":"INFO","message":"Lifetime report 2020-01-01..2026-11-15 from 1 dailyStats docs"}
+[36m[1mi  functions:[22m[39m Finished "us-central1-getLifetimeSalesReport" in 31.0305ms
+[36m[1mi  functions:[22m[39m Beginning execution of "us-central1-getLifetimeSalesReport"
+[90m> [39m {"verifications":{"app":"MISSING","auth":"VALID"},"logging.googleapis.com/labels":{"firebase-log-type":"callable-request-verification"},"severity":"DEBUG","message":"Callable request verification passed"}
+[90m> [39m {"severity":"INFO","message":"Lifetime report 2026-11-15..2026-11-15 from 1 dailyStats docs"}
+[36m[1mi  functions:[22m[39m Finished "us-central1-getLifetimeSalesReport" in 44.1872ms
+{
+  "timings": [
+    "kds mirror for a new order: 3136 ms",
+    "dailyStats counts 2 countable orders: 133 ms",
+    "kds mirror shows Preparing: 25 ms",
+    "paid GCash order enters KDS mirror: 20 ms",
+    "paid GCash order counted: 16 ms",
+    "cancelled order uncounted: 131 ms",
+    "deleted order leaves mirror: 11 ms",
+    "deleted order uncounted: 16 ms"
+  ],
+  "dailyStats": {
+    "date": "2026-11-15",
+    "entryType": {
+      "staff": {
+        "revenue": 0,
+        "count": 0
+      },
+      "kiosk": {
+        "revenue": 158,
+        "count": 1
+      }
+    },
+    "revenue": 158,
+    "channel": {
+      "walkIn": {
+        "revenue": 0,
+        "count": 0
+      },
+      "delivery": {
+        "revenue": 158,
+        "count": 1
+      }
+    },
+    "paymentMethod": {
+      "gcash": {
+        "revenue": 158,
+        "count": 1
+      },
+      "cash": {
+        "revenue": 0,
+        "count": 0
+      }
+    },
+    "orders": 1,
+    "items": {
+      "Burger B1T1": {
+        "name": "Burger B1T1",
+        "variant": "",
+        "revenue": 0,
+        "qty": 0
+      },
+      "Shawarma Wrap (Spicy)": {
+        "name": "Shawarma Wrap",
+        "variant": "Spicy",
+        "revenue": 158,
+        "qty": 2
+      }
+    },
+    "itemsSold": 2,
+    "updatedAt": {
+      "_seconds": 1794717246,
+      "_nanoseconds": 124000000
+    }
+  },
+  "report": {
+    "totalRevenue": 158,
+    "orderCount": 1,
+    "averageOrderValue": 158,
+    "totalItemsSold": 2
+  }
+}
+✔ trigger mirrors orders and keeps daily stats exact (7927.1622ms)
+[36m[1mi  functions:[22m[39m Beginning execution of "us-central1-getLifetimeSalesReport"
+[90m> [39m {"verifications":{"app":"MISSING","auth":"VALID"},"logging.googleapis.com/labels":{"firebase-log-type":"callable-request-verification"},"severity":"DEBUG","message":"Callable request verification passed"}
+[90m> [39m {"severity":"INFO","message":"Lifetime report 2020-01-01..2026-11-15 from 1 dailyStats docs"}
+[36m[1mi  functions:[22m[39m Finished "us-central1-getLifetimeSalesReport" in 28.3964ms
+[36m[1mi  functions:[22m[39m Beginning execution of "us-central1-getLifetimeSalesReport"
+[90m> [39m {"verifications":{"app":"MISSING","auth":"VALID"},"logging.googleapis.com/labels":{"firebase-log-type":"callable-request-verification"},"severity":"DEBUG","message":"Callable request verification passed"}
+[90m> [39m {"severity":"INFO","message":"Lifetime report 2020-01-01..2026-11-15 from 1 dailyStats docs"}
+[36m[1mi  functions:[22m[39m Finished "us-central1-getLifetimeSalesReport" in 29.5062ms
+✔ backfill rebuilds dailyStats and the mirror from orders alone (454.8018ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 2
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 8665.0089
+[32m[1m+ [22m[39m Script exited successfully (code 0)
+[36m[1mi  emulators:[22m[39m Shutting down emulators.
+[36m[1mi  functions:[22m[39m Stopping Functions Emulator
+[36m[1mi  firestore:[22m[39m Stopping Firestore Emulator
+[33m[1m! [22m[39m Firestore Emulator has exited upon receiving signal: SIGINT
+[36m[1mi  eventarc:[22m[39m Stopping Eventarc Emulator
+[36m[1mi  tasks:[22m[39m Stopping Cloud Tasks Emulator
+[36m[1mi  hub:[22m[39m Stopping emulator hub
+[36m[1mi  logging:[22m[39m Stopping Logging Emulator
+=== functions test:rules ===
+
+> test:rules
+> npx --yes firebase-tools emulators:exec --only firestore "node --test test/firestore-rules.test.js"
+
+[36m[1mi  emulators:[22m[39m Starting emulators: firestore
+[36m[1mi  firestore:[22m[39m Firestore Emulator logging to [1mfirestore-debug.log[22m
+[32m[1m+  firestore:[22m[39m Firestore Emulator was started in standard edition.
+[32m[1m+  firestore:[22m[39m Firestore Emulator UI websocket is running on 9150.
+[36m[1mi [22m[39m Running script: [1mnode --test test/firestore-rules.test.js[22m
+▶ orders: kiosk can only create (validated)
+  ✔ anon can create a valid order (554.2205ms)
+  ✔ anon can create the complete checkout payload (88.9507ms)
+[2026-11-15T04:34:15.280Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x1c8e4db8 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'create' @ L17, false for 'create' @ L180
+  ✔ create rejects telegramSent (the field that broke checkout) (82.7911ms)
+[2026-11-15T04:34:15.393Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x1c8e4db9 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+Property customerName is undefined on object. for 'create' @ L17, false for 'create' @ L180, Property customerName is undefined on object. for 'create' @ L17, false for 'create' @ L180
+[2026-11-15T04:34:15.432Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x1c8e4dba error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'create' @ L17, false for 'create' @ L180
+[2026-11-15T04:34:15.483Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x1c8e4dbb error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'create' @ L17, false for 'create' @ L180
+[2026-11-15T04:34:15.524Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x1c8e4dbc error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'create' @ L17, false for 'create' @ L180
+[2026-11-15T04:34:15.574Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x1c8e4dbd error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'create' @ L17, false for 'create' @ L180
+[2026-11-15T04:34:15.616Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x1c8e4dbe error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'create' @ L17, false for 'create' @ L180
+[2026-11-15T04:34:15.667Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x1c8e4dbf error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'create' @ L17, false for 'create' @ L180
+  ✔ create rejects missing/junk/oversized/forged fields (385.1655ms)
+[2026-11-15T04:34:15.782Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x1c8e4dc2 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'update' @ L41, false for 'update' @ L180
+[2026-11-15T04:34:15.791Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x1c8e4dc3 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'delete' @ L41, false for 'delete' @ L180
+  ✔ nobody can read/update/delete via client (163.5917ms)
+✔ orders: kiosk can only create (validated) (2390.9337ms)
+▶ orders: every checkout combination saves
+  ✔ kiosk-cash: a signed-out customer can place it (62.5995ms)
+  ✔ kiosk-cash: a signed-in non-staff user can place it (43.9822ms)
+  ✔ kiosk-cash: staff can place it (46.9187ms)
+  ✔ kiosk-gcash: a signed-out customer can place it (62.5767ms)
+  ✔ kiosk-gcash: a signed-in non-staff user can place it (39.2974ms)
+  ✔ kiosk-gcash: staff can place it (42.1488ms)
+  ✔ staff-cash: staff and admin can place it (87.7009ms)
+[2026-11-15T04:34:16.293Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x1c8e4dcd error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'create' @ L17, false for 'create' @ L180
+[2026-11-15T04:34:16.345Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x1c8e4dce error. Code: 7 Message: 7 PERMISSION_DENIED: 
+Property role is undefined on object. for 'create' @ L17, false for 'create' @ L180, Property role is undefined on object. for 'create' @ L17, false for 'create' @ L180
+[2026-11-15T04:34:16.390Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x1c8e4dcf error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'create' @ L17, false for 'create' @ L180
+  ✔ staff-cash: rejected without a staff role claim (172.2852ms)
+  ✔ staff-gcash: staff and admin can place it (67.0892ms)
+[2026-11-15T04:34:16.507Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x1c8e4dd2 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'create' @ L17, false for 'create' @ L180
+[2026-11-15T04:34:16.550Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x1c8e4dd3 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+Property role is undefined on object. for 'create' @ L17, false for 'create' @ L180, Property role is undefined on object. for 'create' @ L17, false for 'create' @ L180
+[2026-11-15T04:34:16.588Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x1c8e4dd4 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'create' @ L17, false for 'create' @ L180
+  ✔ staff-gcash: rejected without a staff role claim (130.9117ms)
+[2026-11-15T04:34:16.691Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x1c8e4dd6 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'create' @ L17, false for 'create' @ L180
+[2026-11-15T04:34:16.779Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x1c8e4dd8 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'create' @ L17, false for 'create' @ L180
+  ✔ the limits checkout enforces match the rules (190.9183ms)
+✔ orders: every checkout combination saves (948.071ms)
+▶ kds_orders: staff read the kitchen mirror, nobody writes
+  ✔ staff and admin can get and list (208.0021ms)
+  ✔ anon, customers and riders cannot read (268.2626ms)
+[2026-11-15T04:34:17.346Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x1c8e4de2 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'create' @ L50, false for 'create' @ L180, false for 'update' @ L50, false for 'update' @ L180
+[2026-11-15T04:34:17.356Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x1c8e4de3 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'update' @ L50, false for 'update' @ L180
+[2026-11-15T04:34:17.364Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x1c8e4de4 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'delete' @ L50, false for 'delete' @ L180
+  ✔ even admins cannot write the mirror (107.3786ms)
+[2026-11-15T04:34:17.453Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x1c8e4de7 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'create' @ L180, false for 'update' @ L180
+[2026-11-15T04:34:17.512Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x1c8e4de9 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'create' @ L180, false for 'update' @ L180
+[2026-11-15T04:34:17.590Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x1c8e4deb error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'create' @ L180, false for 'update' @ L180
+  ✔ derived stats collections stay server-only (226.0979ms)
+✔ kds_orders: staff read the kitchen mirror, nobody writes (810.4809ms)
+[2026-11-15T04:34:17.695Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x1c8e4dee error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'create' @ L58, false for 'create' @ L180, false for 'update' @ L58, false for 'update' @ L180
+[2026-11-15T04:34:17.745Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x1c8e4def error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'update' @ L58, false for 'update' @ L180
+▶ config: public read-only
+  ✔ anon can read, cannot write (155.1054ms)
+✔ config: public read-only (155.4064ms)
+[2026-11-15T04:34:17.895Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x1c8e4df3 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'create' @ L68, false for 'create' @ L180, false for 'update' @ L68, false for 'update' @ L180
+▶ staff_accounts + login_attempts: server only
+  ✔ everyone denied, even staff (176.306ms)
+✔ staff_accounts + login_attempts: server only (176.5596ms)
+[2026-11-15T04:34:18.039Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x1c8e4df6 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'create' @ L180, false for 'update' @ L180
+▶ default deny
+  ✔ unknown collections denied (116.2406ms)
+✔ default deny (116.4839ms)
+ℹ tests 23
+ℹ suites 6
+ℹ pass 23
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 4970.4038
+[32m[1m+ [22m[39m Script exited successfully (code 0)
+[36m[1mi  emulators:[22m[39m Shutting down emulators.
+[36m[1mi  firestore:[22m[39m Stopping Firestore Emulator
+[33m[1m! [22m[39m Firestore Emulator has exited upon receiving signal: SIGINT
+[36m[1mi  hub:[22m[39m Stopping emulator hub
+[36m[1mi  logging:[22m[39m Stopping Logging Emulator

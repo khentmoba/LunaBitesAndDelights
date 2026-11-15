@@ -40,32 +40,8 @@ const https_1 = require("firebase-functions/v2/https");
 const firestore_1 = require("firebase-admin/firestore");
 const firebase_functions_1 = require("firebase-functions");
 const crypto = __importStar(require("crypto"));
-const telegram_api_1 = require("../telegram_api");
 const index_1 = require("../index");
-// Trust-but-verify: never mark PAID or FAILED from the webhook payload alone.
-// Re-fetch the checkout session from PayMongo with the secret key (#6/#8).
-async function fetchSessionPayments(sessionId, auth) {
-    const res = await fetch(`https://api.paymongo.com/v2/checkout_sessions/${sessionId}`, {
-        headers: { Authorization: `Basic ${auth}` },
-    });
-    if (!res.ok)
-        return null;
-    const json = await res.json();
-    return json?.data?.attributes?.payments || [];
-}
-async function isSessionPaid(sessionId, auth) {
-    const payments = await fetchSessionPayments(sessionId, auth);
-    if (!payments)
-        return false;
-    return payments.some((p) => p?.attributes?.status === 'paid');
-}
-async function isSessionFailed(sessionId, auth) {
-    const payments = await fetchSessionPayments(sessionId, auth);
-    if (!payments)
-        return false;
-    return !payments.some((p) => p?.attributes?.status === 'paid') &&
-        payments.some((p) => p?.attributes?.status === 'failed');
-}
+const paymongo_1 = require("./paymongo");
 function verifyPaymongoSignature(sigHeader, rawBody, webhookSecret) {
     if (!sigHeader || typeof sigHeader !== 'string')
         return false;
@@ -79,13 +55,15 @@ function verifyPaymongoSignature(sigHeader, rawBody, webhookSecret) {
     }));
     const t = parts.t;
     const sig = parts.li || parts.te;
-    if (!t || !sig)
+    if (!t || !sig || !/^[0-9a-f]{64}$/i.test(sig))
         return false;
     const payload = `${t}.${Buffer.isBuffer(rawBody) ? rawBody.toString('utf8') : rawBody}`;
     const expected = crypto.createHmac('sha256', webhookSecret).update(payload).digest('hex');
-    if (expected.length !== sig.length)
+    const expectedBuf = Buffer.from(expected, 'hex');
+    const sigBuf = Buffer.from(sig, 'hex');
+    if (expectedBuf.length !== sigBuf.length)
         return false;
-    return crypto.timingSafeEqual(Buffer.from(expected, 'hex'), Buffer.from(sig, 'hex'));
+    return crypto.timingSafeEqual(expectedBuf, sigBuf);
 }
 /** Firestore doc ids are alphanumeric; the legacy display number may hold '-' too. */
 const DOC_ID = /^[A-Za-z0-9]{1,64}$/;
@@ -107,12 +85,12 @@ exports.paymongoWebhook = (0, https_1.onRequest)({ secrets: [index_1.paymongoSec
         res.status(405).send('Method Not Allowed');
         return;
     }
-    if (!verifyPaymongoSignature(req.headers['paymongo-signature'], req.rawBody, process.env.PAYMONGO_WEBHOOK_SECRET)) {
-        firebase_functions_1.logger.warn('PayMongo webhook signature invalid or missing');
-        res.status(200).send('OK');
-        return;
-    }
     try {
+        if (!verifyPaymongoSignature(req.headers['paymongo-signature'], req.rawBody, process.env.PAYMONGO_WEBHOOK_SECRET)) {
+            firebase_functions_1.logger.warn('PayMongo webhook signature invalid or missing');
+            res.status(200).send('OK');
+            return;
+        }
         const event = req.body?.data;
         if (!event?.type || !event?.data?.id) {
             firebase_functions_1.logger.warn('Invalid webhook payload');
@@ -123,55 +101,41 @@ exports.paymongoWebhook = (0, https_1.onRequest)({ secrets: [index_1.paymongoSec
         const sessionId = String(event.data.id);
         if (event.type === 'checkout_session.payment.paid') {
             const auth = Buffer.from(`${index_1.paymongoSecret.value()}:`).toString('base64');
-            if (!(await isSessionPaid(sessionId, auth))) {
+            const payments = await (0, paymongo_1.fetchSessionPayments)(sessionId, auth);
+            if (!(0, paymongo_1.hasPaidPayment)(payments)) {
                 firebase_functions_1.logger.warn(`Webhook for ${sessionId} failed API verification — ignored`);
                 res.status(200).send('OK');
                 return;
             }
             const attrs = event.data.attributes || {};
-            const refNumber = attrs.reference_number;
-            const paymentId = attrs.payments?.[0]?.id || '';
+            const refNumber = String(attrs.reference_number || '');
+            const paymentId = (0, paymongo_1.firstPaymentId)(payments) || String(attrs.payments?.[0]?.id || '');
             const docId = resolveOrderDocId(attrs);
             if (docId) {
                 const db = (0, firestore_1.getFirestore)();
                 const orderRef = db.collection('orders').doc(docId);
-                await orderRef.update({
-                    paymentStatus: 'PAID',
-                    paymongoPaymentId: String(paymentId).slice(0, 128),
-                    paidAt: new Date().toISOString(),
-                });
-                try {
-                    const orderDoc = await orderRef.get();
-                    if (orderDoc.exists) {
-                        const data = orderDoc.data();
-                        await (0, telegram_api_1.sendToAll)([
-                            `✅ *PAYMENT CONFIRMED*`,
-                            `📄 *Order:* ${(0, telegram_api_1.escapeMd)(String(data.orderId || refNumber || docId))}`,
-                            `👤 *Customer:* ${(0, telegram_api_1.escapeMd)(String(data.customerName || ''))}`,
-                            `💰 *Amount:* \u20B1${(0, telegram_api_1.escapeMd)(String(data.totalAmount || 0))}`,
-                            `💳 *Payment:* GCash via PayMongo`,
-                            `📦 *Type:* ${(0, telegram_api_1.escapeMd)(String(data.type || ''))}`,
-                            `🕐 *Paid at:* ${(0, telegram_api_1.escapeMd)(new Date().toLocaleString('en-PH'))}`,
-                        ].join('\n'));
-                    }
-                }
-                catch (notifErr) {
-                    firebase_functions_1.logger.error('Failed to send payment confirmation to Telegram:', notifErr);
-                }
+                await (0, paymongo_1.markOrderPaidOnce)(orderRef, paymentId, refNumber);
                 firebase_functions_1.logger.info(`Order ${docId} marked as PAID via verified webhook`);
             }
         }
         if (event.type === 'checkout_session.payment.failed') {
             const auth = Buffer.from(`${index_1.paymongoSecret.value()}:`).toString('base64');
-            if (!(await isSessionFailed(sessionId, auth))) {
+            const payments = await (0, paymongo_1.fetchSessionPayments)(sessionId, auth);
+            if (!(0, paymongo_1.hasFailedPayment)(payments)) {
                 firebase_functions_1.logger.warn(`Webhook payment.failed for ${sessionId} failed API verification — ignored`);
                 res.status(200).send('OK');
                 return;
             }
             const docId = resolveOrderDocId(event.data?.attributes || {});
             if (docId) {
-                await (0, firestore_1.getFirestore)().collection('orders').doc(docId)
-                    .update({ paymentStatus: 'PAYMENT_FAILED' });
+                const db = (0, firestore_1.getFirestore)();
+                const orderRef = db.collection('orders').doc(docId);
+                await db.runTransaction(async (tx) => {
+                    const snap = await tx.get(orderRef);
+                    if (!snap.exists || snap.data()?.paymentStatus === 'PAID')
+                        return;
+                    tx.update(orderRef, { paymentStatus: 'PAYMENT_FAILED' });
+                });
                 firebase_functions_1.logger.info(`Order ${docId} payment failed`);
             }
         }

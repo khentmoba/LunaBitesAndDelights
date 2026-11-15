@@ -3,6 +3,9 @@ import 'package:intl/intl.dart';
 /// Philippines is UTC+8.
 DateTime phtNow() => DateTime.now().toUtc().add(const Duration(hours: 8));
 
+/// Converts an instant into PHT wall-clock calendar fields.
+DateTime toPht(DateTime dt) => dt.toUtc().add(const Duration(hours: 8));
+
 /// 'YYYY-MM-DD' label in PHT. Defaults to today.
 String phtDateLabel([DateTime? dt]) {
   final d = dt ?? phtNow();

@@ -40,7 +40,7 @@ const MENU_PRICES = {
     'Classic Lemonade': [49], 'Blue Lemonade': [49], 'Lemon Strawberry': [49],
     'Lemon Cucumber': [49],
     'Cookies & Cream Overload': [65], 'Chocolate Oreo': [65], 'Strawberry Oreo': [65], 'Milo Oreo Float': [65],
-    'Milo Dinosaur': [65], 'Milo Float': [65], 'Milo Crunch': [65], 'Milo Oreo': [65],
+    'Milo Dinosaur': [65], 'Milo Float': [65], 'Cream Milo Float': [65], 'Milo Crunch': [65], 'Milo Oreo': [65],
     'Coke Float': [49], 'Chuckie Float': [65], 'Cookies and Cream Float': [65],
     'Cafe Latte': [49], 'Caramel Macchiato': [49],
     'Ice Cappuccino': [49], 'Chocolate Coffee': [49],
@@ -76,8 +76,12 @@ async (request) => {
         throw new https_1.HttpsError('invalid-argument', 'Invalid order reference');
     }
     const orderRef = (0, firestore_1.getFirestore)().collection('orders').doc(orderDocId);
-    if (!(await orderRef.get()).exists) {
+    const orderSnap = await orderRef.get();
+    if (!orderSnap.exists) {
         throw new https_1.HttpsError('not-found', 'Order not found');
+    }
+    if (orderSnap.data()?.paymentStatus === 'PAID') {
+        throw new https_1.HttpsError('failed-precondition', 'Order is already paid');
     }
     if (!Array.isArray(d.items) || d.items.length === 0 || d.items.length > 50) {
         throw new https_1.HttpsError('invalid-argument', 'Invalid items');
@@ -87,7 +91,10 @@ async (request) => {
     const lineItems = d.items.map((i) => {
         const name = (0, security_1.cleanStr)(i?.name, 120, 'item name');
         const variant = (0, security_1.optStr)(i?.variant, 120);
-        const qty = (0, security_1.cleanInt)(i?.quantity ?? 1, 99, 'quantity') || 1;
+        const qty = (0, security_1.cleanInt)(i?.quantity ?? 1, 99, 'quantity');
+        if (qty < 1) {
+            throw new https_1.HttpsError('invalid-argument', 'Invalid quantity');
+        }
         const allowed = MENU_PRICES[name];
         if (!allowed)
             throw new https_1.HttpsError('invalid-argument', `Unknown item: ${name}`);
@@ -96,8 +103,13 @@ async (request) => {
             throw new https_1.HttpsError('invalid-argument', `Price mismatch for ${name}`);
         }
         const variantMap = VARIANT_PRICES[name];
-        if (variantMap && variant && variantMap[variant] !== undefined && variantMap[variant] !== price) {
-            throw new https_1.HttpsError('invalid-argument', `Price mismatch for ${name} (${variant})`);
+        if (variantMap) {
+            if (!variant || variantMap[variant] === undefined) {
+                throw new https_1.HttpsError('invalid-argument', `Invalid variant for ${name}`);
+            }
+            if (variantMap[variant] !== price) {
+                throw new https_1.HttpsError('invalid-argument', `Price mismatch for ${name} (${variant})`);
+            }
         }
         itemsTotal += price * qty;
         return { name, amount: price * 100, currency: 'PHP', quantity: qty };

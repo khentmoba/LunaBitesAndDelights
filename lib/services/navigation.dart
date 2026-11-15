@@ -22,6 +22,21 @@ class RouteHistoryObserver extends NavigatorObserver {
     return stack.last.settings.name == routeName;
   }
 
+  /// Returns true when [route] is the topmost [PageRoute] in [nav], ignoring
+  /// transient overlays such as modal bottom sheets or dialogs on top of it.
+  /// If [nav] or [route] is not tracked by this observer, falls back to
+  /// [route.isCurrent].
+  bool isTopPageRoute(NavigatorState nav, Route<dynamic> route) {
+    final stack = _stacks[nav];
+    if (stack == null || !stack.contains(route)) {
+      return route.isCurrent;
+    }
+    for (int i = stack.length - 1; i >= 0; i--) {
+      if (stack[i] is PageRoute) return identical(stack[i], route);
+    }
+    return identical(stack.last, route);
+  }
+
   @override
   void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
     final nav = navigator;

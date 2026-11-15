@@ -14,6 +14,13 @@ class GCashCheckoutPage extends StatefulWidget {
   final List<Map<String, dynamic>> items;
   final String customerName;
   final String customerPhone;
+  final Future<Map<String, dynamic>> Function(
+    String name, [
+    Map<String, dynamic>? payload,
+  ])?
+  callFunction;
+  @visibleForTesting
+  final bool? webCheckoutOverride;
 
   const GCashCheckoutPage({
     super.key,
@@ -23,6 +30,8 @@ class GCashCheckoutPage extends StatefulWidget {
     required this.items,
     required this.customerName,
     required this.customerPhone,
+    this.callFunction,
+    this.webCheckoutOverride,
   });
 
   @override
@@ -32,13 +41,27 @@ class GCashCheckoutPage extends StatefulWidget {
 class _GCashCheckoutPageState extends State<GCashCheckoutPage> {
   WebViewController? _controller;
   bool _loading = true;
+  bool _verifying = false;
   String? _error;
+  String? _verifyError;
   String? _checkoutUrl;
+  String? _checkoutSessionId;
+
+  bool get _useWebCheckout => widget.webCheckoutOverride ?? kIsWeb;
+
+  Future<Map<String, dynamic>> _callFn(
+    String name, [
+    Map<String, dynamic>? payload,
+  ]) {
+    final fn = widget.callFunction;
+    if (fn != null) return fn(name, payload);
+    return callFn(name, payload);
+  }
 
   @override
   void initState() {
     super.initState();
-    if (!kIsWeb) {
+    if (!_useWebCheckout) {
       _controller = WebViewController()
         ..setJavaScriptMode(JavaScriptMode.unrestricted)
         ..setNavigationDelegate(
@@ -46,7 +69,7 @@ class _GCashCheckoutPageState extends State<GCashCheckoutPage> {
             onNavigationRequest: (request) {
               if (request.url.contains('payment/success') ||
                   request.url.contains('checkout_sessions/success')) {
-                _onPaymentResult(true);
+                _verifyAndFinish();
                 return NavigationDecision.prevent;
               }
               if (request.url.contains('payment/cancel') ||
@@ -86,7 +109,7 @@ class _GCashCheckoutPageState extends State<GCashCheckoutPage> {
 
   Future<void> _startCheckout() async {
     try {
-      final data = await callFn('createCheckoutSession', {
+      final data = await _callFn('createCheckoutSession', {
         'orderDocId': widget.orderDocId,
         'orderId': widget.orderId,
         'amount': widget.amount,
@@ -96,18 +119,63 @@ class _GCashCheckoutPageState extends State<GCashCheckoutPage> {
       });
 
       final checkoutUrl = data['checkoutUrl'] as String;
-      if (kIsWeb) {
+      final sessionId = data['checkoutSessionId']?.toString();
+      if (_useWebCheckout) {
         if (!mounted) return;
         setState(() {
           _checkoutUrl = checkoutUrl;
+          _checkoutSessionId = sessionId;
           _loading = false;
         });
-        openUrlInBrowser(checkoutUrl);
+        if (widget.webCheckoutOverride == null) {
+          openUrlInBrowser(checkoutUrl);
+        }
       } else {
+        _checkoutSessionId = sessionId;
         await _controller?.loadRequest(Uri.parse(checkoutUrl));
       }
     } catch (e) {
       if (mounted) setState(() => _error = e.toString());
+    }
+  }
+
+  Future<void> _verifyAndFinish() async {
+    if (_verifying) return;
+    final sessionId = _checkoutSessionId;
+    if (sessionId == null || sessionId.isEmpty) {
+      setState(() {
+        _verifyError = 'Checkout session is not ready yet. Please wait.';
+      });
+      return;
+    }
+    setState(() {
+      _verifying = true;
+      _verifyError = null;
+    });
+    try {
+      final res = await _callFn('verifyCheckoutPayment', {
+        'orderDocId': widget.orderDocId,
+        'checkoutSessionId': sessionId,
+      });
+      if (!mounted) return;
+      if (res['paid'] == true) {
+        _onPaymentResult(true);
+      } else {
+        final failed = res['paymentStatus'] == 'PAYMENT_FAILED';
+        setState(() {
+          _verifying = false;
+          _verifyError = failed
+              ? 'Payment was declined or failed. Please try paying again.'
+              : 'Payment has not cleared yet. Finish authorizing in the PayMongo tab, then tap again.';
+        });
+      }
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _verifying = false;
+        _verifyError =
+            'Unable to verify payment right now. Check your connection and try again.';
+      });
     }
   }
 
@@ -179,7 +247,7 @@ class _GCashCheckoutPageState extends State<GCashCheckoutPage> {
                   ),
                 ),
               )
-            : kIsWeb
+            : _useWebCheckout
             ? _buildWebCheckoutBody()
             : Stack(
                 children: [
@@ -275,12 +343,59 @@ class _GCashCheckoutPageState extends State<GCashCheckoutPage> {
                 ),
                 const SizedBox(height: 12),
               ],
+              if (_verifyError != null) ...[
+                Container(
+                  width: double.infinity,
+                  margin: const EdgeInsets.only(bottom: 14),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: KioskTheme.error.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(KioskTheme.radiusSm),
+                    border: Border.all(
+                      color: KioskTheme.error.withValues(alpha: 0.35),
+                    ),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Icon(
+                        Icons.error_outline_rounded,
+                        size: 18,
+                        color: KioskTheme.error,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          _verifyError!,
+                          style: KioskTheme.bodySmall.copyWith(
+                            color: KioskTheme.error,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
               SizedBox(
                 width: double.infinity,
                 child: FilledButton.icon(
-                  onPressed: () => _onPaymentResult(true),
-                  icon: const Icon(Icons.check_circle_outline_rounded),
-                  label: const Text('I HAVE PAID — VIEW RECEIPT'),
+                  onPressed: _verifying ? null : _verifyAndFinish,
+                  icon: _verifying
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Icon(Icons.check_circle_outline_rounded),
+                  label: Text(
+                    _verifying
+                        ? 'VERIFYING PAYMENT...'
+                        : 'I HAVE PAID — VIEW RECEIPT',
+                  ),
                   style: FilledButton.styleFrom(
                     backgroundColor: KioskTheme.lunaPink,
                   ),
@@ -290,7 +405,7 @@ class _GCashCheckoutPageState extends State<GCashCheckoutPage> {
               SizedBox(
                 width: double.infinity,
                 child: OutlinedButton(
-                  onPressed: () => _onPaymentResult(false),
+                  onPressed: _verifying ? null : () => _onPaymentResult(false),
                   child: const Text('CANCEL PAYMENT'),
                 ),
               ),

@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.paymongoWebhook = exports.createCheckoutSession = exports.getLifetimeSalesReport = exports.getSalesAnalytics = exports.onOrderWritten = exports.updateOrderStatus = exports.getActiveOrders = exports.sendOrderNotification = exports.updateStaffPin = exports.verifyStaff = exports.triggerManualReport = exports.dailySalesReport = exports.googleMapsApiKey = exports.paymongoSecret = exports.telegramChatIds = exports.telegramToken = void 0;
+exports.paymongoWebhook = exports.verifyCheckoutPayment = exports.createCheckoutSession = exports.getLifetimeSalesReport = exports.getSalesAnalytics = exports.onOrderWritten = exports.updateOrderStatus = exports.getActiveOrders = exports.sendOrderNotification = exports.updateStaffPin = exports.verifyStaff = exports.triggerManualReport = exports.dailySalesReport = exports.googleMapsApiKey = exports.paymongoSecret = exports.telegramChatIds = exports.telegramToken = void 0;
 const app_1 = require("firebase-admin/app");
 const params_1 = require("firebase-functions/params");
 (0, app_1.initializeApp)();
@@ -33,6 +33,8 @@ var lifetime_report_1 = require("./reporting/lifetime_report");
 Object.defineProperty(exports, "getLifetimeSalesReport", { enumerable: true, get: function () { return lifetime_report_1.getLifetimeSalesReport; } });
 var create_checkout_1 = require("./payments/create_checkout");
 Object.defineProperty(exports, "createCheckoutSession", { enumerable: true, get: function () { return create_checkout_1.createCheckoutSession; } });
+var verify_payment_1 = require("./payments/verify_payment");
+Object.defineProperty(exports, "verifyCheckoutPayment", { enumerable: true, get: function () { return verify_payment_1.verifyCheckoutPayment; } });
 var webhook_1 = require("./payments/webhook");
 Object.defineProperty(exports, "paymongoWebhook", { enumerable: true, get: function () { return webhook_1.paymongoWebhook; } });
 //# sourceMappingURL=index.js.map

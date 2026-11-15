@@ -15,7 +15,7 @@ const GUARD_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 function kdsMirrorDoc(id, data) {
     const ts = data.timestamp instanceof firestore_2.Timestamp
         ? data.timestamp
-        : firestore_2.Timestamp.fromDate(new Date(typeof data.timestamp === 'string' ? data.timestamp : Date.now()));
+        : firestore_2.Timestamp.fromDate(new Date((0, kds_1.toIsoTimestamp)(data.timestamp)));
     return { ...(0, kds_1.projectOrder)(id, data), ts };
 }
 /**
@@ -33,11 +33,14 @@ exports.onOrderWritten = (0, firestore_1.onDocumentWritten)('orders/{orderId}', 
     const after = event.data?.after?.exists ? event.data.after.data() : undefined;
     const mirrorRef = db.collection(exports.KDS_COLLECTION).doc(orderId);
     const mirror = (async () => {
-        if (!after)
+        if (!after || !(0, kds_1.isOrderVisibleInKds)(after))
             return mirrorRef.delete();
         const next = kdsMirrorDoc(orderId, after);
-        if (before && JSON.stringify(kdsMirrorDoc(orderId, before)) === JSON.stringify(next))
+        if (before &&
+            (0, kds_1.isOrderVisibleInKds)(before) &&
+            JSON.stringify(kdsMirrorDoc(orderId, before)) === JSON.stringify(next)) {
             return;
+        }
         return mirrorRef.set(next);
     })();
     const deltas = (0, daily_stats_1.dayDeltas)(before, after);

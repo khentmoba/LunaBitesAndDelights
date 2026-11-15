@@ -30,9 +30,10 @@ exports.getSalesAnalytics = (0, https_1.onCall)(async (request) => {
             (0, util_1.addToChannel)(channel, data.type || 'Pickup', totalAmount);
             for (const item of data.items || []) {
                 const name = item.name || 'Unknown';
-                const qty = Number(item.quantity || item.qty || 1);
+                const key = (0, util_1.itemKey)(name, item.variant);
+                const qty = Number(item.quantity || item.qty) || 1;
                 totalItemsSold += qty;
-                itemCounts[name] = (itemCounts[name] || 0) + qty;
+                itemCounts[key] = (itemCounts[key] || 0) + qty;
             }
         }
         const topItems = Object.entries(itemCounts)

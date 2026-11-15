@@ -36,7 +36,7 @@ function contributionOf(data) {
     for (const item of data.items || []) {
         const name = item.name || 'Unknown';
         const variant = item.variant || '';
-        const qty = item.quantity || 1;
+        const qty = Number(item.quantity || item.qty) || 1;
         itemsSold += qty;
         const key = (0, exports.statsItemKey)(name, variant);
         const slot = items[key] || (items[key] = { name, variant, qty: 0, revenue: 0 });

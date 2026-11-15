@@ -240,7 +240,8 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
 
   Widget _buildSplitCard() {
     final breakdown = _data['breakdown'] as Map? ?? {};
-    int rev(String key) => (breakdown[key] as Map?)?['revenue'] as int? ?? 0;
+    int rev(String key) =>
+        ((breakdown[key] as Map?)?['revenue'] as num?)?.toInt() ?? 0;
 
     final walkInRev = rev('walkIn');
     final deliveryRev = rev('delivery');

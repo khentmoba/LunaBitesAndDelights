@@ -5,6 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getBot = getBot;
 exports.setBot = setBot;
+exports.isMarkdownParseError = isMarkdownParseError;
 exports.sendToAll = sendToAll;
 exports.sendPhotoToAll = sendPhotoToAll;
 exports.escapeMd = escapeMd;
@@ -21,6 +22,18 @@ function getBot() {
 }
 function setBot(customBot) {
     bot = customBot;
+}
+function isMarkdownParseError(err) {
+    const status = err?.response?.statusCode ?? err?.code;
+    const desc = String(err?.response?.body?.description || err?.message || '').toLowerCase();
+    if (desc.includes("can't parse entities") || desc.includes('must be escaped')) {
+        return true;
+    }
+    return status === 400 && (desc.includes('parse') ||
+        desc.includes('entity') ||
+        desc.includes('entities') ||
+        desc.includes('escape') ||
+        desc === '');
 }
 async function sendToAll(message, options = {}) {
     const rawIds = index_1.telegramChatIds.value().split(',');
@@ -40,11 +53,7 @@ async function sendToAll(message, options = {}) {
             return await telegram.sendMessage(id, message, sendOpts);
         }
         catch (err) {
-            const isParseError = sendOpts.parse_mode &&
-                (err?.message?.includes("can't parse entities") ||
-                    err?.response?.body?.description?.includes("can't parse entities") ||
-                    err?.message?.includes('400'));
-            if (isParseError) {
+            if (sendOpts.parse_mode && isMarkdownParseError(err)) {
                 firebase_functions_1.logger.warn(`sendToAll: MarkdownV2 parsing failed for chat ${id}; falling back to plain text`, {
                     error: err?.message,
                     chatId: id,
@@ -92,11 +101,7 @@ async function sendPhotoToAll(photo, caption, options = {}) {
             }, fileOpts);
         }
         catch (err) {
-            const isParseError = sendOpts.parse_mode &&
-                (err?.message?.includes("can't parse entities") ||
-                    err?.response?.body?.description?.includes("can't parse entities") ||
-                    err?.message?.includes('400'));
-            if (isParseError) {
+            if (sendOpts.parse_mode && isMarkdownParseError(err)) {
                 firebase_functions_1.logger.warn(`sendPhotoToAll: MarkdownV2 parsing failed for chat ${id}; falling back to plain text caption`, {
                     error: err?.message,
                     chatId: id,

@@ -1,6 +1,6 @@
 const { describe, test } = require('node:test');
 const assert = require('node:assert/strict');
-const { escapeMd, sendToAll, sendPhotoToAll, setBot, stripMarkdownV2 } = require('../lib/telegram_api');
+const { escapeMd, sendToAll, sendPhotoToAll, setBot, stripMarkdownV2, isMarkdownParseError } = require('../lib/telegram_api');
 const {
   itemLines,
   formatOrderNotification,
@@ -346,5 +346,12 @@ describe('Telegram MarkdownV2 escaping and order notifications', () => {
     assert.deepEqual(fallbackCalls[0].opts.reply_markup, replyMarkup);
     assert.equal(fallbackCalls[0].fileOpts.filename, 'delivery_map.png');
     assert.equal(fallbackCalls[0].opts.caption, '🔔 *NEW DELIVERY — LU-999*\n📍 Address: Purok 5');
+  });
+
+  test('isMarkdownParseError matches Telegram entity parse errors without false-matching plain 400 text', () => {
+    assert.equal(isMarkdownParseError({ message: "Bad Request: can't parse entities" }), true);
+    assert.equal(isMarkdownParseError({ response: { statusCode: 400, body: { description: 'Character must be escaped' } } }), true);
+    assert.equal(isMarkdownParseError({ message: 'chat_id 40012345 not found' }), false);
+    assert.equal(isMarkdownParseError({ response: { statusCode: 400, body: { description: 'Bad Request: chat not found' } } }), false);
   });
 });

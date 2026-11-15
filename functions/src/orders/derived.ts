@@ -1,7 +1,7 @@
 import { onDocumentWritten } from 'firebase-functions/v2/firestore';
 import { getFirestore, FieldValue, Timestamp } from 'firebase-admin/firestore';
 import { logger } from 'firebase-functions';
-import { projectOrder } from './kds';
+import { projectOrder, isOrderVisibleInKds, toIsoTimestamp } from './kds';
 import { dayDeltas, incrementPayload } from '../reporting/daily_stats';
 
 export const KDS_COLLECTION = 'kds_orders';
@@ -13,7 +13,7 @@ const GUARD_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 export function kdsMirrorDoc(id: string, data: FirebaseFirestore.DocumentData) {
   const ts = data.timestamp instanceof Timestamp
     ? data.timestamp
-    : Timestamp.fromDate(new Date(typeof data.timestamp === 'string' ? data.timestamp : Date.now()));
+    : Timestamp.fromDate(new Date(toIsoTimestamp(data.timestamp)));
   return { ...projectOrder(id, data), ts };
 }
 
@@ -33,9 +33,15 @@ export const onOrderWritten = onDocumentWritten('orders/{orderId}', async (event
 
   const mirrorRef = db.collection(KDS_COLLECTION).doc(orderId);
   const mirror = (async () => {
-    if (!after) return mirrorRef.delete();
+    if (!after || !isOrderVisibleInKds(after)) return mirrorRef.delete();
     const next = kdsMirrorDoc(orderId, after);
-    if (before && JSON.stringify(kdsMirrorDoc(orderId, before)) === JSON.stringify(next)) return;
+    if (
+      before &&
+      isOrderVisibleInKds(before) &&
+      JSON.stringify(kdsMirrorDoc(orderId, before)) === JSON.stringify(next)
+    ) {
+      return;
+    }
     return mirrorRef.set(next);
   })();
 

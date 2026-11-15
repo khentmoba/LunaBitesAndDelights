@@ -49,6 +49,7 @@ class _KdsPageState extends State<KdsPage> with SingleTickerProviderStateMixin {
   Set<String> _knownPendingOrderIds = {};
   bool _hasInitialFetchDone = false;
   final Set<String> _checkedItemKeys = {};
+  final Set<String> _updatingOrderIds = {};
 
   TabController? _tabController;
   bool _wasStaff = false;
@@ -225,7 +226,11 @@ class _KdsPageState extends State<KdsPage> with SingleTickerProviderStateMixin {
     String newStatus, {
     String? cancellationReason,
   }) async {
-    setState(() => _loading = true);
+    if (_updatingOrderIds.contains(orderId)) return;
+    setState(() {
+      _updatingOrderIds.add(orderId);
+      _loading = true;
+    });
     try {
       final data = await callFn('updateOrderStatus', {
         'orderId': orderId,
@@ -259,6 +264,12 @@ class _KdsPageState extends State<KdsPage> with SingleTickerProviderStateMixin {
         'Failed to update status. Connection error.',
         const Color(0xFFB3261E),
       );
+    } finally {
+      if (mounted) {
+        setState(() => _updatingOrderIds.remove(orderId));
+      } else {
+        _updatingOrderIds.remove(orderId);
+      }
     }
   }
 
@@ -628,7 +639,12 @@ class _KdsPageState extends State<KdsPage> with SingleTickerProviderStateMixin {
             Expanded(
               child: isMobile
                   ? _buildMobileTabViews(pending, preparing, ready, completed)
-                  : _buildDesktopKanbanBoard(pending, preparing, ready),
+                  : _buildDesktopKanbanBoard(
+                      pending,
+                      preparing,
+                      ready,
+                      completed,
+                    ),
             ),
           ],
         ),
@@ -1351,6 +1367,7 @@ class _KdsPageState extends State<KdsPage> with SingleTickerProviderStateMixin {
     List<dynamic> pending,
     List<dynamic> preparing,
     List<dynamic> ready,
+    List<dynamic> completed,
   ) {
     return Padding(
       padding: const EdgeInsets.all(16.0),
@@ -1394,6 +1411,19 @@ class _KdsPageState extends State<KdsPage> with SingleTickerProviderStateMixin {
               icon: Icons.done_all_rounded,
             ),
           ),
+          if (_showCompleted) ...[
+            const SizedBox(width: 16),
+            Expanded(
+              child: _buildColumnContainer(
+                title: '4. DONE / HISTORY',
+                orders: completed,
+                columnStatus: 'Completed',
+                headerBg: MenuTheme.paper,
+                titleColor: MenuTheme.ink,
+                icon: Icons.history_rounded,
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -2011,7 +2041,9 @@ class _KdsPageState extends State<KdsPage> with SingleTickerProviderStateMixin {
                 ),
                 if (status == 'Pending')
                   TextButton(
-                    onPressed: () => _confirmCancelOrder(orderId, orderNum),
+                    onPressed: _updatingOrderIds.contains(orderId)
+                        ? null
+                        : () => _confirmCancelOrder(orderId, orderNum),
                     child: Text(
                       'Cancel',
                       style: MenuTheme.body(
@@ -2033,6 +2065,7 @@ class _KdsPageState extends State<KdsPage> with SingleTickerProviderStateMixin {
   }
 
   Widget _buildStatusActionButton(String orderId, String currentStatus) {
+    final isUpdating = _updatingOrderIds.contains(orderId);
     String label = '';
     String nextStatus = '';
     Color buttonColor = MenuTheme.plate;
@@ -2069,35 +2102,38 @@ class _KdsPageState extends State<KdsPage> with SingleTickerProviderStateMixin {
     }
 
     return InkWell(
-      onTap: () => _updateStatus(orderId, nextStatus),
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        decoration: BoxDecoration(
-          color: buttonColor,
-          border: Border.all(color: MenuTheme.pinkInk.withValues(alpha: 0.4)),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              icon,
-              color: buttonColor == MenuTheme.paper
-                  ? MenuTheme.ink
-                  : MenuTheme.onPlate,
-              size: 16,
-            ),
-            const SizedBox(width: 8),
-            Text(
-              label,
-              style: MenuTheme.body(
-                size: 12,
+      onTap: isUpdating ? null : () => _updateStatus(orderId, nextStatus),
+      child: Opacity(
+        opacity: isUpdating ? 0.65 : 1.0,
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          decoration: BoxDecoration(
+            color: buttonColor,
+            border: Border.all(color: MenuTheme.pinkInk.withValues(alpha: 0.4)),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                isUpdating ? Icons.hourglass_top_rounded : icon,
                 color: buttonColor == MenuTheme.paper
                     ? MenuTheme.ink
                     : MenuTheme.onPlate,
-              ).copyWith(fontWeight: FontWeight.w800, letterSpacing: 1.5),
-            ),
-          ],
+                size: 16,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                isUpdating ? 'UPDATING...' : label,
+                style: MenuTheme.body(
+                  size: 12,
+                  color: buttonColor == MenuTheme.paper
+                      ? MenuTheme.ink
+                      : MenuTheme.onPlate,
+                ).copyWith(fontWeight: FontWeight.w800, letterSpacing: 1.5),
+              ),
+            ],
+          ),
         ),
       ),
     );

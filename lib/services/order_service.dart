@@ -29,6 +29,19 @@ class OrderService {
       orderDocId: docId,
     );
 
+    final isUnconfirmedGcash =
+        order.paymentMethod == 'GCash' &&
+        (order.paymentStatus == 'AWAITING_PAYMENT' ||
+            order.paymentStatus == 'PAYMENT_FAILED');
+    if (!isUnconfirmedGcash) {
+      recordLocalHistory(order, timeStr);
+    }
+    return (docId: docId, telegramSent: telegramSent);
+  }
+
+  /// Appends a confirmed order to the local fallback ledger used before server
+  /// analytics responds.
+  static void recordLocalHistory(OrderModel order, String timeStr) {
     orderHistory.add({
       'orderNumber': order.orderId,
       'customerName': order.customerName,
@@ -48,7 +61,6 @@ class OrderService {
       'type': order.type,
       'isWalkIn': order.entryType == 'Staff',
     });
-    return (docId: docId, telegramSent: telegramSent);
   }
 
   /// Writes the order and returns its document id, or null if the write failed.
@@ -71,14 +83,17 @@ class OrderService {
 // ── In-memory order history for the admin dashboard ──
 final List<Map<String, dynamic>> orderHistory = [];
 
-int get todayRevenue => _todayOrders.fold(0, (s, o) => s + (o['total'] as int));
+int get todayRevenue =>
+    _todayOrders.fold(0, (s, o) => s + ((o['total'] as num?)?.toInt() ?? 0));
 int get todayOrderCount => _todayOrders.length;
-int get todayItemsSold =>
-    _todayOrders.fold(0, (s, o) => s + (o['itemsCount'] as int));
+int get todayItemsSold => _todayOrders.fold(
+  0,
+  (s, o) => s + ((o['itemsCount'] as num?)?.toInt() ?? 0),
+);
 double get avgOrderValue =>
     todayOrderCount > 0 ? todayRevenue / todayOrderCount : 0;
 
 List<Map<String, dynamic>> get _todayOrders => orderHistory.where((o) {
-  final t = o['time'] as String;
-  return t.startsWith(phtDateLabel(DateTime.now()));
+  final t = (o['time'] ?? '').toString();
+  return t.startsWith(phtDateLabel());
 }).toList();

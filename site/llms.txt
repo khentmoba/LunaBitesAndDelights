@@ -70,4 +70,4 @@
 - Classic Lemonade: ₱49
 
 ## Delivery Policy
-Food orders are placed directly via the online kiosk. Delivery fee is confirmed by the delivery rider upon dispatch and is charged separately. Customers can pay in cash or via GCash on delivery or pickup.
+Food orders are placed directly via the online kiosk. Delivery fee is confirmed by the delivery rider upon dispatch and is charged separately. Online kiosk orders accept Cash (on delivery or pickup) or online GCash via PayMongo.

@@ -47,21 +47,30 @@ export const verifyStaff = onCall(async (request) => {
     if (!/^[0-9]{4,8}$/.test(pin)) {
       throw new HttpsError('invalid-argument', GENERIC_PIN_FAIL);
     }
-    await checkRateLimit('staff:pin_login');
+    const clientIp = typeof request.rawRequest?.ip === 'string' && request.rawRequest.ip
+      ? request.rawRequest.ip
+      : '';
+    const pinRateKey = clientIp ? `staff:pin_login:${clientIp}` : 'staff:pin_login';
+    await checkRateLimit(pinRateKey);
     const failPin = async () => {
-      await recordLoginFailure('staff:pin_login');
+      await recordLoginFailure(pinRateKey);
       return { success: false, message: GENERIC_PIN_FAIL };
     };
 
     const staffAccounts = await db.collection('staff_accounts').get();
     let matchedUser: any = null;
+    let matchedPinResult: 'ok' | 'ok-legacy' = 'ok';
 
     if (!staffAccounts.empty) {
       for (const doc of staffAccounts.docs) {
         const d = doc.data();
-        if (d.pinHash && verifyPassword(pin, d.pinHash) !== 'bad') {
-          matchedUser = { id: doc.id, ...d };
-          break;
+        if (d.pinHash) {
+          const pinRes = verifyPassword(pin, d.pinHash);
+          if (pinRes !== 'bad') {
+            matchedUser = { id: doc.id, docRef: doc.ref, ...d };
+            matchedPinResult = pinRes;
+            break;
+          }
         }
       }
     }
@@ -71,7 +80,12 @@ export const verifyStaff = onCall(async (request) => {
       return failPin();
     }
 
-    await clearLoginAttempts('staff:pin_login');
+    if (matchedPinResult === 'ok-legacy' && matchedUser.docRef) {
+      await matchedUser.docRef.update({ pinHash: hashPassword(pin) });
+      logger.info(`Upgraded legacy staff PIN hash to scrypt for ${matchedUser.username || matchedUser.id}`);
+    }
+
+    await clearLoginAttempts(pinRateKey);
     const role = matchedUser.role === 'admin' ? 'admin' : 'staff';
     const customToken = await getAuth().createCustomToken(`staff_${matchedUser.username || matchedUser.id}`, { role });
     logger.info(`Staff PIN login successful for ${matchedUser.username || matchedUser.id} as ${role}`);
@@ -142,6 +156,15 @@ export const updateStaffPin = onCall(async (request) => {
   const doc = await staffRef.get();
   if (!doc.exists) {
     throw new HttpsError('not-found', 'Staff account not found');
+  }
+
+  const allStaff = await db.collection('staff_accounts').get();
+  for (const other of allStaff.docs) {
+    if (other.id === username) continue;
+    const otherHash = other.data().pinHash;
+    if (typeof otherHash === 'string' && otherHash && verifyPassword(newPin, otherHash) !== 'bad') {
+      throw new HttpsError('already-exists', 'This PIN is already in use by another account');
+    }
   }
 
   await staffRef.update({
