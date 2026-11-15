@@ -70,13 +70,11 @@ void main() {
       expect(find.text('PASSWORD'), findsOneWidget);
       expect(find.text('ENTER 4–8 DIGIT PIN'), findsOneWidget);
 
-      // Check keypad digits exist
       expect(find.text('1'), findsOneWidget);
       expect(find.text('2'), findsOneWidget);
       expect(find.text('3'), findsOneWidget);
       expect(find.text('0'), findsOneWidget);
 
-      // Tap digits 1, 2, 3
       await tester.tap(find.text('1'));
       await tester.pump();
       await tester.tap(find.text('2'));
@@ -84,7 +82,6 @@ void main() {
       await tester.tap(find.text('3'));
       await tester.pump();
 
-      // Switch to PASSWORD tab
       await tester.tap(find.text('PASSWORD'));
       await tester.pumpAndSettle();
 

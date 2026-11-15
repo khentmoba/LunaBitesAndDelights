@@ -33,7 +33,6 @@ void main() async {
         continue;
       }
 
-      // Determine dimensions
       var width = image.width;
       var height = image.height;
       final maxDimension = 800;
@@ -62,7 +61,6 @@ void main() async {
         compressedBytes = img.encodeJpg(resizedImage, quality: 75);
       }
 
-      // Save in-place
       await file.writeAsBytes(compressedBytes);
       stdout.writeln('  Saved: ${file.path} (${compressedBytes.length} bytes)');
       processed++;

@@ -1,0 +1,23 @@
+## flutter analyze
+Analyzing t3-b51e01dd-9f5f83b57ea22931...                       
+No issues found! (ran in 7.9s)
+Analyzer issues: 0 (baseline 0).
+## dart format (changed)
+Formatted 5 files (0 changed) in 0.10 seconds.
+exit 0
+## flutter test
+00:05 +88: All tests passed!
+## flutter build web --release --wasm
+√ Built build\web
+## functions build (tsc ok), lint (eslint clean), test, audit
+
+
+ℹ pass 28
+ℹ fail 0
+audit --audit-level=high: exit 0 (1 low, 15 moderate; none high/critical)
+## site tests
+ℹ pass 28
+ℹ fail 0
+## comment-only check
+Every +/- line in the diff (excluding this file and .map) matches a blank or // or /* */ comment: 74 changed lines, 0 non-comment.
+functions/lib rebuilt with tsc; only verify_staff.js and telegram_api.js (+ maps) changed.

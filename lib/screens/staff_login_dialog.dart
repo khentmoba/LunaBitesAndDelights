@@ -482,7 +482,6 @@ class _StaffLoginDialogState extends State<StaffLoginDialog> {
                       ),
                       const SizedBox(height: 18),
 
-                      // Error Banner
                       if (_error != null) ...[
                         Container(
                           padding: const EdgeInsets.symmetric(
@@ -573,7 +572,6 @@ class _StaffLoginDialogState extends State<StaffLoginDialog> {
                         ),
                         const SizedBox(height: 22),
 
-                        // Keypad
                         _buildKeypad(),
                       ] else ...[
                         // Mode 2: Username & Password

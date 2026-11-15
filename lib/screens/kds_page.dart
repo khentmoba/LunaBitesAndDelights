@@ -606,7 +606,6 @@ class _KdsPageState extends State<KdsPage> with SingleTickerProviderStateMixin {
   Widget build(BuildContext context) {
     final sessionWatcher = context.watch<Session>();
 
-    // If staff is not logged in, prompt authentication immediately
     if (!sessionWatcher.isStaff) {
       return _buildStaffAuthGate();
     }
@@ -1560,7 +1559,6 @@ class _KdsPageState extends State<KdsPage> with SingleTickerProviderStateMixin {
               ],
             ),
           ),
-          // Scrollable Orders List
           Expanded(child: _buildOrdersList(orders, columnStatus)),
         ],
       ),
@@ -2056,7 +2054,6 @@ class _KdsPageState extends State<KdsPage> with SingleTickerProviderStateMixin {
             ),
             const SizedBox(height: 6),
 
-            // Primary Flow Status Button (Square Painted Plate)
             _buildStatusActionButton(orderId, status),
           ],
         ),
