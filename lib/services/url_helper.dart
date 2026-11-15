@@ -7,3 +7,11 @@ void openUrlInBrowser(String url) {
     helper_impl.openExternalUrl(url);
   } catch (_) {}
 }
+
+bool printCurrentPage() {
+  try {
+    return helper_impl.printWindow();
+  } catch (_) {
+    return false;
+  }
+}

@@ -100,12 +100,14 @@ class _StaffLoginDialogState extends State<StaffLoginDialog> {
         session.login(actualUser, role: actualRole);
 
         if (!mounted) return;
+        final nav = Navigator.of(context);
+        final messenger = ScaffoldMessenger.maybeOf(context);
         final isPopup = ModalRoute.of(context) is PopupRoute;
-        if (isPopup && Navigator.canPop(context)) {
-          Navigator.pop(context);
+        if (isPopup && nav.canPop()) {
+          nav.pop();
         }
 
-        ScaffoldMessenger.of(context).showSnackBar(
+        messenger?.showSnackBar(
           SnackBar(
             content: Row(
               children: [
@@ -129,10 +131,7 @@ class _StaffLoginDialogState extends State<StaffLoginDialog> {
         );
 
         if (widget.destinationPage != null) {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => widget.destinationPage!),
-          );
+          nav.push(MaterialPageRoute(builder: (_) => widget.destinationPage!));
         }
       } else {
         setState(() {
@@ -200,12 +199,14 @@ class _StaffLoginDialogState extends State<StaffLoginDialog> {
         session.login(actualUser, role: actualRole);
 
         if (!mounted) return;
+        final nav = Navigator.of(context);
+        final messenger = ScaffoldMessenger.maybeOf(context);
         final isPopup = ModalRoute.of(context) is PopupRoute;
-        if (isPopup && Navigator.canPop(context)) {
-          Navigator.pop(context);
+        if (isPopup && nav.canPop()) {
+          nav.pop();
         }
 
-        ScaffoldMessenger.of(context).showSnackBar(
+        messenger?.showSnackBar(
           SnackBar(
             content: Row(
               children: [
@@ -229,10 +230,7 @@ class _StaffLoginDialogState extends State<StaffLoginDialog> {
         );
 
         if (widget.destinationPage != null) {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => widget.destinationPage!),
-          );
+          nav.push(MaterialPageRoute(builder: (_) => widget.destinationPage!));
         }
       } else {
         setState(() {

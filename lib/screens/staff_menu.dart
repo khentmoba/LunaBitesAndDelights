@@ -1,6 +1,7 @@
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 import '../services/functions.dart';
+import '../services/navigation.dart';
 import '../services/session.dart';
 import '../services/cart_notifier.dart';
 import '../widgets/kiosk/kiosk_theme.dart';
@@ -57,8 +58,9 @@ class _StaffMenuDialogState extends State<StaffMenuDialog> {
                       title: 'LIVE ORDERS',
                       color: Colors.orange,
                       onTap: () {
-                        Navigator.pop(context);
-                        Navigator.pushNamed(context, '/kds');
+                        final nav = Navigator.of(context);
+                        nav.pop();
+                        pushNamedOrPopTo(nav, '/kds');
                       },
                     ),
                   ),
@@ -70,10 +72,13 @@ class _StaffMenuDialogState extends State<StaffMenuDialog> {
                       title: 'DASHBOARD',
                       color: Colors.purple,
                       onTap: () {
-                        Navigator.pop(context);
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
+                        final nav = Navigator.of(context);
+                        nav.pop();
+                        pushOrPopToRoute(
+                          nav,
+                          '/dashboard',
+                          () => MaterialPageRoute(
+                            settings: const RouteSettings(name: '/dashboard'),
                             builder: (_) => const DeferredStaffScreen(
                               StaffScreen.dashboard,
                             ),
@@ -92,10 +97,15 @@ class _StaffMenuDialogState extends State<StaffMenuDialog> {
                 subtitle: 'Take a walk-in order',
                 color: KioskTheme.success,
                 onTap: () {
-                  Navigator.pop(context);
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const KioskMenuPage()),
+                  final nav = Navigator.of(context);
+                  nav.pop();
+                  pushOrPopToRoute(
+                    nav,
+                    '/menu',
+                    () => MaterialPageRoute(
+                      settings: const RouteSettings(name: '/menu'),
+                      builder: (_) => const KioskMenuPage(),
+                    ),
                   );
                 },
               ),
@@ -126,11 +136,12 @@ class _StaffMenuDialogState extends State<StaffMenuDialog> {
                 subtitle: 'Exit staff mode and clear active POS state',
                 color: KioskTheme.error,
                 onTap: () {
-                  Navigator.pop(context);
-                  Navigator.pop(context);
+                  final nav = Navigator.of(context);
+                  final messenger = ScaffoldMessenger.maybeOf(context);
+                  nav.pop();
                   session.logout();
                   cartNotifier.clear();
-                  ScaffoldMessenger.of(context).showSnackBar(
+                  messenger?.showSnackBar(
                     SnackBar(
                       content: Text(
                         'STAFF LOGGED OUT',

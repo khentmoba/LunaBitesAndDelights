@@ -2,6 +2,7 @@ import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/functions.dart';
+import '../services/navigation.dart';
 import '../services/session.dart';
 import '../services/cart_notifier.dart';
 import '../services/order_service.dart';
@@ -155,9 +156,24 @@ class _AdminDashboardState extends State<AdminDashboard> {
   }
 
   void _goToWalkIn() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const KioskMenuPage()),
+    pushOrPopToRoute(
+      Navigator.of(context),
+      '/menu',
+      () => MaterialPageRoute(
+        settings: const RouteSettings(name: '/menu'),
+        builder: (_) => const KioskMenuPage(),
+      ),
+    );
+  }
+
+  void _openKds() {
+    pushOrPopToRoute(
+      Navigator.of(context),
+      '/kds',
+      () => MaterialPageRoute(
+        settings: const RouteSettings(name: '/kds'),
+        builder: (_) => const KdsPage(),
+      ),
     );
   }
 
@@ -508,12 +524,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
   Widget _buildLiveKdsButton() {
     return JuicyFeedback(
-      onPressed: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const KdsPage()),
-        );
-      },
+      onPressed: _openKds,
       child: Container(
         width: double.infinity,
         padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 20),
@@ -677,12 +688,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
         title: 'KDS Display',
         subtitle: 'Kitchen display system',
         color: KioskTheme.warning,
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const KdsPage()),
-          );
-        },
+        onTap: _openKds,
       ),
     ];
 

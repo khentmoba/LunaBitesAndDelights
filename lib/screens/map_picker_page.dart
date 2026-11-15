@@ -89,6 +89,7 @@ class _MapPickerPageState extends State<MapPickerPage>
       _lat = pos.latitude;
       _lng = pos.longitude;
     });
+    _addressDebounce?.cancel();
     _mapController.move(LatLng(pos.latitude, pos.longitude), 17);
     await _fetchAddress(pos.latitude, pos.longitude);
   }
@@ -144,6 +145,7 @@ class _MapPickerPageState extends State<MapPickerPage>
       _searchFocus.unfocus();
     });
 
+    _addressDebounce?.cancel();
     _mapController.move(LatLng(lat, lng), 17);
   }
 
@@ -357,7 +359,8 @@ class _MapPickerPageState extends State<MapPickerPage>
               initialCenter: LatLng(_lat, _lng),
               initialZoom: 17,
               onMapEvent: (e) {
-                if (e is MapEventMoveEnd) {
+                if (e is MapEventMoveEnd &&
+                    e.source != MapEventSource.mapController) {
                   final c = _mapController.camera.center;
                   setState(() {
                     _lat = c.latitude;

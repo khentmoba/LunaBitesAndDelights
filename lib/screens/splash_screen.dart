@@ -96,9 +96,11 @@ class _KioskSplashScreenState extends State<KioskSplashScreen>
   }
 
   void _onStart() {
+    final targetName = session.isStaff ? '/dashboard' : '/menu';
     Navigator.pushReplacement(
       context,
       PageRouteBuilder(
+        settings: RouteSettings(name: targetName),
         pageBuilder: (context, animation, secondaryAnimation) => session.isStaff
             ? const DeferredStaffScreen(StaffScreen.dashboard)
             : const KioskMenuPage(),
