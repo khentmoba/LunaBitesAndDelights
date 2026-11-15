@@ -7,15 +7,17 @@ export interface SnackOptions {
   seconds?: number;
   action?: string;
   icon?: string;
+  /** Staff snacks: square corners, 13px bold text. */
+  square?: boolean;
 }
 
-export function snack(message: string, { color, seconds = 4, action, icon }: SnackOptions = {}): void {
+export function snack(message: string, { color, seconds = 4, action, icon, square }: SnackOptions = {}): void {
   if (current) {
     clearTimeout(current.timer);
     current.el.remove();
   }
   const el = document.createElement('div');
-  el.className = 'snack';
+  el.className = square ? 'snack snack--square' : 'snack';
   el.setAttribute('role', 'status');
   if (color) el.style.background = color;
   if (icon) {

@@ -3,7 +3,7 @@ import Kiosk from '../../layouts/Kiosk.astro';
 import { glyph, type IconName } from '../../kiosk/icons';
 
 const tile = (group: string, value: string, label: string, icon: IconName) => ({ group, value, label, icon });
-const orderTypes = [tile('type', 'Pickup', 'Pickup', 'storefront_rounded'), tile('type', 'Delivery', 'Delivery', 'motorcycle_rounded')];
+const orderTypes = [tile('type', 'Walk-In', 'Walk-In', 'point_of_sale_rounded'), tile('type', 'Pickup', 'Pickup', 'storefront_rounded'), tile('type', 'Delivery', 'Delivery', 'motorcycle_rounded')];
 const payments = [tile('pay', 'Cash', 'Cash', 'payments_rounded'), tile('pay', 'GCash', 'GCash', 'phone_android_rounded')];
 ---
 <Kiosk title="Checkout · Luna Bites & Delights">
@@ -37,7 +37,7 @@ const payments = [tile('pay', 'Cash', 'Cash', 'payments_rounded'), tile('pay', '
       <h2 class="co-label co-section">ORDER TYPE</h2>
       <div class="co-tiles" role="radiogroup" aria-label="Order type">
         {orderTypes.map((t) => (
-          <button type="button" class="co-tile" role="radio" aria-checked="false" data-group={t.group} data-value={t.value}>
+          <button type="button" class="co-tile" role="radio" aria-checked="false" data-group={t.group} data-value={t.value} hidden={t.value === 'Walk-In'}>
             <span class="icon" aria-hidden="true">{glyph(t.icon)}</span>
             <span class="co-tile__label">{t.label.toUpperCase()}</span>
           </button>
@@ -65,7 +65,7 @@ const payments = [tile('pay', 'Cash', 'Cash', 'payments_rounded'), tile('pay', '
 
       <h2 class="co-label co-section co-details" data-details-label>CUSTOMER DETAILS</h2>
       <label class="co-field co-field--name">
-        <span class="co-field__label">FULL NAME</span>
+        <span class="co-field__label" data-name-label>FULL NAME</span>
         <span class="co-input">
           <span class="icon" aria-hidden="true">{glyph('person_rounded')}</span>
           <input name="name" type="text" placeholder="e.g. Juan Dela Cruz" autocomplete="name" autocapitalize="words" enterkeyhint="next" maxlength="200">
@@ -86,7 +86,7 @@ const payments = [tile('pay', 'Cash', 'Cash', 'payments_rounded'), tile('pay', '
       </div>
 
       <label class="co-field">
-        <span class="co-field__label">CONTACT NUMBER</span>
+        <span class="co-field__label" data-phone-label>CONTACT NUMBER</span>
         <span class="co-input">
           <span class="icon" aria-hidden="true">{glyph('phone_rounded')}</span>
           <input name="phone" type="tel" placeholder="e.g. 09XX XXX XXXX" autocomplete="tel" enterkeyhint="done" maxlength="40">
@@ -205,6 +205,7 @@ import {
   validateName, validatePhone, type Order, type OrderType, type PaymentMethod,
 } from '../../kiosk/order';
 import { snack } from '../../kiosk/snackbar';
+import { hasStoredStaffUser } from '../../kiosk/staff-hint';
 
 const $ = <T extends Element = HTMLElement>(sel: string) => document.querySelector<T>(sel)!;
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
@@ -223,6 +224,8 @@ const fresh = (): CheckoutDraft => ({
 });
 let draft: CheckoutDraft = fresh();
 let loading = false;
+/** session.isStaff: a signed-in staff member rings walk-ins up here (POS checkout). */
+let isStaff = false;
 
 const persist = () => save(DRAFT, draft);
 function clearPending() {
@@ -243,6 +246,14 @@ function renderCart() {
     .map((i) => `<li class="co-line"><span class="co-line__qty">${i.quantity}x</span><span class="co-line__name">${esc(i.name)}${i.variant ? ` (${esc(i.variant)})` : ''}</span><span class="co-line__price">${peso(i.price * i.quantity)}</span></li>`)
     .join('');
   $('[data-total]').textContent = peso(cart.totalPrice());
+}
+
+function renderStaff() {
+  $('.co-title').textContent = isStaff ? 'POS CHECKOUT' : 'CHECKOUT';
+  $<HTMLElement>('.co-tile[data-value="Walk-In"]').hidden = !isStaff;
+  $('[data-name-label]').textContent = isStaff ? 'FULL NAME (OPTIONAL FOR POS)' : 'FULL NAME';
+  nameInput.placeholder = isStaff ? 'e.g. Walk-in Customer (Default)' : 'e.g. Juan Dela Cruz';
+  $('[data-phone-label]').textContent = isStaff ? 'CONTACT NUMBER (OPTIONAL FOR POS)' : 'CONTACT NUMBER';
 }
 
 function renderForm() {
@@ -274,7 +285,13 @@ function renderForm() {
 
 /** Runs on first load and when the page comes back from the map or GCash. */
 function restore() {
-  draft = { ...fresh(), ...load<CheckoutDraft>(DRAFT) };
+  const saved = load<CheckoutDraft>(DRAFT);
+  draft = { ...fresh(), ...saved };
+  if (isStaff && !saved) {
+    draft.orderType = 'Walk-In';
+    draft.paymentMethod = 'Cash';
+  }
+  if (!isStaff && draft.orderType === 'Walk-In') draft.orderType = 'Pickup';
   nameInput.value = draft.name;
   phoneInput.value = draft.phone;
   addressInput.value = draft.address;
@@ -328,11 +345,11 @@ async function submit() {
     return;
   }
   const delivery = draft.orderType === 'Delivery';
-  const name = nameInput.value.trim();
-  const phone = phoneInput.value.trim();
+  const name = nameInput.value.trim() || (isStaff ? 'Walk-in Customer' : '');
+  const phone = phoneInput.value.trim() || (isStaff ? 'N/A' : '');
   const address = delivery ? addressInput.value.trim() : draft.orderType;
 
-  let error = validateName(name) ?? validatePhone(phone) ?? rejectionFor(name, items.length);
+  let error = (isStaff ? null : (validateName(name) ?? validatePhone(phone))) ?? rejectionFor(name, items.length);
   if (!error && delivery && address.length === 0) error = 'Please pin your delivery address on the map.';
   if (error) {
     snack(error, { color: PINK });
@@ -345,7 +362,7 @@ async function submit() {
   const total = cart.totalPrice();
   const now = new Date();
   const timeStr = localStamp(now);
-  const statuses = statusesFor(false, draft.paymentMethod);
+  const statuses = statusesFor(isStaff, draft.paymentMethod);
   let docId = draft.pendingDocId;
   const orderNumber = draft.pendingNumber ?? orderNumberFor(now);
   let telegramSent = true;
@@ -370,7 +387,7 @@ async function submit() {
     status: statuses.status,
   };
 
-  if (docId === null || draft.paymentMethod !== 'GCash') {
+  if (docId === null || draft.paymentMethod !== 'GCash' || isStaff) {
     const result = await placeOrder(order, timeStr);
     docId = result.docId;
     telegramSent = result.telegramSent;
@@ -386,10 +403,10 @@ async function submit() {
 
   const receipt: Receipt = {
     orderNumber, customerName: name, customerAddress: address, customerPhone: phone,
-    items: order.items, total, timeStr, isWalkIn: false, orderType: draft.orderType, telegramSent,
+    items: order.items, total, timeStr, isWalkIn: isStaff, orderType: draft.orderType, telegramSent,
   };
 
-  if (draft.paymentMethod === 'GCash') {
+  if (draft.paymentMethod === 'GCash' && !isStaff) {
     draft.pendingDocId = docId;
     draft.pendingNumber = orderNumber;
     draft.pendingCart = cartKey();
@@ -411,5 +428,17 @@ async function submit() {
 
 cart.subscribe(renderCart);
 window.addEventListener('pageshow', restore);
+// Only a browser holding a staff user loads Firebase to confirm the role claim.
+void hasStoredStaffUser().then(async (stored) => {
+  if (!stored) return;
+  const { watchStaff } = await import('../../staff/session');
+  watchStaff((staff) => {
+    const next = staff !== null;
+    if (next === isStaff) return;
+    isStaff = next;
+    renderStaff();
+    restore();
+  });
+});
 watchInactivity();
 </script>

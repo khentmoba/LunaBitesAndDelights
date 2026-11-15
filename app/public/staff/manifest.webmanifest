@@ -1,0 +1,18 @@
+{
+  "name": "Luna Staff",
+  "short_name": "Luna Staff",
+  "description": "Kitchen display, walk-in orders and sales reports for Luna Bites & Delights staff.",
+  "id": "/staff/",
+  "start_url": "/staff/",
+  "scope": "/staff/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#FEB7C9",
+  "theme_color": "#EC1C72",
+  "icons": [
+    { "src": "/kiosk/icons/Icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/kiosk/icons/Icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/kiosk/icons/Icon-maskable-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "/kiosk/icons/Icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

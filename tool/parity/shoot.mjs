@@ -53,12 +53,15 @@ export const SCREENS = [
   { name: 'kiosk-gcash', flutter: '/kiosk/?push=gcash#/menu', ts: '/kiosk/gcash', session: () => ({ 'luna.pending': TS_PENDING }), script: 'window.open = () => null;', callables: () => ({ createCheckoutSession: { checkoutUrl: 'https://checkout.paymongo.com/cs_parity', checkoutSessionId: 'cs_parity' } }) },
   // TypeScript only: Flutter's preview harness never opened these, so they have no baseline.
   { name: 'kiosk-checkout-delivery', flutter: null, ts: '/kiosk/checkout?cart=1', session: () => ({ 'luna.checkout': TS_DELIVERY_DRAFT }) },
+  { name: 'staff-console', flutter: null, ts: '/kiosk/menu?staff=1', settle: 4000, session: () => ({}), script: "addEventListener('load', () => setTimeout(() => document.querySelector('[data-console]')?.click(), 1500));" },
   { name: 'kiosk-map', flutter: null, ts: '/kiosk/map', session: () => ({ 'luna.checkout': TS_DELIVERY_DRAFT }), script: () => MAP_STUBS },
   { name: 'staff-login', flutter: '/kiosk/#/kds', ts: '/staff/' },
   { name: 'staff-kds', flutter: '/kiosk/?staff=1#/kds', ts: '/staff/kds?staff=1' },
   { name: 'staff-dashboard', flutter: '/kiosk/?staff=1#/dashboard', ts: '/staff/dashboard?staff=1', settle: 7000 },
   { name: 'staff-analytics', flutter: '/kiosk/?staff=1#/analytics', ts: '/staff/analytics?staff=1', settle: 7000 },
   { name: 'staff-lifetime', flutter: '/kiosk/?staff=1#/lifetime-analytics', ts: '/staff/lifetime?staff=1', settle: 7000 },
+  { name: 'staff-menu', flutter: '/kiosk/?staff=1#/menu', ts: '/kiosk/menu?staff=1', settle: 4000 },
+  { name: 'staff-checkout', flutter: '/kiosk/?staff=1&cart=1&push=checkout#/menu', ts: '/kiosk/checkout?cart=1&staff=1', settle: 5000 },
 ];
 
 const TS_CART = [
@@ -141,6 +144,37 @@ const SEED = [
   order(5, 'Eva Ramos', { status: 'Completed', type: 'Pickup', paymentStatus: 'PAID', items: [{ name: 'Fries & Nachos Overload', variant: 'Barkada', price: 150, quantity: 1 }], totalAmount: 150 }),
 ];
 
+// The harness staff user's Firebase Auth session, from the auth emulator.
+const API_KEY = 'AIzaSyBAtF167ua5zEH-xhP2U9dObFWlQz3lF-Y';
+async function staffSession() {
+  const res = await fetch(`http://${process.env.FIREBASE_AUTH_EMULATOR_HOST}/identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${API_KEY}`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email: 'staff@parity.test', password: 'parity-only', returnSecureToken: true }),
+  });
+  const r = await res.json();
+  if (!r.idToken) throw new Error(`staff sign-in failed: ${JSON.stringify(r)}`);
+  return {
+    key: `firebase:authUser:${API_KEY}:[DEFAULT]`,
+    value: {
+      uid: r.localId, email: r.email, emailVerified: false, isAnonymous: false, providerData: [],
+      stsTokenManager: { refreshToken: r.refreshToken, accessToken: r.idToken, expirationTime: Date.now() + Number(r.expiresIn) * 1000 },
+      createdAt: String(Date.now()), lastLoginAt: String(Date.now()), apiKey: API_KEY, appName: '[DEFAULT]',
+    },
+  };
+}
+// Runs in the page: the row firebase/auth's IndexedDB persistence reads on start.
+const persistStaffUser = ({ key, value }) => new Promise((resolve, reject) => {
+  const open = indexedDB.open('firebaseLocalStorageDb', 1);
+  open.onupgradeneeded = () => open.result.createObjectStore('firebaseLocalStorage', { keyPath: 'fbase_key' });
+  open.onerror = () => reject(open.error);
+  open.onsuccess = () => {
+    const tx = open.result.transaction('firebaseLocalStorage', 'readwrite');
+    tx.objectStore('firebaseLocalStorage').put({ fbase_key: key, value });
+    tx.oncomplete = () => { open.result.close(); resolve(true); };
+    tx.onerror = () => reject(tx.error);
+  };
+});
+
 let chrome; const profileDir = join(tmpdir(), `luna-parity-${process.pid}`);
 try {
   mkdirSync(outDir, { recursive: true });
@@ -207,7 +241,18 @@ try {
         await s.send('Fetch.enable', { patterns: Object.keys(table).map((n) => ({ urlPattern: `*/${n}` })) });
       }
       await s.send('Emulation.setDeviceMetricsOverride', { width: w, height: h, deviceScaleFactor: dpr, mobile: w < 700 });
-      await s.send('Page.navigate', { url: `http://127.0.0.1:${port}${path}` });
+      // Staff screens: flutter_preview.dart signs the harness staff user in for
+      // ?staff=1. The TypeScript app gets the same user written where the
+      // Firebase Auth SDK keeps it, from a page that loads no Firebase, and is
+      // opened from the kiosk as the Flutter route was pushed (back arrow).
+      let referrer;
+      if (target === 'ts' && /[?&]staff=1/.test(path)) {
+        await s.send('Page.navigate', { url: `http://127.0.0.1:${port}/404.html` });
+        for (let i = 0; i < 100 && (await evaluate('document.readyState').catch(() => '')) !== 'complete'; i++) await sleep(50);
+        await evaluate(`(${persistStaffUser})(${JSON.stringify(await staffSession())})`);
+        referrer = `http://127.0.0.1:${port}/kiosk/`;
+      }
+      await s.send('Page.navigate', { url: `http://127.0.0.1:${port}${path}`, ...(referrer ? { referrer } : {}) });
       // Flutter: wait for the first frame (the HTML splash fades out); plain pages: load + fonts.
       const t0 = Date.now();
       let ready = false;

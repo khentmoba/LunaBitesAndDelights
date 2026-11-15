@@ -8,6 +8,7 @@
 //   staff=1      sign in as the seeded staff account
 //   cart=1       start with two items in the cart
 //   push=receipt|gcash   push a screen that needs constructor arguments
+//   push=checkout        push checkout once the staff session is bound (POS)
 import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -18,6 +19,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:luna_bites_and_delights/main.dart';
 import 'package:luna_bites_and_delights/models/cart.dart';
+import 'package:luna_bites_and_delights/screens/checkout_page.dart';
 import 'package:luna_bites_and_delights/screens/gcash_checkout_page.dart';
 import 'package:luna_bites_and_delights/screens/receipt_page.dart';
 import 'package:luna_bites_and_delights/services/cart_notifier.dart';
@@ -100,6 +102,12 @@ Future<void> main() async {
 
 Future<void> _push(String screen) async {
   await Future<void>.delayed(const Duration(milliseconds: 300));
+  if (screen == 'checkout') {
+    // CheckoutPage reads session.isStaff once, as staff reach it from the menu.
+    for (var i = 0; i < 100 && !session.isStaff; i++) {
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+    }
+  }
   final nav = appRouteObserver.navigator;
   if (nav == null) return;
   final items = _sampleItems();
@@ -132,6 +140,7 @@ Future<void> _push(String screen) async {
         'checkoutSessionId': 'cs_parity',
       },
     ),
+    'checkout' => const CheckoutPage(),
     _ => throw ArgumentError('unknown push screen: $screen'),
   };
   unawaited(nav.push(MaterialPageRoute<void>(builder: (_) => page)));

@@ -1,8 +1,10 @@
 // Firebase for the kiosk, as lib/services/firebase_init.dart and functions.dart
 // set it up: the lunaexpress web app, App Check through reCAPTCHA Enterprise when
-// a site key is built in, and callables in us-central1 with a 15 s timeout.
+// a site key is built in, callables in us-central1 with a 15 s timeout, and
+// Firebase Auth for the staff session.
 // Loaded on first use so the menu and cart never download the SDK.
 import type { FirebaseApp } from 'firebase/app';
+import type { Auth } from 'firebase/auth';
 import type { Firestore } from 'firebase/firestore';
 import type { Functions } from 'firebase/functions';
 
@@ -20,6 +22,7 @@ const config = {
 
 interface Services {
   app: FirebaseApp;
+  auth: Auth;
   db: Firestore;
   functions: Functions;
 }
@@ -27,15 +30,18 @@ interface Services {
 let ready: Promise<Services> | null = null;
 
 async function start(): Promise<Services> {
-  const [{ initializeApp, getApps }, firestore, fns] = await Promise.all([
+  const [{ initializeApp, getApps }, firestore, fns, authSdk] = await Promise.all([
     import('firebase/app'),
     import('firebase/firestore'),
     import('firebase/functions'),
+    import('firebase/auth'),
   ]);
   const app = getApps()[0] ?? initializeApp(config);
+  const auth = authSdk.getAuth(app);
   const db = firestore.getFirestore(app);
   const functions = fns.getFunctions(app, 'us-central1');
   if (emulators) {
+    authSdk.connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true });
     firestore.connectFirestoreEmulator(db, '127.0.0.1', 8080);
     fns.connectFunctionsEmulator(functions, '127.0.0.1', 5001);
   } else {
@@ -48,7 +54,7 @@ async function start(): Promise<Services> {
         .catch((e: unknown) => console.warn('AppCheck activation failed', e));
     }
   }
-  return { app, db, functions };
+  return { app, auth, db, functions };
 }
 
 export function firebase(): Promise<Services> {
