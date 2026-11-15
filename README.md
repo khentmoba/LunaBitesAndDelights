@@ -3,7 +3,7 @@
 Luna Bites & Delights is a food business application that enables customers to order, pay, and choose between delivery or pickup.
 
 - **Storefront:** https://lunabitesanddelights.web.app
-- **Ordering app:** https://lunabitesanddelights.web.app/kiosk/#/menu
+- **Ordering app:** https://lunabitesanddelights.web.app/kiosk/menu
 - **Legacy domain:** `lunaexpress.web.app` permanently redirects (301) to the canonical domain above.
 
 ## Project Vision
@@ -25,6 +25,6 @@ We use the Spec Kit (Specify -> Plan -> Implement) methodology for all feature d
 
 ## Getting Started
 
-1. **Environment Setup**: Ensure Flutter is installed and configured.
+1. **Environment Setup**: Install Node 22, then `npm ci` in `app/` and `functions/`. `npm run dev --prefix app` serves the storefront, kiosk and staff pages.
 2. **Firebase Configuration**: Link the project to your Firebase instance using `firebase init`.
 3. **Explore Specs**: View planned features in the `specs/` directory.

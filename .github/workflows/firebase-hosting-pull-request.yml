@@ -11,11 +11,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: subosito/flutter-action@v2
-        with:
-          channel: stable
-          cache: true
-
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -24,20 +19,17 @@ jobs:
             functions/package-lock.json
             app/package-lock.json
 
-      - run: flutter pub get
-
-      - run: >
-          flutter build web --release --base-href /kiosk/
-          --dart-define=RECAPTCHA_SITE_KEY=${{ secrets.RECAPTCHA_SITE_KEY }}
-          --dart-define=MAPTILER_KEY=${{ secrets.MAPTILER_KEY }}
-
       - run: npm ci
         working-directory: app
 
+      # The kiosk reads these at build time: App Check's reCAPTCHA Enterprise
+      # site key and the MapTiler key for the delivery map. Both are public
+      # browser keys, kept as secrets so forks do not build with them.
       - run: npm run build
         working-directory: app
-
-      - run: dart run tool/assemble_site.dart
+        env:
+          PUBLIC_RECAPTCHA_SITE_KEY: ${{ secrets.RECAPTCHA_SITE_KEY }}
+          PUBLIC_MAPTILER_KEY: ${{ secrets.MAPTILER_KEY }}
 
       - run: npm ci
         working-directory: functions

@@ -1,38 +1,32 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { parseDartMenu } from '../../tool/dart_menu.mjs';
 import { menuSections, priceOf } from '../../app/src/data/menu.ts';
 
-/// The storefront prints prices from app/src/data/menu.ts; the Flutter kiosk
-/// and checkout still charge from lib/data/menu_data.dart. Until Flutter is
-/// removed the two must be the same menu, field for field, or the page would
-/// quote one price and the kiosk charge another.
+/// app/src/data/menu.ts is the one menu the storefront prints and the kiosk
+/// and staff screens charge from. These checks keep it self-consistent.
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 
-const ITEM_DEFAULTS = {
-  price: null, imageUrl: '', variants: [], isBuy1Take1: false, allowMultiSelect: false,
-  maxSelect: 1, optionHeader: 'CHOOSE OPTION', promoLabel: null, isHeader: false,
-};
-
-function withDefaults(sections) {
-  return sections.map((s) => ({
-    subtitle: '',
-    ...s,
-    items: s.items.map((i) => ({
-      ...ITEM_DEFAULTS,
-      ...i,
-      variants: (i.variants ?? []).map((v) => ({ isBuy1Take1: false, ...v })),
-    })),
-  }));
-}
-
-test('menu.ts is the same menu as lib/data/menu_data.dart', () => {
-  const dart = parseDartMenu(join(root, 'lib', 'data', 'menu_data.dart'));
-  assert.ok(dart.length > 0, 'parsed no sections from menu_data.dart');
-  assert.deepEqual(withDefaults(menuSections), withDefaults(dart));
+test('every menu item has a unique id, a price, and a photo that ships', () => {
+  const ids = new Set();
+  for (const section of menuSections) {
+    for (const item of section.items) {
+      if (item.isHeader) continue;
+      assert.ok(!ids.has(item.id), `duplicate menu id ${item.id}`);
+      ids.add(item.id);
+      // Multi-select flavours are free picks on a priced item; otherwise each variant is the price.
+      const prices = item.variants?.length && !item.allowMultiSelect ? item.variants.map((v) => v.price) : [item.price];
+      for (const p of prices) assert.ok(Number.isInteger(p) && p > 0, `${item.id} has price ${p}`);
+      for (const v of item.variants ?? []) assert.ok(Number.isInteger(v.price) && v.price >= 0, `${item.id} ${v.label} has price ${v.price}`);
+      if (item.imageUrl) {
+        assert.ok(existsSync(join(root, 'app', 'public', 'kiosk', item.imageUrl)), `${item.id}: app/public/kiosk/${item.imageUrl} is missing`);
+      }
+    }
+  }
+  assert.ok(ids.size > 50, `only ${ids.size} menu items`);
 });
 
 test('priceOf reads item and variant prices and rejects unknown ones', () => {

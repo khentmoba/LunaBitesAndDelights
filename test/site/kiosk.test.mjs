@@ -13,12 +13,12 @@ globalThis.window = new EventTarget();
 const { resolvePicks, displayPrice } = await import('../../app/src/kiosk/preselect.ts');
 const { cart } = await import('../../app/src/kiosk/cart.ts');
 const order = await import('../../app/src/kiosk/order.ts');
+const { isPaymentUrl } = await import('../../app/src/kiosk/payment-host.ts');
 
-/// The TypeScript kiosk must apply the same rules as the Flutter one it
-/// replaces: test/menu_preselect_test.dart, order_service_test.dart and
-/// lib/utils/validate.dart.
+/// These cases were ported from the Flutter kiosk's tests (removed in the
+/// cutover), so the rules customers relied on stay the same.
 
-test('storefront picks resolve as test/menu_preselect_test.dart expects', () => {
+test('storefront picks resolve as the Flutter kiosk resolved them', () => {
   const r = resolvePicks(['s1#Solo', 's8#Barkada (3–5 pax)', 'b1', 'f4', 'f4', '@drinks', 'nope', 'header_coolers', 's1#Made up']);
   assert.deepEqual(r.ready.map((c) => `${c.name}|${c.variant}|${c.price}`), [
     'Shawarma Wrap|Solo|60',
@@ -66,7 +66,7 @@ test('new orders carry only the statuses firestore.rules allows', () => {
   assert.equal(order.rejectionFor('x'.repeat(100), 50), null);
 });
 
-test('names and PH mobile numbers validate as lib/utils/validate.dart does', () => {
+test('names and PH mobile numbers validate as the Flutter kiosk did', () => {
   assert.equal(order.validateName('  '), 'Name is required');
   assert.equal(order.validateName('x'.repeat(101)), 'Name too long');
   assert.equal(order.validateName('Ana Reyes'), null);
@@ -106,4 +106,15 @@ test('the saved order and its notification match the Flutter payloads', () => {
   assert.equal(n.orderNumber, o.orderId);
   assert.equal(n.total, 120);
   assert.equal(n.orderType, 'Delivery');
+});
+
+test('GCash only opens https PayMongo-family checkout links', () => {
+  assert.equal(isPaymentUrl('https://checkout.paymongo.com/cs_123'), true);
+  assert.equal(isPaymentUrl('https://paymongo.com/x'), true);
+  assert.equal(isPaymentUrl('https://pay.maya.ph/x'), true);
+  assert.equal(isPaymentUrl('http://checkout.paymongo.com/cs_123'), false);
+  assert.equal(isPaymentUrl('https://paymongo.com.evil.example/x'), false);
+  assert.equal(isPaymentUrl('https://evilpaymongo.com/x'), false);
+  assert.equal(isPaymentUrl('javascript:alert(1)'), false);
+  assert.equal(isPaymentUrl('not a url'), false);
 });

@@ -5,11 +5,10 @@ const kds = await import('../../app/src/staff/kds-data.ts');
 const report = await import('../../app/src/staff/report-data.ts');
 const { staffUsernameFor } = await import('../../app/src/kiosk/staff-hint.ts');
 
-/// The staff pages must follow the Flutter rules they replace:
-/// lib/services/kds_feed.dart, lib/screens/kds_page.dart,
-/// lib/screens/lifetime_analytics_page.dart and lib/services/session.dart.
+/// These cases were ported from the Flutter staff screens (removed in the
+/// cutover), so the kitchen and report rules stay the same.
 
-test('month axis labels match test/audit_bugfixes_test.dart', () => {
+test('month axis labels match the Flutter report', () => {
   assert.equal(report.formatMonthAxisLabel('2026-11'), "N '26");
   assert.equal(report.formatMonthAxisLabel('2025-01'), "J '25");
   assert.equal(report.formatMonthAxisLabel('unknown'), 'unknown');
@@ -37,7 +36,7 @@ test('date presets send the range _computeStartDate/_computeEndDate send', () =>
   assert.equal(report.presetRange('thisWeek', null, new Date(Date.UTC(2026, 10, 22)))?.startDate, '2026-11-16');
 });
 
-test('staff uids map to usernames as session.dart does', () => {
+test('staff uids map to usernames as the Flutter session did', () => {
   assert.equal(staffUsernameFor('staff_anna'), 'anna');
   assert.equal(staffUsernameFor('staff_'), null);
   assert.equal(staffUsernameFor('anon123'), null);

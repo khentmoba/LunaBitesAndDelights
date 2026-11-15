@@ -1,0 +1,43 @@
+{
+  "chrome": "headless=new, muted",
+  "results": [
+    {
+      "script": "/kiosk/flutter_service_worker.js",
+      "before": {
+        "workers": [
+          "/kiosk/flutter_service_worker.js"
+        ],
+        "caches": [
+          "flutter-app-cache",
+          "luna-staff-v1"
+        ]
+      },
+      "after": {
+        "workers": [],
+        "caches": [
+          "luna-staff-v1"
+        ]
+      },
+      "pass": true
+    },
+    {
+      "script": "/kiosk/sw.js",
+      "before": {
+        "workers": [
+          "/kiosk/sw.js"
+        ],
+        "caches": [
+          "flutter-app-cache",
+          "luna-staff-v1"
+        ]
+      },
+      "after": {
+        "workers": [],
+        "caches": [
+          "luna-staff-v1"
+        ]
+      },
+      "pass": true
+    }
+  ]
+}

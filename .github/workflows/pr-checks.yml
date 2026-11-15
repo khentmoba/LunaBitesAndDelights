@@ -1,8 +1,8 @@
 name: PR Checks
-# Regression gate: every PR must pass analyze + tests + builds
+# Regression gate: every PR must pass type checks, tests and builds
 # before merge.
 # Protect `main` (Settings → Branches → Require status checks) with:
-#   flutter / functions / rules
+#   site / functions / rules
 on:
   pull_request:
 
@@ -11,49 +11,6 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  flutter:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
-        with:
-          fetch-depth: 0 # needed for changed-files format check
-
-      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2
-        with:
-          flutter-version: '3.47.7'
-          cache: true
-
-      - run: flutter pub get
-
-      - name: Analyze (errors fail; new info/warning issues fail)
-        run: |
-          set -o pipefail
-          flutter analyze --no-fatal-infos --no-fatal-warnings 2>&1 \
-            | tee analyze.txt
-          node tool/check_analyzer_baseline.mjs analyze.txt
-
-      - name: Format check (changed files only)
-        env:
-          BASE_REF: ${{ github.base_ref }}
-        run: |
-          FILES=$(git diff --name-only --diff-filter=d \
-            "origin/$BASE_REF...HEAD" -- '*.dart')
-          if [ -n "$FILES" ]; then
-            echo "$FILES" | xargs dart format --output=none \
-              --set-exit-if-changed
-          else
-            echo "no Dart files changed"
-          fi
-
-      - name: Regression tests
-        run: flutter test
-
-      - name: Report outdated Flutter deps (informational)
-        run: flutter pub outdated
-
-      - name: Web build still compiles
-        run: flutter build web --release --wasm
-
   functions:
     runs-on: ubuntu-latest
     defaults:
@@ -127,6 +84,10 @@ jobs:
 
       - name: Build the storefront
         run: npm run build
+        working-directory: app
+
+      - name: Fail on high/critical vulnerabilities
+        run: npm audit --audit-level=high
         working-directory: app
 
       - name: Storefront tests

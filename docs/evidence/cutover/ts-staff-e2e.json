@@ -1,0 +1,69 @@
+{
+  "steps": [
+    {
+      "step": "wrong PIN",
+      "error": "Invalid PIN. Please try again.",
+      "stillOnLogin": true
+    },
+    {
+      "step": "right PIN",
+      "reachedKdsMs": 159,
+      "snack": "Welcome, anna! (STAFF)",
+      "authUser": {
+        "uid": "staff_anna",
+        "tokenRole": "staff"
+      },
+      "login": "ts-staff-e2e-kds-pending-1440.png"
+    },
+    {
+      "step": "tap START PREPARING",
+      "button": "START PREPARING",
+      "expected": "START PREPARING",
+      "savedStatus": "Preparing",
+      "mirrorStatus": "Preparing",
+      "nextButton": "MARK AS READY",
+      "snack": "Order updated: Preparing"
+    },
+    {
+      "step": "tap MARK AS READY",
+      "button": "MARK AS READY",
+      "expected": "MARK AS READY",
+      "savedStatus": "Ready",
+      "mirrorStatus": "Ready",
+      "nextButton": "COMPLETE & DISPATCH",
+      "snack": "Order updated: Ready"
+    },
+    {
+      "step": "board after",
+      "screenshot": "ts-staff-e2e-kds-ready-1440.png"
+    },
+    {
+      "step": "dashboard",
+      "stats": [
+        "Today's Sales: ₱1991",
+        "Orders: 8",
+        "Avg order: ₱249",
+        "Items sold: 22"
+      ],
+      "welcome": "Welcome, anna!",
+      "recent": [
+        "LU-E2E-001",
+        "LU-261116-023815",
+        "LU-261116-023809",
+        "LU-261115-001",
+        "LU-261115-002",
+        "LU-261115-003",
+        "LU-261115-004",
+        "LU-261115-005"
+      ],
+      "screenshot": "ts-staff-e2e-dashboard-1440.png"
+    },
+    {
+      "step": "logout",
+      "landedOn": "/",
+      "staffRowsLeft": 0,
+      "kioskOrdersButtonHidden": true
+    }
+  ],
+  "errors": []
+}

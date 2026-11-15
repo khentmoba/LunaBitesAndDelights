@@ -4,6 +4,9 @@
 // rewrite is captured with the same seed data, screens and viewports so the
 // two sets can be compared side by side and pixel-diffed.
 //
+// The Flutter app was deleted in the cutover (step 5). To recapture the
+// baseline, check out a commit before it (e.g. feature/ts-staff) and run:
+//
 //   flutter build web --release --wasm -t tool/parity/flutter_preview.dart \
 //     --base-href /kiosk/ --output build/parity-flutter
 //   cd functions && npx firebase-tools emulators:exec --project demo-lunaexpress \

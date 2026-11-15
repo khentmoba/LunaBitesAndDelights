@@ -7,19 +7,19 @@ echo Building from ROOT directory (active codebase)...
 echo.
 
 cd /d "%~dp0"
-call flutter build web --release --base-href /kiosk/
+call npm ci --prefix app
+
+if %errorlevel% neq 0 (
+    echo.
+    echo INSTALL FAILED. Check errors above.
+    exit /b 1
+)
+
+call npm run build --prefix app
 
 if %errorlevel% neq 0 (
     echo.
     echo BUILD FAILED. Check errors above.
-    exit /b 1
-)
-
-call dart run tool/assemble_site.dart
-
-if %errorlevel% neq 0 (
-    echo.
-    echo SITE ASSEMBLY FAILED. Check errors above.
     exit /b 1
 )
 
