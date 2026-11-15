@@ -24,10 +24,13 @@ describe('staff auth: scrypt PIN and password verification', () => {
     assert.equal(verifyPassword('wrongPassword', hash), 'bad');
   });
 
-  test('timing-safe comparison rejects tampered hash', () => {
+  test('timing-safe comparison rejects tampered or mismatched-length hash cleanly', () => {
     const hash = hashPassword('1234');
     const tampered = hash.slice(0, -4) + '0000';
     assert.equal(verifyPassword('1234', tampered), 'bad');
+    assert.equal(verifyPassword('1234', 'scrypt$ab$short'), 'bad');
+    assert.equal(verifyPassword('1234', 'scrypt$ab$' + 'g'.repeat(64)), 'bad');
+    assert.equal(verifyPassword('1234', 'too-short-legacy'), 'bad');
   });
 
   test('isCountableOrder excludes cancelled and unpaid/failed GCash orders', () => {

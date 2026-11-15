@@ -15,6 +15,21 @@ export function setBot(customBot: any) {
   bot = customBot;
 }
 
+export function isMarkdownParseError(err: any): boolean {
+  const status = err?.response?.statusCode ?? err?.code;
+  const desc = String(err?.response?.body?.description || err?.message || '').toLowerCase();
+  if (desc.includes("can't parse entities") || desc.includes('must be escaped')) {
+    return true;
+  }
+  return status === 400 && (
+    desc.includes('parse') ||
+    desc.includes('entity') ||
+    desc.includes('entities') ||
+    desc.includes('escape') ||
+    desc === ''
+  );
+}
+
 export async function sendToAll(message: string, options: any = {}) {
   const rawIds = telegramChatIds.value().split(',');
   const ids = rawIds
@@ -36,12 +51,7 @@ export async function sendToAll(message: string, options: any = {}) {
       try {
         return await telegram.sendMessage(id, message, sendOpts);
       } catch (err: any) {
-        const isParseError =
-          sendOpts.parse_mode &&
-          (err?.message?.includes("can't parse entities") ||
-           err?.response?.body?.description?.includes("can't parse entities") ||
-           err?.message?.includes('400'));
-        if (isParseError) {
+        if (sendOpts.parse_mode && isMarkdownParseError(err)) {
           logger.warn(`sendToAll: MarkdownV2 parsing failed for chat ${id}; falling back to plain text`, {
             error: err?.message,
             chatId: id,
@@ -104,12 +114,7 @@ export async function sendPhotoToAll(
           ...sendOpts,
         }, fileOpts);
       } catch (err: any) {
-        const isParseError =
-          sendOpts.parse_mode &&
-          (err?.message?.includes("can't parse entities") ||
-           err?.response?.body?.description?.includes("can't parse entities") ||
-           err?.message?.includes('400'));
-        if (isParseError) {
+        if (sendOpts.parse_mode && isMarkdownParseError(err)) {
           logger.warn(`sendPhotoToAll: MarkdownV2 parsing failed for chat ${id}; falling back to plain text caption`, {
             error: err?.message,
             chatId: id,

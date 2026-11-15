@@ -31,6 +31,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
   int _avgOrderValue = 0;
   int _itemsSold = 0;
   List<Map<String, dynamic>> _recentOrders = [];
+  bool _hasServerAnalytics = false;
   bool _wasStaff = false;
 
   @override
@@ -57,6 +58,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
         _avgOrderValue = 0;
         _itemsSold = 0;
         _recentOrders = [];
+        _hasServerAnalytics = false;
         _error = null;
       });
     }
@@ -105,10 +107,10 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
       int itemsCount = (analytics['totalItemsSold'] as num?)?.toInt() ?? 0;
       if (itemsCount == 0 && rawOrders.isNotEmpty) {
-        final todayPrefix = phtDateLabel(DateTime.now());
+        final todayPrefix = phtDateLabel();
         for (final o in rawOrders) {
           final ts = DateTime.tryParse((o['timestamp'] ?? '').toString());
-          if (ts != null && phtDateLabel(ts) == todayPrefix) {
+          if (ts != null && phtDateLabel(toPht(ts)) == todayPrefix) {
             itemsCount += (o['itemsCount'] as num?)?.toInt() ?? 0;
           }
         }
@@ -116,6 +118,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
       setState(() {
         if (analytics['success'] == true) {
+          _hasServerAnalytics = true;
           _totalRevenue = (analytics['totalRevenue'] as num?)?.toInt() ?? 0;
           _orderCount = (analytics['orderCount'] as num?)?.toInt() ?? 0;
           _avgOrderValue =
@@ -434,10 +437,10 @@ class _AdminDashboardState extends State<AdminDashboard> {
   }
 
   Widget _buildStatsGrid() {
-    final revenue = _totalRevenue > 0 ? _totalRevenue : todayRevenue;
-    final count = _orderCount > 0 ? _orderCount : todayOrderCount;
-    final avg = _avgOrderValue > 0 ? _avgOrderValue : avgOrderValue.round();
-    final items = _itemsSold > 0 ? _itemsSold : todayItemsSold;
+    final revenue = _hasServerAnalytics ? _totalRevenue : todayRevenue;
+    final count = _hasServerAnalytics ? _orderCount : todayOrderCount;
+    final avg = _hasServerAnalytics ? _avgOrderValue : avgOrderValue.round();
+    final items = _hasServerAnalytics ? _itemsSold : todayItemsSold;
 
     return LayoutBuilder(
       builder: (_, constraints) => Wrap(

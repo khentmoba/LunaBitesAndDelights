@@ -697,7 +697,7 @@ final List<MenuSection> kMenuSections = [
       ),
       MenuItem(
         id: 'cf_milo',
-        name: 'Milo Float',
+        name: 'Cream Milo Float',
         emoji: '🍦',
         description: 'Classic Milo with a creamy vanilla ice cream float.',
         price: 65,
@@ -759,7 +759,7 @@ final List<MenuSection> kMenuSections = [
   MenuSection(
     id: 'burger_hotdog_combined',
     title: 'Burgers',
-    emoji: '🍔🌭',
+    emoji: '🍔',
     subtitle: 'DOUBLE THE JOY: ALL SELECTIONS ARE BUY 1 TAKE 1',
     items: [
       MenuItem(

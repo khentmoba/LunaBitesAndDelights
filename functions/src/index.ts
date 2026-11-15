@@ -22,4 +22,5 @@ export { onOrderWritten } from './orders/derived';
 export { getSalesAnalytics } from './reporting/analytics';
 export { getLifetimeSalesReport } from './reporting/lifetime_report';
 export { createCheckoutSession } from './payments/create_checkout';
+export { verifyCheckoutPayment } from './payments/verify_payment';
 export { paymongoWebhook } from './payments/webhook';

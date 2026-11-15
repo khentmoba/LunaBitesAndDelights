@@ -122,16 +122,19 @@ async function checkRateLimit(key) {
         await ref.delete();
 }
 async function recordLoginFailure(key) {
-    const ref = (0, firestore_1.getFirestore)().collection('login_attempts').doc(hashToken(key));
-    const snap = await ref.get();
-    const fails = (snap.data()?.fails || 0) + 1;
-    await ref.set({
-        fails,
-        updatedAt: firestore_1.FieldValue.serverTimestamp(),
-        ...(fails >= MAX_ATTEMPTS
-            ? { lockedUntil: new Date(Date.now() + LOCKOUT_MS) }
-            : {}),
-    }, { merge: true });
+    const db = (0, firestore_1.getFirestore)();
+    const ref = db.collection('login_attempts').doc(hashToken(key));
+    await db.runTransaction(async (tx) => {
+        const snap = await tx.get(ref);
+        const fails = (snap.data()?.fails || 0) + 1;
+        tx.set(ref, {
+            fails,
+            updatedAt: firestore_1.FieldValue.serverTimestamp(),
+            ...(fails >= MAX_ATTEMPTS
+                ? { lockedUntil: new Date(Date.now() + LOCKOUT_MS) }
+                : {}),
+        }, { merge: true });
+    });
 }
 async function clearLoginAttempts(key) {
     await (0, firestore_1.getFirestore)().collection('login_attempts').doc(hashToken(key)).delete().catch(() => { });
@@ -146,13 +149,19 @@ function hashPassword(password) {
 function verifyPassword(password, stored) {
     if (stored.startsWith('scrypt$')) {
         const [, salt, hash] = stored.split('$');
-        if (!salt || !hash)
+        if (!salt || !hash || !/^[0-9a-f]+$/i.test(hash))
             return 'bad';
-        const calc = crypto.scryptSync(password, salt, 32).toString('hex');
-        return crypto.timingSafeEqual(Buffer.from(calc, 'hex'), Buffer.from(hash, 'hex')) ? 'ok' : 'bad';
+        const calcBuf = crypto.scryptSync(password, salt, 32);
+        const hashBuf = Buffer.from(hash, 'hex');
+        if (calcBuf.length !== hashBuf.length)
+            return 'bad';
+        return crypto.timingSafeEqual(calcBuf, hashBuf) ? 'ok' : 'bad';
     }
     // Legacy sha256 — caller should re-hash with scrypt on success.
-    const legacy = crypto.createHash('sha256').update(password).digest('hex');
-    return crypto.timingSafeEqual(Buffer.from(legacy), Buffer.from(stored)) ? 'ok-legacy' : 'bad';
+    const legacyBuf = Buffer.from(crypto.createHash('sha256').update(password).digest('hex'), 'utf8');
+    const storedBuf = Buffer.from(stored, 'utf8');
+    if (legacyBuf.length !== storedBuf.length)
+        return 'bad';
+    return crypto.timingSafeEqual(legacyBuf, storedBuf) ? 'ok-legacy' : 'bad';
 }
 //# sourceMappingURL=security.js.map

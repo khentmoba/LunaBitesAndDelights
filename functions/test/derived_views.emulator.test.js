@@ -74,13 +74,15 @@ test('trigger mirrors orders and keeps daily stats exact', async () => {
   assert.strictEqual(mirror.paymongoPaymentId, undefined);
 
   await until('dailyStats counts 2 countable orders', async () => (await day.get()).get('orders') === 2);
+  assert.strictEqual((await db.doc('kds_orders/c').get()).exists, false, 'unpaid GCash stays out of KDS mirror');
 
   // Status move: mirror changes, stats untouched.
   await db.doc('orders/a').update({ status: 'Preparing' });
   await until('kds mirror shows Preparing', async () => (await db.doc('kds_orders/a').get()).get('status') === 'Preparing');
 
-  // GCash payment lands → counts. Cancellation → uncounts. Deletion → mirror removed.
+  // GCash payment lands → counts and appears in KDS mirror. Cancellation → uncounts. Deletion → mirror removed.
   await db.doc('orders/c').update({ paymentStatus: 'PAID' });
+  await until('paid GCash order enters KDS mirror', async () => (await db.doc('kds_orders/c').get()).exists);
   await until('paid GCash order counted', async () => (await day.get()).get('orders') === 3);
   await db.doc('orders/b').update({ status: 'Cancelled', cancellationReason: 'test' });
   await until('cancelled order uncounted', async () => (await day.get()).get('orders') === 2);

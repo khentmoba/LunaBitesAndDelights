@@ -4,6 +4,27 @@ import { logger } from 'firebase-functions';
 import { requireStaff, validDocId, cleanStr, optStr } from '../util/security';
 
 const VALID_STATUSES = ['Pending', 'Preparing', 'Ready', 'Completed', 'Cancelled'];
+const EPOCH_ISO = '1970-01-01T00:00:00.000Z';
+
+/** Converts Firestore timestamps or ISO strings deterministically without crashing on invalid dates. */
+export function toIsoTimestamp(raw: unknown): string {
+  const fromObj = (raw as { toDate?: () => Date } | null | undefined)?.toDate?.();
+  if (fromObj instanceof Date && !Number.isNaN(fromObj.getTime())) {
+    return fromObj.toISOString();
+  }
+  if (typeof raw === 'string') {
+    const parsed = new Date(raw);
+    if (!Number.isNaN(parsed.getTime())) return parsed.toISOString();
+  }
+  return EPOCH_ISO;
+}
+
+/** Excludes unpaid/failed online GCash checkouts from the kitchen display until payment clears. */
+export function isOrderVisibleInKds(d: FirebaseFirestore.DocumentData): boolean {
+  const method = String(d.paymentMethod || '');
+  const status = String(d.paymentStatus || '');
+  return !(method === 'GCash' && (status === 'AWAITING_PAYMENT' || status === 'PAYMENT_FAILED'));
+}
 
 // #17: trimmed projection — only what the KDS screen renders. Never ...data.
 export const projectOrder = (id: string, d: FirebaseFirestore.DocumentData) => ({
@@ -31,7 +52,7 @@ export const projectOrder = (id: string, d: FirebaseFirestore.DocumentData) => (
   total: Number(d.totalAmount) || 0,
   type: String(d.type || ''),
   status: String(d.status || 'Pending'),
-  timestamp: d.timestamp?.toDate?.()?.toISOString?.() || (typeof d.timestamp === 'string' ? d.timestamp : new Date().toISOString()),
+  timestamp: toIsoTimestamp(d.timestamp),
 });
 
 export const getActiveOrders = onCall(async (request) => {
@@ -50,6 +71,7 @@ export const getActiveOrders = onCall(async (request) => {
     const orders = [];
     for (const doc of snapshot.docs) {
       const data = doc.data();
+      if (!isOrderVisibleInKds(data)) continue;
       const status = data.status || 'Pending';
       if (includeCompleted || (status !== 'Completed' && status !== 'Cancelled')) {
         orders.push(projectOrder(doc.id, data));

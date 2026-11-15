@@ -3,6 +3,10 @@ const assert = require('node:assert');
 const crypto = require('node:crypto');
 
 const { resolveOrderDocId, verifyPaymongoSignature } = require('../lib/payments/webhook');
+const { hasPaidPayment, hasFailedPayment, firstPaymentId } = require('../lib/payments/paymongo');
+const { hasMatchingCheckoutSession } = require('../lib/payments/verify_payment');
+const { isOrderVisibleInKds, toIsoTimestamp } = require('../lib/orders/kds');
+const { kdsMirrorDoc } = require('../lib/orders/derived');
 
 // A paid session must land on the order document the kiosk wrote. PayMongo
 // echoes our metadata back on the webhook, so the document id travels there
@@ -51,5 +55,56 @@ test('verifyPaymongoSignature validates HMAC-SHA256 when secret is set', () => {
   const sig = crypto.createHmac('sha256', secret).update(`${t}.${rawBody}`).digest('hex');
   assert.strictEqual(verifyPaymongoSignature(`t=${t},te=${sig}`, rawBody, secret), true);
   assert.strictEqual(verifyPaymongoSignature(`t=${t},te=${'0'.repeat(64)}`, rawBody, secret), false);
+  assert.strictEqual(verifyPaymongoSignature(`t=${t},te=${'z'.repeat(64)}`, rawBody, secret), false);
+  assert.strictEqual(verifyPaymongoSignature(`t=${t},te=short`, rawBody, secret), false);
   assert.strictEqual(verifyPaymongoSignature(undefined, rawBody, secret), false);
+});
+
+test('PayMongo payment status helpers identify paid vs failed sessions', () => {
+  assert.strictEqual(hasPaidPayment([{ id: 'pay_1', attributes: { status: 'paid' } }]), true);
+  assert.strictEqual(hasPaidPayment([{ id: 'pay_2', attributes: { status: 'failed' } }]), false);
+  assert.strictEqual(hasFailedPayment([{ id: 'pay_2', attributes: { status: 'failed' } }]), true);
+  assert.strictEqual(
+    hasFailedPayment([
+      { id: 'pay_2', attributes: { status: 'failed' } },
+      { id: 'pay_3', attributes: { status: 'paid' } },
+    ]),
+    false,
+  );
+  assert.strictEqual(
+    firstPaymentId([
+      { id: 'pay_failed', attributes: { status: 'failed' } },
+      { id: 'pay_paid', attributes: { status: 'paid' } },
+    ]),
+    'pay_paid',
+  );
+});
+
+test('KDS projection excludes unconfirmed GCash and handles invalid timestamps cleanly', () => {
+  assert.strictEqual(
+    isOrderVisibleInKds({ paymentMethod: 'GCash', paymentStatus: 'AWAITING_PAYMENT' }),
+    false,
+  );
+  assert.strictEqual(
+    isOrderVisibleInKds({ paymentMethod: 'GCash', paymentStatus: 'PAYMENT_FAILED' }),
+    false,
+  );
+  assert.strictEqual(
+    isOrderVisibleInKds({ paymentMethod: 'GCash', paymentStatus: 'PAID' }),
+    true,
+  );
+  assert.strictEqual(
+    isOrderVisibleInKds({ paymentMethod: 'Cash', paymentStatus: 'NOT PAID' }),
+    true,
+  );
+  assert.strictEqual(toIsoTimestamp('not-a-date'), '1970-01-01T00:00:00.000Z');
+  const mirror = kdsMirrorDoc('ord1', { customerName: 'Test', timestamp: 'invalid-ts' });
+  assert.strictEqual(mirror.timestamp, '1970-01-01T00:00:00.000Z');
+});
+
+test('hasMatchingCheckoutSession rejects unbound or mismatched orders', () => {
+  assert.strictEqual(hasMatchingCheckoutSession({}, 'cs_paid_1'), false);
+  assert.strictEqual(hasMatchingCheckoutSession({ checkoutSessionId: '' }, 'cs_paid_1'), false);
+  assert.strictEqual(hasMatchingCheckoutSession({ checkoutSessionId: 'cs_other' }, 'cs_paid_1'), false);
+  assert.strictEqual(hasMatchingCheckoutSession({ checkoutSessionId: 'cs_paid_1' }, 'cs_paid_1'), true);
 });

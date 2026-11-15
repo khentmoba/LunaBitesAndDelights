@@ -1,7 +1,7 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { getFirestore } from 'firebase-admin/firestore';
 import { logger } from 'firebase-functions';
-import { phtDateLabel, emptyChannel, addToChannel, isCountableOrder } from '../util';
+import { phtDateLabel, emptyChannel, addToChannel, isCountableOrder, itemKey } from '../util';
 import { requireStaff } from '../util/security';
 
 export const getSalesAnalytics = onCall(async (request) => {
@@ -31,9 +31,10 @@ export const getSalesAnalytics = onCall(async (request) => {
 
       for (const item of data.items || []) {
         const name = item.name || 'Unknown';
-        const qty = Number(item.quantity || item.qty || 1);
+        const key = itemKey(name, item.variant);
+        const qty = Number(item.quantity || item.qty) || 1;
         totalItemsSold += qty;
-        itemCounts[name] = (itemCounts[name] || 0) + qty;
+        itemCounts[key] = (itemCounts[key] || 0) + qty;
       }
     }
 

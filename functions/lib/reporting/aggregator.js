@@ -30,9 +30,11 @@ async function aggregateDailySales(dateLabel) {
             kioskSales += amount;
         for (const item of data.items || []) {
             const key = (0, util_1.itemKey)(item.name, item.variant);
-            itemCounts[key] = (itemCounts[key] || 0) + (item.quantity || 1);
+            itemCounts[key] = (itemCounts[key] || 0) + (Number(item.quantity || item.qty) || 1);
         }
     });
+    if (totalOrders === 0)
+        return null;
     return {
         date: dateLabel,
         totalSales,

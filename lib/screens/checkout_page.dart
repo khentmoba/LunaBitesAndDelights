@@ -169,38 +169,36 @@ class _CheckoutPageState extends State<CheckoutPage> {
         _pendingOrderNumber ?? TelegramService.generateOrderNumber();
     var telegramSent = true;
 
+    final placedOrder = OrderModel(
+      orderId: orderNumber,
+      items: items
+          .map(
+            (i) => OrderItem(
+              name: i.name,
+              variant: i.variant,
+              price: i.price,
+              quantity: i.quantity,
+            ),
+          )
+          .toList(),
+      totalAmount: total,
+      timestamp: now,
+      dateLabel: phtDateLabel(),
+      type: _orderType,
+      entryType: statuses.entryType,
+      customerName: name,
+      customerPhone: phone,
+      customerAddress: address,
+      lat: _needsCoordinates ? _pinnedLat : null,
+      lng: _needsCoordinates ? _pinnedLng : null,
+      totalDistance: _needsCoordinates ? _distance : 0.0,
+      paymentMethod: _paymentMethod,
+      paymentStatus: statuses.paymentStatus,
+      status: statuses.status,
+    );
+
     if (orderDocId == null || _paymentMethod != 'GCash') {
-      orderNumber = TelegramService.generateOrderNumber();
-      final result = await OrderService.placeOrder(
-        OrderModel(
-          orderId: orderNumber,
-          items: items
-              .map(
-                (i) => OrderItem(
-                  name: i.name,
-                  variant: i.variant,
-                  price: i.price,
-                  quantity: i.quantity,
-                ),
-              )
-              .toList(),
-          totalAmount: total,
-          timestamp: now,
-          dateLabel: phtDateLabel(),
-          type: _orderType,
-          entryType: statuses.entryType,
-          customerName: name,
-          customerPhone: phone,
-          customerAddress: address,
-          lat: _needsCoordinates ? _pinnedLat : null,
-          lng: _needsCoordinates ? _pinnedLng : null,
-          totalDistance: _needsCoordinates ? _distance : 0.0,
-          paymentMethod: _paymentMethod,
-          paymentStatus: statuses.paymentStatus,
-          status: statuses.status,
-        ),
-        timeStr,
-      );
+      final result = await OrderService.placeOrder(placedOrder, timeStr);
       orderDocId = result.docId;
       telegramSent = result.telegramSent;
     }
@@ -252,6 +250,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
       if (paid == true) {
         _pendingOrderDocId = null;
         _pendingOrderNumber = null;
+        OrderService.recordLocalHistory(placedOrder, timeStr);
         cartNotifier.clear();
         TelegramService.showTelegramStatus(context, telegramSent, orderNumber);
         _goToReceipt(
