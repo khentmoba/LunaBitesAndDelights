@@ -43,3 +43,9 @@ flutter build web --release --wasm --base-href /kiosk/ && dart run tool/assemble
 storefront: build/web/index.html (+60 files)
 kiosk: build/web/kiosk/index.html  (Flutter; no TypeScript kiosk or staff pages copied: build/web/staff does not exist)
 (run with MSYS_NO_PATHCONV=1 so Git Bash keeps --base-href /kiosk/ as written)
+
+## Re-run after review round 1 fixes
+- astro check: 0 errors, 0 warnings, 0 hints
+- npm run build: 17 page(s) built
+- test:site: 47 pass, 0 fail
+- tool/parity/staff_e2e.mjs: exit 0, logout leaves 0 staff_ rows in Auth's IndexedDB

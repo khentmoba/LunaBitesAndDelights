@@ -85,6 +85,7 @@ pending pickup order. Full output: [`ts-staff-e2e.json`](ts-staff-e2e.json).
 | START PREPARING | `updateOrderStatus` set the order, and its `kds_orders` mirror, to `Preparing`. The card moved column and now offers MARK AS READY. |
 | MARK AS READY | Saved as `Ready`, mirror `Ready`, card offers COMPLETE & DISPATCH, snack "Order updated: Ready". |
 | Dashboard | Today's Sales ₱263, Orders 1, Avg order ₱263, Items sold 3, from `getSalesAnalytics`. Recent orders lists LU-E2E-001. |
+| Logout | Landed on `/` with no `staff_` row left in Auth's IndexedDB store, and the kiosk menu hides the ORDERS shortcut. Logout waits for `signOut` to finish before leaving the page, so the row is gone before the next page loads. |
 
 No page errors were logged.
 

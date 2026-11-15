@@ -174,12 +174,19 @@ export function mountLogin(root: HTMLElement): void {
   });
 
   // A hardware keyboard works the PIN pad too.
-  root.ownerDocument.addEventListener('keydown', (e) => {
-    if (!body.isConnected || mode !== 'pin' || loading || e.ctrlKey || e.metaKey || e.altKey) return;
+  const onKey = (e: KeyboardEvent) => {
+    if (!body.isConnected) {
+      root.ownerDocument.removeEventListener('keydown', onKey);
+      return;
+    }
+    if (mode !== 'pin' || loading || e.ctrlKey || e.metaKey || e.altKey) return;
+    // A focused button or field handles its own Enter and Backspace.
+    if ((e.key === 'Enter' || e.key === 'Backspace') && (e.target as HTMLElement).closest?.('button, input, a, select, textarea')) return;
     if (/^[0-9]$/.test(e.key) && pin.length < 8) setPin(pin + e.key);
     else if (e.key === 'Backspace' && pin) setPin(pin.slice(0, -1));
     else if (e.key === 'Enter' && pin.length >= 4) void verify({ pin }, 'Staff', 'Incorrect PIN. Please try again.');
-  });
+  };
+  root.ownerDocument.addEventListener('keydown', onKey);
 
   render();
 }

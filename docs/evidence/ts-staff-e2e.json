@@ -7,7 +7,7 @@
     },
     {
       "step": "right PIN",
-      "reachedKdsMs": 469,
+      "reachedKdsMs": 468,
       "snack": "Welcome, anna! (STAFF)",
       "authUser": {
         "uid": "staff_anna",
@@ -50,6 +50,12 @@
         "LU-E2E-001"
       ],
       "screenshot": "ts-staff-e2e-dashboard-1440.png"
+    },
+    {
+      "step": "logout",
+      "landedOn": "/",
+      "staffRowsLeft": 0,
+      "kioskOrdersButtonHidden": true
     }
   ],
   "errors": []

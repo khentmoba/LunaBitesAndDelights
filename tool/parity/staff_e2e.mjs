@@ -139,6 +139,18 @@ try {
     recent: await evaluate(`[...document.querySelectorAll('.otile__num')].map((n) => n.textContent)`),
     screenshot: await shoot('ts-staff-e2e-dashboard-1440.png'),
   });
+  // Logout must clear the Auth row before leaving, or the kiosk still sees staff.
+  await evaluate(`document.querySelector('.dhead__logout').click(), true`);
+  await waitFor(`location.pathname === '/'`);
+  await sleep(300);
+  await s.send('Page.navigate', { url: `http://127.0.0.1:${port}/kiosk/menu` });
+  await waitFor(`document.readyState === 'complete'`);
+  await sleep(800);
+  step('logout', {
+    landedOn: '/',
+    staffRowsLeft: await evaluate(`new Promise((ok) => { const o = indexedDB.open('firebaseLocalStorageDb'); o.onsuccess = () => { const db = o.result; if (!db.objectStoreNames.contains('firebaseLocalStorage')) { ok(0); return; } const q = db.transaction('firebaseLocalStorage').objectStore('firebaseLocalStorage').getAll(); q.onsuccess = () => ok(q.result.filter((r) => String(r.value?.uid ?? '').startsWith('staff_')).length); }; o.onerror = () => ok(-1); })`),
+    kioskOrdersButtonHidden: await evaluate(`document.querySelector('a.orders[data-staff]')?.hidden ?? null`),
+  });
   await browser.send('Browser.close').catch(() => {});
 } finally {
   chrome.kill();
@@ -148,5 +160,5 @@ try {
 }
 
 writeFileSync(join(outDir, 'ts-staff-e2e.json'), JSON.stringify({ steps, errors }, null, 2) + '\n');
-const ok = steps.find((x) => x.step === 'tap MARK AS READY')?.savedStatus === 'Ready' && steps.find((x) => x.step === 'wrong PIN')?.stillOnLogin;
+const ok = steps.find((x) => x.step === 'tap MARK AS READY')?.savedStatus === 'Ready' && steps.find((x) => x.step === 'wrong PIN')?.stillOnLogin && steps.find((x) => x.step === 'logout')?.staffRowsLeft === 0;
 if (!ok) { console.error('staff e2e failed', errors); process.exit(1); }

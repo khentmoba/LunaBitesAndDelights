@@ -206,9 +206,10 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
     renderBar();
   }
 
+  // signOut must finish before the page unloads, or the Auth row stays in
+  // IndexedDB and customer pages still treat this browser as staff.
   function exit() {
-    void logout();
-    go('/');
+    void logout().then(() => go('/'));
   }
 
   // ---- rendering ----
@@ -456,7 +457,7 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
     const addr = (o.customerAddress ?? '').trim();
     const rule = '<p class="kslip__rule">--------------------------------</p>';
     const items = (o.items ?? [])
-      .map((i) => `<div class="kslip__item"><span class="kslip__qty">${i.quantity ?? i.qty ?? 1}x </span><span><span class="kslip__name">${esc(i.name ?? '')}</span>${i.variant ? `<span class="kslip__variant">${esc(i.variant)}</span>` : ''}</span></div>`)
+      .map((i) => `<div class="kslip__item"><span class="kslip__qty">${qtyOf(i)}x </span><span><span class="kslip__name">${esc(i.name ?? '')}</span>${i.variant ? `<span class="kslip__variant">${esc(i.variant)}</span>` : ''}</span></div>`)
       .join('');
     const d = showDialog(`
 <h2 class="sdialog__title">${icon('receipt_long_rounded')}<span>KITCHEN TICKET</span></h2>

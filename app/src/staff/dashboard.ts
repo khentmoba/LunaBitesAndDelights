@@ -200,9 +200,8 @@ ${
     if (act === 'refresh' || act === 'retry') void fetchData();
     else if (act === 'signin') void logout();
     else if (act === 'logout') {
-      void logout();
       cart.clear();
-      go('/');
+      void logout().then(() => go('/'));
     } else if (act === 'analytics') go('/staff/analytics');
     else if (act === 'history') showSheet();
     else if (act === 'walkin') go('/kiosk/menu');
