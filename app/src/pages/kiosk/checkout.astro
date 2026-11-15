@@ -228,7 +228,10 @@ const persist = () => save(DRAFT, draft);
 function clearPending() {
   draft.pendingDocId = null;
   draft.pendingNumber = null;
+  delete draft.pendingCart;
 }
+/** The saved GCash order only stands for the cart it was saved with. */
+const cartKey = () => JSON.stringify(orderItems(cart.items()));
 
 function renderCart() {
   const items = cart.items();
@@ -275,6 +278,10 @@ function restore() {
   nameInput.value = draft.name;
   phoneInput.value = draft.phone;
   addressInput.value = draft.address;
+  if (draft.pendingDocId !== null && draft.pendingCart !== cartKey()) {
+    clearPending();
+    persist();
+  }
   loading = false;
   renderForm();
   if (draft.gcashCancelled) {
@@ -385,6 +392,7 @@ async function submit() {
   if (draft.paymentMethod === 'GCash') {
     draft.pendingDocId = docId;
     draft.pendingNumber = orderNumber;
+    draft.pendingCart = cartKey();
     persist();
     const pending: PendingPayment = {
       orderDocId: docId, orderId: orderNumber, amount: total, items: order.items,

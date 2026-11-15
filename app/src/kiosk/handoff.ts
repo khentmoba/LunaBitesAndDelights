@@ -13,9 +13,11 @@ export interface CheckoutDraft {
   lng: number;
   pinned: boolean;
   distance: number;
-  /** An order already saved for GCash, reused on retry until the form changes. */
+  /** An order already saved for GCash, reused on retry until the form or cart changes. */
   pendingDocId: string | null;
   pendingNumber: string | null;
+  /** The cart lines that order was saved with. */
+  pendingCart?: string;
   /** Set by the GCash page when the shopper backs out without paying. */
   gcashCancelled?: boolean;
 }

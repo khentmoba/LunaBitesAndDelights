@@ -32,6 +32,10 @@ import Kiosk from '../../layouts/Kiosk.astro';
   };
   var to = routes[location.hash];
   if (to) location.replace(to + location.search);
+  // Storefront picks (?pick=...) ride along to the menu, as Flutter reads them after the splash.
+  else if (location.search) addEventListener('DOMContentLoaded', function () {
+    document.querySelector('.splash__start').href = '/kiosk/menu' + location.search;
+  });
 })();
 </script>
 
