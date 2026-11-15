@@ -1,0 +1,579 @@
+=== SITE TESTS ===
+
+> test:site
+> node --test test/site/app.test.mjs test/site/hosting.test.mjs
+
+✔ both pages inline their script and stylesheet with no external CSS/JS or cache-busting params (1.4729ms)
+✔ inline style blocks have valid balanced CSS (0.3207ms)
+✔ the menu page keeps the bar and reveal behaviour (156.788ms)
+✔ the bar only sticks once the page has scrolled (76.9183ms)
+✔ reduced motion hides nothing and writes no reveal state (43.9273ms)
+✔ without IntersectionObserver the menu and photos appear at once (46.6913ms)
+✔ with IntersectionObserver the reveal waits for the section to arrive (33.325ms)
+✔ a section that never intersects stays unrevealed (28.1047ms)
+✔ the map and street view swap one at a time (46.8849ms)
+✔ a weak device keeps every line visible and starts no observers (25.3346ms)
+✔ both pages flag weak devices before the stylesheet (0.2303ms)
+✔ font preloads match the inline stylesheet so each font is fetched once (0.2379ms)
+✔ the hero logo is responsive and the hidden bar logo is not preloaded (0.208ms)
+✔ the street view embed is fetched only when its tab is chosen (32.7142ms)
+✔ without script the street view still offers a way out (0.1719ms)
+✔ staff login link remains visible in the header and is not hidden in CSS (0.1783ms)
+✔ the bar publishes its measured height to --bar-h for scroll-margin-top (30.5961ms)
+✔ the hero, bar, and footer logos share the 240px AVIF sized for the hero slot (0.1685ms)
+✔ the pruned Bricolage kerning covers every character pair the pages render (50.8639ms)
+✔ both pages define metric-matched fallback fonts and avoid high fetchpriority on mobile-below-fold hero photo (0.2917ms)
+✔ lunaexpress: redirect /kiosk{,/**} does not loop (1.1826ms)
+✔ lunaexpress: redirect /** does not loop (0.115ms)
+✔ app-site serves /kiosk/ without an explicit redirect rule (0.526ms)
+✔ globToRegExp handles the patterns used in firebase.json (0.3498ms)
+✔ the loop check catches the rule that broke production (0.1935ms)
+ℹ tests 25
+ℹ suites 0
+ℹ pass 25
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 14055.0204
+
+=== FLUTTER ANALYZE ===
+Resolving dependencies...
+Downloading packages...
+  _flutterfire_internals 1.3.77 (1.3.79 available)
+  archive 4.0.9 (4.7.1 available)
+  async 2.13.0 (2.13.1 available)
+  clock 1.1.2 (1.1.3 available)
+  cloud_firestore 6.10.0 (7.1.0 available)
+  cloud_firestore_platform_interface 8.0.7 (8.1.0 available)
+  cloud_firestore_web 5.7.3 (5.8.0 available)
+  cloud_functions 6.5.0 (7.0.1 available)
+  cloud_functions_platform_interface 6.0.7 (6.1.1 available)
+  cloud_functions_web 5.1.13 (5.1.15 available)
+  crypto 3.0.7 (3.0.8 available)
+  cupertino_icons 1.0.8 (2.0.0 available)
+  firebase_app_check 0.4.8 (0.5.1 available)
+  firebase_app_check_platform_interface 0.4.2+1 (0.5.1+3 available)
+  firebase_app_check_web 0.2.6+1 (0.3.1+3 available)
+  firebase_auth 6.7.0 (7.0.1 available)
+  firebase_auth_platform_interface 9.1.0 (9.1.2 available)
+  firebase_auth_web 6.3.0 (6.3.2 available)
+  firebase_core 4.15.0 (5.1.0 available)
+  firebase_core_web 3.12.0 (4.1.0 available)
+  flutter_map 6.2.1 (8.3.2 available)
+  geolocator 13.0.4 (14.1.2 available)
+  geolocator_android 4.6.2 (5.2.1 available)
+  geolocator_apple 2.3.13 (2.4.3 available)
+  geolocator_platform_interface 4.2.6 (4.4.1 available)
+  geolocator_web 4.1.3 (4.1.4 available)
+  image 4.8.0 (4.12.0 available)
+  intl 0.20.2 (0.20.3 available)
+  latlong2 0.9.1 (0.10.1 available)
+  logger 2.7.0 (2.8.0 available)
+  material_color_utilities 0.13.0 (0.13.1 available)
+  mgrs_dart 2.0.0 (3.0.0 available)
+  petitparser 7.0.2 (7.1.0 available)
+  posix 6.5.0 (6.5.4 available)
+  proj4dart 2.1.0 (3.0.0 available)
+  stack_trace 1.12.1 (1.12.2 available)
+  test_api 0.7.12 (0.7.15 available)
+  unicode 0.3.1 (1.1.9 available)
+  uuid 4.5.3 (4.6.0 available)
+  vector_math 2.4.3 (2.4.4 available)
+  vm_service 15.0.2 (15.4.0 available)
+  web 1.1.1 (1.1.2 available)
+  webview_flutter 4.13.1 (4.14.1 available)
+  webview_flutter_android 4.10.13 (4.14.1 available)
+  webview_flutter_platform_interface 2.14.0 (2.15.1 available)
+  webview_flutter_wkwebview 3.24.1 (3.27.2 available)
+  xml 6.6.1 (7.1.0 available)
+Got dependencies!
+47 packages have newer versions incompatible with dependency constraints.
+Try `flutter pub outdated` for more information.
+Analyzing t3-45ea8c3f-7cbeaa387605e4ce...                       
+No issues found! (ran in 8.2s)
+
+Analyzer issues: 0 (baseline 0).
+
+
+=== DART FORMAT ===
+no Dart files changed
+
+=== FLUTTER TEST ===
+Resolving dependencies...
+Downloading packages...
+  _flutterfire_internals 1.3.77 (1.3.79 available)
+  archive 4.0.9 (4.7.1 available)
+  async 2.13.0 (2.13.1 available)
+  clock 1.1.2 (1.1.3 available)
+  cloud_firestore 6.10.0 (7.1.0 available)
+  cloud_firestore_platform_interface 8.0.7 (8.1.0 available)
+  cloud_firestore_web 5.7.3 (5.8.0 available)
+  cloud_functions 6.5.0 (7.0.1 available)
+  cloud_functions_platform_interface 6.0.7 (6.1.1 available)
+  cloud_functions_web 5.1.13 (5.1.15 available)
+  crypto 3.0.7 (3.0.8 available)
+  cupertino_icons 1.0.8 (2.0.0 available)
+  firebase_app_check 0.4.8 (0.5.1 available)
+  firebase_app_check_platform_interface 0.4.2+1 (0.5.1+3 available)
+  firebase_app_check_web 0.2.6+1 (0.3.1+3 available)
+  firebase_auth 6.7.0 (7.0.1 available)
+  firebase_auth_platform_interface 9.1.0 (9.1.2 available)
+  firebase_auth_web 6.3.0 (6.3.2 available)
+  firebase_core 4.15.0 (5.1.0 available)
+  firebase_core_web 3.12.0 (4.1.0 available)
+  flutter_map 6.2.1 (8.3.2 available)
+  geolocator 13.0.4 (14.1.2 available)
+  geolocator_android 4.6.2 (5.2.1 available)
+  geolocator_apple 2.3.13 (2.4.3 available)
+  geolocator_platform_interface 4.2.6 (4.4.1 available)
+  geolocator_web 4.1.3 (4.1.4 available)
+  image 4.8.0 (4.12.0 available)
+  intl 0.20.2 (0.20.3 available)
+  latlong2 0.9.1 (0.10.1 available)
+  logger 2.7.0 (2.8.0 available)
+  material_color_utilities 0.13.0 (0.13.1 available)
+  mgrs_dart 2.0.0 (3.0.0 available)
+  petitparser 7.0.2 (7.1.0 available)
+  posix 6.5.0 (6.5.4 available)
+  proj4dart 2.1.0 (3.0.0 available)
+  stack_trace 1.12.1 (1.12.2 available)
+  test_api 0.7.12 (0.7.15 available)
+  unicode 0.3.1 (1.1.9 available)
+  uuid 4.5.3 (4.6.0 available)
+  vector_math 2.4.3 (2.4.4 available)
+  vm_service 15.0.2 (15.4.0 available)
+  web 1.1.1 (1.1.2 available)
+  webview_flutter 4.13.1 (4.14.1 available)
+  webview_flutter_android 4.10.13 (4.14.1 available)
+  webview_flutter_platform_interface 2.14.0 (2.15.1 available)
+  webview_flutter_wkwebview 3.24.1 (3.27.2 available)
+  xml 6.6.1 (7.1.0 available)
+Got dependencies!
+47 packages have newer versions incompatible with dependency constraints.
+Try `flutter pub outdated` for more information.
+00:00 +0: loading C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-45ea8c3f-7cbeaa387605e4ce/test/adaptive_layout_test.dart
+00:00 +0: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-45ea8c3f-7cbeaa387605e4ce/test/adaptive_layout_test.dart: LunaExpressApp configures adaptive density and platform transitions
+00:00 +1: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-45ea8c3f-7cbeaa387605e4ce/test/adaptive_layout_test.dart: LunaExpressApp configures adaptive density and platform transitions
+00:00 +2: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-45ea8c3f-7cbeaa387605e4ce/test/adaptive_layout_test.dart: LunaExpressApp configures adaptive density and platform transitions
+00:00 +3: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-45ea8c3f-7cbeaa387605e4ce/test/adaptive_layout_test.dart: LunaExpressApp configures adaptive density and platform transitions
+00:00 +4: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-45ea8c3f-7cbeaa387605e4ce/test/adaptive_layout_test.dart: LunaExpressApp configures adaptive density and platform transitions
+00:00 +5: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-45ea8c3f-7cbeaa387605e4ce/test/audit_bugfixes_test.dart: Audit bugfixes regression suite GCashCheckoutPage blocks receipt bypass until verifyCheckoutPayment confirms PAID
+00:00 +6: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-45ea8c3f-7cbeaa387605e4ce/test/audit_bugfixes_test.dart: Audit bugfixes regression suite GCashCheckoutPage blocks receipt bypass until verifyCheckoutPayment confirms PAID
+00:00 +7: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-45ea8c3f-7cbeaa387605e4ce/test/audit_bugfixes_test.dart: Audit bugfixes regression suite GCashCheckoutPage blocks receipt bypass until verifyCheckoutPayment confirms PAID
+00:00 +8: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-45ea8c3f-7cbeaa387605e4ce/test/audit_bugfixes_test.dart: Audit bugfixes regression suite GCashCheckoutPage blocks receipt bypass until verifyCheckoutPayment confirms PAID
+00:00 +9: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-45ea8c3f-7cbeaa387605e4ce/test/audit_bugfixes_test.dart: Audit bugfixes regression suite GCashCheckoutPage blocks receipt bypass until verifyCheckoutPayment confirms PAID
+00:00 +10: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-45ea8c3f-7cbeaa387605e4ce/test/audit_bugfixes_test.dart: Audit bugfixes regression suite GCashCheckoutPage blocks receipt bypass until verifyCheckoutPayment confirms PAID
+00:01 +11: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-45ea8c3f-7cbeaa387605e4ce/test/audit_bugfixes_test.dart: Audit bugfixes regression suite GCashCheckoutPage blocks receipt bypass until verifyCheckoutPayment confirms PAID
+00:01 +12: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-45ea8c3f-7cbeaa387605e4ce/test/audit_bugfixes_test.dart: Audit bugfixes regression suite GCashCheckoutPage blocks receipt bypass until verifyCheckoutPayment confirms PAID
+00:01 +13: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-45ea8c3f-7cbeaa387605e4ce/test/kds_live_feed_test.dart: pushed orders appear without polling and header says Live
+00:01 +14: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-45ea8c3f-7cbeaa387605e4ce/test/kds_live_feed_test.dart: pushed orders appear without polling and header says Live
+00:01 +15: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-45ea8c3f-7cbeaa387605e4ce/test/kds_live_feed_test.dart: pushed orders appear without polling and header says Live
+00:01 +16: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-45ea8c3f-7cbeaa387605e4ce/test/kds_live_feed_test.dart: pushed orders appear without polling and header says Live
+00:01 +17: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-45ea8c3f-7cbeaa387605e4ce/test/kds_live_feed_test.dart: pushed orders appear without polling and header says Live
+00:01 +18: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-45ea8c3f-7cbeaa387605e4ce/test/kds_live_feed_test.dart: pushed orders appear without polling and header says Live
+00:01 +19: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-45ea8c3f-7cbeaa387605e4ce/test/kds_live_feed_test.dart: pushed orders appear without polling and header says Live
+00:01 +20: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-45ea8c3f-7cbeaa387605e4ce/test/kds_live_feed_test.dart: pushed orders appear without polling and header says Live
+00:01 +21: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-45ea8c3f-7cbeaa387605e4ce/test/kds_live_feed_test.dart: pushed orders appear without polling and header says Live
+00:01 +22: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-45ea8c3f-7cbeaa387605e4ce/test/kds_live_feed_test.dart: pushed orders appear without polling and header says Live
+00:01 +23: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-45ea8c3f-7cbeaa387605e4ce/test/menu_kiosk_test.dart: KioskMenuPage displays Sulit Meals and Chicken Poppers categories
+00:01 +24: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-45ea8c3f-7cbeaa387605e4ce/test/menu_kiosk_test.dart: KioskMenuPage displays Sulit Meals and Chicken Poppers categories
+00:02 +25: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-45ea8c3f-7cbeaa387605e4ce/test/menu_ordering_test.dart: single option and quantity reach cart with the exact price
+00:02 +26: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-45ea8c3f-7cbeaa387605e4ce/test/menu_ordering_test.dart: single option and quantity reach cart with the exact price
+00:02 +27: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-45ea8c3f-7cbeaa387605e4ce/test/navigation_flow_test.dart: StaffMenuDialog logout pops once, keeps menu mounted, and shows SnackBar safely
+00:02 +28: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-45ea8c3f-7cbeaa387605e4ce/test/navigation_flow_test.dart: StaffMenuDialog logout pops once, keeps menu mounted, and shows SnackBar safely
+00:02 +29: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-45ea8c3f-7cbeaa387605e4ce/test/navigation_flow_test.dart: StaffMenuDialog logout pops once, keeps menu mounted, and shows SnackBar safely
+00:02 +29: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-45ea8c3f-7cbeaa387605e4ce/test/order_service_test.dart: every checkout combination matches a rules fixture kiosk-cash
+Order LU-261114-120000 saved to Firestore as testOrderReference
+00:02 +30: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-45ea8c3f-7cbeaa387605e4ce/test/navigation_flow_test.dart: StaffMenuDialog logout pops once, keeps menu mounted, and shows SnackBar safely
+00:02 +30: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-45ea8c3f-7cbeaa387605e4ce/test/order_service_test.dart: every checkout combination matches a rules fixture kiosk-gcash
+Order LU-261114-120000 saved to Firestore as testOrderReference
+00:02 +31: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-45ea8c3f-7cbeaa387605e4ce/test/navigation_flow_test.dart: StaffMenuDialog logout pops once, keeps menu mounted, and shows SnackBar safely
+00:02 +31: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-45ea8c3f-7cbeaa387605e4ce/test/order_service_test.dart: every checkout combination matches a rules fixture staff-cash
+Order LU-261114-120000 saved to Firestore as testOrderReference
+00:02 +32: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-45ea8c3f-7cbeaa387605e4ce/test/navigation_flow_test.dart: StaffMenuDialog logout pops once, keeps menu mounted, and shows SnackBar safely
+00:02 +33: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-45ea8c3f-7cbeaa387605e4ce/test/navigation_flow_test.dart: StaffMenuDialog logout pops once, keeps menu mounted, and shows SnackBar safely
+00:02 +33: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-45ea8c3f-7cbeaa387605e4ce/test/order_service_test.dart: every checkout combination matches a rules fixture staff-gcash
+Order LU-261114-120000 saved to Firestore as testOrderReference
+00:02 +34: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-45ea8c3f-7cbeaa387605e4ce/test/navigation_flow_test.dart: StaffMenuDialog logout pops once, keeps menu mounted, and shows SnackBar safely
+00:02 +35: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-45ea8c3f-7cbeaa387605e4ce/test/navigation_flow_test.dart: StaffMenuDialog logout pops once, keeps menu mounted, and shows SnackBar safely
+00:02 +36: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-45ea8c3f-7cbeaa387605e4ce/test/navigation_flow_test.dart: StaffMenuDialog logout pops once, keeps menu mounted, and shows SnackBar safely
+00:02 +37: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-45ea8c3f-7cbeaa387605e4ce/test/navigation_flow_test.dart: StaffMenuDialog logout pops once, keeps menu mounted, and shows SnackBar safely
+00:02 +37: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-45ea8c3f-7cbeaa387605e4ce/test/order_service_test.dart: initial order write leaves notification status to the server
+Order LU-261029-120000 saved to Firestore as testOrderReference
+00:02 +38: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-45ea8c3f-7cbeaa387605e4ce/test/navigation_flow_test.dart: StaffMenuDialog logout pops once, keeps menu mounted, and shows SnackBar safely
+00:02 +39: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-45ea8c3f-7cbeaa387605e4ce/test/menu_ordering_test.dart: fd4 poster item reaches cart at 320px
+00:02 +40: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-45ea8c3f-7cbeaa387605e4ce/test/navigation_flow_test.dart: StaffMenuDialog WALK-IN ORDER pops cleanly and Navigator keeps single /menu
+00:02 +41: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-45ea8c3f-7cbeaa387605e4ce/test/navigation_flow_test.dart: StaffMenuDialog WALK-IN ORDER pops cleanly and Navigator keeps single /menu
+00:02 +42: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-45ea8c3f-7cbeaa387605e4ce/test/navigation_flow_test.dart: StaffMenuDialog WALK-IN ORDER pops cleanly and Navigator keeps single /menu
+00:02 +43: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-45ea8c3f-7cbeaa387605e4ce/test/navigation_flow_test.dart: StaffMenuDialog WALK-IN ORDER pops cleanly and Navigator keeps single /menu
+00:02 +44: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-45ea8c3f-7cbeaa387605e4ce/test/navigation_flow_test.dart: StaffMenuDialog WALK-IN ORDER pops cleanly and Navigator keeps single /menu
+00:02 +45: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-45ea8c3f-7cbeaa387605e4ce/test/navigation_flow_test.dart: StaffMenuDialog WALK-IN ORDER pops cleanly and Navigator keeps single /menu
+00:02 +46: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-45ea8c3f-7cbeaa387605e4ce/test/navigation_flow_test.dart: StaffMenuDialog WALK-IN ORDER pops cleanly and Navigator keeps single /menu
+00:02 +47: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-45ea8c3f-7cbeaa387605e4ce/test/navigation_flow_test.dart: StaffMenuDialog WALK-IN ORDER pops cleanly and Navigator keeps single /menu
+00:02 +48: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-45ea8c3f-7cbeaa387605e4ce/test/navigation_flow_test.dart: StaffMenuDialog WALK-IN ORDER pops cleanly and Navigator keeps single /menu
+00:02 +49: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-45ea8c3f-7cbeaa387605e4ce/test/navigation_flow_test.dart: StaffMenuDialog WALK-IN ORDER pops cleanly and Navigator keeps single /menu
+00:02 +50: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-45ea8c3f-7cbeaa387605e4ce/test/navigation_flow_test.dart: StaffMenuDialog WALK-IN ORDER pops cleanly and Navigator keeps single /menu
+00:02 +51: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-45ea8c3f-7cbeaa387605e4ce/test/navigation_flow_test.dart: StaffMenuDialog WALK-IN ORDER pops cleanly and Navigator keeps single /menu
+00:02 +52: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-45ea8c3f-7cbeaa387605e4ce/test/navigation_flow_test.dart: StaffMenuDialog WALK-IN ORDER pops cleanly and Navigator keeps single /menu
+00:02 +53: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-45ea8c3f-7cbeaa387605e4ce/test/navigation_flow_test.dart: StaffMenuDialog WALK-IN ORDER pops cleanly and Navigator keeps single /menu
+00:02 +54: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-45ea8c3f-7cbeaa387605e4ce/test/navigation_flow_test.dart: StaffMenuDialog WALK-IN ORDER pops cleanly and Navigator keeps single /menu
+00:02 +55: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-45ea8c3f-7cbeaa387605e4ce/test/navigation_flow_test.dart: StaffMenuDialog WALK-IN ORDER pops cleanly and Navigator keeps single /menu
+00:02 +56: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-45ea8c3f-7cbeaa387605e4ce/test/navigation_flow_test.dart: StaffMenuDialog WALK-IN ORDER pops cleanly and Navigator keeps single /menu
+00:02 +57: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-45ea8c3f-7cbeaa387605e4ce/test/navigation_flow_test.dart: StaffMenuDialog WALK-IN ORDER pops cleanly and Navigator keeps single /menu
+00:02 +58: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-45ea8c3f-7cbeaa387605e4ce/test/navigation_flow_test.dart: StaffMenuDialog WALK-IN ORDER pops cleanly and Navigator keeps single /menu
+00:02 +59: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-45ea8c3f-7cbeaa387605e4ce/test/navigation_flow_test.dart: StaffMenuDialog WALK-IN ORDER pops cleanly and Navigator keeps single /menu
+00:02 +60: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-45ea8c3f-7cbeaa387605e4ce/test/navigation_flow_test.dart: StaffMenuDialog WALK-IN ORDER pops cleanly and Navigator keeps single /menu
+00:02 +61: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-45ea8c3f-7cbeaa387605e4ce/test/menu_ordering_test.dart: e7 poster item reaches cart at 320px
+00:03 +62: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-45ea8c3f-7cbeaa387605e4ce/test/menu_ordering_test.dart: e7 poster item reaches cart at 320px
+00:03 +63: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-45ea8c3f-7cbeaa387605e4ce/test/menu_ordering_test.dart: e7 poster item reaches cart at 320px
+00:03 +64: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-45ea8c3f-7cbeaa387605e4ce/test/menu_ordering_test.dart: e7 poster item reaches cart at 320px
+00:03 +65: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-45ea8c3f-7cbeaa387605e4ce/test/menu_ordering_test.dart: e7 poster item reaches cart at 320px
+00:03 +66: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-45ea8c3f-7cbeaa387605e4ce/test/navigation_flow_test.dart: ReceiptPage ORDER AGAIN returns to /menu even when / is underneath (deep-link flow)
+00:03 +67: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-45ea8c3f-7cbeaa387605e4ce/test/menu_ordering_test.dart: closing item details does not add an order
+00:03 +68: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-45ea8c3f-7cbeaa387605e4ce/test/navigation_flow_test.dart: ReceiptPage NEW WALK-IN ORDER returns to /menu instead of AdminDashboard
+00:03 +69: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-45ea8c3f-7cbeaa387605e4ce/test/navigation_flow_test.dart: ReceiptPage NEW WALK-IN ORDER returns to /menu instead of AdminDashboard
+00:03 +70: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-45ea8c3f-7cbeaa387605e4ce/test/navigation_flow_test.dart: ReceiptPage NEW WALK-IN ORDER returns to /menu instead of AdminDashboard
+00:03 +71: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-45ea8c3f-7cbeaa387605e4ce/test/navigation_flow_test.dart: ReceiptPage NEW WALK-IN ORDER returns to /menu instead of AdminDashboard
+00:03 +72: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-45ea8c3f-7cbeaa387605e4ce/test/menu_ordering_test.dart: 320px menu supports large text without layout exceptions
+00:03 +73: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-45ea8c3f-7cbeaa387605e4ce/test/menu_ordering_test.dart: 320px menu supports large text without layout exceptions
+00:03 +74: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-45ea8c3f-7cbeaa387605e4ce/test/menu_ordering_test.dart: 320px menu supports large text without layout exceptions
+00:03 +75: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-45ea8c3f-7cbeaa387605e4ce/test/staff_kds_test.dart: Staff Session & Audio Alert Tests StaffLoginDialog displays Quick PIN keypad by default
+00:03 +76: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-45ea8c3f-7cbeaa387605e4ce/test/staff_kds_test.dart: Staff Session & Audio Alert Tests StaffLoginDialog displays Quick PIN keypad by default
+00:03 +77: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-45ea8c3f-7cbeaa387605e4ce/test/staff_kds_test.dart: Staff Session & Audio Alert Tests StaffLoginDialog displays Quick PIN keypad by default
+00:04 +78: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-45ea8c3f-7cbeaa387605e4ce/test/staff_kds_test.dart: Staff Session & Audio Alert Tests StaffLoginDialog displays Quick PIN keypad by default
+00:04 +79: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-45ea8c3f-7cbeaa387605e4ce/test/navigation_flow_test.dart: Compact KdsPage POS and Sales & Admin actions pop back to existing named routes
+00:04 +80: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-45ea8c3f-7cbeaa387605e4ce/test/staff_kds_test.dart: Staff Session & Audio Alert Tests KdsPage renders operations board when staff is logged in
+00:04 +81: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-45ea8c3f-7cbeaa387605e4ce/test/navigation_flow_test.dart: ReceiptPage ORDER AGAIN opens KioskMenuPage even when /menu is absent from stack
+00:04 +82: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-45ea8c3f-7cbeaa387605e4ce/test/staff_kds_test.dart: Staff Session & Audio Alert Tests KdsPage mobile layout (390x844 & 320x640) renders without overflow or mock orders
+00:04 +83: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-45ea8c3f-7cbeaa387605e4ce/test/staff_kds_test.dart: Staff Session & Audio Alert Tests AdminDashboard, AnalyticsPage, and LifetimeAnalyticsPage require staff login and render cleanly on mobile
+00:04 +84: All tests passed!
+
+=== FLUTTER BUILD WEB WASM ===
+Resolving dependencies...
+Downloading packages...
+  _flutterfire_internals 1.3.77 (1.3.79 available)
+  archive 4.0.9 (4.7.1 available)
+  async 2.13.0 (2.13.1 available)
+  clock 1.1.2 (1.1.3 available)
+  cloud_firestore 6.10.0 (7.1.0 available)
+  cloud_firestore_platform_interface 8.0.7 (8.1.0 available)
+  cloud_firestore_web 5.7.3 (5.8.0 available)
+  cloud_functions 6.5.0 (7.0.1 available)
+  cloud_functions_platform_interface 6.0.7 (6.1.1 available)
+  cloud_functions_web 5.1.13 (5.1.15 available)
+  crypto 3.0.7 (3.0.8 available)
+  cupertino_icons 1.0.8 (2.0.0 available)
+  firebase_app_check 0.4.8 (0.5.1 available)
+  firebase_app_check_platform_interface 0.4.2+1 (0.5.1+3 available)
+  firebase_app_check_web 0.2.6+1 (0.3.1+3 available)
+  firebase_auth 6.7.0 (7.0.1 available)
+  firebase_auth_platform_interface 9.1.0 (9.1.2 available)
+  firebase_auth_web 6.3.0 (6.3.2 available)
+  firebase_core 4.15.0 (5.1.0 available)
+  firebase_core_web 3.12.0 (4.1.0 available)
+  flutter_map 6.2.1 (8.3.2 available)
+  geolocator 13.0.4 (14.1.2 available)
+  geolocator_android 4.6.2 (5.2.1 available)
+  geolocator_apple 2.3.13 (2.4.3 available)
+  geolocator_platform_interface 4.2.6 (4.4.1 available)
+  geolocator_web 4.1.3 (4.1.4 available)
+  image 4.8.0 (4.12.0 available)
+  intl 0.20.2 (0.20.3 available)
+  latlong2 0.9.1 (0.10.1 available)
+  logger 2.7.0 (2.8.0 available)
+  material_color_utilities 0.13.0 (0.13.1 available)
+  mgrs_dart 2.0.0 (3.0.0 available)
+  petitparser 7.0.2 (7.1.0 available)
+  posix 6.5.0 (6.5.4 available)
+  proj4dart 2.1.0 (3.0.0 available)
+  stack_trace 1.12.1 (1.12.2 available)
+  test_api 0.7.12 (0.7.15 available)
+  unicode 0.3.1 (1.1.9 available)
+  uuid 4.5.3 (4.6.0 available)
+  vector_math 2.4.3 (2.4.4 available)
+  vm_service 15.0.2 (15.4.0 available)
+  web 1.1.1 (1.1.2 available)
+  webview_flutter 4.13.1 (4.14.1 available)
+  webview_flutter_android 4.10.13 (4.14.1 available)
+  webview_flutter_platform_interface 2.14.0 (2.15.1 available)
+  webview_flutter_wkwebview 3.24.1 (3.27.2 available)
+  xml 6.6.1 (7.1.0 available)
+Got dependencies!
+47 packages have newer versions incompatible with dependency constraints.
+Try `flutter pub outdated` for more information.
+
+┌─ New feature ────────────────────────────────────────────────────────────────────────────┐
+│   WebAssembly compilation is new. Understand the details before deploying to production. │
+│   See https://flutter.dev/to/wasm for more information.                                  │
+└──────────────────────────────────────────────────────────────────────────────────────────┘
+Compiling lib\main.dart for the Web...                          
+Font asset "CupertinoIcons.ttf" was tree-shaken, reducing it from 257628 to 1472 bytes (99.4% reduction). Tree-shaking can be disabled by providing the --no-tree-shake-icons flag when building your app.
+Font asset "MaterialIcons-Regular.otf" was tree-shaken, reducing it from 1645184 to 21524 bytes (98.7% reduction). Tree-shaking can be disabled by providing the --no-tree-shake-icons flag when building your app.
+Compiling lib\main.dart for the Web...                             59.2s
+√ Built build\web
+
+=== FUNCTIONS BUILD + UNIT TESTS + AUDIT ===
+
+> build
+> tsc
+
+
+> test
+> npm run build && node --test test/telegram_notification.test.js test/payment_reconciliation.test.js test/staff_auth.test.js test/daily_stats.test.js
+
+
+> build
+> tsc
+
+✔ report from day summaries matches the old order scan (31.5157ms)
+✔ summing per-write deltas equals recounting the final orders (91.1925ms)
+✔ status-only and bookkeeping writes produce no stats write (0.4101ms)
+✔ a date correction moves the order between days (0.2674ms)
+✔ unpaid GCash orders do not count until payment lands (0.2386ms)
+✔ stored docs round-trip and tolerate missing fields (0.593ms)
+✔ prefers the order document id from metadata (1.0366ms)
+✔ falls back to reference_number for sessions created before this change (0.227ms)
+✔ ignores metadata that is not a plain document id (0.2579ms)
+✔ returns null when the payload has no usable id (0.2145ms)
+✔ verifyPaymongoSignature validates HMAC-SHA256 when secret is set (0.9718ms)
+✔ PayMongo payment status helpers identify paid vs failed sessions (0.2362ms)
+✔ KDS projection excludes unconfirmed GCash and handles invalid timestamps cleanly (0.4384ms)
+✔ hasMatchingCheckoutSession rejects unbound or mismatched orders (0.3165ms)
+▶ staff auth: scrypt PIN and password verification
+  ✔ hashes and verifies a 4-digit PIN (249.753ms)
+  ✔ hashes and verifies a staff password (123.6282ms)
+  ✔ timing-safe comparison rejects tampered or mismatched-length hash cleanly (73.7973ms)
+  ✔ isCountableOrder excludes cancelled and unpaid/failed GCash orders (0.1903ms)
+✔ staff auth: scrypt PIN and password verification (448.8392ms)
+{"error":"ETELEGRAM: 400 Bad Request: can't parse entities: Character '(' is reserved","chatId":"111","severity":"WARNING","message":"sendToAll: MarkdownV2 parsing failed for chat 111; falling back to plain text"}
+{"error":"ETELEGRAM: 400 Bad Request: can't parse entities: Character '(' is reserved","chatId":"222","severity":"WARNING","message":"sendToAll: MarkdownV2 parsing failed for chat 222; falling back to plain text"}
+{"error":"ETELEGRAM: 400 Bad Request: can't parse entities","chatId":"333","severity":"WARNING","message":"sendPhotoToAll: MarkdownV2 parsing failed for chat 333; falling back to plain text caption"}
+{"error":"ETELEGRAM: 400 Bad Request: can't parse entities","chatId":"444","severity":"WARNING","message":"sendPhotoToAll: MarkdownV2 parsing failed for chat 444; falling back to plain text caption"}
+▶ Telegram MarkdownV2 escaping and order notifications
+  ✔ escapeMd escapes all Telegram MarkdownV2 reserved characters (1.2708ms)
+  ✔ escapeMd handles numbers, null, and undefined without throwing (0.22ms)
+  ✔ item line with variant must have escaped parentheses in MarkdownV2 (1.0022ms)
+  ✔ full order notification messages must be valid MarkdownV2 (0.8179ms)
+  ✔ stripMarkdownV2 removes backslash escapes cleanly for plain-text fallback (0.2912ms)
+  ✔ sendToAll falls back to plain text when Telegram rejects entity parsing (1.6182ms)
+  ✔ map URL helpers generate valid Google and MapTiler URLs (0.3132ms)
+  ✔ formatDeliverySummaryCaption generates valid MarkdownV2 under 1024 chars (0.4393ms)
+  ✔ sendPhotoToAll sends photo with caption and reply_markup, and falls back to plain text on entity parse error (1.1492ms)
+  ✔ isMarkdownParseError matches Telegram entity parse errors without false-matching plain 400 text (0.3573ms)
+✔ Telegram MarkdownV2 escaping and order notifications (9.3833ms)
+ℹ tests 28
+ℹ suites 2
+ℹ pass 28
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 839.9441
+# npm audit report
+
+fast-xml-parser  <=5.11.2
+fast-xml-parser: Quadratic CPU consumption scanning unterminated stop-node tags - https://github.com/advisories/GHSA-474x-hrwr-fgx4
+fix available via `npm audit fix`
+node_modules/fast-xml-parser
+
+qs  <=6.16.0
+Severity: moderate
+qs's arrayLimit bypass in its bracket notation allows DoS via memory exhaustion - https://github.com/advisories/GHSA-6rw7-vpxm-498p
+qs has a remotely triggerable DoS: qs.stringify crashes with TypeError on null/undefined entries in comma-format arrays when encodeValuesOnly is set - https://github.com/advisories/GHSA-q8mj-m7cp-5q26
+qs array-limit bypass via bracket-key comma parsing - https://github.com/advisories/GHSA-x5fp-wj9c-mxmx
+qs: Denial of Service via Attacker Controlled isBuffer - https://github.com/advisories/GHSA-4mjr-xmp4-gh2g
+qs : qs.stringify with arrayFormat 'comma' throws an uncaught TypeError on array elements carrying a non-callable own toString (DoS) - https://github.com/advisories/GHSA-6pq8-jhm2-2vcw
+fix available via `npm audit fix`
+node_modules/body-parser/node_modules/qs
+node_modules/qs
+node_modules/request/node_modules/qs
+  request  *
+  Depends on vulnerable versions of qs
+  Depends on vulnerable versions of tough-cookie
+  Depends on vulnerable versions of uuid
+  node_modules/request
+    request-promise-core  *
+    Depends on vulnerable versions of request
+    node_modules/request-promise-core
+
+
+tough-cookie  <4.1.3
+Severity: moderate
+tough-cookie Prototype Pollution vulnerability - https://github.com/advisories/GHSA-72xf-g2v4-qvf3
+fix available via `npm audit fix`
+node_modules/request/node_modules/tough-cookie
+
+uuid  <11.1.1
+Severity: moderate
+uuid: Missing buffer bounds check in v3/v5/v6 when buf is provided - https://github.com/advisories/GHSA-w5hq-g745-h8pq
+fix available via `npm audit fix --force`
+Will install node-telegram-bot-api@2.4.0, which is a breaking change
+node_modules/gaxios/node_modules/uuid
+node_modules/google-gax/node_modules/uuid
+node_modules/request/node_modules/uuid
+node_modules/teeny-request/node_modules/uuid
+node_modules/uuid
+  @cypress/request  <=3.0.10
+  Depends on vulnerable versions of uuid
+  node_modules/@cypress/request
+    @cypress/request-promise  *
+    Depends on vulnerable versions of @cypress/request
+    Depends on vulnerable versions of request-promise-core
+    node_modules/@cypress/request-promise
+    node-telegram-bot-api  0.64.0 - 0.67.0
+    Depends on vulnerable versions of @cypress/request
+    Depends on vulnerable versions of @cypress/request-promise
+    node_modules/node-telegram-bot-api
+  gaxios  6.4.0 - 6.7.1
+  Depends on vulnerable versions of uuid
+  node_modules/gaxios
+  google-gax  4.0.5-experimental - 4.6.1
+  Depends on vulnerable versions of retry-request
+  Depends on vulnerable versions of uuid
+  node_modules/google-gax
+    @google-cloud/firestore  7.5.0-pre.0 || 7.6.0 - 7.11.6
+    Depends on vulnerable versions of google-gax
+    node_modules/@google-cloud/firestore
+      firebase-admin  7.0.0 - 8.2.0 || 11.0.0 - 14.3.0
+      Depends on vulnerable versions of @google-cloud/firestore
+      Depends on vulnerable versions of @google-cloud/storage
+      node_modules/firebase-admin
+        firebase-functions  2.2.0 - 2.3.1 || 5.0.0 - 7.2.6-rc.0
+        Depends on vulnerable versions of firebase-admin
+        node_modules/firebase-functions
+  teeny-request  3.9.1 - 9.0.0
+  Depends on vulnerable versions of uuid
+  node_modules/teeny-request
+    @google-cloud/storage  2.2.0 - 2.5.0 || 5.19.0 - 8.0.0
+    Depends on vulnerable versions of retry-request
+    Depends on vulnerable versions of teeny-request
+    node_modules/@google-cloud/storage
+    retry-request  7.0.0 - 7.0.2
+    Depends on vulnerable versions of teeny-request
+    node_modules/retry-request
+
+17 vulnerabilities (1 low, 16 moderate)
+
+To address issues that do not require attention, run:
+  npm audit fix
+
+To address all issues (including breaking changes), run:
+  npm audit fix --force
+
+=== FIRESTORE RULES TESTS (JAVA 21) ===
+
+> test:rules
+> npx --yes firebase-tools emulators:exec --only firestore "node --test test/firestore-rules.test.js"
+
+[36m[1mi  emulators:[22m[39m Starting emulators: firestore
+[36m[1mi  firestore:[22m[39m Firestore Emulator logging to [1mfirestore-debug.log[22m
+[32m[1m+  firestore:[22m[39m Firestore Emulator was started in standard edition.
+[32m[1m+  firestore:[22m[39m Firestore Emulator UI websocket is running on 9150.
+[36m[1mi [22m[39m Running script: [1mnode --test test/firestore-rules.test.js[22m
+▶ orders: kiosk can only create (validated)
+  ✔ anon can create a valid order (403.6326ms)
+  ✔ anon can create the complete checkout payload (74.6004ms)
+[2026-11-15T05:31:08.015Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x202007b2 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'create' @ L17, false for 'create' @ L180
+  ✔ create rejects telegramSent (the field that broke checkout) (68.9141ms)
+[2026-11-15T05:31:08.116Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x202007b3 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+Property customerName is undefined on object. for 'create' @ L17, false for 'create' @ L180, Property customerName is undefined on object. for 'create' @ L17, false for 'create' @ L180
+[2026-11-15T05:31:08.144Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x202007b4 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'create' @ L17, false for 'create' @ L180
+[2026-11-15T05:31:08.174Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x202007b5 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'create' @ L17, false for 'create' @ L180
+[2026-11-15T05:31:08.203Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x202007b6 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'create' @ L17, false for 'create' @ L180
+[2026-11-15T05:31:08.235Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x202007b7 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'create' @ L17, false for 'create' @ L180
+[2026-11-15T05:31:08.267Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x202007b8 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'create' @ L17, false for 'create' @ L180
+[2026-11-15T05:31:08.304Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x202007b9 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'create' @ L17, false for 'create' @ L180
+  ✔ create rejects missing/junk/oversized/forged fields (288.4543ms)
+[2026-11-15T05:31:08.426Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x202007bc error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'update' @ L41, false for 'update' @ L180
+[2026-11-15T05:31:08.434Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x202007bd error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'delete' @ L41, false for 'delete' @ L180
+  ✔ nobody can read/update/delete via client (168.1149ms)
+✔ orders: kiosk can only create (validated) (1865.3493ms)
+▶ orders: every checkout combination saves
+  ✔ kiosk-cash: a signed-out customer can place it (42.7904ms)
+  ✔ kiosk-cash: a signed-in non-staff user can place it (50.6799ms)
+  ✔ kiosk-cash: staff can place it (39.0042ms)
+  ✔ kiosk-gcash: a signed-out customer can place it (49.9266ms)
+  ✔ kiosk-gcash: a signed-in non-staff user can place it (48.4849ms)
+  ✔ kiosk-gcash: staff can place it (45.0572ms)
+  ✔ staff-cash: staff and admin can place it (66.6343ms)
+[2026-11-15T05:31:08.873Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x202007c7 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'create' @ L17, false for 'create' @ L180
+[2026-11-15T05:31:08.907Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x202007c8 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+Property role is undefined on object. for 'create' @ L17, false for 'create' @ L180, Property role is undefined on object. for 'create' @ L17, false for 'create' @ L180
+[2026-11-15T05:31:08.935Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x202007c9 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'create' @ L17, false for 'create' @ L180
+  ✔ staff-cash: rejected without a staff role claim (118.8263ms)
+  ✔ staff-gcash: staff and admin can place it (64.3648ms)
+[2026-11-15T05:31:09.047Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x202007cc error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'create' @ L17, false for 'create' @ L180
+[2026-11-15T05:31:09.076Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x202007cd error. Code: 7 Message: 7 PERMISSION_DENIED: 
+Property role is undefined on object. for 'create' @ L17, false for 'create' @ L180, Property role is undefined on object. for 'create' @ L17, false for 'create' @ L180
+[2026-11-15T05:31:09.099Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x202007ce error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'create' @ L17, false for 'create' @ L180
+  ✔ staff-gcash: rejected without a staff role claim (99.0951ms)
+[2026-11-15T05:31:09.169Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x202007d0 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'create' @ L17, false for 'create' @ L180
+[2026-11-15T05:31:09.237Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x202007d2 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'create' @ L17, false for 'create' @ L180
+  ✔ the limits checkout enforces match the rules (138.0394ms)
+✔ orders: every checkout combination saves (764.0695ms)
+▶ kds_orders: staff read the kitchen mirror, nobody writes
+  ✔ staff and admin can get and list (172.4152ms)
+  ✔ anon, customers and riders cannot read (220.8941ms)
+[2026-11-15T05:31:09.696Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x202007dc error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'create' @ L50, false for 'create' @ L180, false for 'update' @ L50, false for 'update' @ L180
+[2026-11-15T05:31:09.713Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x202007dd error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'update' @ L50, false for 'update' @ L180
+[2026-11-15T05:31:09.720Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x202007de error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'delete' @ L50, false for 'delete' @ L180
+  ✔ even admins cannot write the mirror (89.8807ms)
+[2026-11-15T05:31:09.824Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x202007e1 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'create' @ L180, false for 'update' @ L180
+[2026-11-15T05:31:09.886Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x202007e3 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'create' @ L180, false for 'update' @ L180
+[2026-11-15T05:31:09.935Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x202007e5 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'create' @ L180, false for 'update' @ L180
+  ✔ derived stats collections stay server-only (214.1303ms)
+✔ kds_orders: staff read the kitchen mirror, nobody writes (697.9935ms)
+[2026-11-15T05:31:10.051Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x202007e8 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'create' @ L58, false for 'create' @ L180, false for 'update' @ L58, false for 'update' @ L180
+[2026-11-15T05:31:10.108Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x202007e9 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'update' @ L58, false for 'update' @ L180
+▶ config: public read-only
+  ✔ anon can read, cannot write (173.185ms)
+✔ config: public read-only (173.4764ms)
+[2026-11-15T05:31:10.291Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x202007ed error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'create' @ L68, false for 'create' @ L180, false for 'update' @ L68, false for 'update' @ L180
+▶ staff_accounts + login_attempts: server only
+  ✔ everyone denied, even staff (222.171ms)
+✔ staff_accounts + login_attempts: server only (222.4073ms)
+[2026-11-15T05:31:10.430Z]  @firebase/firestore: Firestore (12.19.0): GrpcConnection RPC 'Write' stream 0x202007f0 error. Code: 7 Message: 7 PERMISSION_DENIED: 
+false for 'create' @ L180, false for 'update' @ L180
+▶ default deny
+  ✔ unknown collections denied (98.8603ms)
+✔ default deny (99.0918ms)
+ℹ tests 23
+ℹ suites 6
+ℹ pass 23
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 4109.1149
+[32m[1m+ [22m[39m Script exited successfully (code 0)
+[36m[1mi  emulators:[22m[39m Shutting down emulators.
+[36m[1mi  firestore:[22m[39m Stopping Firestore Emulator
+[33m[1m! [22m[39m Firestore Emulator has exited upon receiving signal: SIGINT
+[36m[1mi  hub:[22m[39m Stopping emulator hub
+[36m[1mi  logging:[22m[39m Stopping Logging Emulator
+

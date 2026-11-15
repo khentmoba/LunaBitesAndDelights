@@ -30,7 +30,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const MIME = {
   '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8',
   '.mjs': 'text/javascript; charset=utf-8', '.json': 'application/json',
-  '.wasm': 'application/wasm', '.png': 'image/png', '.otf': 'font/otf', '.ttf': 'font/ttf',
+  '.wasm': 'application/wasm', '.png': 'image/png', '.webp': 'image/webp', '.jpg': 'image/jpeg', '.otf': 'font/otf', '.ttf': 'font/ttf',
   '.css': 'text/css; charset=utf-8', '.bin': 'application/octet-stream',
 };
 const COMPRESS = new Set(['.html', '.js', '.mjs', '.json', '.wasm', '.css', '.otf', '.ttf', '.bin']);
@@ -92,7 +92,12 @@ async function cdp(wsUrl) {
   return { ws, send, events };
 }
 
-const FIRST_FRAME = `window.__ff = null; window.addEventListener('flutter-first-frame', () => { window.__ff = performance.now(); });`;
+const FIRST_FRAME = `window.__ff = null; window.__fcp = null; window.__lcp = null;
+  window.addEventListener('flutter-first-frame', () => { window.__ff = performance.now(); });
+  try {
+    new PerformanceObserver((l) => { for (const e of l.getEntries()) if (e.name === 'first-contentful-paint') window.__fcp = e.startTime; }).observe({ type: 'paint', buffered: true });
+    new PerformanceObserver((l) => { for (const e of l.getEntries()) if (e.startTime > (window.__lcp || 0)) window.__lcp = e.startTime; }).observe({ type: 'largest-contentful-paint', buffered: true });
+  } catch (_) {}`;
 const PROFILES = {
   fast4g: { label: '4G: 4 Mbps down, 1.5 Mbps up, 100 ms RTT, 4x CPU', latency: 100, down: 4e6 / 8, up: 1.5e6 / 8, cpu: 4 },
   wifi: { label: 'unthrottled, 1x CPU', latency: 0, down: -1, up: -1, cpu: 1 },
@@ -127,7 +132,13 @@ async function coldLoad(s, port, profile) {
     expression: 'JSON.stringify({ crossOriginIsolated: self.crossOriginIsolated, renderer: window._flutter?.buildConfig?.builds?.map(b => b.compileTarget + ":" + (b.renderer||"")) })',
     returnByValue: true,
   })).result.value;
+  const timings = JSON.parse((await s.send('Runtime.evaluate', {
+    expression: 'JSON.stringify({ fcp: window.__fcp, lcp: window.__lcp })',
+    returnByValue: true,
+  })).result.value);
   return {
+    fcpMs: timings.fcp === null ? null : Math.round(timings.fcp),
+    lcpMs: timings.lcp === null ? null : Math.round(timings.lcp),
     firstFrameMs: ff === null ? null : Math.round(ff),
     bytesOnWire: uniq.reduce((n, r) => n + r.bytes, 0),
     requests: uniq.length,
@@ -168,6 +179,8 @@ try {
     for (let i = 0; i < runs; i++) samples.push(await coldLoad(s, port, profile));
     result.profiles[name] = {
       profile: profile.label,
+      medianFcpMs: median(samples.map((x) => x.fcpMs ?? Infinity)),
+      medianLcpMs: median(samples.map((x) => x.lcpMs ?? Infinity)),
       medianFirstFrameMs: median(samples.map((x) => x.firstFrameMs ?? Infinity)),
       medianBytesOnWire: median(samples.map((x) => x.bytesOnWire)),
       samples,
@@ -182,7 +195,7 @@ try {
     writeFileSync(resolve(args.shot), Buffer.from(data, 'base64'));
   }
   if (args.out) { mkdirSync(dirname(resolve(args.out)), { recursive: true }); writeFileSync(resolve(args.out), JSON.stringify(result, null, 2) + '\n'); }
-  console.log(JSON.stringify({ label, ...Object.fromEntries(Object.entries(result.profiles).map(([k, v]) => [k, { firstFrameMs: v.medianFirstFrameMs, bytes: v.medianBytesOnWire, engine: v.samples[0].engine, env: v.samples[0].env }])) }, null, 1));
+  console.log(JSON.stringify({ label, ...Object.fromEntries(Object.entries(result.profiles).map(([k, v]) => [k, { fcpMs: v.medianFcpMs, lcpMs: v.medianLcpMs, firstFrameMs: v.medianFirstFrameMs, bytes: v.medianBytesOnWire, engine: v.samples[0].engine, env: v.samples[0].env }])) }, null, 1));
   s.ws.close();
 } finally {
   if (chrome) chrome.kill('SIGKILL');

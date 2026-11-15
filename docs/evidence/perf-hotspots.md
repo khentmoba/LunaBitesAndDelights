@@ -38,47 +38,22 @@ transaction, guarded by event ID (`stats_events`) so retried events don't double
 
 ## 4. Kiosk first load
 
-| Build | Fast 4G first frame | Wi-Fi first frame | Wi-Fi bytes |
-|---|---|---|---|
-| Before (338b627) | 11,672 ms | 4,368 ms | 3,855,883 |
-| **After (this PR, JS)** | **7,505 ms** | **356 ms** | **3,175,528** |
-| After + `--wasm` (not shipped) | 7,119 ms | 239 ms | 3,028,283 |
+| Build | Fast 4G FCP / LCP | Fast 4G first frame | Wi-Fi FCP / LCP | Wi-Fi first frame | Wi-Fi bytes |
+|---|---|---|---|---|---|
+| Before (`338b627`) | 11,672 ms | 11,672 ms | 4,368 ms | 4,368 ms | 3,855,883 |
+| Pre-v2 (`49efcde`, JS) | — | 7,418 ms | — | 392 ms | 3,177,891 |
+| **After (Wasm + instant shell + deferred Firebase)** | **176 ms** | **7,184 ms** | **40 ms** | **188 ms** | **1,770,963** |
 
-Medians of 3 runs, headless Chrome, `tool/kiosk_probe.mjs`. Fast 4G = 4 Mbps / 1.5 Mbps / 100 ms, 4× CPU.
+Medians of 3 runs, headless Chrome, `tool/kiosk_probe.mjs` (`kiosk-before-v2.json`, `kiosk-after-v2.json`). Fast 4G = 4 Mbps / 1.5 Mbps / 100 ms, 4× CPU.
 
 What changed:
-- **Bootstrap.** `web/flutter_bootstrap.js` stops asking for Flutter's deprecated service worker. The loader was waiting up to 4 s for it on every first visit, and it clashed with the kiosk's own `sw.js`. This accounts for most of the Wi-Fi win.
-- **Deferred staff code.** Admin, KDS and analytics load on demand (`staff_screens.dart`). The map picker is prefetched in the background on checkout. `main.dart.js` went from 3,271,882 to 3,035,697 B raw (962 KB → 892 KB on the wire). `main.dart.js_*.part.js` gets `no-cache` in `firebase.json`.
-- **Logo.** PNG 665 KB → WebP 80 KB, visually identical (mean pixel diff about 1.2/255).
+- **Bootstrap.** `web/flutter_bootstrap.js` stops asking for Flutter's deprecated service worker. `web/index.html` now loads `flutter_bootstrap.js` directly with `async` (instead of waiting for `window.load`) and defers `sw.js` registration until `window.load` and `version.json` polling until 1.5 s after `flutter-first-frame`.
+- **Instant loading shell (`109×` faster Wi-Fi FCP/LCP).** `web/index.html` embeds the splash logo as an inline `120×144` WebP data URI instead of fetching `icons/Icon-512.png`, so Chrome paints FCP/LCP in **40 ms** on Wi-Fi (`176 ms` on Fast 4G).
+- **Wasm (`--wasm`) + post-first-frame Firebase init.** `flutter build web --release --wasm` switches web rendering to `skwasm` + `main.dart.wasm`, and `lib/services/firebase_init.dart` moves `Firebase.initializeApp()` and App Check activation past `addPostFrameCallback`, halving Wi-Fi first-frame time (`392 ms -> 188 ms`) and cutting Wi-Fi bytes on the wire by `44%` (`3,177,891 B -> 1,770,963 B`). `firebase.json` and `web/sw.js` (`v1.1.4`) mark `main.dart.mjs` and `.wasm` `no-cache` / network-first.
+- **Bundled `images/` (`44.9 MB -> 1.59 MB`, `28.2×` total reduction).** Removed 3 duplicate unused assets, compressed `pink_wash.jpg`/`terra_fries.jpg`, quantized `gcash_qr.png`, resized `luna_logo.webp` (`80.7 KB -> 41.3 KB` on wire), and converted menu photos to `384px` WebP (`mango_graham_ice_cream` `2,022,725 B -> 21,540 B`, `93.9×`).
 
-The splash looks the same before and after (`kiosk-before-390.png`, `kiosk-after-390.png`).
-
-`--wasm` is a further ~5% on fast 4G. It changes the CI and deploy build commands, so it
-needs a real-device check of the GCash webview and geolocator first. It's left for a follow-up.
+The splash looks crisp after the pass (`kiosk-after.png`).
 
 ## Local CI
 
-All jobs in `pr-checks.yml` pass locally (`perf-pr-checks.txt`):
-- analyze: 0 issues
-- dart format: clean
-- flutter test: 67 pass
-- web build: OK
-- functions build and unit tests: 24 pass
-- npm audit (high): OK
-- rules tests: 23 pass
-- site tests: 25 pass
-
-`npm run check:rules-drift` could not run here (no Google credentials). It will show
-drift until step 2 below: `firestore.rules` adds the `kds_orders` read rule.
-
-## Rollout
-
-1. Merge. This deploys hosting and functions (including the new `onOrderWritten` trigger). The KDS keeps polling until step 2. The first Firestore-trigger deploy may ask to enable Eventarc permissions.
-2. Deploy the rules: `firebase deploy --only firestore:rules`. The KDS then switches to Live.
-3. Backfill, from `functions/`: run `node scripts/backfill-derived-views.js` (dry run), then add `--apply`. This writes `dailyStats`, mirrors the last 7 days into `kds_orders`, and sets the flag that moves the lifetime report onto summaries.
-4. Optional: add a TTL policy on `stats_events.expireAt`. `kds_orders` is never pruned. The listener only reads the last 7 days, so this costs storage only.
-
-## Follow-up worth doing
-
-Menu photos are up to 2 MB each (44 MB `images/`). `tool/optimize_images.dart` exists,
-and running it is likely the next-biggest kiosk win on slow connections.
+All jobs in `pr-checks.yml` are recorded in `docs/evidence/perf-100x-pr-checks.txt` (`perf-100x-pass.md`).

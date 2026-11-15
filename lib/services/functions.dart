@@ -1,4 +1,5 @@
 import 'package:cloud_functions/cloud_functions.dart';
+import 'firebase_init.dart';
 
 /// One-liner for calling a us-central1 callable. Returns the response data
 /// as a string-keyed map. Throws [FirebaseFunctionsException] on failure.
@@ -7,6 +8,7 @@ Future<Map<String, dynamic>> callFn(
   Map<String, dynamic>? params,
   int timeoutSecs = 15,
 ]) async {
+  await ensureFirebaseInitialized();
   final callable = FirebaseFunctions.instanceFor(region: 'us-central1')
       .httpsCallable(
         name,
