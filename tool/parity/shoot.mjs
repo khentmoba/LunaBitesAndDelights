@@ -49,14 +49,36 @@ export const SCREENS = [
   { name: 'kiosk-cart-empty', flutter: '/kiosk/#/cart', ts: '/kiosk/cart' },
   { name: 'kiosk-cart', flutter: '/kiosk/?cart=1#/cart', ts: '/kiosk/cart?cart=1' },
   { name: 'kiosk-checkout', flutter: '/kiosk/?cart=1#/checkout_process', ts: '/kiosk/checkout?cart=1' },
-  { name: 'kiosk-receipt', flutter: '/kiosk/?push=receipt#/menu', ts: '/kiosk/receipt?demo=1' },
-  { name: 'kiosk-gcash', flutter: '/kiosk/?push=gcash#/menu', ts: '/kiosk/gcash?demo=1' },
+  { name: 'kiosk-receipt', flutter: '/kiosk/?push=receipt#/menu', ts: '/kiosk/receipt', session: () => ({ 'luna.receipt': TS_RECEIPT }) },
+  { name: 'kiosk-gcash', flutter: '/kiosk/?push=gcash#/menu', ts: '/kiosk/gcash', session: () => ({ 'luna.pending': TS_PENDING }), script: 'window.open = () => null;', callables: () => ({ createCheckoutSession: { checkoutUrl: 'https://checkout.paymongo.com/cs_parity', checkoutSessionId: 'cs_parity' } }) },
+  // TypeScript only: Flutter's preview harness never opened these, so they have no baseline.
+  { name: 'kiosk-checkout-delivery', flutter: null, ts: '/kiosk/checkout?cart=1', session: () => ({ 'luna.checkout': TS_DELIVERY_DRAFT }) },
+  { name: 'kiosk-map', flutter: null, ts: '/kiosk/map', session: () => ({ 'luna.checkout': TS_DELIVERY_DRAFT }), script: () => MAP_STUBS },
   { name: 'staff-login', flutter: '/kiosk/#/kds', ts: '/staff/' },
   { name: 'staff-kds', flutter: '/kiosk/?staff=1#/kds', ts: '/staff/kds?staff=1' },
   { name: 'staff-dashboard', flutter: '/kiosk/?staff=1#/dashboard', ts: '/staff/dashboard?staff=1', settle: 7000 },
   { name: 'staff-analytics', flutter: '/kiosk/?staff=1#/analytics', ts: '/staff/analytics?staff=1', settle: 7000 },
   { name: 'staff-lifetime', flutter: '/kiosk/?staff=1#/lifetime-analytics', ts: '/staff/lifetime?staff=1', settle: 7000 },
 ];
+
+const TS_CART = [
+  { id: 'sm3', name: 'S3 – Shawarma Rice', emoji: '🌯🍚', imageUrl: 'images/sulit_shawarma.webp', variant: '', price: 99, quantity: 2 },
+  { id: 'mc1', name: 'Milo Craze', emoji: '🥤', imageUrl: '', variant: 'Oreo', price: 65, quantity: 1 },
+];
+
+// What flutter_preview.dart passes ReceiptPage and GCashCheckoutPage for
+// ?push=receipt and ?push=gcash. The TypeScript pages read the same values from
+// sessionStorage, where checkout leaves them.
+const TS_ITEMS = TS_CART.map(({ name, variant, price, quantity }) => ({ name, variant, price, quantity }));
+const TS_RECEIPT = {
+  orderNumber: 'LU-261115-001', customerName: 'Ana Reyes', customerAddress: 'Purok 5, Poblacion Magallanes',
+  customerPhone: '09171234567', items: TS_ITEMS, total: 263, timeStr: 'Nov 15, 2026 · 12:30 PM',
+  isWalkIn: false, orderType: 'Delivery', telegramSent: true,
+};
+const TS_PENDING = {
+  orderDocId: 'parity-order', orderId: 'LU-261115-001', amount: 263, items: TS_ITEMS,
+  customerName: 'Ana Reyes', customerPhone: '09171234567', receipt: TS_RECEIPT,
+};
 
 const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.mjs': 'text/javascript', '.json': 'application/json', '.wasm': 'application/wasm', '.png': 'image/png', '.webp': 'image/webp', '.jpg': 'image/jpeg', '.svg': 'image/svg+xml', '.ico': 'image/x-icon', '.css': 'text/css', '.woff2': 'font/woff2', '.ttf': 'font/ttf', '.otf': 'font/otf', '.webmanifest': 'application/manifest+json', '.txt': 'text/plain', '.bin': 'application/octet-stream' };
 const isFile = (f) => existsSync(f) && statSync(f).isFile();
@@ -86,6 +108,20 @@ async function cdp(wsUrl) {
   const send = (method, params = {}) => new Promise((r, j) => { const n = ++id; pending.set(n, { r, j }); ws.send(JSON.stringify({ id: n, method, params })); });
   return { ws, send };
 }
+
+// A pinned delivery draft, and the map page's browser services answered
+// in-page: no position, and a fixed Nominatim reply.
+const TS_DELIVERY_DRAFT = {
+  name: 'Ana Reyes', phone: '09171234567', address: 'Purok 5, Poblacion, Magallanes, Agusan del Norte, Caraga, 8604, Philippines',
+  orderType: 'Delivery', paymentMethod: 'Cash', lat: 9.020509, lng: 125.517591, pinned: true, distance: 0.4, pendingDocId: null, pendingNumber: null,
+};
+const MAP_STUBS = `
+  Object.defineProperty(navigator, 'geolocation', { value: { getCurrentPosition: (ok, fail) => fail({ code: 1 }) } });
+  const realFetch = window.fetch.bind(window);
+  window.fetch = (url, init) => String(url).startsWith('https://nominatim.openstreetmap.org/')
+    ? Promise.resolve(new Response(JSON.stringify({ display_name: ${JSON.stringify(TS_DELIVERY_DRAFT.address)}, address: { road: 'Purok 5', suburb: 'Poblacion', town: 'Magallanes' } }), { headers: { 'Content-Type': 'application/json' } }))
+    : realFetch(url, init);
+`;
 
 // Fixed seed so both targets render identical data.
 const today = new Date();
@@ -142,6 +178,34 @@ try {
         if (m.method === 'Runtime.consoleAPICalled' && m.params.type === 'error') errors.push(`${screen.name}-${w}: console.error ${m.params.args.map((a) => a.value ?? a.description).join(' ')}`);
       });
       const evaluate = async (expression) => (await s.send('Runtime.evaluate', { expression, returnByValue: true, awaitPromise: true })).result.value;
+      // The TypeScript kiosk keeps its cart in sessionStorage; seed the same two
+      // items flutter_preview.dart puts in the Flutter cart for ?cart=1.
+      if (target === 'ts' && /[?&]cart=1/.test(path)) {
+        await s.send('Page.addScriptToEvaluateOnNewDocument', { source: `sessionStorage.setItem('luna.cart', ${JSON.stringify(JSON.stringify(TS_CART))})` });
+      }
+      if (target === 'ts' && screen.session) {
+        const writes = Object.entries(screen.session()).map(([k, v]) => `sessionStorage.setItem(${JSON.stringify(k)}, ${JSON.stringify(JSON.stringify(v))});`);
+        await s.send('Page.addScriptToEvaluateOnNewDocument', { source: writes.join('') + (typeof screen.script === 'function' ? screen.script() : screen.script ?? '') });
+      }
+      // Callables answer from the screen's table, as flutter_preview.dart's fake
+      // checkout call does, so no request reaches a real function.
+      if (target === 'ts' && screen.callables) {
+        const table = screen.callables();
+        const cors = [{ name: 'Access-Control-Allow-Origin', value: '*' }, { name: 'Access-Control-Allow-Headers', value: '*' }, { name: 'Access-Control-Allow-Methods', value: 'POST, OPTIONS' }];
+        s.ws.addEventListener('message', (e) => {
+          const m = JSON.parse(e.data);
+          if (m.method !== 'Fetch.requestPaused') return;
+          const name = Object.keys(table).find((n) => m.params.request.url.endsWith(`/${n}`));
+          if (!name) { s.send('Fetch.continueRequest', { requestId: m.params.requestId }).catch(() => {}); return; }
+          const preflight = m.params.request.method === 'OPTIONS';
+          s.send('Fetch.fulfillRequest', {
+            requestId: m.params.requestId, responseCode: preflight ? 204 : 200,
+            responseHeaders: [...cors, { name: 'Content-Type', value: 'application/json' }],
+            body: preflight ? '' : Buffer.from(JSON.stringify({ result: table[name] })).toString('base64'),
+          }).catch(() => {});
+        });
+        await s.send('Fetch.enable', { patterns: Object.keys(table).map((n) => ({ urlPattern: `*/${n}` })) });
+      }
       await s.send('Emulation.setDeviceMetricsOverride', { width: w, height: h, deviceScaleFactor: dpr, mobile: w < 700 });
       await s.send('Page.navigate', { url: `http://127.0.0.1:${port}${path}` });
       // Flutter: wait for the first frame (the HTML splash fades out); plain pages: load + fonts.
@@ -175,6 +239,7 @@ try {
   for (const screen of SCREENS) {
     if (only && !only.has(screen.name)) continue;
     const path = screen[target];
+    if (!path) continue;
     if (path.startsWith('/kiosk/') && target === 'flutter' && !kioskDir) continue;
     for (const vp of VIEWPORTS) await capture(screen, path, vp);
   }

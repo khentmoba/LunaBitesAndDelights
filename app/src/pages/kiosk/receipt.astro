@@ -1,0 +1,166 @@
+---
+import Kiosk from '../../layouts/Kiosk.astro';
+import { glyph } from '../../kiosk/icons';
+---
+<Kiosk title="Receipt · Luna Bites & Delights">
+<div class="page">
+  <header class="appbar rc-bar">
+    <h1 class="appbar__title rc-title">RECEIPT</h1>
+  </header>
+
+  <main class="rc" data-receipt hidden>
+    <div class="rc__in">
+      <section class="rc-hero">
+        <div class="rc-hero__check"><span class="icon" aria-hidden="true">{glyph('check_rounded')}</span></div>
+        <div class="rc-fit"><h2 class="rc-hero__title" data-fit data-headline></h2></div>
+        <p class="rc-hero__sub" data-sub></p>
+      </section>
+
+      <section class="rc-slip" aria-label="Receipt">
+        <div class="rc-slip__head">
+          <div class="rc-fit"><p class="rc-slip__brand" data-fit>LUNA BITES &amp; DELIGHTS</p></div>
+          <div class="rc-badge"><div class="rc-fit"><p class="rc-badge__text" data-fit data-number></p></div></div>
+        </div>
+        <div class="rc-slip__body">
+          <dl class="rc-rows" data-rows></dl>
+          <div class="rc-divider" aria-hidden="true"></div>
+          <h3 class="rc-items__label">ITEMS ORDERED</h3>
+          <ul class="rc-items" data-items></ul>
+          <div class="rc-divider" aria-hidden="true"></div>
+          <p class="rc-fee" data-fee hidden>Delivery fee applies. Your rider will confirm the amount, charged separately from your food order.</p>
+          <div class="rc-total">
+            <span class="rc-total__label" data-total-label>GRAND TOTAL</span>
+            <span class="rc-total__price" data-total></span>
+          </div>
+          <p class="rc-note" data-note></p>
+        </div>
+      </section>
+
+      <button type="button" class="rc-again" data-again>ORDER AGAIN</button>
+    </div>
+  </main>
+</div>
+</Kiosk>
+
+<style is:global>
+body { overflow: hidden; }
+.page { display: flex; flex-direction: column; height: 100dvh; background: var(--ground); }
+/* Transparent AppBar: the blush shows through, the theme's 2px rule stays. */
+.rc-bar { background-color: transparent; }
+.rc-title { letter-spacing: 1.2px; }
+
+/* lib/screens/receipt_page.dart */
+.rc { flex: 1; min-height: 0; overflow-y: auto; padding: 16px 16px calc(32px + env(safe-area-inset-bottom)); }
+.rc__in { max-width: 760px; margin: 0 auto; display: flex; flex-direction: column; }
+.rc-fit { display: flex; justify-content: center; min-width: 0; }
+[data-fit] { display: inline-block; white-space: nowrap; margin: 0; }
+
+.rc-hero { display: flex; flex-direction: column; align-items: center; padding: 28px 16px; border-radius: var(--radius-lg); background: var(--plate); box-shadow: var(--shadow-xl); color: #fff; text-align: center; }
+.rc-hero > .rc-fit { align-self: stretch; margin-top: 24px; }
+.rc-hero__check { display: grid; place-items: center; width: 80px; height: 80px; border-radius: 50%; background: rgb(255 255 255 / .1); }
+.rc-hero__check .icon { font-size: 48px; }
+.rc-hero__title { font-size: 22px; font-weight: 800; letter-spacing: 1px; line-height: 1.42; }
+.rc-hero__sub { margin: 8px 0 0; font-size: 16px; font-weight: 500; line-height: 1.42; }
+
+.rc-slip { margin-top: 32px; border-radius: var(--radius-xl); background: #fff; box-shadow: var(--shadow-lg); }
+.rc-slip__head { display: flex; flex-direction: column; align-items: center; padding: 32px 0; border-radius: var(--radius-xl) var(--radius-xl) 0 0; background: rgb(252 208 78 / .3); }
+.rc-slip__head > .rc-fit { align-self: stretch; }
+.rc-slip__brand { font-size: 24px; font-weight: 800; letter-spacing: 4px; line-height: 1.12; }
+.rc-badge { max-width: 100%; margin-top: 20px; padding: 10px 16px; border-radius: var(--radius-lg); background: var(--plate); }
+.rc-badge__text { color: #fff; font-size: 16px; font-weight: 800; letter-spacing: 1px; line-height: 1.42; }
+
+.rc-slip__body { padding: 18px; }
+.rc-rows { margin: 0; }
+.rc-row { display: flex; align-items: flex-start; }
+.rc-row + .rc-row { margin-top: 12px; }
+.rc-row dt { flex: none; width: 84px; margin-right: 10px; font-size: 11.5px; font-weight: 700; letter-spacing: 1.5px; line-height: 1.2; color: var(--ink-muted); }
+.rc-row dd { flex: 1; min-width: 0; margin: 0; font-size: 14px; font-weight: 500; line-height: 1.5; overflow-wrap: anywhere; }
+.rc-divider { height: 1px; margin: 24px 0; background: rgb(236 28 114 / .24); }
+.rc-items__label { margin: 0 0 16px; font-size: 14px; font-weight: 700; letter-spacing: 1.5px; line-height: 1.2; color: var(--ink-muted); }
+.rc-items { margin: 0; padding: 0; list-style: none; }
+.rc-item { display: flex; align-items: flex-start; padding-bottom: 16px; }
+.rc-item__qty, .rc-item__price { flex: none; font-size: 16px; font-weight: 700; line-height: 1.3; }
+.rc-item__text { flex: 1; min-width: 0; margin-left: 16px; }
+.rc-item__name { margin: 0; font-size: 16px; font-weight: 700; line-height: 1.25; }
+.rc-item__variant { margin: 0; font-size: 12px; font-weight: 500; line-height: 1.4; color: var(--ink-muted); }
+.rc-items + .rc-divider { margin: 0 0 32px; }
+.rc-fee { margin: 0 0 12px; font-size: 14px; font-weight: 500; line-height: 1.5; color: var(--ink-soft); }
+.rc-total { display: flex; align-items: center; gap: 12px; }
+.rc-total__label { flex: 1; font-size: 20px; font-weight: 800; letter-spacing: 1px; line-height: 1.2; }
+.rc-total__price { font-size: 28px; font-weight: 800; letter-spacing: -.6px; line-height: 1.08; }
+.rc-note { margin: 32px 0 0; padding: 20px; border: 1px solid rgb(252 208 78 / .5); border-radius: var(--radius); background: rgb(252 208 78 / .1); font-size: 14px; font-weight: 500; line-height: 1.5; text-align: center; }
+
+.rc-again { margin: 28px 0 16px; min-height: 46px; padding: 0 24px; border-radius: var(--radius); background: var(--plate); color: #fff; font-size: 16px; font-weight: 800; letter-spacing: 1.5px; line-height: 1.42; }
+.rc-again:hover { background: color-mix(in srgb, var(--plate), white 8%); }
+
+@media (min-width: 600px) {
+  .rc-title { letter-spacing: 2px; }
+  .rc { padding: 32px 32px calc(32px + env(safe-area-inset-bottom)); }
+  .rc-hero { padding: 40px 24px; }
+  .rc-hero__title { font-size: 26px; letter-spacing: 1.5px; }
+  .rc-badge { padding: 10px 24px; }
+  .rc-badge__text { font-size: 20px; letter-spacing: 2px; }
+  .rc-slip__body { padding: 32px; }
+  .rc-row dt { width: 100px; margin-right: 16px; }
+  .rc-total__price { font-size: 36px; }
+  .rc-again { margin-top: 40px; font-size: 18px; }
+}
+</style>
+
+<script>
+import { peso } from '../../kiosk/cart';
+import { fitLabels } from '../../kiosk/fit';
+import { RECEIPT, load, save, type Receipt } from '../../kiosk/handoff';
+import { glyph } from '../../kiosk/icons';
+import { snack } from '../../kiosk/snackbar';
+
+const $ = <T extends Element = HTMLElement>(sel: string) => document.querySelector<T>(sel)!;
+const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
+
+const r = load<Receipt>(RECEIPT);
+if (!r) {
+  location.replace('/kiosk/menu');
+} else {
+  const pickup = r.orderType === 'Pickup';
+  const delivery = r.orderType === 'Delivery';
+  $('[data-headline]').textContent = r.isWalkIn ? 'ORDER COMPLETE' : pickup ? 'PICKUP CONFIRMED!' : 'ORDER PLACED!';
+  $('[data-sub]').textContent = r.isWalkIn
+    ? 'Thank you for dining with us!'
+    : pickup ? 'Your order will be ready for pickup soon.' : 'We are preparing your delivery now!';
+  $('[data-number]').textContent = `ORDER # ${r.orderNumber}`;
+
+  const rows: [string, string][] = [];
+  if (!r.isWalkIn) {
+    rows.push(['FULL NAME', r.customerName]);
+    if (!pickup) rows.push(['ADDRESS', r.customerAddress]);
+    rows.push(['PHONE', r.customerPhone]);
+  }
+  rows.push(['TIME', r.timeStr]);
+  $('[data-rows]').innerHTML = rows.map(([k, v]) => `<div class="rc-row"><dt>${k}</dt><dd>${esc(v)}</dd></div>`).join('');
+
+  $('[data-items]').innerHTML = r.items
+    .map((i) => `<li class="rc-item"><span class="rc-item__qty">${i.quantity}x</span><div class="rc-item__text"><p class="rc-item__name">${esc(i.name)}</p>${i.variant ? `<p class="rc-item__variant">${esc(i.variant)}</p>` : ''}</div><span class="rc-item__price">${peso(i.price * i.quantity)}</span></li>`)
+    .join('');
+  $('[data-fee]').hidden = !delivery;
+  $('[data-total-label]').textContent = delivery ? 'FOOD TOTAL' : 'GRAND TOTAL';
+  $('[data-total]').textContent = peso(r.total);
+  $('[data-note]').textContent = r.isWalkIn
+    ? 'Please show this to the staff.'
+    : pickup ? 'Please pick up your order at the counter.' : 'Screenshot this for your records!';
+  $('[data-again]').textContent = r.isWalkIn ? 'NEW WALK-IN ORDER' : 'ORDER AGAIN';
+  $('[data-receipt]').hidden = false;
+  fitLabels();
+
+  if (!r.telegramSent) {
+    snack('Order saved! Telegram notification could not be sent. Please inform a staff member.', {
+      color: '#EF6C00', seconds: 6, action: 'OK', icon: glyph('warning_amber_rounded'),
+    });
+    save(RECEIPT, { ...r, telegramSent: true });
+  }
+
+  $('[data-again]').addEventListener('click', () => {
+    save(RECEIPT, null);
+    location.replace('/kiosk/menu');
+  });
+}
+</script>

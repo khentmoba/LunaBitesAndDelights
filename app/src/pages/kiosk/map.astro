@@ -1,0 +1,281 @@
+---
+import Kiosk from '../../layouts/Kiosk.astro';
+import { glyph } from '../../kiosk/icons';
+---
+<Kiosk title="Pin your location · Luna Bites & Delights">
+<div class="page">
+  <header class="appbar appbar--plate">
+    <button type="button" class="appbar__lead" data-back aria-label="Back">
+      <span class="icon" aria-hidden="true">{glyph('arrow_back')}</span>
+    </button>
+    <h1 class="appbar__title mp-title">PIN YOUR LOCATION</h1>
+    <div class="appbar__actions">
+      <button type="button" class="textbtn mp-confirm-top" data-confirm disabled>CONFIRM</button>
+    </div>
+  </header>
+
+  <div class="mp-search">
+    <label class="mp-search__field">
+      <span class="icon" aria-hidden="true">{glyph('search')}</span>
+      <span class="sr-only">Search address</span>
+      <input type="search" placeholder="Search address..." enterkeyhint="search" autocomplete="off" data-query>
+      <span class="spinner mp-search__spin" aria-hidden="true" data-searching hidden></span>
+      <button type="button" class="mp-search__clear" aria-label="Clear search" data-clear hidden><span class="icon" aria-hidden="true">{glyph('clear')}</span></button>
+    </label>
+  </div>
+  <ul class="mp-results" data-results hidden></ul>
+
+  <main class="mp-map">
+    <div class="mp-map__canvas" data-map></div>
+    <p class="mp-notice" data-notice hidden><span class="icon" aria-hidden="true">{glyph('map_outlined')}</span><span>Map preview is unavailable. Search your street or use your location.</span></p>
+    <div class="mp-pin" aria-hidden="true">
+      <div class="mp-pin__in">
+        <div class="mp-pin__head"><span></span></div>
+        <div class="mp-pin__shadow"></div>
+      </div>
+    </div>
+    <div class="mp-bottom">
+      <button type="button" class="mp-locate" aria-label="Use my current location" data-locate><span class="icon" aria-hidden="true">{glyph('my_location')}</span></button>
+      <section class="mp-card" aria-live="polite">
+        <div class="mp-card__head">
+          <span class="icon" aria-hidden="true">{glyph('location_on')}</span>
+          <span class="mp-card__label">PINNED LOCATION</span>
+          <span class="icon mp-card__ok" aria-hidden="true" data-ok hidden>{glyph('check_circle')}</span>
+        </div>
+        <p class="mp-card__address" data-address>Move the map to pin your location</p>
+        <button type="button" class="btn-filled mp-card__confirm" data-confirm disabled>CONFIRM LOCATION</button>
+      </section>
+    </div>
+    <div class="mp-loading" data-loading hidden><span class="gc-spinner" aria-label="Loading"></span></div>
+  </main>
+</div>
+</Kiosk>
+
+<style is:global>
+body { overflow: hidden; }
+.page { display: flex; flex-direction: column; height: 100dvh; background: var(--blush-paper); }
+.mp-title { font-size: 18px; letter-spacing: 1px; }
+.mp-confirm-top { min-width: 48px; color: #fff; font-size: 14px; font-weight: 700; letter-spacing: 1.2px; line-height: 1.2; }
+.mp-confirm-top:disabled { color: rgb(255 255 255 / .38); cursor: default; }
+.mp-confirm-top:hover:not(:disabled) { background: rgb(255 255 255 / .08); }
+
+/* lib/screens/map_picker_page.dart */
+.mp-search { position: relative; z-index: 2; padding: 10px 16px; background: #fff; box-shadow: 0 2px 8px rgb(217 21 102 / .05); }
+.mp-search__field { display: flex; align-items: center; min-height: 48px; border-radius: var(--radius); background: var(--blush-paper); }
+.mp-search__field:focus-within { box-shadow: inset 0 0 0 1.5px var(--plate); }
+.mp-search__field > .icon { width: 40px; flex: none; font-size: 20px; text-align: center; color: var(--pink-ink); }
+.mp-search__field input { flex: 1; min-width: 0; align-self: stretch; padding: 0 16px 0 4px; border: 0; outline: 0; background: transparent; font: inherit; font-size: 14px; font-weight: 500; line-height: 1.5; color: var(--ink-soft); caret-color: var(--plate); }
+.mp-search__field input::placeholder { color: var(--ink-muted); opacity: 1; }
+.mp-search__field input::-webkit-search-cancel-button { display: none; }
+.mp-search__spin { width: 18px; height: 18px; margin: 0 15px; border-width: 2px; color: var(--pink-ink); flex: none; }
+.mp-search__clear { display: grid; place-items: center; width: 40px; height: 40px; margin-right: 4px; border-radius: 50%; color: var(--ink-muted); flex: none; }
+.mp-search__clear .icon { font-size: 18px; }
+
+.mp-results { position: relative; z-index: 2; max-height: 220px; margin: 0; padding: 0; overflow-y: auto; list-style: none; background: #fff; box-shadow: 0 4px 10px rgb(179 14 82 / .12); }
+.mp-results li + li { border-top: 1px solid rgb(236 28 114 / .24); }
+.mp-results button { display: flex; align-items: center; gap: 16px; width: 100%; padding: 10px 16px; text-align: left; }
+.mp-results .icon { flex: none; font-size: 20px; color: var(--pink-ink); }
+.mp-results span:last-child { font-size: 13px; font-weight: 500; line-height: 1.5; color: var(--ink-soft); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.mp-results button:hover { background: rgb(42 15 30 / .04); }
+
+.mp-map { position: relative; flex: 1; min-height: 0; overflow: hidden; background: var(--blush-light); }
+.mp-map__canvas { position: absolute; inset: 0; background: var(--blush-light); }
+.mp-map__canvas .leaflet-control-attribution { font: 10px/1.4 var(--print); }
+
+.mp-notice { position: absolute; z-index: 500; top: 12px; left: 16px; right: 16px; display: flex; align-items: center; gap: 8px; margin: 0; padding: 10px 14px; border-radius: var(--radius); background: #fff; box-shadow: var(--shadow-sm); font-size: 12px; font-weight: 500; line-height: 1.3; color: var(--ink-muted); }
+.mp-notice .icon { flex: none; font-size: 18px; color: var(--pink-ink); }
+
+.mp-pin { position: absolute; z-index: 500; inset: 0; display: grid; place-items: center; pointer-events: none; }
+.mp-pin__in { display: flex; flex-direction: column; align-items: center; transform: translateY(-50%); }
+.mp-pin__head { display: grid; place-items: center; width: 36px; height: 44px; border: 3px solid #fff; border-radius: 36px 36px 36px 0; background: var(--plate); box-shadow: var(--shadow-md); animation: mp-pulse 1.6s ease-in-out infinite alternate; }
+.mp-pin__head span { width: 12px; height: 12px; border-radius: 50%; background: #fff; }
+.mp-pin__shadow { width: 14px; height: 7px; margin-top: 2px; border-radius: 7px; background: rgb(217 21 102 / .2); }
+@keyframes mp-pulse { from { transform: scale(.94); } to { transform: scale(1); } }
+
+.mp-bottom { position: absolute; z-index: 600; left: 16px; right: 16px; bottom: calc(16px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; }
+.mp-locate { align-self: flex-end; display: grid; place-items: center; width: 48px; height: 48px; margin-bottom: 12px; border: 1px solid var(--rule); border-radius: 50%; background: #fff; color: var(--pink-ink); box-shadow: 0 2px 4px -1px rgb(179 14 82 / .25), 0 4px 5px rgb(179 14 82 / .18); }
+.mp-locate .icon { font-size: 22px; }
+.mp-card { padding: 14px 16px; border: 1px solid var(--rule); border-radius: var(--radius-lg); background: #fff; box-shadow: var(--shadow-lg); }
+.mp-card__head { display: flex; align-items: center; gap: 6px; color: var(--pink-ink); }
+.mp-card__head .icon { font-size: 18px; }
+.mp-card__label { flex: 1; font-size: 11px; font-weight: 700; letter-spacing: 1.3px; line-height: 1.2; color: var(--ink-muted); }
+.mp-card__ok { color: var(--success); }
+.mp-card__address { margin: 6px 0 12px; font-size: 14px; font-weight: 500; line-height: 1.4; color: var(--ink-muted); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.mp-card__address.has-address { color: var(--ink); }
+.mp-card__confirm { width: 100%; }
+.mp-card__confirm:disabled { background: var(--blush-paper); color: var(--ink-soft); cursor: default; }
+
+.mp-loading { position: absolute; z-index: 700; inset: 0; display: grid; place-items: center; background: rgb(255 255 255 / .85); }
+@media (prefers-reduced-motion: reduce) { .mp-pin__head { animation: none; transform: scale(.97); } }
+</style>
+
+<script>
+import 'leaflet/dist/leaflet.css';
+import L from 'leaflet';
+import { DRAFT, load, save, type CheckoutDraft } from '../../kiosk/handoff';
+import { currentPosition, reverseGeocode, searchAddress, shortAddress, tileUrl, type Place } from '../../kiosk/geo';
+import { glyph } from '../../kiosk/icons';
+import { popTo } from '../../kiosk/inactivity';
+import { STORE, deliveryDistance } from '../../kiosk/order';
+
+const $ = <T extends Element = HTMLElement>(sel: string) => document.querySelector<T>(sel)!;
+const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
+
+const draft = load<CheckoutDraft>(DRAFT);
+let address = draft?.address ?? '';
+let addressShort = address;
+let lat = draft?.lat ?? STORE.lat;
+let lng = draft?.lng ?? STORE.lng;
+let loading = false;
+let results: Place[] = [];
+let searchTimer = 0;
+let addressTimer = 0;
+let moving = false;
+
+const map = L.map($('[data-map]'), { center: [lat, lng], zoom: 17, zoomControl: false, attributionControl: Boolean(tileUrl) });
+if (tileUrl) {
+  L.tileLayer(tileUrl, {
+    maxZoom: 19,
+    attribution: '<a href="https://www.maptiler.com/copyright/" target="_blank" rel="noopener">© MapTiler</a> <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© OpenStreetMap contributors</a>',
+  }).addTo(map);
+} else {
+  $('[data-notice]').hidden = false;
+}
+
+function render() {
+  const has = addressShort.length > 0;
+  $('[data-ok]').hidden = !has;
+  const line = $('[data-address]');
+  line.textContent = has ? addressShort : 'Move the map to pin your location';
+  line.classList.toggle('has-address', has);
+  for (const b of document.querySelectorAll<HTMLButtonElement>('[data-confirm]')) b.disabled = address.length === 0 || loading;
+  $('[data-loading]').hidden = !loading;
+}
+
+/** Moves the map without treating it as the shopper dragging it. */
+function moveTo(la: number, ln: number) {
+  moving = true;
+  map.setView([la, ln], 17, { animate: false });
+  moving = false;
+}
+
+async function fetchAddress(la: number, ln: number) {
+  const a = await reverseGeocode(la, ln);
+  if (a.full) address = a.full;
+  if (a.short) addressShort = a.short;
+  else if (!address) {
+    address = `${la.toFixed(6)}, ${ln.toFixed(6)}`;
+    addressShort = address;
+  }
+  render();
+}
+
+map.on('moveend', () => {
+  if (moving) return;
+  const c = map.getCenter();
+  lat = c.lat;
+  lng = c.lng;
+  clearTimeout(addressTimer);
+  addressTimer = window.setTimeout(() => void fetchAddress(c.lat, c.lng), 600);
+});
+
+async function goToMyLocation() {
+  const pos = await currentPosition();
+  if (!pos) return;
+  lat = pos.lat;
+  lng = pos.lng;
+  clearTimeout(addressTimer);
+  moveTo(lat, lng);
+  await fetchAddress(lat, lng);
+}
+
+// Search, as _onSearchChanged: two characters, then 400 ms of quiet.
+const query = $<HTMLInputElement>('[data-query]');
+const list = $('[data-results]');
+function showResults(on: boolean) {
+  list.hidden = !(on && results.length > 0);
+  map.invalidateSize();
+}
+function setSearching(on: boolean) {
+  $('[data-searching]').hidden = !on;
+  $('[data-clear]').hidden = on || query.value.length === 0;
+}
+function onSearch() {
+  clearTimeout(searchTimer);
+  const q = query.value.trim();
+  if (q.length < 2) {
+    results = [];
+    showResults(false);
+    setSearching(false);
+    return;
+  }
+  setSearching(true);
+  searchTimer = window.setTimeout(async () => {
+    results = await searchAddress(q);
+    list.innerHTML = results
+      .map((r, i) => `<li><button type="button" data-i="${i}"><span class="icon" aria-hidden="true">${glyph('location_on')}</span><span>${esc(r.display_name ?? '')}</span></button></li>`)
+      .join('');
+    setSearching(false);
+    showResults(true);
+  }, 400);
+}
+query.addEventListener('input', onSearch);
+query.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') onSearch();
+});
+query.addEventListener('focus', () => showResults(true));
+list.addEventListener('click', (e) => {
+  const b = (e.target as Element).closest<HTMLElement>('[data-i]');
+  const r = b ? results[Number(b.dataset.i)] : undefined;
+  if (!r) return;
+  lat = Number.parseFloat(r.lat) || lat;
+  lng = Number.parseFloat(r.lon) || lng;
+  address = r.display_name ?? '';
+  addressShort = shortAddress(r.address);
+  query.value = '';
+  query.blur();
+  showResults(false);
+  setSearching(false);
+  clearTimeout(addressTimer);
+  moveTo(lat, lng);
+  render();
+});
+$('[data-clear]').addEventListener('click', () => {
+  query.value = '';
+  clearTimeout(searchTimer);
+  results = [];
+  showResults(false);
+  setSearching(false);
+});
+
+async function confirm() {
+  loading = true;
+  render();
+  const c = map.getCenter();
+  lat = c.lat;
+  lng = c.lng;
+  await fetchAddress(lat, lng);
+  loading = false;
+  render();
+  const current = load<CheckoutDraft>(DRAFT);
+  if (current) {
+    save(DRAFT, { ...current, address, lat, lng, pinned: true, distance: deliveryDistance(lat, lng), pendingDocId: null, pendingNumber: null });
+  }
+  popTo('/kiosk/checkout');
+}
+
+document.querySelectorAll('[data-confirm]').forEach((b) => b.addEventListener('click', () => void confirm()));
+$('[data-locate]').addEventListener('click', () => void goToMyLocation());
+$('[data-back]').addEventListener('click', () => popTo('/kiosk/checkout'));
+
+render();
+void (async () => {
+  const pos = await currentPosition();
+  if (pos) {
+    lat = pos.lat;
+    lng = pos.lng;
+  }
+  moveTo(lat, lng);
+  await fetchAddress(lat, lng);
+})();
+</script>

@@ -1,0 +1,407 @@
+---
+import Kiosk from '../../layouts/Kiosk.astro';
+import { glyph, type IconName } from '../../kiosk/icons';
+
+const tile = (group: string, value: string, label: string, icon: IconName) => ({ group, value, label, icon });
+const orderTypes = [tile('type', 'Pickup', 'Pickup', 'storefront_rounded'), tile('type', 'Delivery', 'Delivery', 'motorcycle_rounded')];
+const payments = [tile('pay', 'Cash', 'Cash', 'payments_rounded'), tile('pay', 'GCash', 'GCash', 'phone_android_rounded')];
+---
+<Kiosk title="Checkout · Luna Bites & Delights">
+<div class="page">
+  <header class="appbar appbar--plate">
+    <button type="button" class="appbar__lead" data-back aria-label="Back">
+      <span class="icon" aria-hidden="true">{glyph('arrow_back')}</span>
+    </button>
+    <h1 class="appbar__title co-title">CHECKOUT</h1>
+  </header>
+
+  <main class="co-empty" data-empty hidden>
+    <span class="icon co-empty__icon" aria-hidden="true">{glyph('shopping_bag_outlined')}</span>
+    <h2 class="co-empty__title">Your order slip is empty</h2>
+    <a class="btn-filled" href="/kiosk/menu">Browse the menu</a>
+  </main>
+
+  <main class="co" data-filled hidden>
+    <form class="co__in" data-form novalidate>
+      <section class="co-card" aria-labelledby="summary-title">
+        <h2 class="co-label" id="summary-title">ORDER SUMMARY</h2>
+        <ul class="co-lines" data-lines></ul>
+        <div class="co-divider" aria-hidden="true"></div>
+        <p class="co-fee" data-delivery hidden>Delivery fee applies. Your rider will confirm the amount, charged separately from your food order.</p>
+        <div class="co-total">
+          <span class="co-total__label" data-total-label>TOTAL</span>
+          <span class="co-total__price" data-total></span>
+        </div>
+      </section>
+
+      <h2 class="co-label co-section">ORDER TYPE</h2>
+      <div class="co-tiles" role="radiogroup" aria-label="Order type">
+        {orderTypes.map((t) => (
+          <button type="button" class="co-tile" role="radio" aria-checked="false" data-group={t.group} data-value={t.value}>
+            <span class="icon" aria-hidden="true">{glyph(t.icon)}</span>
+            <span class="co-tile__label">{t.label.toUpperCase()}</span>
+          </button>
+        ))}
+      </div>
+
+      <h2 class="co-label co-section">PAYMENT METHOD</h2>
+      <div class="co-tiles" role="radiogroup" aria-label="Payment method">
+        {payments.map((t) => (
+          <button type="button" class="co-tile" role="radio" aria-checked="false" data-group={t.group} data-value={t.value}>
+            <span class="icon" aria-hidden="true">{glyph(t.icon)}</span>
+            <span class="co-tile__label">{t.label.toUpperCase()}</span>
+          </button>
+        ))}
+      </div>
+      <div class="co-gcash" data-gcash hidden>
+        <div class="co-gcash__head">
+          <span class="icon" aria-hidden="true">{glyph('payment_rounded')}</span>
+          <span>GCASH VIA PAYMONGO</span>
+        </div>
+        <p class="co-gcash__lead">You will be redirected to a secure GCash checkout page after confirming your order.</p>
+        <p class="co-gcash__body">Select GCash as your payment method in the checkout page and authorize the payment in the GCash app.</p>
+        <p class="co-gcash__lock"><span class="icon" aria-hidden="true">{glyph('lock_rounded')}</span><span>Secured by PayMongo. Funds settle to the merchant's bank account.</span></p>
+      </div>
+
+      <h2 class="co-label co-section co-details" data-details-label>CUSTOMER DETAILS</h2>
+      <label class="co-field co-field--name">
+        <span class="co-field__label">FULL NAME</span>
+        <span class="co-input">
+          <span class="icon" aria-hidden="true">{glyph('person_rounded')}</span>
+          <input name="name" type="text" placeholder="e.g. Juan Dela Cruz" autocomplete="name" autocapitalize="words" enterkeyhint="next" maxlength="200">
+        </span>
+      </label>
+
+      <div class="co-delivery" data-delivery-fields hidden>
+        <a class="co-pin" href="/kiosk/map" data-pin>
+          <span class="icon co-pin__icon" aria-hidden="true" data-pin-icon>{glyph('add_location_alt_outlined')}</span>
+          <span class="co-pin__text" data-pin-text>Tap to pin your location on map</span>
+          <span class="icon co-pin__chev" aria-hidden="true">{glyph('chevron_right')}</span>
+        </a>
+        <label class="co-input co-input--area">
+          <span class="sr-only">Delivery address</span>
+          <span class="icon" aria-hidden="true">{glyph('edit_location_alt')}</span>
+          <textarea name="address" rows="2" placeholder="Address auto-fills from map..." autocomplete="street-address" autocapitalize="sentences" enterkeyhint="next"></textarea>
+        </label>
+      </div>
+
+      <label class="co-field">
+        <span class="co-field__label">CONTACT NUMBER</span>
+        <span class="co-input">
+          <span class="icon" aria-hidden="true">{glyph('phone_rounded')}</span>
+          <input name="phone" type="tel" placeholder="e.g. 09XX XXX XXXX" autocomplete="tel" enterkeyhint="done" maxlength="40">
+        </span>
+      </label>
+
+      <div class="co-submit">
+        <p class="co-blocked" data-blocked hidden><span class="icon" aria-hidden="true">{glyph('location_on_outlined')}</span><span>Pin your delivery address on the map above to continue.</span></p>
+        <button type="submit" class="co-confirm" data-confirm>CONFIRM PICKUP ORDER</button>
+      </div>
+    </form>
+  </main>
+</div>
+</Kiosk>
+
+<style is:global>
+body { overflow: hidden; }
+.page { display: flex; flex-direction: column; height: 100dvh; background: var(--blush-paper); }
+.co-title { letter-spacing: 1.2px; }
+
+.co-empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 32px; text-align: center; }
+.co-empty__icon { font-size: 64px; color: rgb(217 21 102 / .4); }
+.co-empty__title { margin: 16px 0 24px; font-size: 24px; font-weight: 800; letter-spacing: -.4px; line-height: 1.12; }
+
+/* lib/screens/checkout_page.dart */
+.co { flex: 1; min-height: 0; overflow-y: auto; padding: 16px 16px calc(24px + env(safe-area-inset-bottom)); }
+.co__in { max-width: 760px; margin: 0 auto; display: flex; flex-direction: column; }
+.co-label { margin: 0; font-size: 16px; font-weight: 700; letter-spacing: 1.2px; line-height: 1.2; color: var(--ink); }
+
+.co-card { padding: 16px; background: var(--card); border: 1px solid var(--rule); border-radius: var(--radius-lg); box-shadow: var(--shadow-md); }
+.co-lines { margin: 14px 0 0; padding: 0; list-style: none; }
+.co-line { display: flex; align-items: flex-start; padding-bottom: 12px; }
+.co-line__qty, .co-line__price { flex: none; font-size: 15px; font-weight: 700; line-height: 1.3; font-variant-numeric: tabular-nums; }
+.co-line__qty { font-variant-numeric: normal; }
+.co-line__name { flex: 1; min-width: 0; margin: 0 8px 0 12px; font-size: 15px; font-weight: 500; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.co-divider { height: 1px; background: rgb(236 28 114 / .24); }
+.co-fee { margin: 16px 0 0; font-size: 14px; font-weight: 500; line-height: 1.5; color: var(--ink-soft); }
+.co-total { display: flex; align-items: center; justify-content: space-between; margin-top: 16px; }
+.co-fee:not([hidden]) + .co-total { margin-top: 12px; }
+.co-total__label { font-size: 20px; font-weight: 800; letter-spacing: 1.5px; line-height: 1.2; }
+.co-total__price { font-size: 28px; font-weight: 800; letter-spacing: -.6px; line-height: 1.08; font-variant-numeric: tabular-nums; }
+
+.co-section { margin-top: 20px; margin-bottom: 12px; }
+.co-tiles { display: flex; gap: 10px; }
+/* Material with a 2px shape side: the border is painted over the padding, not added to it. */
+.co-tile { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 14px 6px; border-radius: var(--radius-lg); background: var(--card); box-shadow: inset 0 0 0 2px var(--rule); color: var(--pink-ink); transition: transform .18s cubic-bezier(.215,.61,.355,1); }
+.co-tile .icon { font-size: 24px; }
+.co-tile__label { max-width: 100%; font-size: 12px; font-weight: 800; letter-spacing: .6px; line-height: 1.42; white-space: nowrap; }
+.co-tile[aria-checked="true"] { background: var(--plate); box-shadow: inset 0 0 0 2px var(--plate); color: #fff; }
+.co-tile:active { transform: scale(1.03); }
+
+.co-gcash { margin-top: 24px; padding: 24px; border: 1px solid rgb(0 125 254 / .2); border-radius: var(--radius-lg); background: rgb(0 125 254 / .05); }
+.co-gcash__head { display: flex; align-items: center; gap: 12px; color: #007DFE; font-size: 13px; font-weight: 700; letter-spacing: 1.2px; line-height: 1.2; }
+.co-gcash__lead { margin: 16px 0 0; font-size: 14px; font-weight: 500; line-height: 1.5; }
+.co-gcash__body { margin: 12px 0 0; font-size: 13px; font-weight: 500; line-height: 1.5; color: var(--ink-soft); }
+.co-gcash__lock { display: flex; align-items: center; gap: 8px; margin: 12px 0 0; padding: 12px; border: 1px solid rgb(0 125 254 / .1); border-radius: var(--radius-sm); background: #fff; font-size: 11px; font-weight: 500; line-height: 1.4; color: var(--ink-soft); }
+.co-gcash__lock .icon { font-size: 16px; color: #007DFE; }
+
+.co-details { margin-bottom: 14px; }
+.co-field { display: flex; flex-direction: column; gap: 8px; }
+.co-field--name { margin-bottom: 16px; }
+.co-field__label { font-size: 13px; font-weight: 700; letter-spacing: 1.2px; line-height: 1.2; }
+/* OutlineInputBorder, 1.5px rule, 2px plate when focused, painted inside a 48px compact box. */
+.co-input { position: relative; display: flex; align-items: center; min-height: 48px; border-radius: var(--radius); background: #fff; box-shadow: inset 0 0 0 1.5px var(--rule); }
+.co-input:focus-within { box-shadow: inset 0 0 0 2px var(--plate); }
+.co-input > .icon { flex: none; width: 40px; font-size: 20px; text-align: center; color: var(--pink-ink); }
+.co-input input, .co-input textarea { flex: 1; min-width: 0; align-self: stretch; margin: 0; padding: 0 20px 0 4px; border: 0; outline: 0; background: transparent; font: inherit; font-size: 16px; font-weight: 600; letter-spacing: .5px; line-height: 24px; color: var(--ink); caret-color: var(--plate); }
+.co-input ::placeholder { color: var(--ink-muted); font-size: 14px; font-weight: 600; opacity: 1; }
+.co-input--area { align-items: flex-start; }
+.co-input--area > .icon { margin-top: 14px; }
+.co-input--area textarea { padding-top: 12px; padding-bottom: 12px; resize: none; height: 72px; }
+.co-input ::selection { background: rgb(252 208 78 / .6); }
+
+.co-delivery { margin-bottom: 16px; }
+.co-pin { display: flex; align-items: center; gap: 14px; padding: 16px; border-radius: var(--radius); background: #fff; box-shadow: inset 0 0 0 2px var(--rule); color: var(--pink-ink); font-size: 15px; font-weight: 600; line-height: 1.42; margin-bottom: 12px; }
+.co-pin.is-pinned { background: var(--blush-paper); box-shadow: inset 0 0 0 2px var(--plate); font-weight: 800; }
+.co-pin__icon { font-size: 24px; }
+.co-pin__text { flex: 1; }
+.co-pin__chev { font-size: 20px; }
+
+.co-submit { margin-top: 28px; margin-bottom: 16px; display: flex; flex-direction: column; }
+.co-blocked { display: flex; align-items: center; justify-content: center; gap: 6px; margin: 0 0 10px; font-size: 13px; font-weight: 600; line-height: 1.5; color: var(--pink-ink); }
+.co-blocked .icon { font-size: 16px; }
+/* FilledButton, minimumSize 54 less the 8px compact density. */
+.co-confirm { display: flex; align-items: center; justify-content: center; min-height: 46px; padding: 0 24px; border-radius: var(--radius); background: var(--plate); color: #fff; font-size: 15px; font-weight: 700; letter-spacing: 1.2px; line-height: 1.2; transition: transform .18s cubic-bezier(.215,.61,.355,1); }
+.co-confirm:hover:not(:disabled) { background: color-mix(in srgb, var(--plate), white 8%); }
+.co-confirm:active:not(:disabled) { transform: scale(1.03); }
+.co-confirm:disabled { cursor: default; }
+.co-confirm.is-blocked { background: var(--blush-paper); color: var(--ink-soft); }
+
+@media (min-width: 600px) {
+  .co-title { letter-spacing: 2px; }
+  .co { padding: 32px 32px calc(32px + env(safe-area-inset-bottom)); }
+  .co-card { padding: 24px; }
+  .co-lines { margin-top: 20px; }
+  .co-total__price { font-size: 32px; }
+  .co-section { margin-top: 32px; margin-bottom: 16px; }
+  .co-tiles { gap: 16px; }
+  .co-tile { padding: 20px 6px; }
+  .co-tile .icon { font-size: 30px; }
+  .co-tile__label { font-size: 14px; letter-spacing: 1.5px; }
+  .co-details { margin-top: 32px; }
+  .co-submit { margin-top: 40px; }
+  .co-confirm { font-size: 17px; }
+}
+@media (prefers-reduced-motion: reduce) { .co-tile, .co-confirm { transition: none; } }
+</style>
+
+<script>
+import { cart, peso } from '../../kiosk/cart';
+import { glyph } from '../../kiosk/icons';
+import { popTo, watchInactivity } from '../../kiosk/inactivity';
+import { DRAFT, PENDING, RECEIPT, load, save, type CheckoutDraft, type PendingPayment, type Receipt } from '../../kiosk/handoff';
+import {
+  STORE, localStamp, orderItems, orderNumberFor, phtDateLabel, placeOrder, rejectionFor, statusesFor,
+  validateName, validatePhone, type Order, type OrderType, type PaymentMethod,
+} from '../../kiosk/order';
+import { snack } from '../../kiosk/snackbar';
+
+const $ = <T extends Element = HTMLElement>(sel: string) => document.querySelector<T>(sel)!;
+const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
+const PINK = '#D91566';
+const ERROR = '#B3261E';
+
+const form = $<HTMLFormElement>('[data-form]');
+const nameInput = form.elements.namedItem('name') as HTMLInputElement;
+const phoneInput = form.elements.namedItem('phone') as HTMLInputElement;
+const addressInput = form.elements.namedItem('address') as HTMLTextAreaElement;
+const confirmBtn = $<HTMLButtonElement>('[data-confirm]');
+
+const fresh = (): CheckoutDraft => ({
+  name: '', phone: '', address: '', orderType: 'Pickup', paymentMethod: 'Cash',
+  lat: STORE.lat, lng: STORE.lng, pinned: false, distance: 0, pendingDocId: null, pendingNumber: null,
+});
+let draft: CheckoutDraft = fresh();
+let loading = false;
+
+const persist = () => save(DRAFT, draft);
+function clearPending() {
+  draft.pendingDocId = null;
+  draft.pendingNumber = null;
+}
+
+function renderCart() {
+  const items = cart.items();
+  const empty = items.length === 0;
+  $('[data-empty]').hidden = !empty;
+  $('[data-filled]').hidden = empty;
+  if (empty) return;
+  $('[data-lines]').innerHTML = items
+    .map((i) => `<li class="co-line"><span class="co-line__qty">${i.quantity}x</span><span class="co-line__name">${esc(i.name)}${i.variant ? ` (${esc(i.variant)})` : ''}</span><span class="co-line__price">${peso(i.price * i.quantity)}</span></li>`)
+    .join('');
+  $('[data-total]').textContent = peso(cart.totalPrice());
+}
+
+function renderForm() {
+  const delivery = draft.orderType === 'Delivery';
+  for (const tile of document.querySelectorAll<HTMLElement>('.co-tile')) {
+    const on = tile.dataset.group === 'type' ? tile.dataset.value === draft.orderType : tile.dataset.value === draft.paymentMethod;
+    tile.setAttribute('aria-checked', String(on));
+  }
+  $('[data-gcash]').hidden = draft.paymentMethod !== 'GCash';
+  $('[data-delivery]').hidden = !delivery;
+  $('[data-total-label]').textContent = delivery ? 'FOOD TOTAL' : 'TOTAL';
+  $('[data-details-label]').textContent = delivery ? 'DELIVERY DETAILS' : 'CUSTOMER DETAILS';
+  $('[data-delivery-fields]').hidden = !delivery;
+
+  const pin = $('[data-pin]');
+  pin.classList.toggle('is-pinned', draft.pinned);
+  pin.setAttribute('aria-label', draft.pinned ? 'Location pinned on map, tap to change' : 'Tap to pin your location on map');
+  $('[data-pin-icon]').textContent = glyph(draft.pinned ? 'location_on' : 'add_location_alt_outlined');
+  $('[data-pin-text]').textContent = draft.pinned ? 'Location pinned on map' : 'Tap to pin your location on map';
+
+  const blocked = delivery && !draft.pinned;
+  $('[data-blocked]').hidden = !blocked;
+  confirmBtn.classList.toggle('is-blocked', blocked);
+  confirmBtn.disabled = blocked || loading;
+  confirmBtn.setAttribute('aria-busy', String(loading));
+  if (loading) confirmBtn.innerHTML = '<span class="spinner" aria-label="Placing your order"></span>';
+  else confirmBtn.textContent = draft.orderType === 'Walk-In' ? 'CONFIRM POS ORDER' : draft.orderType === 'Pickup' ? 'CONFIRM PICKUP ORDER' : 'PLACE DELIVERY ORDER';
+}
+
+/** Runs on first load and when the page comes back from the map or GCash. */
+function restore() {
+  draft = { ...fresh(), ...load<CheckoutDraft>(DRAFT) };
+  nameInput.value = draft.name;
+  phoneInput.value = draft.phone;
+  addressInput.value = draft.address;
+  loading = false;
+  renderForm();
+  if (draft.gcashCancelled) {
+    delete draft.gcashCancelled;
+    persist();
+    snack('GCash payment was cancelled or failed. Your order is saved — tap to retry payment.', { color: ERROR, seconds: 5 });
+  }
+}
+
+for (const tile of document.querySelectorAll<HTMLElement>('.co-tile')) {
+  tile.addEventListener('click', () => {
+    if (tile.dataset.group === 'type') {
+      draft.orderType = tile.dataset.value as OrderType;
+      clearPending();
+    } else {
+      draft.paymentMethod = tile.dataset.value as PaymentMethod;
+      if (draft.paymentMethod === 'Cash') clearPending();
+    }
+    persist();
+    renderForm();
+  });
+}
+
+form.addEventListener('input', () => {
+  draft.name = nameInput.value;
+  draft.phone = phoneInput.value;
+  draft.address = addressInput.value;
+  clearPending();
+  persist();
+});
+
+$('[data-pin]').addEventListener('click', () => persist());
+document.querySelectorAll('[data-back]').forEach((b) => b.addEventListener('click', () => popTo('/kiosk/cart')));
+
+form.addEventListener('submit', (e) => {
+  e.preventDefault();
+  if (!loading) void submit();
+});
+
+async function submit() {
+  const items = [...cart.items()];
+  if (items.length === 0) {
+    snack('Your order slip is empty. Please add items first.', { color: PINK });
+    return;
+  }
+  const delivery = draft.orderType === 'Delivery';
+  const name = nameInput.value.trim();
+  const phone = phoneInput.value.trim();
+  const address = delivery ? addressInput.value.trim() : draft.orderType;
+
+  let error = validateName(name) ?? validatePhone(phone) ?? rejectionFor(name, items.length);
+  if (!error && delivery && address.length === 0) error = 'Please pin your delivery address on the map.';
+  if (error) {
+    snack(error, { color: PINK });
+    return;
+  }
+
+  loading = true;
+  renderForm();
+
+  const total = cart.totalPrice();
+  const now = new Date();
+  const timeStr = localStamp(now);
+  const statuses = statusesFor(false, draft.paymentMethod);
+  let docId = draft.pendingDocId;
+  const orderNumber = draft.pendingNumber ?? orderNumberFor(now);
+  let telegramSent = true;
+
+  const order: Order = {
+    orderId: orderNumber,
+    items: orderItems(items),
+    totalAmount: total,
+    timestamp: now,
+    dateLabel: phtDateLabel(now),
+    type: draft.orderType,
+    entryType: statuses.entryType,
+    customerName: name,
+    customerPhone: phone,
+    customerAddress: address,
+    lat: delivery ? draft.lat : null,
+    lng: delivery ? draft.lng : null,
+    deliveryFee: 0,
+    totalDistance: delivery ? draft.distance : 0,
+    paymentMethod: draft.paymentMethod,
+    paymentStatus: statuses.paymentStatus,
+    status: statuses.status,
+  };
+
+  if (docId === null || draft.paymentMethod !== 'GCash') {
+    const result = await placeOrder(order, timeStr);
+    docId = result.docId;
+    telegramSent = result.telegramSent;
+  }
+
+  loading = false;
+  renderForm();
+
+  if (docId === null) {
+    snack('We could not save your order. Please check the connection and try again.', { color: ERROR, seconds: 6 });
+    return;
+  }
+
+  const receipt: Receipt = {
+    orderNumber, customerName: name, customerAddress: address, customerPhone: phone,
+    items: order.items, total, timeStr, isWalkIn: false, orderType: draft.orderType, telegramSent,
+  };
+
+  if (draft.paymentMethod === 'GCash') {
+    draft.pendingDocId = docId;
+    draft.pendingNumber = orderNumber;
+    persist();
+    const pending: PendingPayment = {
+      orderDocId: docId, orderId: orderNumber, amount: total, items: order.items,
+      customerName: name, customerPhone: phone, receipt,
+    };
+    save(PENDING, pending);
+    location.assign('/kiosk/gcash');
+    return;
+  }
+
+  cart.clear();
+  save(DRAFT, null);
+  save(RECEIPT, receipt);
+  location.replace('/kiosk/receipt');
+}
+
+cart.subscribe(renderCart);
+window.addEventListener('pageshow', restore);
+watchInactivity();
+</script>

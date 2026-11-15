@@ -107,6 +107,258 @@
       "file": "storefront-404-1440.webp",
       "path": "/404.html",
       "ready": true
+    },
+    {
+      "name": "kiosk-splash",
+      "width": 320,
+      "file": "kiosk-splash-320.webp",
+      "path": "/kiosk/",
+      "ready": true
+    },
+    {
+      "name": "kiosk-splash",
+      "width": 390,
+      "file": "kiosk-splash-390.webp",
+      "path": "/kiosk/",
+      "ready": true
+    },
+    {
+      "name": "kiosk-splash",
+      "width": 768,
+      "file": "kiosk-splash-768.webp",
+      "path": "/kiosk/",
+      "ready": true
+    },
+    {
+      "name": "kiosk-splash",
+      "width": 1440,
+      "file": "kiosk-splash-1440.webp",
+      "path": "/kiosk/",
+      "ready": true
+    },
+    {
+      "name": "kiosk-menu",
+      "width": 320,
+      "file": "kiosk-menu-320.webp",
+      "path": "/kiosk/menu",
+      "ready": true
+    },
+    {
+      "name": "kiosk-menu",
+      "width": 390,
+      "file": "kiosk-menu-390.webp",
+      "path": "/kiosk/menu",
+      "ready": true
+    },
+    {
+      "name": "kiosk-menu",
+      "width": 768,
+      "file": "kiosk-menu-768.webp",
+      "path": "/kiosk/menu",
+      "ready": true
+    },
+    {
+      "name": "kiosk-menu",
+      "width": 1440,
+      "file": "kiosk-menu-1440.webp",
+      "path": "/kiosk/menu",
+      "ready": true
+    },
+    {
+      "name": "kiosk-cart-empty",
+      "width": 320,
+      "file": "kiosk-cart-empty-320.webp",
+      "path": "/kiosk/cart",
+      "ready": true
+    },
+    {
+      "name": "kiosk-cart-empty",
+      "width": 390,
+      "file": "kiosk-cart-empty-390.webp",
+      "path": "/kiosk/cart",
+      "ready": true
+    },
+    {
+      "name": "kiosk-cart-empty",
+      "width": 768,
+      "file": "kiosk-cart-empty-768.webp",
+      "path": "/kiosk/cart",
+      "ready": true
+    },
+    {
+      "name": "kiosk-cart-empty",
+      "width": 1440,
+      "file": "kiosk-cart-empty-1440.webp",
+      "path": "/kiosk/cart",
+      "ready": true
+    },
+    {
+      "name": "kiosk-cart",
+      "width": 320,
+      "file": "kiosk-cart-320.webp",
+      "path": "/kiosk/cart?cart=1",
+      "ready": true
+    },
+    {
+      "name": "kiosk-cart",
+      "width": 390,
+      "file": "kiosk-cart-390.webp",
+      "path": "/kiosk/cart?cart=1",
+      "ready": true
+    },
+    {
+      "name": "kiosk-cart",
+      "width": 768,
+      "file": "kiosk-cart-768.webp",
+      "path": "/kiosk/cart?cart=1",
+      "ready": true
+    },
+    {
+      "name": "kiosk-cart",
+      "width": 1440,
+      "file": "kiosk-cart-1440.webp",
+      "path": "/kiosk/cart?cart=1",
+      "ready": true
+    },
+    {
+      "name": "kiosk-checkout",
+      "width": 320,
+      "file": "kiosk-checkout-320.webp",
+      "path": "/kiosk/checkout?cart=1",
+      "ready": true
+    },
+    {
+      "name": "kiosk-checkout",
+      "width": 390,
+      "file": "kiosk-checkout-390.webp",
+      "path": "/kiosk/checkout?cart=1",
+      "ready": true
+    },
+    {
+      "name": "kiosk-checkout",
+      "width": 768,
+      "file": "kiosk-checkout-768.webp",
+      "path": "/kiosk/checkout?cart=1",
+      "ready": true
+    },
+    {
+      "name": "kiosk-checkout",
+      "width": 1440,
+      "file": "kiosk-checkout-1440.webp",
+      "path": "/kiosk/checkout?cart=1",
+      "ready": true
+    },
+    {
+      "name": "kiosk-receipt",
+      "width": 320,
+      "file": "kiosk-receipt-320.webp",
+      "path": "/kiosk/receipt",
+      "ready": true
+    },
+    {
+      "name": "kiosk-receipt",
+      "width": 390,
+      "file": "kiosk-receipt-390.webp",
+      "path": "/kiosk/receipt",
+      "ready": true
+    },
+    {
+      "name": "kiosk-receipt",
+      "width": 768,
+      "file": "kiosk-receipt-768.webp",
+      "path": "/kiosk/receipt",
+      "ready": true
+    },
+    {
+      "name": "kiosk-receipt",
+      "width": 1440,
+      "file": "kiosk-receipt-1440.webp",
+      "path": "/kiosk/receipt",
+      "ready": true
+    },
+    {
+      "name": "kiosk-gcash",
+      "width": 320,
+      "file": "kiosk-gcash-320.webp",
+      "path": "/kiosk/gcash",
+      "ready": true
+    },
+    {
+      "name": "kiosk-gcash",
+      "width": 390,
+      "file": "kiosk-gcash-390.webp",
+      "path": "/kiosk/gcash",
+      "ready": true
+    },
+    {
+      "name": "kiosk-gcash",
+      "width": 768,
+      "file": "kiosk-gcash-768.webp",
+      "path": "/kiosk/gcash",
+      "ready": true
+    },
+    {
+      "name": "kiosk-gcash",
+      "width": 1440,
+      "file": "kiosk-gcash-1440.webp",
+      "path": "/kiosk/gcash",
+      "ready": true
+    },
+    {
+      "name": "kiosk-checkout-delivery",
+      "width": 320,
+      "file": "kiosk-checkout-delivery-320.webp",
+      "path": "/kiosk/checkout?cart=1",
+      "ready": true
+    },
+    {
+      "name": "kiosk-checkout-delivery",
+      "width": 390,
+      "file": "kiosk-checkout-delivery-390.webp",
+      "path": "/kiosk/checkout?cart=1",
+      "ready": true
+    },
+    {
+      "name": "kiosk-checkout-delivery",
+      "width": 768,
+      "file": "kiosk-checkout-delivery-768.webp",
+      "path": "/kiosk/checkout?cart=1",
+      "ready": true
+    },
+    {
+      "name": "kiosk-checkout-delivery",
+      "width": 1440,
+      "file": "kiosk-checkout-delivery-1440.webp",
+      "path": "/kiosk/checkout?cart=1",
+      "ready": true
+    },
+    {
+      "name": "kiosk-map",
+      "width": 320,
+      "file": "kiosk-map-320.webp",
+      "path": "/kiosk/map",
+      "ready": true
+    },
+    {
+      "name": "kiosk-map",
+      "width": 390,
+      "file": "kiosk-map-390.webp",
+      "path": "/kiosk/map",
+      "ready": true
+    },
+    {
+      "name": "kiosk-map",
+      "width": 768,
+      "file": "kiosk-map-768.webp",
+      "path": "/kiosk/map",
+      "ready": true
+    },
+    {
+      "name": "kiosk-map",
+      "width": 1440,
+      "file": "kiosk-map-1440.webp",
+      "path": "/kiosk/map",
+      "ready": true
     }
   ],
   "timedOut": [],

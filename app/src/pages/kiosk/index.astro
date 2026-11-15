@@ -1,0 +1,80 @@
+---
+import Kiosk from '../../layouts/Kiosk.astro';
+---
+<Kiosk title="Order · Luna Bites & Delights">
+<div class="splash">
+  <div class="splash__scroll">
+    <div class="splash__in">
+      <div class="splash__top" aria-hidden="true"></div>
+      <div class="splash__group">
+        <div class="splash__float">
+          <img class="splash__logo" src="/kiosk/images/luna_logo.webp" alt="Luna Bites & Delights" width="480" height="578" decoding="async">
+        </div>
+        <p class="splash__card">Good food, sweet drinks, moonlit vibes.</p>
+        <div class="splash__dots" aria-hidden="true"><span></span><span></span><span></span></div>
+      </div>
+      <div class="splash__cta">
+        <a class="splash__start" href="/kiosk/menu"><span>Start my order</span></a>
+      </div>
+    </div>
+  </div>
+</div>
+</Kiosk>
+
+<script is:inline>
+// Old Flutter hash routes (/kiosk/#/menu, /kiosk/?pick=s1#/menu, ...) still
+// arrive from bookmarks and the storefront; send each to its page.
+(function () {
+  var routes = {
+    '#/menu': '/kiosk/menu', '#/cart': '/kiosk/cart', '#/checkout_process': '/kiosk/checkout',
+    '#/kds': '/staff/kds', '#/staff': '/staff/kds', '#/orders': '/staff/kds',
+    '#/dashboard': '/staff/dashboard', '#/analytics': '/staff/analytics', '#/lifetime-analytics': '/staff/lifetime',
+  };
+  var to = routes[location.hash];
+  if (to) location.replace(to + location.search);
+})();
+</script>
+
+<style is:global>
+body { overflow: hidden; }
+/* lib/screens/splash_screen.dart */
+.splash { position: fixed; inset: 0; background: var(--ground) url('/kiosk/images/pink_wash.jpg') center / cover no-repeat; }
+.splash__scroll { height: 100%; overflow-y: auto; padding: calc(28px + env(safe-area-inset-top)) calc(24px + env(safe-area-inset-right)) calc(28px + env(safe-area-inset-bottom)) calc(24px + env(safe-area-inset-left)); }
+.splash__in { min-height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: space-between; animation: splash-fade .8s ease-out both; }
+.splash__top { height: 8px; flex: none; }
+.splash__group { display: flex; flex-direction: column; align-items: center; width: 100%; }
+.splash__float { animation: splash-float 2s ease-in-out infinite alternate; }
+.splash__logo { width: 240px; height: 288px; object-fit: scale-down; animation: splash-in 1.2s cubic-bezier(.215,.61,.355,1) both; }
+.splash__card { max-width: 100%; margin: 24px 0 0; padding: 14px 22px 16px; border-radius: var(--radius-sm); background: var(--paper); box-shadow: var(--shadow-md); font-family: var(--hand); font-size: 28px; font-weight: 600; line-height: 1.1; text-align: center; animation: splash-in 1.2s cubic-bezier(.215,.61,.355,1) both; }
+.splash__dots { display: flex; justify-content: center; margin-top: 28px; }
+.splash__dots span { width: 10px; height: 10px; margin: 0 4px; border-radius: 2px; background: var(--plate); animation: 1.5s linear infinite; }
+.splash__dots span:nth-child(1) { animation-name: splash-dot0; }
+.splash__dots span:nth-child(2) { animation-name: splash-dot1; }
+.splash__dots span:nth-child(3) { animation-name: splash-dot2; }
+.splash__cta { padding: 32px 0; }
+/* A plate with a 4px lip around a hairline-framed inner panel; it breathes, and grows a touch when pressed. */
+.splash__start { display: block; padding: 4px; border-radius: var(--radius); background: var(--plate); box-shadow: var(--shadow-primary); animation: splash-pulse 1s ease-in-out infinite alternate; }
+.splash__start span { display: flex; align-items: center; justify-content: center; min-height: 52px; padding: 16px 40px; border: 1.5px solid rgb(255 255 255 / .6); border-radius: var(--radius-sm); color: #fff; font-size: 21px; font-weight: 800; line-height: 1.42; letter-spacing: .25px; text-align: center; transition: transform .18s cubic-bezier(.215,.61,.355,1); }
+.splash__start:active span { transform: scale(1.03); }
+.splash__start:hover span { background: rgb(255 255 255 / .08); }
+
+@keyframes splash-fade { from { opacity: 0; } }
+@keyframes splash-in { from { opacity: 0; } }
+@keyframes splash-float { to { transform: translateY(10px); } }
+@keyframes splash-pulse { to { transform: scale(1.05); } }
+@keyframes splash-dot0 { 0% { opacity: 1; } 80%, 100% { opacity: .2; } }
+@keyframes splash-dot1 { 0%, 20% { opacity: 1; } 100% { opacity: .2; } }
+@keyframes splash-dot2 { 0%, 40% { opacity: 1; } 100% { opacity: .4; } }
+
+/* Short screens: a smaller logo and tighter gaps. */
+@media (max-height: 619.98px) {
+  .splash__scroll { padding-top: calc(16px + env(safe-area-inset-top)); padding-bottom: calc(16px + env(safe-area-inset-bottom)); }
+  .splash__logo { width: clamp(120px, 28dvh, 200px); height: clamp(144px, 33.6dvh, 240px); }
+  .splash__card { margin-top: 16px; font-size: 24px; }
+  .splash__dots { margin-top: 18px; }
+  .splash__cta { padding: 20px 0 12px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .splash__in, .splash__float, .splash__logo, .splash__card, .splash__dots span, .splash__start { animation: none; }
+}
+</style>
