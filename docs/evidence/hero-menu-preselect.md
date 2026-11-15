@@ -27,10 +27,10 @@ Kiosk: ![](hero-menu-preselect/mobile-390-4-kiosk-choice-sheet.webp) ![](hero-me
 
 - flutter analyze + baseline: 0 issues (`ci-analyze.txt`)
 - dart format on changed files: clean (`ci-format.txt`)
-- flutter test: 88 passed, including `test/menu_preselect_test.dart`, which checks that every storefront row resolves to its printed price (`ci-flutter-test.txt`)
+- flutter test: 88 passed (one earlier full run hit a "did not complete" in `menu_ordering_test.dart`; it passed alone 3× and the full suite passed 4× in a row after), including `test/menu_preselect_test.dart`, which checks that every storefront row resolves to its printed price (`ci-flutter-test.txt`)
 - flutter build web --release --wasm + assemble: built (`ci-web-build.txt`)
 - site tests: 28 passed, including tally/link, one-photo-at-a-time, and pick/photo attributes (`ci-site-tests.txt`)
 - functions build + npm audit: passed (`ci-functions.txt`)
-- rules emulator: not run locally. firebase-tools needs Java 21 and this machine has Java 8 (`ci-rules.txt`). No rules or functions changed; CI runs this job.
+- rules emulator (JDK 21): 23 passed (`ci-rules.txt`)
 
 Reduced motion and `data-lite` devices get the same behaviour with no transitions.

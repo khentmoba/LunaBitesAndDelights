@@ -57,96 +57,96 @@ Try `flutter pub outdated` for more information.
 00:00 +3: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/adaptive_layout_test.dart: LunaExpressApp configures adaptive density and platform transitions
 00:00 +4: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/adaptive_layout_test.dart: LunaExpressApp configures adaptive density and platform transitions
 00:00 +5: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/audit_bugfixes_test.dart: Audit bugfixes regression suite GCashCheckoutPage blocks receipt bypass until verifyCheckoutPayment confirms PAID
-00:00 +6: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/audit_bugfixes_test.dart: Audit bugfixes regression suite GCashCheckoutPage blocks receipt bypass until verifyCheckoutPayment confirms PAID
-00:00 +7: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/audit_bugfixes_test.dart: Audit bugfixes regression suite GCashCheckoutPage blocks receipt bypass until verifyCheckoutPayment confirms PAID
-00:00 +8: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/audit_bugfixes_test.dart: Audit bugfixes regression suite GCashCheckoutPage blocks receipt bypass until verifyCheckoutPayment confirms PAID
-00:00 +9: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/audit_bugfixes_test.dart: Audit bugfixes regression suite GCashCheckoutPage blocks receipt bypass until verifyCheckoutPayment confirms PAID
+00:01 +6: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/audit_bugfixes_test.dart: Audit bugfixes regression suite GCashCheckoutPage blocks receipt bypass until verifyCheckoutPayment confirms PAID
+00:01 +7: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/audit_bugfixes_test.dart: Audit bugfixes regression suite GCashCheckoutPage blocks receipt bypass until verifyCheckoutPayment confirms PAID
+00:01 +8: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/audit_bugfixes_test.dart: Audit bugfixes regression suite GCashCheckoutPage blocks receipt bypass until verifyCheckoutPayment confirms PAID
+00:01 +9: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/audit_bugfixes_test.dart: Audit bugfixes regression suite GCashCheckoutPage blocks receipt bypass until verifyCheckoutPayment confirms PAID
 00:01 +10: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/audit_bugfixes_test.dart: Audit bugfixes regression suite GCashCheckoutPage blocks receipt bypass until verifyCheckoutPayment confirms PAID
-00:01 +11: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/audit_bugfixes_test.dart: Audit bugfixes regression suite GCashCheckoutPage blocks receipt bypass until verifyCheckoutPayment confirms PAID
-00:01 +12: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/audit_bugfixes_test.dart: Audit bugfixes regression suite GCashCheckoutPage blocks receipt bypass until verifyCheckoutPayment confirms PAID
-00:01 +13: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/audit_bugfixes_test.dart: Audit bugfixes regression suite GCashCheckoutPage blocks receipt bypass until verifyCheckoutPayment confirms PAID
-00:01 +14: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/audit_bugfixes_test.dart: Audit bugfixes regression suite GCashCheckoutPage blocks receipt bypass until verifyCheckoutPayment confirms PAID
-00:01 +15: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/kds_live_feed_test.dart: pushed orders appear without polling and header says Live
-00:01 +16: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/kds_live_feed_test.dart: pushed orders appear without polling and header says Live
-00:01 +17: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/kds_live_feed_test.dart: pushed orders appear without polling and header says Live
-00:01 +18: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/kds_live_feed_test.dart: pushed orders appear without polling and header says Live
-00:01 +19: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/kds_live_feed_test.dart: pushed orders appear without polling and header says Live
-00:01 +20: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/kds_live_feed_test.dart: pushed orders appear without polling and header says Live
-00:01 +21: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/kds_live_feed_test.dart: pushed orders appear without polling and header says Live
-00:01 +22: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/kds_live_feed_test.dart: pushed orders appear without polling and header says Live
-00:01 +23: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/kds_live_feed_test.dart: pushed orders appear without polling and header says Live
-00:01 +24: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/kds_live_feed_test.dart: pushed orders appear without polling and header says Live
-00:01 +25: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/kds_live_feed_test.dart: pushed orders appear without polling and header says Live
-00:01 +26: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/menu_kiosk_test.dart: KioskMenuPage displays Sulit Meals and Chicken Poppers categories
-00:01 +27: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/menu_kiosk_test.dart: KioskMenuPage displays Sulit Meals and Chicken Poppers categories
-00:01 +27: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/order_service_test.dart: every checkout combination matches a rules fixture kiosk-cash
+00:01 +11: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/kds_live_feed_test.dart: pushed orders appear without polling and header says Live
+00:01 +12: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/kds_live_feed_test.dart: pushed orders appear without polling and header says Live
+00:01 +13: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/kds_live_feed_test.dart: pushed orders appear without polling and header says Live
+00:01 +14: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/kds_live_feed_test.dart: pushed orders appear without polling and header says Live
+00:02 +15: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/kds_live_feed_test.dart: pushed orders appear without polling and header says Live
+00:02 +16: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/kds_live_feed_test.dart: pushed orders appear without polling and header says Live
+00:02 +17: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/kds_live_feed_test.dart: pushed orders appear without polling and header says Live
+00:02 +18: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/kds_live_feed_test.dart: pushed orders appear without polling and header says Live
+00:02 +19: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/kds_live_feed_test.dart: pushed orders appear without polling and header says Live
+00:02 +20: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/kds_live_feed_test.dart: pushed orders appear without polling and header says Live
+00:02 +21: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/kds_live_feed_test.dart: pushed orders appear without polling and header says Live
+00:02 +22: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/kds_live_feed_test.dart: pushed orders appear without polling and header says Live
+00:02 +23: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/kds_live_feed_test.dart: pushed orders appear without polling and header says Live
+00:02 +24: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/kds_live_feed_test.dart: pushed orders appear without polling and header says Live
+00:02 +25: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/kds_live_feed_test.dart: pushed orders appear without polling and header says Live
+00:02 +26: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/kds_live_feed_test.dart: pushed orders appear without polling and header says Live
+00:03 +27: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/kds_live_feed_test.dart: pushed orders appear without polling and header says Live
+00:03 +28: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/menu_ordering_test.dart: single option and quantity reach cart with the exact price
+00:03 +28: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/order_service_test.dart: every checkout combination matches a rules fixture kiosk-cash
 Order LU-261114-120000 saved to Firestore as testOrderReference
-00:01 +28: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/menu_kiosk_test.dart: KioskMenuPage displays Sulit Meals and Chicken Poppers categories
-00:01 +28: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/order_service_test.dart: every checkout combination matches a rules fixture kiosk-gcash
+00:03 +29: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/menu_ordering_test.dart: single option and quantity reach cart with the exact price
+00:03 +29: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/order_service_test.dart: every checkout combination matches a rules fixture kiosk-gcash
 Order LU-261114-120000 saved to Firestore as testOrderReference
-00:01 +29: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/menu_kiosk_test.dart: KioskMenuPage displays Sulit Meals and Chicken Poppers categories
-00:01 +29: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/order_service_test.dart: every checkout combination matches a rules fixture staff-cash
+00:03 +30: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/menu_ordering_test.dart: single option and quantity reach cart with the exact price
+00:03 +30: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/order_service_test.dart: every checkout combination matches a rules fixture staff-cash
 Order LU-261114-120000 saved to Firestore as testOrderReference
-00:01 +30: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/menu_kiosk_test.dart: KioskMenuPage displays Sulit Meals and Chicken Poppers categories
-00:01 +30: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/order_service_test.dart: every checkout combination matches a rules fixture staff-gcash
+00:03 +31: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/menu_ordering_test.dart: single option and quantity reach cart with the exact price
+00:03 +31: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/order_service_test.dart: every checkout combination matches a rules fixture staff-gcash
 Order LU-261114-120000 saved to Firestore as testOrderReference
-00:01 +31: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/menu_kiosk_test.dart: KioskMenuPage displays Sulit Meals and Chicken Poppers categories
-00:01 +32: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/menu_kiosk_test.dart: KioskMenuPage displays Sulit Meals and Chicken Poppers categories
-00:01 +33: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/menu_kiosk_test.dart: KioskMenuPage displays Sulit Meals and Chicken Poppers categories
-00:01 +34: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/menu_kiosk_test.dart: KioskMenuPage displays Sulit Meals and Chicken Poppers categories
-00:01 +35: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/menu_ordering_test.dart: single option and quantity reach cart with the exact price
-00:01 +35: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/order_service_test.dart: initial order write leaves notification status to the server
+00:03 +32: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/menu_ordering_test.dart: single option and quantity reach cart with the exact price
+00:03 +33: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/menu_ordering_test.dart: single option and quantity reach cart with the exact price
+00:03 +34: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/menu_ordering_test.dart: single option and quantity reach cart with the exact price
+00:03 +35: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/menu_ordering_test.dart: single option and quantity reach cart with the exact price
+00:03 +35: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/order_service_test.dart: initial order write leaves notification status to the server
 Order LU-261029-120000 saved to Firestore as testOrderReference
-00:01 +36: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/menu_ordering_test.dart: single option and quantity reach cart with the exact price
-00:02 +37: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/menu_ordering_test.dart: single option and quantity reach cart with the exact price
-00:02 +38: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/menu_preselect_test.dart: the menu opens with the picks in the cart and stays on menu
-00:02 +39: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/menu_preselect_test.dart: the menu opens with the picks in the cart and stays on menu
-00:02 +40: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/menu_preselect_test.dart: the menu opens with the picks in the cart and stays on menu
-00:02 +41: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/menu_preselect_test.dart: the menu opens with the picks in the cart and stays on menu
-00:02 +42: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/menu_preselect_test.dart: the menu opens with the picks in the cart and stays on menu
-00:02 +43: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/menu_preselect_test.dart: the menu opens with the picks in the cart and stays on menu
-00:02 +44: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/menu_preselect_test.dart: the menu opens with the picks in the cart and stays on menu
-00:02 +45: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/menu_preselect_test.dart: the menu opens with the picks in the cart and stays on menu
-00:02 +46: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/menu_preselect_test.dart: the menu opens with the picks in the cart and stays on menu
-00:02 +47: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/menu_preselect_test.dart: the menu opens with the picks in the cart and stays on menu
-00:02 +48: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/menu_preselect_test.dart: the menu opens with the picks in the cart and stays on menu
-00:02 +49: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/menu_preselect_test.dart: the menu opens with the picks in the cart and stays on menu
-00:02 +50: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/menu_preselect_test.dart: the menu opens with the picks in the cart and stays on menu
-00:02 +51: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/menu_preselect_test.dart: the menu opens with the picks in the cart and stays on menu
-00:02 +52: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/menu_preselect_test.dart: the menu opens with the picks in the cart and stays on menu
-00:02 +53: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/menu_preselect_test.dart: the menu opens with the picks in the cart and stays on menu
-00:02 +54: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/menu_preselect_test.dart: the menu opens with the picks in the cart and stays on menu
-00:02 +55: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/menu_preselect_test.dart: the menu opens with the picks in the cart and stays on menu
-00:02 +56: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/menu_preselect_test.dart: the menu opens with the picks in the cart and stays on menu
-00:02 +57: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/menu_preselect_test.dart: the menu opens with the picks in the cart and stays on menu
-00:02 +58: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/menu_preselect_test.dart: the menu opens with the picks in the cart and stays on menu
-00:02 +59: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/menu_preselect_test.dart: the menu opens with the picks in the cart and stays on menu
-00:02 +60: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/navigation_flow_test.dart: StaffMenuDialog logout pops once, keeps menu mounted, and shows SnackBar safely
-00:02 +61: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/navigation_flow_test.dart: StaffMenuDialog logout pops once, keeps menu mounted, and shows SnackBar safely
-00:02 +62: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/navigation_flow_test.dart: StaffMenuDialog logout pops once, keeps menu mounted, and shows SnackBar safely
-00:02 +63: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/navigation_flow_test.dart: StaffMenuDialog logout pops once, keeps menu mounted, and shows SnackBar safely
-00:02 +64: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/navigation_flow_test.dart: StaffMenuDialog logout pops once, keeps menu mounted, and shows SnackBar safely
-00:02 +65: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/navigation_flow_test.dart: StaffMenuDialog logout pops once, keeps menu mounted, and shows SnackBar safely
-00:02 +66: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/navigation_flow_test.dart: StaffMenuDialog logout pops once, keeps menu mounted, and shows SnackBar safely
-00:02 +67: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/navigation_flow_test.dart: StaffMenuDialog logout pops once, keeps menu mounted, and shows SnackBar safely
-00:02 +68: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/navigation_flow_test.dart: StaffMenuDialog logout pops once, keeps menu mounted, and shows SnackBar safely
-00:02 +69: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/navigation_flow_test.dart: StaffMenuDialog logout pops once, keeps menu mounted, and shows SnackBar safely
-00:02 +70: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/navigation_flow_test.dart: StaffMenuDialog logout pops once, keeps menu mounted, and shows SnackBar safely
-00:03 +71: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/navigation_flow_test.dart: StaffMenuDialog logout pops once, keeps menu mounted, and shows SnackBar safely
-00:03 +72: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/navigation_flow_test.dart: StaffMenuDialog logout pops once, keeps menu mounted, and shows SnackBar safely
-00:03 +73: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/staff_kds_test.dart: Staff Session & Audio Alert Tests StaffLoginDialog displays Quick PIN keypad by default
-00:03 +74: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/staff_kds_test.dart: Staff Session & Audio Alert Tests StaffLoginDialog displays Quick PIN keypad by default
-00:03 +75: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/staff_kds_test.dart: Staff Session & Audio Alert Tests StaffLoginDialog displays Quick PIN keypad by default
-00:03 +76: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/staff_kds_test.dart: Staff Session & Audio Alert Tests StaffLoginDialog displays Quick PIN keypad by default
-00:03 +77: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/staff_kds_test.dart: Staff Session & Audio Alert Tests StaffLoginDialog displays Quick PIN keypad by default
-00:03 +78: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/staff_kds_test.dart: Staff Session & Audio Alert Tests StaffLoginDialog displays Quick PIN keypad by default
-00:03 +79: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/staff_kds_test.dart: Staff Session & Audio Alert Tests StaffLoginDialog displays Quick PIN keypad by default
-00:03 +80: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/staff_kds_test.dart: Staff Session & Audio Alert Tests StaffLoginDialog displays Quick PIN keypad by default
-00:03 +81: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/navigation_flow_test.dart: CheckoutPage explains blocked Delivery button and reacts when cart clears
-00:03 +82: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/staff_kds_test.dart: Staff Session & Audio Alert Tests KdsPage renders operations board when staff is logged in
-00:04 +83: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/navigation_flow_test.dart: KdsPage mobile DONE tab shows completed-orders empty copy and safe print fallback
-00:04 +84: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/navigation_flow_test.dart: KdsPage mobile DONE tab shows completed-orders empty copy and safe print fallback
-00:04 +85: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/staff_kds_test.dart: Staff Session & Audio Alert Tests AdminDashboard, AnalyticsPage, and LifetimeAnalyticsPage require staff login and render cleanly on mobile
-00:04 +86: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/navigation_flow_test.dart: Compact KdsPage POS and Sales & Admin actions pop back to existing named routes
-00:04 +87: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/navigation_flow_test.dart: ReceiptPage ORDER AGAIN opens KioskMenuPage even when /menu is absent from stack
-00:04 +88: All tests passed!
+00:03 +36: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/menu_ordering_test.dart: single option and quantity reach cart with the exact price
+00:03 +37: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/menu_ordering_test.dart: single option and quantity reach cart with the exact price
+00:03 +38: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/menu_preselect_test.dart: the menu opens with the picks in the cart and stays on menu
+00:03 +39: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/menu_preselect_test.dart: the menu opens with the picks in the cart and stays on menu
+00:03 +40: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/menu_preselect_test.dart: the menu opens with the picks in the cart and stays on menu
+00:03 +41: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/menu_preselect_test.dart: the menu opens with the picks in the cart and stays on menu
+00:03 +42: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/menu_preselect_test.dart: the menu opens with the picks in the cart and stays on menu
+00:03 +43: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/menu_preselect_test.dart: the menu opens with the picks in the cart and stays on menu
+00:03 +44: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/menu_preselect_test.dart: the menu opens with the picks in the cart and stays on menu
+00:03 +45: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/menu_preselect_test.dart: the menu opens with the picks in the cart and stays on menu
+00:03 +46: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/menu_preselect_test.dart: the menu opens with the picks in the cart and stays on menu
+00:03 +47: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/menu_preselect_test.dart: the menu opens with the picks in the cart and stays on menu
+00:03 +48: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/menu_preselect_test.dart: the menu opens with the picks in the cart and stays on menu
+00:03 +49: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/menu_preselect_test.dart: the menu opens with the picks in the cart and stays on menu
+00:03 +50: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/menu_preselect_test.dart: the menu opens with the picks in the cart and stays on menu
+00:03 +51: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/menu_preselect_test.dart: the menu opens with the picks in the cart and stays on menu
+00:03 +52: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/menu_preselect_test.dart: the menu opens with the picks in the cart and stays on menu
+00:03 +53: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/menu_preselect_test.dart: the menu opens with the picks in the cart and stays on menu
+00:03 +54: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/menu_preselect_test.dart: the menu opens with the picks in the cart and stays on menu
+00:03 +55: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/menu_preselect_test.dart: the menu opens with the picks in the cart and stays on menu
+00:03 +56: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/menu_preselect_test.dart: the menu opens with the picks in the cart and stays on menu
+00:03 +57: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/menu_preselect_test.dart: the menu opens with the picks in the cart and stays on menu
+00:03 +58: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/menu_preselect_test.dart: the menu opens with the picks in the cart and stays on menu
+00:03 +59: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/menu_preselect_test.dart: the menu opens with the picks in the cart and stays on menu
+00:03 +60: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/menu_preselect_test.dart: the menu opens with the picks in the cart and stays on menu
+00:03 +61: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/menu_preselect_test.dart: the menu opens with the picks in the cart and stays on menu
+00:04 +62: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/menu_preselect_test.dart: the menu opens with the picks in the cart and stays on menu
+00:04 +63: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/menu_preselect_test.dart: the menu opens with the picks in the cart and stays on menu
+00:04 +64: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/navigation_flow_test.dart: StaffMenuDialog logout pops once, keeps menu mounted, and shows SnackBar safely
+00:04 +65: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/navigation_flow_test.dart: StaffMenuDialog logout pops once, keeps menu mounted, and shows SnackBar safely
+00:04 +66: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/navigation_flow_test.dart: StaffMenuDialog logout pops once, keeps menu mounted, and shows SnackBar safely
+00:04 +67: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/navigation_flow_test.dart: StaffMenuDialog logout pops once, keeps menu mounted, and shows SnackBar safely
+00:04 +68: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/navigation_flow_test.dart: StaffMenuDialog logout pops once, keeps menu mounted, and shows SnackBar safely
+00:04 +69: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/navigation_flow_test.dart: StaffMenuDialog logout pops once, keeps menu mounted, and shows SnackBar safely
+00:04 +70: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/navigation_flow_test.dart: StaffMenuDialog logout pops once, keeps menu mounted, and shows SnackBar safely
+00:04 +71: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/navigation_flow_test.dart: StaffMenuDialog logout pops once, keeps menu mounted, and shows SnackBar safely
+00:04 +72: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/navigation_flow_test.dart: StaffMenuDialog logout pops once, keeps menu mounted, and shows SnackBar safely
+00:04 +73: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/staff_kds_test.dart: Staff Session & Audio Alert Tests StaffLoginDialog displays Quick PIN keypad by default
+00:05 +74: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/staff_kds_test.dart: Staff Session & Audio Alert Tests StaffLoginDialog displays Quick PIN keypad by default
+00:05 +75: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/staff_kds_test.dart: Staff Session & Audio Alert Tests StaffLoginDialog displays Quick PIN keypad by default
+00:05 +76: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/staff_kds_test.dart: Staff Session & Audio Alert Tests StaffLoginDialog displays Quick PIN keypad by default
+00:05 +77: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/staff_kds_test.dart: Staff Session & Audio Alert Tests StaffLoginDialog displays Quick PIN keypad by default
+00:05 +78: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/staff_kds_test.dart: Staff Session & Audio Alert Tests StaffLoginDialog displays Quick PIN keypad by default
+00:05 +79: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/navigation_flow_test.dart: pushOrPopToRoute / pushNamedOrPopTo pop back instead of stacking duplicate Menu/KDS routes
+00:05 +80: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/staff_kds_test.dart: Staff Session & Audio Alert Tests KdsPage renders operations board when staff is logged in
+00:05 +81: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/staff_kds_test.dart: Staff Session & Audio Alert Tests KdsPage renders operations board when staff is logged in
+00:05 +82: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/navigation_flow_test.dart: CheckoutPage explains blocked Delivery button and reacts when cart clears
+00:05 +83: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/navigation_flow_test.dart: CheckoutPage explains blocked Delivery button and reacts when cart clears
+00:06 +84: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/staff_kds_test.dart: Staff Session & Audio Alert Tests AdminDashboard, AnalyticsPage, and LifetimeAnalyticsPage require staff login and render cleanly on mobile
+00:06 +85: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/navigation_flow_test.dart: KdsPage mobile DONE tab shows completed-orders empty copy and safe print fallback
+00:06 +86: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/navigation_flow_test.dart: Compact KdsPage POS and Sales & Admin actions pop back to existing named routes
+00:06 +87: C:/Users/Admin/.t3/worktrees/LunaBites and Delights/t3-7d9d053b-11484b1a6e99ae3c/test/navigation_flow_test.dart: ReceiptPage ORDER AGAIN opens KioskMenuPage even when /menu is absent from stack
+00:10 +88: All tests passed!
