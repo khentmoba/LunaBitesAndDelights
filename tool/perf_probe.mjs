@@ -1,6 +1,6 @@
 // Headless performance probe for the static storefront.
 //
-// Serves site/ over localhost with the real firebase.json header rules, then
+// Serves build/app/ (the built storefront) over localhost with the real firebase.json header rules, then
 // drives Chrome over CDP with a slow-3G network and a 4x CPU slowdown. It
 // records cold-load and repeat-visit bytes, paint timings, long tasks, and
 // renders screenshots at the viewports the storefront supports.
@@ -29,7 +29,7 @@ const args = Object.fromEntries(
 const label = args.label ?? 'probe';
 const outFile = args.out ?? join(root, 'docs', 'evidence', `perf-${label}.json`);
 const chromePath = args.chrome ?? 'C:/Program Files/Google/Chrome/Application/chrome.exe';
-const siteDir = args.site ?? join(root, 'site');
+const siteDir = args.site ?? join(root, 'build', 'app');
 const firebasePath = args.firebase ?? join(root, 'firebase.json');
 const evidenceDir = join(root, 'docs', 'evidence');
 
@@ -317,7 +317,7 @@ async function screenshot({ send }, { width, height, dpr, name, scrollTo, hash }
 let chrome;
 try {
   mkdirSync(evidenceDir, { recursive: true });
-  if (!resolveFile('/')) throw new Error(`No site/index.html under ${siteDir}`);
+  if (!resolveFile('/')) throw new Error(`No index.html under ${siteDir}`);
   await new Promise((r) => server.listen(0, '127.0.0.1', r));
   const port = server.address().port;
   const debugPort = 9400 + (port % 300);

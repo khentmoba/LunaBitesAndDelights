@@ -28,7 +28,7 @@ const { getAuth } = require('firebase-admin/auth');
 const args = Object.fromEntries(process.argv.slice(2).map((a) => { const [k, ...v] = a.split('='); return [k.replace(/^--/, ''), v.join('=') || true]; }));
 const target = args.target ?? 'flutter';
 const kioskDir = args.kiosk ? resolve(args.kiosk) : null;
-const siteDir = resolve(args.site ?? join(root, 'site'));
+const siteDir = resolve(args.site ?? join(root, 'build', 'app'));
 const outDir = resolve(args.out ?? join(root, 'docs', 'evidence', 'parity', target));
 const only = args.only ? new Set(String(args.only).split(',')) : null;
 const chromePath = args.chrome ?? 'C:/Program Files/Google/Chrome/Application/chrome.exe';

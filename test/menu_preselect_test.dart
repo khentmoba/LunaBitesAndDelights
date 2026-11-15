@@ -19,22 +19,24 @@ void main() {
     resetStorefrontPicks();
   });
 
-  test('every storefront row resolves at the price it prints', () {
-    final html = File('site/index.html').readAsStringSync();
+  // The page prints `priceOf(id, variant)` from app/src/data/menu.ts, which
+  // test/site/menu.test.mjs holds equal to menu_data.dart. Here each row must
+  // print the price of the very item it marks, and that item must resolve.
+  test('every storefront row resolves and prints the price of what it marks', () {
+    final page = File('app/src/pages/index.astro').readAsStringSync();
     final rows = RegExp(
-      r'data-pick="([^"]+)"[\s\S]*?<span class="row__price">₱(\d+)</span>',
-    ).allMatches(html).toList();
+      r'data-pick="([^"]+)".*?<span class="row__price">₱\{priceOf\("([^"]+)"(?:, "([^"]+)")?\)\}</span>',
+    ).allMatches(page).toList();
     expect(rows, hasLength(greaterThan(50)));
 
     for (final row in rows) {
       final pick = row.group(1)!.replaceAll('&amp;', '&');
-      final printed = int.parse(row.group(2)!);
       final result = resolvePicks([pick]);
       expect(result.isEmpty, isFalse, reason: '$pick resolves to nothing');
       if (pick.startsWith('@')) continue;
-      if (result.ready.isNotEmpty) {
-        expect(result.ready.single.price, printed, reason: pick);
-      } else {
+      final printed = [row.group(2)!, ?row.group(3)].join('#');
+      expect(printed, pick, reason: 'row $pick prints the price of $printed');
+      if (result.ready.isEmpty) {
         expect(result.needsChoice, hasLength(1), reason: pick);
       }
     }

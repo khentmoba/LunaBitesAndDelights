@@ -10,4 +10,4 @@ They are static instances, subset to Latin plus the peso sign, cut from the upst
 | `Caveat-600.ttf`, `Caveat-700.ttf` | https://github.com/google/fonts/blob/main/ofl/caveat/Caveat%5Bwght%5D.ttf | `OFL-Caveat.txt` |
 
 Downloaded from Google Fonts on 2026-10-29. Flutter family names are `Bricolage` (printed type) and `Caveat`
-(handwritten marks only). The storefront serves WOFF2 subsets of the same fonts from `site/fonts/`.
+(handwritten marks only). The storefront serves WOFF2 subsets of the same fonts from `app/public/fonts/`.

@@ -24,7 +24,7 @@ from fontTools.ttLib import TTFont
 ROOT = Path(__file__).resolve().parent.parent
 SOURCE = ROOT / "tool" / "fonts" / "bricolage-source.woff2"
 PAIRS = ROOT / "tool" / "fonts" / "bricolage-kern-pairs.json"
-OUT = ROOT / "site" / "fonts" / "bricolage.woff2"
+OUT = ROOT / "app" / "public" / "fonts" / "bricolage.woff2"
 # Only the map coordinates use these; no Bricolage release has them.
 KNOWN_FALLBACK = set("\u2032\u2033")
 

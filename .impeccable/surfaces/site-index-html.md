@@ -1,7 +1,7 @@
 ---
 version: 1
 slug: "site-index-html"
-primary_target: "site/index.html"
+primary_target: "app/src/pages/index.astro"
 related_targets: []
 ---
 

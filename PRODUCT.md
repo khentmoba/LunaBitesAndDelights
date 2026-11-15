@@ -10,10 +10,10 @@ adaptive
 
 Two surfaces in one Firebase Hosting deploy:
 
-- `/` — a hand-written static HTML/CSS/JS storefront (`site/`), no framework.
+- `/` — a static HTML/CSS/JS storefront, built with Astro from `app/src/pages/` (prices come from `app/src/data/menu.ts`).
 - `/kiosk/` — the existing Flutter web ordering app, built with `--base-href /kiosk/`.
 
-`tool/assemble_site.dart` moves the Flutter build into `build/web/kiosk/` and copies `site/` to the root of `build/web/`.
+`tool/assemble_site.dart` moves the Flutter build into `build/web/kiosk/` and copies the Astro build (`build/app/`) to the root of `build/web/`.
 
 ## Users
 
@@ -53,8 +53,8 @@ A neighbourhood kiosk with the prices printed where you can see them: real per-i
 - Name: Luna Bites & Delights. Canonical domain: `https://lunabitesanddelights.web.app`. The legacy `lunaexpress.web.app` domain permanently redirects (301) to it, and "Luna Express" survives only as a search alias in structured data.
 - Tagline in the owner's own words: "Good food, sweet drinks, moonlit vibes."
 - Intro copy from the Facebook page: "Tambayan ng good food, sweet drinks, at moonlit vibes 🌕✨ Feel the comfort, taste the delight — only at Luna Bites & Delights 💛 Located @ Purok 5, Magallanes, Agusan Del Norte."
-- Owner-supplied palette: logo pink `#EC1C72`, blush `#FEB7C9`, pink watercolor wash (`site/img/pink-wash.webp`, `images/pink_wash.jpg`), butter yellow `#FCD04E`, paper `#FFFAFB`, plum ink `#2A0F1E`.
-- Logo: `images/luna_logo.png` (and `site/img/luna-logo-*.webp`), the owner's circular pink badge with a yellow cooler cup, striped straw, script "Luna" and "Bites & Delights".
+- Owner-supplied palette: logo pink `#EC1C72`, blush `#FEB7C9`, pink watercolor wash (`app/public/img/pink-wash.webp`, `images/pink_wash.jpg`), butter yellow `#FCD04E`, paper `#FFFAFB`, plum ink `#2A0F1E`.
+- Logo: `images/luna_logo.png` (and `app/public/img/luna-logo-*.webp`), the owner's circular pink badge with a yellow cooler cup, striped straw, script "Luna" and "Bites & Delights".
 
 ## Evidence on Hand
 

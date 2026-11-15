@@ -2,15 +2,16 @@ import 'dart:io';
 
 /// Composes the deployed site from two builds:
 ///
-///   /        the hand-written storefront in `site/`
+///   /        the Astro storefront, built into `build/app/`
 ///   /kiosk/  the Flutter ordering app
 ///
-/// Run after `flutter build web --release --base-href /kiosk/`.
+/// Run after `flutter build web --release --base-href /kiosk/` and
+/// `npm run build --prefix app`.
 
 void main() {
   final build = Directory('build/web');
   final kiosk = Directory('build/web/kiosk');
-  final storefront = Directory('site');
+  final storefront = Directory('build/app');
 
   if (!File('${build.path}/index.html').existsSync()) {
     stderr.writeln(
@@ -19,7 +20,9 @@ void main() {
     exit(1);
   }
   if (!File('${storefront.path}/index.html').existsSync()) {
-    stderr.writeln('site/index.html is missing.');
+    stderr.writeln(
+      'build/app/index.html is missing — run npm run build --prefix app first.',
+    );
     exit(1);
   }
 
