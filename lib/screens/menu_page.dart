@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart' hide MenuTheme;
 import 'package:provider/provider.dart';
+
 import '../data/menu_data.dart';
 import '../models/menu.dart';
 import '../services/session.dart';
 import '../services/cart_notifier.dart';
 import '../services/inactivity_timer.dart';
+import '../services/menu_preselect.dart';
 import '../services/navigation.dart';
 import '../widgets/kiosk/menu_theme.dart';
 import '../widgets/kiosk/sidebar.dart';
@@ -20,46 +22,48 @@ class KioskMenuPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Theme(
       data: MenuTheme.data,
-      child: Builder(
-        builder: (context) {
-          final wide = MediaQuery.sizeOf(context).width >= 1000;
-          return InactivityWatcher(
-            child: Scaffold(
-              backgroundColor: MenuTheme.ground,
-              body: SafeArea(
-                bottom: false,
-                child: Row(
-                  children: [
-                    if (wide) const KioskSidebar(),
-                    Expanded(
-                      child: Column(
-                        children: [
-                          DecoratedBox(
-                            decoration: BoxDecoration(
-                              color: MenuTheme.paper,
-                              border: wide
-                                  ? const Border(
-                                      bottom: BorderSide(
-                                        color: MenuTheme.pink,
-                                        width: 2,
-                                      ),
-                                    )
-                                  : null,
+      child: MenuPreselectHost(
+        child: Builder(
+          builder: (context) {
+            final wide = MediaQuery.sizeOf(context).width >= 1000;
+            return InactivityWatcher(
+              child: Scaffold(
+                backgroundColor: MenuTheme.ground,
+                body: SafeArea(
+                  bottom: false,
+                  child: Row(
+                    children: [
+                      if (wide) const KioskSidebar(),
+                      Expanded(
+                        child: Column(
+                          children: [
+                            DecoratedBox(
+                              decoration: BoxDecoration(
+                                color: MenuTheme.paper,
+                                border: wide
+                                    ? const Border(
+                                        bottom: BorderSide(
+                                          color: MenuTheme.pink,
+                                          width: 2,
+                                        ),
+                                      )
+                                    : null,
+                              ),
+                              child: _buildHeader(context, wide),
                             ),
-                            child: _buildHeader(context, wide),
-                          ),
-                          if (!wide) const KioskCategoryBar(),
-                          Expanded(child: _buildProductGrid(context)),
-                        ],
+                            if (!wide) const KioskCategoryBar(),
+                            Expanded(child: _buildProductGrid(context)),
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
+                bottomNavigationBar: _buildOrderBar(context),
               ),
-              bottomNavigationBar: _buildOrderBar(context),
-            ),
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }

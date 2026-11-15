@@ -15,3 +15,10 @@ bool printCurrentPage() {
     return false;
   }
 }
+
+/// Swaps the address bar URL without a navigation or a new history entry.
+void replaceBrowserUrl(String url) {
+  try {
+    helper_impl.replaceUrl(url);
+  } catch (_) {}
+}
