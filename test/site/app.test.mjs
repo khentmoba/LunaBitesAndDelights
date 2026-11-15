@@ -377,3 +377,62 @@ test('both pages define metric-matched fallback fonts and avoid high fetchpriori
     'desktop preload already prioritizes shawarma-wrap.avif; mobile should not mark it fetchpriority=high',
   );
 });
+
+test('marking rows fills the tally and builds the kiosk link with those picks', () => {
+  const { window } = load();
+  const doc = window.document;
+  const tally = doc.getElementById('tally');
+  const row = (name) => [...doc.querySelectorAll('.row')].find((r) => r.querySelector('.row__name').textContent.trim() === name);
+
+  assert.equal(tally.classList.contains('is-open'), false, 'hidden until something is marked');
+  for (const name of ['Shawarma Wrap', 'Burger with Egg', 'Large Fries']) {
+    const box = row(name).querySelector('.row__tick input');
+    box.checked = true;
+    box.dispatchEvent(new window.Event('change', { bubbles: true }));
+  }
+
+  assert.equal(tally.classList.contains('is-open'), true);
+  assert.equal(doc.querySelector('.tally__count').textContent, '3');
+  assert.equal(doc.querySelector('.tally__total').textContent, '₱220');
+  assert.equal(
+    doc.querySelector('.tally .stamp').getAttribute('href'),
+    '/kiosk/?pick=s1%23Solo&pick=f3&pick=b4#/menu',
+    'the link stops at the kiosk menu, never at checkout',
+  );
+
+  doc.querySelector('.tally__clear').dispatchEvent(new window.Event('click', { bubbles: true }));
+  assert.equal(tally.classList.contains('is-open'), false);
+  assert.equal(doc.querySelectorAll('.row__tick input:checked').length, 0);
+  assert.equal(doc.querySelector('.tally .stamp').getAttribute('href'), '/kiosk/#/menu');
+});
+
+test('tapping a dish name opens its photo, one at a time, without marking it', () => {
+  const { window } = load();
+  const doc = window.document;
+  const [first, second] = doc.querySelectorAll('.row__peek');
+
+  first.dispatchEvent(new window.Event('click', { bubbles: true }));
+  const photo = first.closest('.row').querySelector('.row__photo');
+  assert.equal(first.getAttribute('aria-expanded'), 'true');
+  assert.equal(first.getAttribute('aria-controls'), photo.id);
+  assert.equal(photo.classList.contains('is-open'), true);
+  assert.equal(photo.querySelector('img').getAttribute('src'), '/kiosk/assets/images/poster_shawarma_wrap.webp');
+  assert.equal(first.closest('.row').querySelector('input').checked, false, 'peeking never marks');
+
+  second.dispatchEvent(new window.Event('click', { bubbles: true }));
+  assert.equal(first.getAttribute('aria-expanded'), 'false', 'the first photo closes');
+  assert.equal(photo.classList.contains('is-open'), false);
+
+  second.dispatchEvent(new window.Event('click', { bubbles: true }));
+  assert.equal(second.getAttribute('aria-expanded'), 'false', 'a second tap closes it');
+});
+
+test('every menu row carries a kiosk pick and a photo path', () => {
+  const doc = new JSDOM(storefront).window.document;
+  const rows = doc.querySelectorAll('.slip--menu .row');
+  assert.ok(rows.length > 50);
+  for (const row of rows) {
+    assert.match(row.getAttribute('data-pick') ?? '', /^(@\w+|[\w]+(#.+)?)$/);
+    assert.match(row.getAttribute('data-photo') ?? '', /^images\/[\w-]+\.webp$/);
+  }
+});
