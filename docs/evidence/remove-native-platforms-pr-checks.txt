@@ -1,0 +1,22 @@
+# Local run of .github/workflows/pr-checks.yml on a86f7a5 (2026-11-15)
+
+## flutter
+flutter analyze --no-fatal-infos --no-fatal-warnings   -> No issues found!
+node tool/check_analyzer_baseline.mjs                    -> Analyzer issues: 0 (baseline 0).
+format check (changed files only)                        -> no Dart files changed
+flutter test                                             -> +88: All tests passed!
+flutter build web --release --wasm                       -> Built build/web
+
+## functions
+npm ci && npm run build (tsc)                            -> exit 0
+npm audit --audit-level=high                             -> exit 0 (16 low/moderate, none high/critical)
+
+## rules
+npm run test:rules (Firestore emulator, Temurin JDK 21)  -> tests 23, pass 23, fail 0
+
+## site
+npm run test:site                                        -> tests 28, pass 28, fail 0
+
+## Scope check
+No remaining tracked files under android/ ios/ macos/ windows/ linux/:
+0 files
