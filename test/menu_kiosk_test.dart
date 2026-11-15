@@ -24,7 +24,6 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Verify Sulit Meals category is selected and items are shown
       expect(find.text('Sulit Meals'), findsWidgets);
       expect(find.text('Chicken Poppers'), findsWidgets);
 
@@ -33,7 +32,6 @@ void main() {
       expect(find.text('S3 – Shawarma Rice'), findsOneWidget);
       expect(find.text("Luna's Pork Sisig"), findsOneWidget);
 
-      // Switch to Chicken Poppers category
       kioskSession.setCategory('chicken_poppers');
       await tester.pumpAndSettle();
 

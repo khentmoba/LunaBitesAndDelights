@@ -148,7 +148,6 @@ export async function sendPhotoToAll(
   return results;
 }
 
-// Utility to escape MarkdownV2 special characters
 export function escapeMd(text: string | number | null | undefined): string {
   return String(text ?? '').replace(/([_*\[\]()~`>#+\-=|{}.!\\])/g, '\\$1');
 }

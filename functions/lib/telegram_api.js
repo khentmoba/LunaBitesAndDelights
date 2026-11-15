@@ -127,7 +127,6 @@ async function sendPhotoToAll(photo, caption, options = {}) {
     }
     return results;
 }
-// Utility to escape MarkdownV2 special characters
 function escapeMd(text) {
     return String(text ?? '').replace(/([_*\[\]()~`>#+\-=|{}.!\\])/g, '\\$1');
 }

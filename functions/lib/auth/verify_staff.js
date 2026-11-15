@@ -70,7 +70,6 @@ exports.verifyStaff = (0, https_1.onCall)(async (request) => {
         }
         await batch.commit();
     }
-    // ── Quick PIN Login Flow ──
     if (pin) {
         if (!/^[0-9]{4,8}$/.test(pin)) {
             throw new https_1.HttpsError('invalid-argument', GENERIC_PIN_FAIL);
@@ -114,7 +113,6 @@ exports.verifyStaff = (0, https_1.onCall)(async (request) => {
         firebase_functions_1.logger.info(`Staff PIN login successful for ${matchedUser.username || matchedUser.id} as ${role}`);
         return { success: true, username: matchedUser.username || matchedUser.id, role, customToken };
     }
-    // ── Username + Password Flow ──
     if (!usernameRaw || !password) {
         throw new https_1.HttpsError('invalid-argument', GENERIC_FAIL);
     }

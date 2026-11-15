@@ -42,7 +42,6 @@ export const verifyStaff = onCall(async (request) => {
     await batch.commit();
   }
 
-  // ── Quick PIN Login Flow ──
   if (pin) {
     if (!/^[0-9]{4,8}$/.test(pin)) {
       throw new HttpsError('invalid-argument', GENERIC_PIN_FAIL);
@@ -92,7 +91,6 @@ export const verifyStaff = onCall(async (request) => {
     return { success: true, username: matchedUser.username || matchedUser.id, role, customToken };
   }
 
-  // ── Username + Password Flow ──
   if (!usernameRaw || !password) {
     throw new HttpsError('invalid-argument', GENERIC_FAIL);
   }

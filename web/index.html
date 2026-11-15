@@ -37,7 +37,7 @@
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     }
 
-    /* ── UPDATE BANNER ─────────────────────────── */
+    /* UPDATE BANNER */
     #update-banner {
       display: none;
       position: fixed;
@@ -72,7 +72,7 @@
     #update-btn:active { transform: translateY(1px); }
     #update-btn:focus-visible { outline: 3px solid #2A0F1E; outline-offset: 3px; }
 
-    /* ── LOADING SCREEN ────────────────────────── */
+    /* LOADING SCREEN */
     #loading-screen {
       position: fixed; inset: 0;
       background-color: #FEB7C9;
@@ -123,9 +123,7 @@
     var VERSION_STORAGE_KEY = 'luna_app_version';
     var _pendingServerVersion = null; 
 
-    // ─────────────────────────────────────────
-    //  LOADING SCREEN
-    // ─────────────────────────────────────────
+    // LOADING SCREEN
     function hideLoadingScreen() {
       var screen = document.getElementById('loading-screen');
       if (screen) {
@@ -138,9 +136,7 @@
       if (title) title.textContent = 'Still loading the menu…';
     }, 8000);
 
-    // ─────────────────────────────────────────
-    //  UPDATE BANNER
-    // ─────────────────────────────────────────
+    // UPDATE BANNER
     function showUpdateBanner() {
       var banner = document.getElementById('update-banner');
       if (banner) banner.classList.add('show');
@@ -186,9 +182,7 @@
       }, 400);
     }
 
-    // ─────────────────────────────────────────
-    //  iOS VERSION POLLING
-    // ─────────────────────────────────────────
+    // iOS VERSION POLLING
     function checkVersionUpdate() {
       fetch('version.json?t=' + Date.now(), {
         cache: 'no-store',
@@ -226,9 +220,7 @@
       }
     });
 
-    // ─────────────────────────────────────────
-    //  PWA INSTALL BRIDGE
-    // ─────────────────────────────────────────
+    // PWA INSTALL BRIDGE
     window._pwaPromptReady = false;
     window._pwaPromptEvent = null;
 
@@ -253,9 +245,7 @@
       window._pwaPromptEvent = null;
     });
 
-    // ─────────────────────────────────────────
-    //  SERVICE WORKER (Android & iOS 11.3+)
-    // ─────────────────────────────────────────
+    // SERVICE WORKER (Android & iOS 11.3+)
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', function() {
       navigator.serviceWorker.register('sw.js').then(function(registration) {
@@ -301,7 +291,7 @@
       });
     }
 
-    // ── KITCHEN / STAFF ORDER ALERT CHIME ──────────────────
+    // KITCHEN / STAFF ORDER ALERT CHIME
     window.playOrderAlert = function() {
       try {
         var AudioCtx = window.AudioContext || window.webkitAudioContext;

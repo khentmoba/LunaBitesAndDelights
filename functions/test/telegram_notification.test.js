@@ -241,7 +241,6 @@ describe('Telegram MarkdownV2 escaping and order notifications', () => {
     const testMsg = '🔔 *NEW ORDER — LU\\-12345*\n  • 1x French Fries \\(Cheese\\) — ₱50';
     const results = await sendToAll(testMsg);
 
-    // Both chats should have succeeded via the plain-text fallback
     assert.equal(results.length, 2);
     assert.equal(results[0].status, 'fulfilled');
     assert.equal(results[1].status, 'fulfilled');
@@ -259,11 +258,9 @@ describe('Telegram MarkdownV2 escaping and order notifications', () => {
     const lat = 8.95;
     const lng = 125.53;
 
-    // Google Maps navigation direction URL
     const navUrl = getGoogleMapsNavigationUrl(lat, lng);
     assert.equal(navUrl, 'https://www.google.com/maps/dir/?api=1&destination=8.95,125.53');
 
-    // Google Static Maps URL
     const gmapUrl = getGoogleStaticMapUrl(lat, lng, 'AIzaSyFakeKey123');
     assert.ok(gmapUrl.startsWith('https://maps.googleapis.com/maps/api/staticmap?'));
     assert.ok(gmapUrl.includes('center=8.95%2C125.53'));
@@ -274,7 +271,6 @@ describe('Telegram MarkdownV2 escaping and order notifications', () => {
     assert.ok(gmapUrl.includes('markers=color%3Ared%7C8.95%2C125.53'));
     assert.ok(gmapUrl.includes('key=AIzaSyFakeKey123'));
 
-    // MapTiler Static Map URL
     const maptilerUrl = getMapTilerStaticMapUrl(lat, lng, 'maptilerKeyXYZ');
     assert.equal(
       maptilerUrl,
@@ -341,7 +337,6 @@ describe('Telegram MarkdownV2 escaping and order notifications', () => {
     assert.equal(mdCalls.length, 2);
     assert.equal(fallbackCalls.length, 2);
 
-    // Verify photo buffer and reply_markup were preserved
     assert.equal(fallbackCalls[0].photo, fakeBuffer);
     assert.deepEqual(fallbackCalls[0].opts.reply_markup, replyMarkup);
     assert.equal(fallbackCalls[0].fileOpts.filename, 'delivery_map.png');

@@ -1,13 +1,9 @@
-// ═══════════════════════════════════════════════════
-//  LUNA EXPRESS — SERVICE WORKER  (web/sw.js)
-//
 //  Strategy: NETWORK FIRST
 //  → Always tries to fetch fresh from the server
 //  → Falls back to cache only when offline
 //  → Auto-detects new versions and notifies the app
-// ═══════════════════════════════════════════════════
 
-// ── Change this version string every time you deploy ──
+// Change this version string every time you deploy
 const SW_VERSION = 'v1.1.4';
 const CACHE_NAME = 'luna-express-' + SW_VERSION;
 
@@ -24,7 +20,6 @@ const PRECACHE_URLS = [
   BASE + 'favicon.png',
 ];
 
-// ── INSTALL ──────────────────────────────────────────
 self.addEventListener('install', function(event) {
   console.log('[SW ' + SW_VERSION + '] Installing...');
   event.waitUntil(
@@ -36,7 +31,6 @@ self.addEventListener('install', function(event) {
   );
 });
 
-// ── ACTIVATE ─────────────────────────────────────────
 // Wipe ALL old caches when this new SW takes over
 self.addEventListener('activate', function(event) {
   console.log('[SW ' + SW_VERSION + '] Activating — wiping old caches');
@@ -66,7 +60,6 @@ self.addEventListener('activate', function(event) {
   );
 });
 
-// ── FETCH — NETWORK FIRST ────────────────────────────
 self.addEventListener('fetch', function(event) {
   if (event.request.method !== 'GET') return;
 
@@ -103,7 +96,6 @@ self.addEventListener('fetch', function(event) {
   );
 });
 
-// ── MESSAGE: SKIP_WAITING ─────────────────────────────
 // App sends this when user taps "Update Now"
 self.addEventListener('message', function(event) {
   if (event.data && event.data.type === 'SKIP_WAITING') {
