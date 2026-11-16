@@ -563,7 +563,12 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
       renderBoard();
     } else if (t.dataset.tab) {
       tab = Number(t.dataset.tab);
-      syncTabs();
+      if (tab === 3 && !showCompleted) {
+        showCompleted = true;
+        publish();
+      } else {
+        syncTabs();
+      }
       const panes = board.querySelector<HTMLElement>('[data-panes]')!;
       panes.scrollTo({ left: tab * panes.clientWidth, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
     } else if (t.dataset.check) {
@@ -581,8 +586,14 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
     } else if (t.dataset.copy !== undefined) {
       const o = byId(t.dataset.copy);
       if (o) {
-        void navigator.clipboard?.writeText(dispatchNote(o)).catch(() => {});
-        staffSnack('Delivery dispatch note copied to clipboard', SUCCESS);
+        if (!navigator.clipboard?.writeText) {
+          staffSnack('Clipboard unavailable', ERROR);
+        } else {
+          void navigator.clipboard.writeText(dispatchNote(o)).then(
+            () => staffSnack('Delivery dispatch note copied to clipboard', SUCCESS),
+            () => staffSnack('Could not copy dispatch note', ERROR),
+          );
+        }
       }
     }
   };

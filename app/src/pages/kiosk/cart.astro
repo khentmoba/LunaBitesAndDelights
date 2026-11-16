@@ -199,8 +199,15 @@ const release = () => {
   drag = null;
   fg.classList.add('settle');
   if (dx < -fg.offsetWidth * 0.4) {
+    let removed = false;
+    const finish = () => {
+      if (removed) return;
+      removed = true;
+      cart.remove(id);
+    };
     fg.style.transform = 'translateX(-100%)';
-    fg.addEventListener('transitionend', () => cart.remove(id), { once: true });
+    fg.addEventListener('transitionend', finish, { once: true });
+    window.setTimeout(finish, 250);
   } else fg.style.transform = '';
 };
 window.addEventListener('pointerup', release);

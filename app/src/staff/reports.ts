@@ -188,8 +188,9 @@ export function mountLifetime(root: HTMLElement, getStaff: () => Staff | null): 
   };
 
   function pickCustom(reload: () => void) {
-    const today = label(phtToday());
-    const start = custom?.start ?? label(new Date(Date.now() - 30 * 86400_000));
+    const todayDate = phtToday();
+    const today = label(todayDate);
+    const start = custom?.start ?? label(new Date(todayDate.getTime() - 30 * 86400_000));
     const end = custom?.end ?? today;
     const d = showDialog(
       `<form method="dialog" class="rrange">

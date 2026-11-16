@@ -79,6 +79,11 @@ export const paymongoWebhook = onRequest(
       }
       logger.info(`PayMongo webhook received: ${event.type}`);
       const sessionId = String(event.data.id);
+      if (!/^[A-Za-z0-9_-]{4,128}$/.test(sessionId)) {
+        logger.warn('Invalid PayMongo session id in webhook');
+        res.status(200).send('OK');
+        return;
+      }
 
       if (event.type === 'checkout_session.payment.paid') {
         const payments = await fetchSessionPayments(sessionId, paymongoAuthHeader());

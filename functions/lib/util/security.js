@@ -109,20 +109,23 @@ function hashToken(s) {
  * Call recordLoginFailure() on bad password, clearLoginAttempts() on success.
  */
 async function checkRateLimit(key) {
-    const ref = (0, firestore_1.getFirestore)().collection('login_attempts').doc(hashToken(key));
-    const snap = await ref.get();
-    if (!snap.exists)
-        return;
-    const d = snap.data();
-    const fails = d.fails || 0;
-    const lockedUntil = d.lockedUntil?.toDate?.();
-    if (fails >= MAX_ATTEMPTS && lockedUntil && lockedUntil.getTime() > Date.now()) {
-        const mins = Math.ceil((lockedUntil.getTime() - Date.now()) / 60000);
-        throw new https_1.HttpsError('resource-exhausted', `Too many attempts. Try again in ${mins}m`);
-    }
-    // Stale lockout expired — reset.
-    if (fails >= MAX_ATTEMPTS)
-        await ref.delete();
+    const db = (0, firestore_1.getFirestore)();
+    const ref = db.collection('login_attempts').doc(hashToken(key));
+    await db.runTransaction(async (tx) => {
+        const snap = await tx.get(ref);
+        if (!snap.exists)
+            return;
+        const d = snap.data();
+        const fails = d.fails || 0;
+        const lockedUntil = d.lockedUntil?.toDate?.();
+        if (fails >= MAX_ATTEMPTS && lockedUntil && lockedUntil.getTime() > Date.now()) {
+            const mins = Math.ceil((lockedUntil.getTime() - Date.now()) / 60000);
+            throw new https_1.HttpsError('resource-exhausted', `Too many attempts. Try again in ${mins}m`);
+        }
+        // Stale lockout expired — reset atomically.
+        if (fails >= MAX_ATTEMPTS)
+            tx.delete(ref);
+    });
 }
 async function recordLoginFailure(key) {
     const db = (0, firestore_1.getFirestore)();

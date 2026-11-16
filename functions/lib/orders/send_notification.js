@@ -221,10 +221,24 @@ async function sendDeliveryNotification(data, message, lat, lng) {
     }
     await (0, telegram_api_1.sendToAll)(message, { reply_markup: replyMarkup });
 }
-// Public kiosk endpoint: strict validation + sanitization instead of auth (#14).
+// Public kiosk endpoint: strict validation + order-doc verification instead of auth (#14).
 exports.sendOrderNotification = (0, https_1.onCall)({ secrets: [secrets_1.telegramToken, secrets_1.telegramChatIds, secrets_1.googleMapsApiKey] }, // #1: secrets server-side only
 async (request) => {
     const { orderDocId, data } = parseOrderNotificationInput(request.data || {});
+    if (!orderDocId) {
+        throw new https_1.HttpsError('invalid-argument', 'Missing orderDocId');
+    }
+    const orderSnap = await (0, firestore_1.getFirestore)().collection('orders').doc(orderDocId).get();
+    if (!orderSnap.exists) {
+        throw new https_1.HttpsError('not-found', 'Order not found');
+    }
+    const orderData = orderSnap.data();
+    if (orderData.orderId !== data.orderNumber) {
+        throw new https_1.HttpsError('permission-denied', 'Order reference mismatch');
+    }
+    if (orderData.telegramSent === true) {
+        return { success: true, alreadySent: true };
+    }
     const message = formatOrderNotification(data);
     firebase_functions_1.logger.info(`Sending order notification for ${data.orderNumber} to Telegram`);
     try {

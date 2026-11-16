@@ -235,7 +235,7 @@ list.addEventListener('click', (e) => {
   lat = Number.parseFloat(r.lat) || lat;
   lng = Number.parseFloat(r.lon) || lng;
   address = r.display_name ?? '';
-  addressShort = shortAddress(r.address);
+  addressShort = shortAddress(r.address) || address;
   query.value = '';
   query.blur();
   showResults(false);
@@ -262,10 +262,11 @@ async function confirm() {
   await fetchAddress(lat, lng);
   loading = false;
   render();
-  const current = load<CheckoutDraft>(DRAFT);
-  if (current) {
-    save(DRAFT, { ...current, address, lat, lng, pinned: true, distance: deliveryDistance(lat, lng), pendingDocId: null, pendingNumber: null });
-  }
+  const base: CheckoutDraft = load<CheckoutDraft>(DRAFT) ?? {
+    name: '', phone: '', address: '', orderType: 'Delivery', paymentMethod: 'Cash',
+    lat: STORE.lat, lng: STORE.lng, pinned: false, distance: 0, pendingDocId: null, pendingNumber: null,
+  };
+  save(DRAFT, { ...base, address, lat, lng, pinned: true, distance: deliveryDistance(lat, lng), pendingDocId: null, pendingNumber: null });
   popTo('/kiosk/checkout');
 }
 

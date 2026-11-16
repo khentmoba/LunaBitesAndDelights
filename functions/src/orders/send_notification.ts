@@ -247,11 +247,26 @@ async function sendDeliveryNotification(
   await sendToAll(message, { reply_markup: replyMarkup });
 }
 
-// Public kiosk endpoint: strict validation + sanitization instead of auth (#14).
+// Public kiosk endpoint: strict validation + order-doc verification instead of auth (#14).
 export const sendOrderNotification = onCall(
   { secrets: [telegramToken, telegramChatIds, googleMapsApiKey] }, // #1: secrets server-side only
   async (request) => {
     const { orderDocId, data } = parseOrderNotificationInput(request.data || {});
+    if (!orderDocId) {
+      throw new HttpsError('invalid-argument', 'Missing orderDocId');
+    }
+    const orderSnap = await getFirestore().collection('orders').doc(orderDocId).get();
+    if (!orderSnap.exists) {
+      throw new HttpsError('not-found', 'Order not found');
+    }
+    const orderData = orderSnap.data()!;
+    if (orderData.orderId !== data.orderNumber) {
+      throw new HttpsError('permission-denied', 'Order reference mismatch');
+    }
+    if (orderData.telegramSent === true) {
+      return { success: true, alreadySent: true };
+    }
+
     const message = formatOrderNotification(data);
 
     logger.info(`Sending order notification for ${data.orderNumber} to Telegram`);
