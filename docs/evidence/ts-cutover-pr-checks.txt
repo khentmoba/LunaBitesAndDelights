@@ -1,0 +1,36 @@
+# Local run of .github/workflows/pr-checks.yml — 2026-11-15T18:40:28Z
+# The flutter job is gone with the Flutter app; the jobs are site / functions / rules.
+
+## functions: build + audit
+npm run build: exit 0
+npm audit --audit-level=high: exit 0
+
+## rules: emulator tests (JDK 21)
+ℹ tests 23
+ℹ pass 23
+ℹ fail 0
+exit 0
+
+## rules: drift against production (read-only)
+Not conclusive here: no Google credentials on this machine (MetadataLookupWarning). This PR does not touch firestore.rules.
+
+## site: npm ci + astro check + build + audit + tests
+- 0 errors
+- 0 warnings
+- 0 hints
+02:42:04 [build] 17 page(s) built in 848ms
+02:42:04 [build] Complete!
+npm audit --audit-level=high: exit 0
+ℹ tests 48
+ℹ pass 48
+ℹ fail 0
+
+## deploy output (firebase-hosting-merge.yml: npm run build in app, hosting public = build/app)
+kiosk: cart checkout flutter_service_worker.js fonts gcash icons images index.html manifest.json map menu receipt sw.js 
+staff: analytics dashboard index.html kds lifetime manifest.webmanifest sw.js 
+Flutter files in build/app: 0
+
+## service worker retirement (tool/parity/sw_retire.mjs, headless muted Chrome)
+{"script":"/kiosk/flutter_service_worker.js","before":{"workers":["/kiosk/flutter_service_worker.js"],"caches":["flutter-app-cache","luna-staff-v1"]},"after":{"workers":[],"caches":["luna-staff-v1"]},"pass":true}
+{"script":"/kiosk/sw.js","before":{"workers":["/kiosk/sw.js"],"caches":["flutter-app-cache","luna-staff-v1"]},"after":{"workers":[],"caches":["luna-staff-v1"]},"pass":true}
+PASS

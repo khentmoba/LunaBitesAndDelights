@@ -6,22 +6,22 @@ How each item is enforced, and the manual steps that can't live in code.
 
 | # | Item | Where |
 |---|------|-------|
-| 1 | Hide API keys | Server: `functions/src/index.ts` — `TELEGRAM_*`, `PAYMONGO_SECRET_KEY`, and `GOOGLE_MAPS_API_KEY` are Secret Manager secrets, never client-visible. Client: MapTiler + reCAPTCHA keys arrive as `--dart-define` build inputs from GitHub secrets, so no key literal lives in the repo. Deploy: `firebase functions:secrets:set <NAME>` for each. |
-| 3 | Public DB key | Firebase web `apiKey` in `lib/firebase_options.dart` is public by design; access is enforced by rules + App Check, not by hiding it. Restrict it anyway (below). |
+| 1 | Hide API keys | Server: `functions/src/index.ts` — `TELEGRAM_*`, `PAYMONGO_SECRET_KEY`, and `GOOGLE_MAPS_API_KEY` are Secret Manager secrets, never client-visible. Client: MapTiler + reCAPTCHA keys arrive as `PUBLIC_MAPTILER_KEY` / `PUBLIC_RECAPTCHA_SITE_KEY` build inputs from GitHub secrets, so no key literal lives in the repo. Deploy: `firebase functions:secrets:set <NAME>` for each. |
+| 3 | Public DB key | Firebase web `apiKey` in `app/src/kiosk/firebase.ts` is public by design; access is enforced by rules + App Check, not by hiding it. Restrict it anyway (below). |
 | 4,7 | Row-level security / record access | `firestore.rules` — default deny, per-collection rules; order reads/updates only through staff callables. |
 | 5 | Encrypt sensitive data | At rest: Google-managed encryption (Firestore/Auth/Storage). In transit: TLS everywhere. PII stripped from logs; `login_attempts` keys are hashed. |
 | 6,9 | Server-side auth / sessions | Staff login returns a Firebase custom token w/ `role` claim (`verify_staff.ts`); KDS/analytics/report callables `requireStaff()`. No more forgeable `{success:true}` sessions. |
 | 8 | Block field tampering | Rules use `hasOnly()` allowlists on the `orders` create payload; `create_checkout.ts` re-prices every line from a server menu and rejects amount mismatches; webhook re-verifies PAID via PayMongo API. |
 | 10 | Hash passwords | Staff: scrypt + per-user salt (`security.ts`); legacy sha256 auto-upgrades on next login. First-run seed uses random passwords logged once — rotate after first login. |
 | 11 | Rate limit login | `checkRateLimit()` — 5 failures → 15-min lockout (Firestore-backed). |
-| 12 | Bot protection | App Check wired in `lib/main.dart` (`--dart-define=RECAPTCHA_SITE_KEY=…`, reCAPTCHA Enterprise key registered 2026-09-28). Enforcement stays OFF until clients roll out — then enable per-service in console. |
+| 12 | Bot protection | App Check wired in `app/src/kiosk/firebase.ts` (`PUBLIC_RECAPTCHA_SITE_KEY`, reCAPTCHA Enterprise key registered 2026-09-28). Enforcement stays OFF until clients roll out — then enable per-service in console. |
 | 13 | Parameterize queries | Firestore SDK (no string-built queries); doc IDs allowlisted `^[A-Za-z0-9_-]+$`; webhook/coordinate inputs type-checked. |
-| 14 | Validate all input | Server: `cleanStr/optStr/cleanInt/validDocId` on every callable. Client: `lib/utils/validate.dart` on auth forms. |
-| 15 | Escape user content | Flutter `Text` auto-escapes; Telegram uses `escapeMd()`; GCash WebView has a host allowlist; map HTML interpolates numbers only. |
+| 14 | Validate all input | Server: `cleanStr/optStr/cleanInt/validDocId` on every callable. Client: `app/src/kiosk/order.ts` validates names and phone numbers before an order is sent. |
+| 15 | Escape user content | Pages escape user text with `esc()` or set it as `textContent`; Telegram uses `escapeMd()`; the GCash page only opens https PayMongo/GCash/Maya links (`app/src/kiosk/payment-host.ts`); map HTML interpolates numbers only. |
 | 16 | Restrict uploads | `storage.rules` — Storage is closed to all clients; nothing in the app uploads. |
 | 17 | Trim API responses | KDS returns a fixed projection (no `...data`); error messages generic; provider errors not leaked. |
 | 18,19 | Headers / HTTPS | `firebase.json` — HSTS, nosniff, DENY framing, Referrer/Permissions-Policy. Hosting is HTTPS-only by default. |
-| 20 | Scan dependencies | CI (`.github/workflows/pr-checks.yml`): `npm audit --audit-level=high`, `flutter pub outdated` + full test/build gate. Run locally: `cd functions && npm audit`, `flutter pub outdated`. |
+| 20 | Scan dependencies | CI (`.github/workflows/pr-checks.yml`): `npm audit --audit-level=high` for `functions/` and `app/` + full test/build gate. Run locally: `cd functions && npm audit`, `cd app && npm audit`. |
 
 ## Manual steps (Firebase Console — do once)
 
@@ -33,7 +33,7 @@ How each item is enforced, and the manual steps that can't live in code.
 
 ## #2 Purge git secrets
 
-A MapTiler key was hardcoded in `lib/services/geocoding.dart` until 2026-10. It is a browser key: rotating it in the MapTiler dashboard is the fix, and a history rewrite buys nothing once it is revoked. The Firebase web `apiKey` in `lib/firebase_options.dart` is public by design and stays.
+A MapTiler key was hardcoded in the Flutter app's `lib/services/geocoding.dart` until 2026-10. It is a browser key: rotating it in the MapTiler dashboard is the fix, and a history rewrite buys nothing once it is revoked. The Firebase web `apiKey` in `app/src/kiosk/firebase.ts` is public by design and stays.
 If a real secret ever lands in git:
 
 ```bash

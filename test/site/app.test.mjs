@@ -327,8 +327,8 @@ test('without script the street view still offers a way out', () => {
 });
 
 test('staff login link remains visible in the header and is not hidden in CSS', () => {
-  assert.match(storefront, /<a class="bar__staff" href="\/kiosk\/#\/staff">Staff login<\/a>/);
-  assert.match(menuPage, /<a class="bar__staff" href="\/kiosk\/#\/staff">Staff login<\/a>/);
+  assert.match(storefront, /<a class="bar__staff" href="\/staff\/">Staff login<\/a>/);
+  assert.match(menuPage, /<a class="bar__staff" href="\/staff\/">Staff login<\/a>/);
   for (const [name, html] of Object.entries(pages)) {
     assert.doesNotMatch(inlineStyleOf(html), /\.bar__staff\s*\{[^}]*display:\s*none/, `${name} must not hide .bar__staff`);
   }
@@ -396,14 +396,14 @@ test('marking rows fills the tally and builds the kiosk link with those picks', 
   assert.equal(doc.querySelector('.tally__total').textContent, '₱220');
   assert.equal(
     doc.querySelector('.tally .stamp').getAttribute('href'),
-    '/kiosk/?pick=s1%23Solo&pick=f3&pick=b4#/menu',
+    '/kiosk/menu?pick=s1%23Solo&pick=f3&pick=b4',
     'the link stops at the kiosk menu, never at checkout',
   );
 
   doc.querySelector('.tally__clear').dispatchEvent(new window.Event('click', { bubbles: true }));
   assert.equal(tally.classList.contains('is-open'), false);
   assert.equal(doc.querySelectorAll('.row__tick input:checked').length, 0);
-  assert.equal(doc.querySelector('.tally .stamp').getAttribute('href'), '/kiosk/#/menu');
+  assert.equal(doc.querySelector('.tally .stamp').getAttribute('href'), '/kiosk/menu');
 });
 
 test('tapping a dish name opens its photo, one at a time, without marking it', () => {
@@ -416,7 +416,7 @@ test('tapping a dish name opens its photo, one at a time, without marking it', (
   assert.equal(first.getAttribute('aria-expanded'), 'true');
   assert.equal(first.getAttribute('aria-controls'), photo.id);
   assert.equal(photo.classList.contains('is-open'), true);
-  assert.equal(photo.querySelector('img').getAttribute('src'), '/kiosk/assets/images/poster_shawarma_wrap.webp');
+  assert.equal(photo.querySelector('img').getAttribute('src'), '/kiosk/images/poster_shawarma_wrap.webp');
   assert.equal(first.closest('.row').querySelector('input').checked, false, 'peeking never marks');
 
   second.dispatchEvent(new window.Event('click', { bubbles: true }));

@@ -1,0 +1,125 @@
+[
+  {
+    "run": "pickup-cash",
+    "button": "CONFIRM PICKUP ORDER",
+    "reachedReceipt": true,
+    "elapsedMs": 2471,
+    "receipt": {
+      "headline": "PICKUP CONFIRMED!",
+      "number": "ORDER # LU-261116-023809",
+      "rows": [
+        "FULL NAMEAna Reyes",
+        "PHONE0917 123 4567",
+        "TIME2026-11-16 02:38"
+      ],
+      "total": "₱263",
+      "snack": "󰊠Order saved! Telegram notification could not be sent. Please inform a staff member.OK",
+      "cartLeft": "[]",
+      "draftLeft": null
+    },
+    "saved": {
+      "id": "Gd8R0AdPHR4EX1sqpTMa",
+      "orderId": "LU-261116-023809",
+      "items": [
+        {
+          "name": "S3 – Shawarma Rice",
+          "variant": "",
+          "price": 99,
+          "quantity": 2,
+          "total": 198
+        },
+        {
+          "name": "Milo Craze",
+          "variant": "Oreo",
+          "price": 65,
+          "quantity": 1,
+          "total": 65
+        }
+      ],
+      "totalAmount": 263,
+      "dateLabel": "2026-11-16",
+      "type": "Pickup",
+      "entryType": "Kiosk",
+      "customerName": "Ana Reyes",
+      "customerPhone": "0917 123 4567",
+      "customerAddress": "Pickup",
+      "lat": null,
+      "lng": null,
+      "deliveryFee": 0,
+      "totalDistance": 0,
+      "paymentMethod": "Cash",
+      "paymentStatus": "NOT PAID",
+      "status": "Pending",
+      "checkoutSessionId": null,
+      "paymongoPaymentId": null,
+      "timestamp": "2026-11-15T18:38:09.982Z",
+      "telegramSent": false
+    },
+    "screenshot": "ts-kiosk-order-e2e-pickup-cash-390.png",
+    "errors": [
+      "console.error Telegram notification error for order LU-261116-023809 FirebaseError: Failed to send Telegram notification [500]"
+    ]
+  },
+  {
+    "run": "delivery-cash",
+    "button": "PLACE DELIVERY ORDER",
+    "reachedReceipt": true,
+    "elapsedMs": 204,
+    "receipt": {
+      "headline": "ORDER PLACED!",
+      "number": "ORDER # LU-261116-023815",
+      "rows": [
+        "FULL NAMEAna Reyes",
+        "ADDRESSPurok 5, Poblacion, Magallanes, Agusan del Norte",
+        "PHONE0917 123 4567",
+        "TIME2026-11-16 02:38"
+      ],
+      "total": "₱263",
+      "snack": "󰊠Order saved! Telegram notification could not be sent. Please inform a staff member.OK",
+      "cartLeft": "[]",
+      "draftLeft": null
+    },
+    "saved": {
+      "id": "GHiTmKM0kwxkzo4dobF2",
+      "orderId": "LU-261116-023815",
+      "items": [
+        {
+          "name": "S3 – Shawarma Rice",
+          "variant": "",
+          "price": 99,
+          "quantity": 2,
+          "total": 198
+        },
+        {
+          "name": "Milo Craze",
+          "variant": "Oreo",
+          "price": 65,
+          "quantity": 1,
+          "total": 65
+        }
+      ],
+      "totalAmount": 263,
+      "dateLabel": "2026-11-16",
+      "type": "Delivery",
+      "entryType": "Kiosk",
+      "customerName": "Ana Reyes",
+      "customerPhone": "0917 123 4567",
+      "customerAddress": "Purok 5, Poblacion, Magallanes, Agusan del Norte",
+      "lat": 9.0212,
+      "lng": 125.5181,
+      "deliveryFee": 0,
+      "totalDistance": 0.13,
+      "paymentMethod": "Cash",
+      "paymentStatus": "NOT PAID",
+      "status": "Pending",
+      "checkoutSessionId": null,
+      "paymongoPaymentId": null,
+      "timestamp": "2026-11-15T18:38:15.168Z",
+      "telegramSent": false
+    },
+    "screenshot": "ts-kiosk-order-e2e-delivery-cash-390.png",
+    "errors": [
+      "console.error Telegram notification error for order LU-261116-023815 FirebaseError: Failed to send Telegram notification [500]"
+    ]
+  }
+]

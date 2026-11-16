@@ -1,8 +1,5 @@
 // The menu: every section, item, variant and price. Single source of truth
 // for the storefront, the kiosk and the staff screens.
-//
-// Until Flutter is removed, lib/data/menu_data.dart must match this file;
-// test/site/menu.test.mjs fails if they drift.
 
 export interface MenuVariant {
   label: string;

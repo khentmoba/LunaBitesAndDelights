@@ -11,7 +11,7 @@
 
 ## UI Work
 
-- **Always use the `$impeccable` skill for UI work**, including design, implementation, review, and changes to layout, styling, copy, motion, accessibility, or responsive behavior in the storefront or Flutter app. Read its `SKILL.md` from the available skill catalog before starting.
+- **Always use the `$impeccable` skill for UI work**, including design, implementation, review, and changes to layout, styling, copy, motion, accessibility, or responsive behavior in the storefront, kiosk or staff pages (`app/`). Read its `SKILL.md` from the available skill catalog before starting.
 - Follow the applicable Impeccable workflow and the existing `PRODUCT.md`, `DESIGN.md`, and surface brief. Verify UI changes in the rendered app at the screen sizes they support before handing them off.
 
 ## Proof & Evidence Requirements (MANDATORY)
@@ -27,7 +27,7 @@
 1. **Never push directly to `main`.**
    - Direct pushes to `main` trigger the automated production deploy workflow (`.github/workflows/firebase-hosting-merge.yml`).
    - Do NOT run manual production deployments (`firebase deploy`) without explicit user instruction.
-   - Branch protection on `main` requires the `flutter`, `functions`, and `rules` checks.
+   - Branch protection on `main` requires the `site`, `functions`, and `rules` checks.
 
 2. **Always create a Pull Request (PR).**
    - Always use the `$file-pr` skill when making PRs.
