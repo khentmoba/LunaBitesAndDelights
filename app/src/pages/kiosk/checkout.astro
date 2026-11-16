@@ -2,9 +2,9 @@
 import Kiosk from '../../layouts/Kiosk.astro';
 import { glyph, type IconName } from '../../kiosk/icons';
 
-const tile = (group: string, value: string, label: string, icon: IconName) => ({ group, value, label, icon });
+const tile = (group: string, value: string, label: string, icon: IconName, soon = false) => ({ group, value, label, icon, soon });
 const orderTypes = [tile('type', 'Walk-In', 'Walk-In', 'point_of_sale_rounded'), tile('type', 'Pickup', 'Pickup', 'storefront_rounded'), tile('type', 'Delivery', 'Delivery', 'motorcycle_rounded')];
-const payments = [tile('pay', 'Cash', 'Cash', 'payments_rounded'), tile('pay', 'GCash', 'GCash', 'phone_android_rounded')];
+const payments = [tile('pay', 'Cash', 'Cash', 'payments_rounded'), tile('pay', 'GCash', 'GCash', 'phone_android_rounded', true)];
 ---
 <Kiosk title="Checkout · Luna Bites & Delights">
 <div class="page">
@@ -47,9 +47,19 @@ const payments = [tile('pay', 'Cash', 'Cash', 'payments_rounded'), tile('pay', '
       <h2 class="co-label co-section">PAYMENT METHOD</h2>
       <div class="co-tiles" role="radiogroup" aria-label="Payment method">
         {payments.map((t) => (
-          <button type="button" class="co-tile" role="radio" aria-checked="false" data-group={t.group} data-value={t.value}>
+          <button
+            type="button"
+            class:list={['co-tile', t.soon && 'co-tile--soon']}
+            role="radio"
+            aria-checked="false"
+            aria-disabled={t.soon ? 'true' : undefined}
+            disabled={t.soon}
+            data-group={t.group}
+            data-value={t.value}
+          >
             <span class="icon" aria-hidden="true">{glyph(t.icon)}</span>
             <span class="co-tile__label">{t.label.toUpperCase()}</span>
+            {t.soon && <span class="co-tile__soon">COMING SOON</span>}
           </button>
         ))}
       </div>
@@ -132,11 +142,13 @@ body { overflow: hidden; }
 .co-section { margin-top: 20px; margin-bottom: 12px; }
 .co-tiles { display: flex; gap: 10px; }
 /* Material with a 2px shape side: the border is painted over the padding, not added to it. */
-.co-tile { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 14px 6px; border-radius: var(--radius-lg); background: var(--card); box-shadow: inset 0 0 0 2px var(--rule); color: var(--pink-ink); transition: transform .18s cubic-bezier(.215,.61,.355,1); }
+.co-tile { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 14px 6px; border-radius: var(--radius-lg); background: var(--card); box-shadow: inset 0 0 0 2px var(--rule); color: var(--pink-ink); transition: transform .18s cubic-bezier(.215,.61,.355,1); }
 .co-tile .icon { font-size: 24px; }
 .co-tile__label { max-width: 100%; font-size: 12px; font-weight: 800; letter-spacing: .6px; line-height: 1.42; white-space: nowrap; }
 .co-tile[aria-checked="true"] { background: var(--plate); box-shadow: inset 0 0 0 2px var(--plate); color: #fff; }
-.co-tile:active { transform: scale(1.03); }
+.co-tile--soon, .co-tile:disabled { background: var(--blush-paper); color: var(--ink-soft); cursor: not-allowed; }
+.co-tile__soon { padding: 2px 8px; border-radius: 999px; background: var(--blush-light); color: var(--pink-ink); font-size: 10px; font-weight: 800; letter-spacing: .8px; line-height: 1.4; white-space: nowrap; }
+.co-tile:active:not(:disabled) { transform: scale(1.03); }
 
 .co-gcash { margin-top: 24px; padding: 24px; border: 1px solid rgb(0 125 254 / .2); border-radius: var(--radius-lg); background: rgb(0 125 254 / .05); }
 .co-gcash__head { display: flex; align-items: center; gap: 12px; color: #007DFE; font-size: 13px; font-weight: 700; letter-spacing: 1.2px; line-height: 1.2; }
@@ -291,6 +303,11 @@ function restore() {
     draft.paymentMethod = 'Cash';
   }
   if (!isStaff && draft.orderType === 'Walk-In') draft.orderType = 'Pickup';
+  if (draft.paymentMethod === 'GCash') {
+    draft.paymentMethod = 'Cash';
+    clearPending();
+    persist();
+  }
   nameInput.value = draft.name;
   phoneInput.value = draft.phone;
   addressInput.value = draft.address;
@@ -309,6 +326,7 @@ function restore() {
 
 for (const tile of document.querySelectorAll<HTMLElement>('.co-tile')) {
   tile.addEventListener('click', () => {
+    if ((tile as HTMLButtonElement).disabled || tile.dataset.value === 'GCash') return;
     if (tile.dataset.group === 'type') {
       draft.orderType = tile.dataset.value as OrderType;
       clearPending();
