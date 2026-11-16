@@ -60,3 +60,6 @@ Thumbs.db
 # Local screenshot scratch dirs
 .live/
 .preview/
+
+# Astro generated types
+app/.astro/

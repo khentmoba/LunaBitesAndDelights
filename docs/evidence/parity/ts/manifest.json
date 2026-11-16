@@ -1,0 +1,114 @@
+{
+  "target": "ts",
+  "capturedAt": "2026-11-15T13:52:14.489Z",
+  "viewports": [
+    [
+      320,
+      640,
+      2
+    ],
+    [
+      390,
+      844,
+      2
+    ],
+    [
+      768,
+      1024,
+      2
+    ],
+    [
+      1440,
+      900,
+      1
+    ]
+  ],
+  "screens": [
+    {
+      "name": "storefront-home",
+      "width": 320,
+      "file": "storefront-home-320.png",
+      "path": "/",
+      "ready": true
+    },
+    {
+      "name": "storefront-home",
+      "width": 390,
+      "file": "storefront-home-390.png",
+      "path": "/",
+      "ready": true
+    },
+    {
+      "name": "storefront-home",
+      "width": 768,
+      "file": "storefront-home-768.png",
+      "path": "/",
+      "ready": true
+    },
+    {
+      "name": "storefront-home",
+      "width": 1440,
+      "file": "storefront-home-1440.webp",
+      "path": "/",
+      "ready": true
+    },
+    {
+      "name": "storefront-menu",
+      "width": 320,
+      "file": "storefront-menu-320.webp",
+      "path": "/menu/",
+      "ready": true
+    },
+    {
+      "name": "storefront-menu",
+      "width": 390,
+      "file": "storefront-menu-390.webp",
+      "path": "/menu/",
+      "ready": true
+    },
+    {
+      "name": "storefront-menu",
+      "width": 768,
+      "file": "storefront-menu-768.webp",
+      "path": "/menu/",
+      "ready": true
+    },
+    {
+      "name": "storefront-menu",
+      "width": 1440,
+      "file": "storefront-menu-1440.webp",
+      "path": "/menu/",
+      "ready": true
+    },
+    {
+      "name": "storefront-404",
+      "width": 320,
+      "file": "storefront-404-320.webp",
+      "path": "/404.html",
+      "ready": true
+    },
+    {
+      "name": "storefront-404",
+      "width": 390,
+      "file": "storefront-404-390.webp",
+      "path": "/404.html",
+      "ready": true
+    },
+    {
+      "name": "storefront-404",
+      "width": 768,
+      "file": "storefront-404-768.webp",
+      "path": "/404.html",
+      "ready": true
+    },
+    {
+      "name": "storefront-404",
+      "width": 1440,
+      "file": "storefront-404-1440.webp",
+      "path": "/404.html",
+      "ready": true
+    }
+  ],
+  "timedOut": [],
+  "errors": []
+}

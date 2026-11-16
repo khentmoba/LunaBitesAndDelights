@@ -1,7 +1,7 @@
 // Optional local check for the proof AGENTS.md requires. Not run in CI.
 // Inputs (env): PR_BODY (pull request description), CHANGED_FILES (newline-separated repo paths).
 //
-// UI change (lib/ except services and models, web/, site/): needs an inline image and a docs/evidence/ reference.
+// UI change (lib/ except services and models, web/, app/src/, app/public/): needs an inline image and a docs/evidence/ reference.
 // Backend change (functions/src/, lib/services/, firestore.rules, storage.rules): needs a docs/evidence/ reference.
 
 const body = process.env.PR_BODY ?? '';
@@ -11,7 +11,7 @@ const files = (process.env.CHANGED_FILES ?? '')
   .filter(Boolean);
 
 const isUI = files.some(
-  (file) => /^(lib|web|site)\//.test(file) && !/^lib\/(services|models)\//.test(file),
+  (file) => /^(lib|web|app\/src|app\/public)\//.test(file) && !/^lib\/(services|models)\//.test(file),
 );
 const isBackend = files.some((file) =>
   /^(functions\/src\/|lib\/services\/|firestore\.rules$|storage\.rules$)/.test(file),

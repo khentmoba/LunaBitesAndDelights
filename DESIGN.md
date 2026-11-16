@@ -174,7 +174,7 @@ The world has three inks plus paper: logo pink, butter yellow and plum-black ink
 butter highlights, tapes and stamps; ink reads. Nothing glows and nothing is glass. Depth is paper lying on paper,
 and every photograph is a snapshot taped to the slip.
 
-The storefront (`site/`) and the Flutter ordering app (`/kiosk/`) share the logo, palette, fonts and component
+The storefront (`app/src/pages/`) and the Flutter ordering app (`/kiosk/`) share the logo, palette, fonts and component
 language. The storefront is the long, scrolling pad; the app is the same pad at work: the menu is the price
 board, the cart is the order slip being written, and checkout prints the summary.
 
@@ -203,7 +203,7 @@ Three inks and paper, taken from the logo and the owner's two supplied pinks.
 
 ### Neutral
 - **Blush** (`blush`): the owner's flat pink, the ground under the pink wash and the app scaffold.
-- **Pink Wash** (`wash-base`): base color under the owner's watercolor texture (`site/img/pink-wash.webp`,
+- **Pink Wash** (`wash-base`): base color under the owner's watercolor texture (`app/public/img/pink-wash.webp`,
   `images/pink_wash.jpg`).
 - **Paper** (`paper`) and **Card White** (`card-white`): slips, sheets, snapshot borders and product cards.
 - **Blush Paper / Blush Light** (`blush-paper`, `blush-light`): printed notice boxes, selected option rows and
@@ -334,7 +334,7 @@ and `prefers-reduced-motion: reduce` removes the motion entirely.
 - **Do** keep prices in one right-aligned tabular column.
 - **Do** use Caveat only for what is written onto a slip: values, sample lines, captions, quantities.
 - **Do** keep the delivery-fee notice visible without interaction on the storefront, checkout and receipt.
-- **Do** use the owner's logo file (`images/luna_logo.png`, `site/img/luna-logo-*.webp`) unaltered apart from its transparent surround.
+- **Do** use the owner's logo file (`images/luna_logo.png`, `app/public/img/luna-logo-*.webp`) unaltered apart from its transparent surround.
 
 ### Don't:
 - **Don't** put white or pink small type on butter, or small type on Logo Pink.

@@ -20,7 +20,9 @@ jobs:
         with:
           node-version: '22'
           cache: 'npm'
-          cache-dependency-path: functions/package-lock.json
+          cache-dependency-path: |
+            functions/package-lock.json
+            app/package-lock.json
 
       - run: flutter pub get
 
@@ -28,6 +30,12 @@ jobs:
           flutter build web --release --base-href /kiosk/
           --dart-define=RECAPTCHA_SITE_KEY=${{ secrets.RECAPTCHA_SITE_KEY }}
           --dart-define=MAPTILER_KEY=${{ secrets.MAPTILER_KEY }}
+
+      - run: npm ci
+        working-directory: app
+
+      - run: npm run build
+        working-directory: app
 
       - run: dart run tool/assemble_site.dart
 

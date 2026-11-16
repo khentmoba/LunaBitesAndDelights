@@ -495,7 +495,7 @@
       "Do keep prices in one right-aligned tabular column.",
       "Do use Caveat only for what is written onto a slip: values, sample lines, captions, quantities.",
       "Do keep the delivery-fee notice visible without interaction on the storefront, checkout and receipt.",
-      "Do use the owner's logo file (images/luna_logo.png, site/img/luna-logo-*.webp) unaltered apart from its transparent surround."
+      "Do use the owner's logo file (images/luna_logo.png, app/public/img/luna-logo-*.webp) unaltered apart from its transparent surround."
     ],
     "donts": [
       "Don't put white or pink small type on butter, or small type on Logo Pink.",

@@ -1,0 +1,35 @@
+# Local run of .github/workflows/pr-checks.yml — 2026-11-15T13:55:25Z
+
+## flutter: analyze
+Try `flutter pub outdated` for more information.
+Analyzing luna-ts-foundation...                                 
+No issues found! (ran in 15.3s)
+
+## flutter: format (changed Dart files)
+Formatted 3 files (0 changed) in 0.02 seconds.
+
+## flutter: test
+00:07 +84: All tests passed!  (88 on main minus the 4 in the deleted test/site_price_parity_test.dart)
+
+## flutter: web build
+√ Built build\web
+
+## functions: build + audit
+npm run build: exit 0
+npm audit --audit-level=high: exit 0 (17 vulnerabilities: 1 low, 16 moderate; none high or critical)
+
+## rules: emulator tests (JDK 21)
+npm run test:rules: exit 0, tests 23, pass 23, fail 0
+
+## site: app npm ci + astro check + build
+Run `npm audit` for details.
+- 0 errors
+- 0 warnings
+- 0 hints
+21:58:08 [build] 5 page(s) built in 508ms
+21:58:08 [build] Complete!
+
+## site: npm run test:site
+ℹ tests 30
+ℹ pass 30
+ℹ fail 0

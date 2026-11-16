@@ -56,8 +56,8 @@ Callable Functions used by the client: `createCheckoutSession`, `verifyCheckoutP
 ## Steps (one PR each)
 
 1. **Baseline** (this PR): parity harness (`tool/parity/`), Flutter screenshots of every screen, this spec.
-2. **Foundation**: Astro + TypeScript app, tokens as CSS variables, storefront ported, shared menu and order types, CI job.
-3. **Customer ordering**: menu, cart, checkout, GCash/PayMongo, receipt. Replaces `/kiosk/` for customers.
+2. **Foundation**: Astro + TypeScript app in `app/`, storefront ported (same markup and CSS), typed menu in `app/src/data/menu.ts` that the storefront prints prices from, CI job.
+3. **Customer ordering**: kiosk tokens as CSS variables, order types, menu, cart, checkout, GCash/PayMongo, receipt. Replaces `/kiosk/` for customers.
 4. **Staff**: login, kitchen display, dashboard, analytics, PWA.
 5. **Cutover**: delete Flutter and Dart, update deploy workflows and `firebase.json`.
 

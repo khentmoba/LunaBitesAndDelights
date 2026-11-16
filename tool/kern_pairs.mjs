@@ -2,7 +2,7 @@
 // tool/prune_kerning.py can drop the Bricolage kerning pairs no page uses.
 //
 //   node tool/kern_pairs.mjs            # rewrite tool/fonts/bricolage-kern-pairs.json
-//   python tool/prune_kerning.py        # rebuild site/fonts/bricolage.woff2 from it
+//   python tool/prune_kerning.py        # rebuild app/public/fonts/bricolage.woff2 from it
 //
 // test/site/app.test.mjs fails when page copy gains a pair missing from the
 // committed list; rerun both commands when that happens.
@@ -13,7 +13,7 @@ import { fileURLToPath } from 'node:url';
 import { JSDOM } from 'jsdom';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-export const kernPages = ['site/index.html', 'site/menu/index.html'];
+export const kernPages = ['build/app/index.html', 'build/app/menu/index.html'];
 export const kernPairsFile = join(root, 'tool', 'fonts', 'bricolage-kern-pairs.json');
 
 /// Text that can be painted: body text (noscript included, since it renders

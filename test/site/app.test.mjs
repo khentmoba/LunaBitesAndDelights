@@ -6,19 +6,19 @@ import { fileURLToPath } from 'node:url';
 import { JSDOM } from 'jsdom';
 import { pagePairs, kernPairsFile } from '../../tool/kern_pairs.mjs';
 
-/// `site/app.js` is the storefront's behaviour script: the sticky bar, the
+/// The storefront's behaviour script (the last inline <script>) is: the sticky bar, the
 /// scroll reveals, and the map/street-view swap. A tiny inline probe in each
 /// <head> flags weak devices before the stylesheet loads; jsdom does not run
 /// inline scripts, so these tests supply that flag themselves. A selector that
 /// stopped matching the markup would fail silently in production otherwise.
 ///
-/// These tests run the real `site/index.html` and `site/menu/index.html` through
-/// the real `site/app.js`, so they fail if either the script or the markup it
-/// depends on drifts.
+/// These tests run the built `build/app/index.html` and `build/app/menu/index.html`
+/// (run `npm run build --prefix app` first) through their real scripts, so they
+/// fail if either the script or the markup it depends on drifts.
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
-const storefront = readFileSync(join(root, 'site', 'index.html'), 'utf8');
-const menuPage = readFileSync(join(root, 'site', 'menu', 'index.html'), 'utf8');
+const storefront = readFileSync(join(root, 'build', 'app', 'index.html'), 'utf8');
+const menuPage = readFileSync(join(root, 'build', 'app', 'menu', 'index.html'), 'utf8');
 
 const pages = { index: storefront, menu: menuPage };
 
@@ -126,14 +126,14 @@ test('the menu page keeps the bar and reveal behaviour', () => {
   const doc = window.document;
 
   const bar = doc.querySelector('.bar');
-  assert.ok(bar, 'site/menu/index.html must keep a .bar for the sticky state');
+  assert.ok(bar, 'menu/index.html must keep a .bar for the sticky state');
   assert.ok(
     doc.querySelector('.slip--menu'),
-    'site/menu/index.html must keep .slip--menu for the reveal',
+    'menu/index.html must keep .slip--menu for the reveal',
   );
   assert.ok(
     doc.querySelector('.slip--menu .menu__cols'),
-    'site/menu/index.html must keep .menu__cols inside .slip--menu for the reveal',
+    'menu/index.html must keep .menu__cols inside .slip--menu for the reveal',
   );
   assert.equal(
     doc.documentElement.classList.contains('js-motion'),
