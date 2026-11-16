@@ -99,3 +99,18 @@ export function fnError(e: unknown): { code: string; message: string } | null {
 }
 
 export const isAuthCode = (code: string): boolean => code === 'unauthenticated' || code === 'permission-denied';
+
+export function isAuthErrorText(message: string): boolean {
+  const e = message.toLowerCase();
+  return e.includes('sign in') || e.includes('unauthenticated') || e.includes('permission-denied');
+}
+
+export function staffErrorMessage(e: unknown, prefix: string, offline: string): string {
+  const fe = fnError(e);
+  if (!fe) return offline;
+  if (isAuthCode(fe.code)) {
+    void logout();
+    return `Staff session expired (${fe.code}). Please sign in again.`;
+  }
+  return `${prefix}: ${fe.message}`;
+}

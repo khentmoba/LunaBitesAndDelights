@@ -134,18 +134,16 @@ body { overflow: hidden; }
 
 <script>
 import { cart, peso, type CartItem } from '../../kiosk/cart';
-import { $, esc } from '../../kiosk/dom';
+import { $, esc, itemThumb } from '../../kiosk/dom';
 import { glyph } from '../../kiosk/icons';
 import { popTo, resetKiosk, watchInactivity } from '../../kiosk/inactivity';
-
-const thumb = (item: CartItem) => `/kiosk/${item.imageUrl || 'images/luna_logo.webp'}`;
 
 function row(item: CartItem): string {
   const name = esc(item.name);
   return `<li class="row" data-id="${esc(item.id)}">
   <div class="row__bg" aria-hidden="true"><span class="icon">${glyph('delete_outline_rounded')}</span></div>
   <div class="row__fg">
-    <div class="row__thumb"><img src="${thumb(item)}" alt="" onerror="this.onerror=null;this.src='/kiosk/images/luna_logo.webp'"></div>
+    <div class="row__thumb"><img src="${itemThumb(item.imageUrl)}" alt="" onerror="this.onerror=null;this.src='/kiosk/images/luna_logo.webp'"></div>
     <div class="row__text">
       <p class="row__name">${name}</p>
       ${item.variant ? `<p class="row__variant">${esc(item.variant)}</p>` : ''}

@@ -1,11 +1,13 @@
 // AdminDashboard from lib/screens/admin_dashboard.dart: today's numbers, the
 // kitchen and walk-in shortcuts, quick actions and the latest orders.
 import { cart } from '../kiosk/cart.ts';
+import { $ } from '../kiosk/dom.ts';
 import { callFn } from '../kiosk/firebase.ts';
 import type { IconName } from '../kiosk/icons.ts';
+import { localStamp, phtDateLabel } from '../kiosk/order.ts';
 import { snack } from '../kiosk/snackbar.ts';
-import { fnError, isAuthCode, logout, type Staff } from './session.ts';
-import { diagonals, esc, go, icon, int } from './ui.ts';
+import { isAuthErrorText, logout, staffErrorMessage, type Staff } from './session.ts';
+import { diagonals, esc, go, icon, int, showDialog } from './ui.ts';
 
 interface Tile {
   orderNumber: string;
@@ -16,12 +18,6 @@ interface Tile {
   time: string;
   status: string;
 }
-
-const pad = (n: number) => String(n).padStart(2, '0');
-/** localStamp from lib/utils/format.dart: 'YYYY-MM-DD  HH:MM' in local time. */
-const localStamp = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}  ${pad(d.getHours())}:${pad(d.getMinutes())}`;
-/** phtDateLabel: the 'YYYY-MM-DD' day in the Philippines (UTC+8). */
-const phtDateLabel = (d: Date) => new Date(d.getTime() + 8 * 3600_000).toISOString().slice(0, 10);
 
 export function tileFrom(o: Record<string, unknown>): Tile {
   const ts = new Date(String(o.timestamp ?? ''));
@@ -66,7 +62,7 @@ export function mountDashboard(root: HTMLElement, getStaff: () => Staff | null):
   let disposed = false;
 
   root.innerHTML = '<main class="dash" data-dash></main>';
-  const el = root.querySelector<HTMLElement>('[data-dash]')!;
+  const el = $('[data-dash]', root);
 
   async function fetchData() {
     if (!getStaff()) return;
@@ -94,13 +90,7 @@ export function mountDashboard(root: HTMLElement, getStaff: () => Staff | null):
       if (res.success === true) orders = raw.map(tileFrom);
     } catch (e) {
       if (disposed) return;
-      const fe = fnError(e);
-      if (fe && isAuthCode(fe.code)) void logout();
-      error = fe
-        ? isAuthCode(fe.code)
-          ? `Staff session expired (${fe.code}). Please sign in again.`
-          : `Could not load dashboard data: ${fe.message}`
-        : 'Error connecting to server. Tap RETRY to sync.';
+      error = staffErrorMessage(e, 'Could not load dashboard data', 'Error connecting to server. Tap RETRY to sync.');
     }
     loading = false;
     if (!disposed) render();
@@ -112,8 +102,7 @@ export function mountDashboard(root: HTMLElement, getStaff: () => Staff | null):
 
   function render() {
     const staff = getStaff();
-    const e = (error ?? '').toLowerCase();
-    const auth = e.includes('sign in') || e.includes('unauthenticated') || e.includes('permission-denied');
+    const auth = error !== null && isAuthErrorText(error);
     const recent = orders.slice(0, 10);
     el.innerHTML = `
 <header class="dhead" data-ga>
@@ -176,21 +165,16 @@ ${
       snack('No orders yet today.', { color: 'var(--plate)', seconds: 4 });
       return;
     }
-    const d = document.createElement('dialog');
-    d.className = 'osheet';
-    d.setAttribute('aria-labelledby', 'osheet-title');
-    d.innerHTML = `<div class="osheet__panel">
+    const d = showDialog(
+      `<div class="osheet__panel">
   <span class="osheet__handle"></span>
   <div class="osheet__head"><h2 class="osheet__title" id="osheet-title">All orders</h2><span class="osheet__count">${orders.length} total</span></div>
   <hr class="kdivider">
   <div class="osheet__list">${orders.map(orderTile).join('')}</div>
-</div>`;
-    d.addEventListener('close', () => d.remove());
-    d.addEventListener('click', (ev) => {
-      if (ev.target === d) d.close();
-    });
-    document.body.append(d);
-    d.showModal();
+</div>`,
+      'osheet',
+    );
+    d.setAttribute('aria-labelledby', 'osheet-title');
   }
 
   el.addEventListener('click', (ev) => {

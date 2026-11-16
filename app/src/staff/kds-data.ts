@@ -110,6 +110,9 @@ export const qtyOf = (i: KdsItem): number => Math.trunc(Number(i.quantity ?? i.q
 /** Dart's toString for a JSON number: 263 → "263", 2.5 → "2.5". */
 export const numText = (v: unknown): string => (typeof v === 'number' ? String(v) : String(v ?? 0));
 
+export const mapsDirectionsUrl = (lat: number, lng: number): string =>
+  `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
+
 /** The rider dispatch note `_copyRiderDispatchNote` puts on the clipboard. */
 export function dispatchNote(o: KdsOrder): string {
   const num = o.orderNumber ?? o.id;
@@ -119,7 +122,7 @@ export function dispatchNote(o: KdsOrder): string {
   const method = o.paymentMethod ?? 'Cash';
   const paid = (o.paymentStatus ?? '').toUpperCase() === 'PAID';
   const items = (o.items ?? []).map((i) => `  • ${i.quantity ?? i.qty ?? 1}x ${i.name}${i.variant ? ` (${i.variant})` : ''}`).join('\n');
-  const maps = o.lat != null && o.lng != null ? `https://www.google.com/maps/dir/?api=1&destination=${o.lat},${o.lng}` : '';
+  const maps = o.lat != null && o.lng != null ? mapsDirectionsUrl(o.lat, o.lng) : '';
   return [
     `🛵 *LUNA BITES & DELIGHTS — #${num}*`,
     `👤 Customer: ${o.customerName ?? 'Customer'}`,

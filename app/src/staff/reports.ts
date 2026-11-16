@@ -3,7 +3,7 @@
 // ReportScaffold (lib/widgets/report/report_widgets.dart).
 import { callFn } from '../kiosk/firebase.ts';
 import type { IconName } from '../kiosk/icons.ts';
-import { fnError, isAuthCode, logout, type Staff } from './session.ts';
+import { staffErrorMessage, type Staff } from './session.ts';
 import { fmt, formatMonthAxisLabel, label, PRESETS, type Preset, phtToday, presetRange, shortFmt } from './report-data.ts';
 import { cameFromApp, esc, go, icon, int, num, showDialog } from './ui.ts';
 
@@ -69,13 +69,7 @@ function mountReport(root: HTMLElement, getStaff: () => Staff | null, r: Report)
       else error = typeof d.message === 'string' ? d.message : r.failMsg;
     } catch (e) {
       if (disposed) return;
-      const fe = fnError(e);
-      if (fe && isAuthCode(fe.code)) void logout();
-      error = fe
-        ? isAuthCode(fe.code)
-          ? `Staff session expired (${fe.code}). Please sign in again.`
-          : `${r.loadMsg}: ${fe.message}`
-        : 'Error connecting to server. Please try again.';
+      error = staffErrorMessage(e, r.loadMsg, 'Error connecting to server. Please try again.');
     }
     loading = false;
     if (!disposed) render();

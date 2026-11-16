@@ -6,7 +6,7 @@ import { callFn } from '../kiosk/firebase.ts';
 import type { IconName } from '../kiosk/icons.ts';
 import { snack } from '../kiosk/snackbar.ts';
 import { fnError, logout } from './session.ts';
-import { esc, go, icon } from './ui.ts';
+import { esc, go, icon, showDialog } from './ui.ts';
 
 const ORANGE = '#FF9800';
 const PURPLE = '#9C27B0';
@@ -26,12 +26,7 @@ const actionItem = (act: string, ico: IconName, title: string, sub: string, colo
 /** Opens the console. `onLogout` runs after the staff session ends. */
 export function openStaffConsole(onLogout: () => void): void {
   let generating = false;
-  const d = document.createElement('dialog');
-  d.className = 'scon';
-  d.setAttribute('aria-labelledby', 'scon-title');
-
-  const render = () => {
-    d.innerHTML = `<div class="scon__panel">
+  const markup = () => `<div class="scon__panel">
   <span class="scon__handle"></span>
   <h2 class="scon__head" id="scon-title" tabindex="-1" autofocus>STAFF CONTROL CONSOLE</h2>
   <div class="scon__row">${consoleBtn('kds', 'outdoor_grill_rounded', 'LIVE ORDERS', ORANGE)}${consoleBtn('dashboard', 'dashboard_rounded', 'DASHBOARD', PURPLE)}</div>
@@ -43,7 +38,10 @@ export function openStaffConsole(onLogout: () => void): void {
   }
   ${actionItem('logout', 'logout_rounded', 'LOGOUT STAFF PORTAL', 'Exit staff mode and clear active POS state', ERROR)}
 </div>`;
-  };
+
+  const d = showDialog(markup(), 'scon');
+  d.setAttribute('aria-labelledby', 'scon-title');
+  const render = () => { d.innerHTML = markup(); };
 
   async function sendReport() {
     generating = true;
@@ -69,10 +67,6 @@ export function openStaffConsole(onLogout: () => void): void {
   }
 
   d.addEventListener('click', (ev) => {
-    if (ev.target === d) {
-      d.close();
-      return;
-    }
     const t = (ev.target as HTMLElement).closest<HTMLElement>('[data-act]');
     if (!t) return;
     const act = t.dataset.act;
@@ -89,8 +83,4 @@ export function openStaffConsole(onLogout: () => void): void {
       snack('STAFF LOGGED OUT', { color: PINK });
     }
   });
-  d.addEventListener('close', () => d.remove());
-  render();
-  document.body.append(d);
-  d.showModal();
 }
