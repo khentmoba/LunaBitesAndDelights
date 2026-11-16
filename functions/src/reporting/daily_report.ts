@@ -2,7 +2,7 @@ import { onSchedule } from 'firebase-functions/v2/scheduler';
 import { aggregateDailySales, salesReportMessage } from './aggregator';
 import { sendToAll, escapeMd } from '../telegram_api';
 import { phtDateLabel } from '../util';
-import { telegramToken, telegramChatIds } from '../index';
+import { telegramToken, telegramChatIds } from '../secrets';
 import { logger } from 'firebase-functions';
 
 export const dailySalesReport = onSchedule({

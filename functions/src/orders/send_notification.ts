@@ -1,13 +1,12 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { getFirestore } from 'firebase-admin/firestore';
 import { sendToAll, sendPhotoToAll, escapeMd } from '../telegram_api';
-import { telegramToken, telegramChatIds, googleMapsApiKey } from '../index';
+import { telegramToken, telegramChatIds, googleMapsApiKey } from '../secrets';
 import { logger } from 'firebase-functions';
-import { cleanStr, optStr, cleanInt } from '../util/security';
+import { ALNUM_DOC_ID, cleanStr, optStr, cleanInt } from '../util/security';
 
 const ORDER_TYPES = ['Walk-In', 'Pickup', 'Delivery'];
 const MAX_ITEMS = 50;
-const DOC_ID = /^[A-Za-z0-9]{1,64}$/;
 
 /** Records notification outcome on the order. Never fails the request. */
 async function markNotified(orderDocId: string | null, sent: boolean) {
@@ -154,39 +153,40 @@ export async function fetchMapImage(url: string, timeoutMs = 6000): Promise<Buff
   }
 }
 
-// Public kiosk endpoint: strict validation + sanitization instead of auth (#14).
-export const sendOrderNotification = onCall(
-  { secrets: [telegramToken, telegramChatIds, googleMapsApiKey] }, // #1: secrets server-side only
-  async (request) => {
-    const d = request.data || {};
-    const orderDocId =
-      typeof d.orderDocId === 'string' && DOC_ID.test(d.orderDocId) ? d.orderDocId : null;
-    const orderNumber = cleanStr(d.orderNumber, 32, 'orderNumber');
-    const customerName = cleanStr(d.customerName, 100, 'customerName');
-    const customerAddress = optStr(d.customerAddress);
-    const customerPhone = optStr(d.customerPhone, 32);
-    const total = cleanInt(d.total, 1000000, 'total');
-    const timeStr = optStr(d.timeStr, 64);
-    const orderType = ORDER_TYPES.includes(d.orderType) ? d.orderType : 'Pickup'; // #8
-    const deliveryFee = cleanInt(d.deliveryFee ?? 0, 5000, 'deliveryFee');
-    const paymentMethod = optStr(d.paymentMethod, 32);
-    const paymentStatus = optStr(d.paymentStatus, 32);
+function parseOrderNotificationInput(d: any): {
+  orderDocId: string | null;
+  data: OrderNotificationData;
+} {
+  const orderDocId =
+    typeof d.orderDocId === 'string' && ALNUM_DOC_ID.test(d.orderDocId) ? d.orderDocId : null;
+  const orderNumber = cleanStr(d.orderNumber, 32, 'orderNumber');
+  const customerName = cleanStr(d.customerName, 100, 'customerName');
+  const customerAddress = optStr(d.customerAddress);
+  const customerPhone = optStr(d.customerPhone, 32);
+  const total = cleanInt(d.total, 1000000, 'total');
+  const timeStr = optStr(d.timeStr, 64);
+  const orderType = ORDER_TYPES.includes(d.orderType) ? d.orderType : 'Pickup'; // #8
+  const deliveryFee = cleanInt(d.deliveryFee ?? 0, 5000, 'deliveryFee');
+  const paymentMethod = optStr(d.paymentMethod, 32);
+  const paymentStatus = optStr(d.paymentStatus, 32);
 
-    if (!Array.isArray(d.items) || d.items.length === 0 || d.items.length > MAX_ITEMS) {
-      throw new HttpsError('invalid-argument', 'Invalid items');
-    }
-    const items = d.items.map((i: any) => ({
-      name: cleanStr(i?.name, 120, 'item name'),
-      variant: optStr(i?.variant, 120),
-      price: cleanInt(i?.price, 100000, 'item price'),
-      quantity: cleanInt(i?.quantity ?? 1, 99, 'item quantity') || 1,
-    }));
+  if (!Array.isArray(d.items) || d.items.length === 0 || d.items.length > MAX_ITEMS) {
+    throw new HttpsError('invalid-argument', 'Invalid items');
+  }
+  const items = d.items.map((i: any) => ({
+    name: cleanStr(i?.name, 120, 'item name'),
+    variant: optStr(i?.variant, 120),
+    price: cleanInt(i?.price, 100000, 'item price'),
+    quantity: cleanInt(i?.quantity ?? 1, 99, 'item quantity') || 1,
+  }));
 
-    // Coordinates must be real numbers or omitted (no string injection into map URL).
-    const lat = (typeof d.lat === 'number' && Math.abs(d.lat) <= 90) ? d.lat : null;
-    const lng = (typeof d.lng === 'number' && Math.abs(d.lng) <= 180) ? d.lng : null;
+  // Coordinates must be real numbers or omitted (no string injection into map URL).
+  const lat = (typeof d.lat === 'number' && Math.abs(d.lat) <= 90) ? d.lat : null;
+  const lng = (typeof d.lng === 'number' && Math.abs(d.lng) <= 180) ? d.lng : null;
 
-    const notificationData: OrderNotificationData = {
+  return {
+    orderDocId,
+    data: {
       orderNumber,
       customerName,
       customerAddress,
@@ -200,66 +200,64 @@ export const sendOrderNotification = onCall(
       paymentStatus,
       lat,
       lng,
-    };
+    },
+  };
+}
 
-    const message = formatOrderNotification(notificationData);
+function resolveStaticMapUrl(lat: number, lng: number): string | null {
+  let gmapKey = '';
+  try {
+    gmapKey = googleMapsApiKey.value();
+  } catch {
+    gmapKey = '';
+  }
+  gmapKey ||= process.env.GOOGLE_MAPS_API_KEY || '';
+  if (gmapKey) return getGoogleStaticMapUrl(lat, lng, gmapKey);
+  const maptilerKey = process.env.MAPTILER_KEY || '';
+  return maptilerKey ? getMapTilerStaticMapUrl(lat, lng, maptilerKey) : null;
+}
 
-    logger.info(`Sending order notification for ${orderNumber} to Telegram`);
+async function sendDeliveryNotification(
+  data: OrderNotificationData,
+  message: string,
+  lat: number,
+  lng: number,
+): Promise<void> {
+  const replyMarkup = {
+    inline_keyboard: [[{ text: '📍 Open in Google Maps 🧭', url: getGoogleMapsNavigationUrl(lat, lng) }]],
+  };
+  const mapUrl = resolveStaticMapUrl(lat, lng);
+  if (mapUrl) {
     try {
-      if (orderType === 'Delivery' && lat != null && lng != null) {
-        const navigationUrl = getGoogleMapsNavigationUrl(lat, lng);
-        const replyMarkup = {
-          inline_keyboard: [
-            [
-              {
-                text: '📍 Open in Google Maps 🧭',
-                url: navigationUrl,
-              },
-            ],
-          ],
-        };
-
-        // Determine static map key (Google Maps preferred, MapTiler fallback)
-        let gmapKey = '';
-        try {
-          gmapKey = googleMapsApiKey.value();
-        } catch {
-          gmapKey = '';
+      const imageBuffer = await fetchMapImage(mapUrl);
+      if (imageBuffer) {
+        if (message.length <= 1024) {
+          await sendPhotoToAll(imageBuffer, message, { reply_markup: replyMarkup });
+          return;
         }
-        gmapKey ||= process.env.GOOGLE_MAPS_API_KEY || '';
-        const maptilerKey = process.env.MAPTILER_KEY || '';
+        const summaryCaption = formatDeliverySummaryCaption(data);
+        await sendPhotoToAll(imageBuffer, summaryCaption, { reply_markup: replyMarkup });
+        await sendToAll(message);
+        return;
+      }
+    } catch (photoError: any) {
+      logger.warn(`Photo delivery failed for ${data.orderNumber}, falling back to text`, photoError);
+    }
+  }
+  await sendToAll(message, { reply_markup: replyMarkup });
+}
 
-        let mapUrl: string | null = null;
-        if (gmapKey) {
-          mapUrl = getGoogleStaticMapUrl(lat, lng, gmapKey);
-        } else if (maptilerKey) {
-          mapUrl = getMapTilerStaticMapUrl(lat, lng, maptilerKey);
-        }
+// Public kiosk endpoint: strict validation + sanitization instead of auth (#14).
+export const sendOrderNotification = onCall(
+  { secrets: [telegramToken, telegramChatIds, googleMapsApiKey] }, // #1: secrets server-side only
+  async (request) => {
+    const { orderDocId, data } = parseOrderNotificationInput(request.data || {});
+    const message = formatOrderNotification(data);
 
-        let photoSent = false;
-        if (mapUrl) {
-          try {
-            const imageBuffer = await fetchMapImage(mapUrl);
-            if (imageBuffer) {
-              if (message.length <= 1024) {
-                await sendPhotoToAll(imageBuffer, message, { reply_markup: replyMarkup });
-                photoSent = true;
-              } else {
-                const summaryCaption = formatDeliverySummaryCaption(notificationData);
-                await sendPhotoToAll(imageBuffer, summaryCaption, { reply_markup: replyMarkup });
-                await sendToAll(message);
-                photoSent = true;
-              }
-            }
-          } catch (photoError: any) {
-            logger.warn(`Photo delivery failed for ${orderNumber}, falling back to text`, photoError);
-          }
-        }
-
-        if (!photoSent) {
-          // Fallback to text message, but keep the 1-tap navigation button!
-          await sendToAll(message, { reply_markup: replyMarkup });
-        }
+    logger.info(`Sending order notification for ${data.orderNumber} to Telegram`);
+    try {
+      if (data.orderType === 'Delivery' && data.lat != null && data.lng != null) {
+        await sendDeliveryNotification(data, message, data.lat, data.lng);
       } else {
         await sendToAll(message);
       }
@@ -268,7 +266,7 @@ export const sendOrderNotification = onCall(
       return { success: true };
     } catch (error: any) {
       await markNotified(orderDocId, false);
-      logger.error(`Error sending Telegram notification for ${orderNumber}`, error);
+      logger.error(`Error sending Telegram notification for ${data.orderNumber}`, error);
       throw new HttpsError('internal', 'Failed to send Telegram notification');
     }
   });

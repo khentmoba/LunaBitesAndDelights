@@ -11,12 +11,12 @@ exports.sendPhotoToAll = sendPhotoToAll;
 exports.escapeMd = escapeMd;
 exports.stripMarkdownV2 = stripMarkdownV2;
 const node_telegram_bot_api_1 = __importDefault(require("node-telegram-bot-api"));
-const index_1 = require("./index");
+const secrets_1 = require("./secrets");
 const firebase_functions_1 = require("firebase-functions");
 let bot;
 function getBot() {
     if (!bot) {
-        bot = new node_telegram_bot_api_1.default(index_1.telegramToken.value(), { polling: false });
+        bot = new node_telegram_bot_api_1.default(secrets_1.telegramToken.value(), { polling: false });
     }
     return bot;
 }
@@ -36,7 +36,7 @@ function isMarkdownParseError(err) {
         desc === '');
 }
 async function deliverToAll(fnName, fallbackNote, failLabel, options, send) {
-    const ids = index_1.telegramChatIds.value()
+    const ids = secrets_1.telegramChatIds.value()
         .split(',')
         .map(id => id.trim())
         .filter(id => id.length > 0);

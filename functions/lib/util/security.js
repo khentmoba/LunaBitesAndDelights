@@ -33,6 +33,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.ALNUM_DOC_ID = void 0;
 exports.requireStaff = requireStaff;
 exports.cleanStr = cleanStr;
 exports.optStr = optStr;
@@ -90,6 +91,8 @@ function cleanInt(v, max, field = 'field') {
     }
     return n;
 }
+/** Alphanumeric Firestore auto-id format used for order documents. */
+exports.ALNUM_DOC_ID = /^[A-Za-z0-9]{1,64}$/;
 /** Rejects path-traversal / weird doc IDs (#13: parameterized-query equivalent). */
 function validDocId(v, field = 'id') {
     const s = cleanStr(v, 128, field);

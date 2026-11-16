@@ -28,34 +28,39 @@ function isOrderVisibleInKds(d) {
     const status = String(d.paymentStatus || '');
     return !(method === 'GCash' && (status === 'AWAITING_PAYMENT' || status === 'PAYMENT_FAILED'));
 }
+const itemQty = (i) => Number(i?.quantity) || Number(i?.qty) || 0;
 // #17: trimmed projection — only what the KDS screen renders. Never ...data.
-const projectOrder = (id, d) => ({
-    id,
-    orderNumber: d.orderId || d.orderNumber || id,
-    customerName: d.customerName || '',
-    customerPhone: d.customerPhone || '',
-    customerAddress: d.customerAddress || '',
-    lat: typeof d.lat === 'number' ? d.lat : null,
-    lng: typeof d.lng === 'number' ? d.lng : null,
-    deliveryFee: Number(d.deliveryFee) || 0,
-    paymentMethod: String(d.paymentMethod || 'Cash'),
-    paymentStatus: String(d.paymentStatus || 'NOT PAID'),
-    entryType: String(d.entryType || ''),
-    items: (Array.isArray(d.items) ? d.items : []).map((i) => ({
-        name: String(i.name || ''),
-        variant: String(i.variant || ''),
-        qty: Number(i.quantity) || Number(i.qty) || 0,
-        quantity: Number(i.quantity) || Number(i.qty) || 0,
-        price: Number(i.price) || 0,
-    })),
-    itemsCount: Array.isArray(d.items)
-        ? d.items.reduce((s, i) => s + (Number(i.quantity) || Number(i.qty) || 0), 0)
-        : 0,
-    total: Number(d.totalAmount) || 0,
-    type: String(d.type || ''),
-    status: String(d.status || 'Pending'),
-    timestamp: toIsoTimestamp(d.timestamp),
-});
+const projectOrder = (id, d) => {
+    const rawItems = Array.isArray(d.items) ? d.items : [];
+    return {
+        id,
+        orderNumber: d.orderId || d.orderNumber || id,
+        customerName: d.customerName || '',
+        customerPhone: d.customerPhone || '',
+        customerAddress: d.customerAddress || '',
+        lat: typeof d.lat === 'number' ? d.lat : null,
+        lng: typeof d.lng === 'number' ? d.lng : null,
+        deliveryFee: Number(d.deliveryFee) || 0,
+        paymentMethod: String(d.paymentMethod || 'Cash'),
+        paymentStatus: String(d.paymentStatus || 'NOT PAID'),
+        entryType: String(d.entryType || ''),
+        items: rawItems.map((i) => {
+            const qty = itemQty(i);
+            return {
+                name: String(i.name || ''),
+                variant: String(i.variant || ''),
+                qty,
+                quantity: qty,
+                price: Number(i.price) || 0,
+            };
+        }),
+        itemsCount: rawItems.reduce((s, i) => s + itemQty(i), 0),
+        total: Number(d.totalAmount) || 0,
+        type: String(d.type || ''),
+        status: String(d.status || 'Pending'),
+        timestamp: toIsoTimestamp(d.timestamp),
+    };
+};
 exports.projectOrder = projectOrder;
 exports.getActiveOrders = (0, https_1.onCall)(async (request) => {
     (0, security_1.requireStaff)(request); // #6 + #7

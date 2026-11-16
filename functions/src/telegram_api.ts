@@ -1,5 +1,5 @@
 import TelegramBot from 'node-telegram-bot-api';
-import { telegramToken, telegramChatIds } from './index';
+import { telegramToken, telegramChatIds } from './secrets';
 import { logger } from 'firebase-functions';
 
 let bot: TelegramBot;
