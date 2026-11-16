@@ -349,4 +349,18 @@ describe('Telegram MarkdownV2 escaping and order notifications', () => {
     assert.equal(isMarkdownParseError({ message: 'chat_id 40012345 not found' }), false);
     assert.equal(isMarkdownParseError({ response: { statusCode: 400, body: { description: 'Bad Request: chat not found' } } }), false);
   });
+
+  test('sendToAll and sendPhotoToAll fail cleanly when unconfigured or all recipients reject', async () => {
+    process.env.TELEGRAM_CHAT_ID = ' , ';
+    await assert.rejects(() => sendToAll('hello'), /TELEGRAM_CHAT_ID is not configured/);
+    await assert.rejects(() => sendPhotoToAll(Buffer.from('x'), 'cap'), /TELEGRAM_CHAT_ID is not configured/);
+
+    process.env.TELEGRAM_CHAT_ID = '111,222';
+    setBot({
+      sendMessage: async () => { throw new Error('network down'); },
+      sendPhoto: async () => { throw new Error('network down'); },
+    });
+    await assert.rejects(() => sendToAll('hello'), /All 2 Telegram messages failed/);
+    await assert.rejects(() => sendPhotoToAll(Buffer.from('x'), 'cap'), /All 2 Telegram photo messages failed/);
+  });
 });

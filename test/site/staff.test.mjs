@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 const kds = await import('../../app/src/staff/kds-data.ts');
 const report = await import('../../app/src/staff/report-data.ts');
 const { staffUsernameFor } = await import('../../app/src/kiosk/staff-hint.ts');
+const { esc } = await import('../../app/src/staff/ui.ts');
 
 /// These cases were ported from the Flutter staff screens (removed in the
 /// cutover), so the kitchen and report rules stay the same.
@@ -87,4 +88,12 @@ test('rider dispatch note carries the order, contact and map link', () => {
   assert.match(note, /📞 Phone: 09171234567/);
   assert.match(note, /destination=9\.02,125\.51/);
   assert.match(note, / {2}• 2x S3 – Shawarma Rice/);
+});
+
+test('esc escapes HTML entities and handles nullish and numeric inputs', () => {
+  assert.equal(esc(`&<>"'`), '&amp;&lt;&gt;&quot;&#39;');
+  assert.equal(esc("Luna's Pork Sisig"), 'Luna&#39;s Pork Sisig');
+  assert.equal(esc(null), '');
+  assert.equal(esc(undefined), '');
+  assert.equal(esc(42), '42');
 });
