@@ -451,3 +451,16 @@ test('notice pages render expected headings, links, and inline styles', () => {
     assert.ok(inlineStyleOf(html).includes('.card{'), `${c.file} keeps inline card styles`);
   }
 });
+
+test('checkout disables GCash as coming soon and keeps Cash active', () => {
+  const html = readFileSync(join(root, 'build', 'app', 'kiosk', 'checkout', 'index.html'), 'utf8');
+  const doc = new JSDOM(html).window.document;
+  const cash = doc.querySelector('.co-tile[data-group="pay"][data-value="Cash"]');
+  const gcash = doc.querySelector('.co-tile[data-group="pay"][data-value="GCash"]');
+  assert.ok(cash, 'Cash tile exists');
+  assert.equal(cash.hasAttribute('disabled'), false);
+  assert.ok(gcash, 'GCash tile exists');
+  assert.equal(gcash.hasAttribute('disabled'), true);
+  assert.equal(gcash.getAttribute('aria-disabled'), 'true');
+  assert.match(gcash.textContent ?? '', /COMING SOON/);
+});
