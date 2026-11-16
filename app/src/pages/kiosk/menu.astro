@@ -348,7 +348,7 @@ function openSheet(item: MenuItem): Promise<void> {
     return item.price ?? 0;
   };
   const canAdd = () => (multi ? chosen.size > 0 : variants.length === 0 || picked >= 0);
-  const label = () => (multi ? [...chosen].map((i) => variants[i]!.label).join(', ') : picked < 0 ? '' : variants[picked]!.label);
+  const label = () => (multi ? [...chosen].sort((a, b) => a - b).map((i) => variants[i]!.label).join(', ') : picked < 0 ? '' : variants[picked]!.label);
 
   const narrow = innerWidth < 700;
   sheet.classList.toggle('sheet--short', variants.length === 0 && !narrow);

@@ -12,7 +12,7 @@
 - Regional Proximity: Municipality of Magallanes, Agusan del Norte. Directly adjacent to Cabadbaran City (~14.5 km / 15–20 minutes commute).
 - Operating Hours: 9:00 AM – 8:00 PM Daily
 - Payment Methods: Cash, GCash
-- Ordering Website: https://lunabitesanddelights.web.app/kiosk/#/menu
+- Ordering Website: https://lunabitesanddelights.web.app/kiosk/menu
 - Official Storefront: https://lunabitesanddelights.web.app/
 - Full Menu: https://lunabitesanddelights.web.app/menu/
 - Official Facebook: https://www.facebook.com/p/Luna-Bites-Delights-100090686762896/
@@ -70,4 +70,4 @@
 - Classic Lemonade: ₱49
 
 ## Delivery Policy
-Food orders are placed directly via the online kiosk. Delivery fee is confirmed by the delivery rider upon dispatch and is charged separately. Online kiosk orders accept Cash (on delivery or pickup) or online GCash via PayMongo.
+Food orders are placed directly via the online kiosk. Delivery fee is confirmed by the delivery rider upon dispatch and is charged separately. Online kiosk orders accept Cash on delivery or pickup (online GCash checkout is coming soon).

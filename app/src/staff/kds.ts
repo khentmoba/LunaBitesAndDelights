@@ -538,7 +538,7 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
 
   // ---- events ----
 
-  root.addEventListener('click', (e) => {
+  const onRootClick = (e: Event) => {
     const t = (e.target as HTMLElement).closest<HTMLElement>('button');
     if (!t || t.hasAttribute('disabled')) return;
     const act = t.dataset.act;
@@ -585,7 +585,8 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
         staffSnack('Delivery dispatch note copied to clipboard', SUCCESS);
       }
     }
-  });
+  };
+  root.addEventListener('click', onRootClick);
 
   ctl.addEventListener('input', (e) => {
     const t = e.target as HTMLInputElement;
@@ -615,5 +616,6 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
     clearInterval(pollTimer);
     clearInterval(clock);
     wideMq.removeEventListener('change', onLayout);
+    root.removeEventListener('click', onRootClick);
   };
 }

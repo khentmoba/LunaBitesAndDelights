@@ -84,7 +84,7 @@ function mountReport(root: HTMLElement, getStaff: () => Staff | null, r: Report)
         : `${r.top?.() ?? ''}<div class="rep__scroll">${r.body(data)}</div>`;
   }
 
-  root.addEventListener('click', (ev) => {
+  const onRootClick = (ev: Event) => {
     const t = (ev.target as HTMLElement).closest<HTMLElement>('[data-act]');
     if (!t || t.hasAttribute('disabled')) return;
     const act = t.dataset.act;
@@ -93,7 +93,8 @@ function mountReport(root: HTMLElement, getStaff: () => Staff | null, r: Report)
       else go('/staff/dashboard');
     } else if (act === 'refresh' || act === 'retry') void load();
     else r.onClick?.(t, () => void load());
-  });
+  };
+  root.addEventListener('click', onRootClick);
 
   addEventListener('resize', fitTitle);
   render();
@@ -103,6 +104,7 @@ function mountReport(root: HTMLElement, getStaff: () => Staff | null, r: Report)
   return () => {
     disposed = true;
     removeEventListener('resize', fitTitle);
+    root.removeEventListener('click', onRootClick);
   };
 }
 
@@ -153,7 +155,7 @@ export function mountAnalytics(root: HTMLElement, getStaff: () => Staff | null):
     <div class="cbars">${bar('Walk-In', walkIn, ORANGE)}${bar('Pickup', pickup, INFO)}${bar('Delivery', delivery, PURPLE)}</div>
   </section>
   <section class="rcard rcard--flat ana__top">
-    <h2 class="rcard__title">TOP Menu ITEMS</h2><hr class="kdivider">
+    <h2 class="rcard__title">TOP MENU ITEMS</h2><hr class="kdivider">
     ${
       items.length
         ? items
