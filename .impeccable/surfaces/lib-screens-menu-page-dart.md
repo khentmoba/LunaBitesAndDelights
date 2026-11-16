@@ -1,8 +1,8 @@
 ---
 version: 1
 slug: "lib-screens-menu-page-dart"
-primary_target: "lib/screens/menu_page.dart"
-related_targets: ["lib/widgets/kiosk/menu_theme.dart","lib/widgets/kiosk/product_card.dart","lib/widgets/kiosk/category_bar.dart","lib/widgets/kiosk/sidebar.dart","lib/widgets/kiosk/customization_modal.dart","lib/screens/cart_page.dart","lib/widgets/kiosk/kiosk_theme.dart"]
+primary_target: "app/src/pages/kiosk/menu.astro"
+related_targets: ["app/src/layouts/Kiosk.astro","app/src/kiosk/tokens.css","app/src/pages/kiosk/cart.astro","app/src/pages/kiosk/checkout.astro","app/src/pages/kiosk/index.astro","app/src/pages/kiosk/receipt.astro","app/src/data/menu.ts"]
 ---
 
 ## Mode
@@ -11,7 +11,7 @@ Operate. Visitors choose a category, inspect a dish and its price, choose any re
 
 ## Scope
 
-The Flutter ordering app at `/kiosk/`, built in the same Pink Order Pad world as the storefront (`/`): splash, menu, item chooser, order-slip cart, checkout, receipt and staff console. Pricing, payment and delivery rules are unchanged.
+The Astro ordering app at `/kiosk/`, built in the same Pink Order Pad world as the storefront (`/`): splash, menu, item chooser, order-slip cart, checkout, receipt and staff console. Pricing, payment and delivery rules are unchanged.
 
 ## Direction contract
 
