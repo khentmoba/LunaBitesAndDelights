@@ -197,6 +197,7 @@ body { overflow: hidden; }
 
 <script>
 import { cart, peso } from '../../kiosk/cart';
+import { $, esc } from '../../kiosk/dom';
 import { glyph } from '../../kiosk/icons';
 import { popTo, watchInactivity } from '../../kiosk/inactivity';
 import { DRAFT, PENDING, RECEIPT, load, save, type CheckoutDraft, type PendingPayment, type Receipt } from '../../kiosk/handoff';
@@ -207,8 +208,6 @@ import {
 import { snack } from '../../kiosk/snackbar';
 import { hasStoredStaffUser } from '../../kiosk/staff-hint';
 
-const $ = <T extends Element = HTMLElement>(sel: string) => document.querySelector<T>(sel)!;
-const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
 const PINK = '#D91566';
 const ERROR = '#B3261E';
 

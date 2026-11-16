@@ -134,11 +134,10 @@ body { overflow: hidden; }
 
 <script>
 import { cart, peso, type CartItem } from '../../kiosk/cart';
+import { $, esc } from '../../kiosk/dom';
 import { glyph } from '../../kiosk/icons';
 import { popTo, resetKiosk, watchInactivity } from '../../kiosk/inactivity';
 
-const $ = <T extends Element>(sel: string) => document.querySelector<T>(sel)!;
-const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
 const thumb = (item: CartItem) => `/kiosk/${item.imageUrl || 'images/luna_logo.webp'}`;
 
 function row(item: CartItem): string {

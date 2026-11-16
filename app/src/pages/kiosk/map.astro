@@ -112,14 +112,12 @@ body { overflow: hidden; }
 <script>
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
+import { $, esc } from '../../kiosk/dom';
 import { DRAFT, load, save, type CheckoutDraft } from '../../kiosk/handoff';
 import { currentPosition, reverseGeocode, searchAddress, shortAddress, tileUrl, type Place } from '../../kiosk/geo';
 import { glyph } from '../../kiosk/icons';
 import { popTo } from '../../kiosk/inactivity';
 import { STORE, deliveryDistance } from '../../kiosk/order';
-
-const $ = <T extends Element = HTMLElement>(sel: string) => document.querySelector<T>(sel)!;
-const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
 
 const draft = load<CheckoutDraft>(DRAFT);
 let address = draft?.address ?? '';

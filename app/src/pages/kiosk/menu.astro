@@ -271,16 +271,14 @@ body:has(.orderbar:not([hidden])) .snack { bottom: 94px; }
 <script>
 import { menuSections, type MenuItem } from '../../data/menu';
 import { cart, peso } from '../../kiosk/cart';
+import { $, $$, esc } from '../../kiosk/dom';
 import { kioskSession } from '../../kiosk/session';
 import { resolvePicks, promoOf, displayPrice } from '../../kiosk/preselect';
 import { glyph } from '../../kiosk/icons';
 import { resetKiosk, watchInactivity } from '../../kiosk/inactivity';
 import { hasStoredStaffUser } from '../../kiosk/staff-hint';
 
-const $ = <T extends Element>(sel: string, root: ParentNode = document) => root.querySelector<T>(sel)!;
-const $$ = <T extends Element>(sel: string, root: ParentNode = document) => [...root.querySelectorAll<T>(sel)];
 const items = new Map(menuSections.flatMap((s) => s.items.map((i) => [i.id, i] as const)));
-const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
 
 function showSection(id: string) {
   if (!menuSections.some((s) => s.id === id)) id = menuSections[0]!.id;
