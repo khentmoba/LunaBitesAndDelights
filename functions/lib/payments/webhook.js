@@ -99,6 +99,11 @@ exports.paymongoWebhook = (0, https_1.onRequest)({ secrets: [secrets_1.paymongoS
         }
         firebase_functions_1.logger.info(`PayMongo webhook received: ${event.type}`);
         const sessionId = String(event.data.id);
+        if (!/^[A-Za-z0-9_-]{4,128}$/.test(sessionId)) {
+            firebase_functions_1.logger.warn('Invalid PayMongo session id in webhook');
+            res.status(200).send('OK');
+            return;
+        }
         if (event.type === 'checkout_session.payment.paid') {
             const payments = await (0, paymongo_1.fetchSessionPayments)(sessionId, (0, paymongo_1.paymongoAuthHeader)());
             if (!(0, paymongo_1.hasPaidPayment)(payments)) {

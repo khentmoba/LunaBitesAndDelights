@@ -44,7 +44,7 @@ import Kiosk from '../../layouts/Kiosk.astro';
 import { hasStoredStaffUser } from '../../kiosk/staff-hint';
 
 void hasStoredStaffUser().then((staff) => {
-  if (staff) document.querySelector<HTMLAnchorElement>('.splash__start')!.href = '/staff/dashboard';
+  if (staff && !location.search) document.querySelector<HTMLAnchorElement>('.splash__start')!.href = '/staff/dashboard';
 });
 </script>
 
