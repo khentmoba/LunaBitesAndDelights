@@ -1,0 +1,438 @@
+---
+import Kiosk from '../../layouts/Kiosk.astro';
+import { menuSections, type MenuItem } from '../../data/menu';
+import { categoryIcon, glyph } from '../../kiosk/icons';
+import { displayPrice, promoOf } from '../../kiosk/preselect';
+import { DEFAULT_CATEGORY } from '../../kiosk/session';
+
+const img = (item: MenuItem) => `/kiosk/${item.imageUrl || 'images/luna_logo.webp'}`;
+
+/** Splits a section's items into header labels and runs of cards, as the Flutter slivers do. */
+function groups(items: MenuItem[]) {
+  const out: ({ header: string } | { cards: MenuItem[] })[] = [];
+  let run: MenuItem[] = [];
+  for (const item of items) {
+    if (item.isHeader) {
+      if (run.length) out.push({ cards: run });
+      run = [];
+      out.push({ header: item.name.toUpperCase() });
+    } else run.push(item);
+  }
+  if (run.length) out.push({ cards: run });
+  return out;
+}
+---
+<Kiosk>
+<div class="menu">
+  <nav class="sidebar" aria-label="Menu sections">
+    <h2 class="heading sidebar__title">Menu</h2>
+    {menuSections.map((s) => (
+      <button type="button" class="tile" data-section={s.id} aria-current={s.id === DEFAULT_CATEGORY ? 'true' : 'false'}>
+        <span class="icon tile__icon" aria-hidden="true">{glyph(categoryIcon(s.id))}</span>
+        <span class="tile__title">{s.title}</span>
+      </button>
+    ))}
+  </nav>
+
+  <div class="main">
+    <header class="top">
+      <img class="top__logo" src="/kiosk/images/luna_logo.webp" alt="" width="40" height="48">
+      <h1 class="heading top__title">Luna Bites &amp; Delights</h1>
+      <a class="iconbtn" href="/kiosk/cart" data-cart-link aria-label="View order, 0 items">
+        <span class="icon" aria-hidden="true">{glyph('shopping_bag_outlined')}</span>
+        <span class="badge" data-cart-badge hidden>0</span>
+      </a>
+      <div class="more">
+        <button type="button" class="iconbtn" data-more aria-haspopup="menu" aria-expanded="false" aria-label="Menu options">
+          <span class="icon" aria-hidden="true">{glyph('more_vert')}</span>
+        </button>
+        <div class="popup" role="menu" data-popup hidden>
+          <button type="button" role="menuitem" data-reset>Start over</button>
+        </div>
+      </div>
+    </header>
+
+    <div class="chips" role="tablist" aria-label="Menu sections">
+      {menuSections.map((s) => (
+        <button type="button" class="chip" role="tab" data-section={s.id} aria-selected={s.id === DEFAULT_CATEGORY ? 'true' : 'false'}>
+          <span class="icon chip__check" aria-hidden="true">{glyph('check')}</span>
+          <span>{s.title}</span>
+        </button>
+      ))}
+    </div>
+
+    <main class="scroll" data-scroll>
+      {menuSections.map((s) => (
+        <section class="section" data-panel={s.id} hidden={s.id !== DEFAULT_CATEGORY}>
+          <div class="section__head">
+            <h2 class="heading section__title">{s.title}</h2>
+            {s.subtitle && <p class="section__sub">{s.subtitle}</p>}
+          </div>
+          {groups(s.items).map((g) =>
+            'header' in g ? (
+              <h3 class="band">{g.header}</h3>
+            ) : (
+              <div class="grid">
+                {g.cards.map((item) => {
+                  const promo = promoOf(item);
+                  const from = (item.variants?.length ?? 0) > 0;
+                  return (
+                    <button type="button" class="card" data-item={item.id}
+                      aria-label={`${item.name}, ${from ? 'from ' : ''}₱${displayPrice(item)}`}>
+                      <span class="card__photo">
+                        <img src={img(item)} alt="" loading="lazy" decoding="async">
+                        {promo && <span class="tape">{promo}</span>}
+                      </span>
+                      <span class="card__body">
+                        <span class="card__name">{item.name}</span>
+                        <span class="card__rule"></span>
+                        <span class="card__row">
+                          <span class="card__price">
+                            {from && <span class="card__from">From </span>}<span class="price">₱{displayPrice(item)}</span>
+                          </span>
+                          <span class="card__add"><span class="icon" aria-hidden="true">{glyph('add')}</span></span>
+                        </span>
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            ),
+          )}
+        </section>
+      ))}
+    </main>
+  </div>
+</div>
+
+<footer class="orderbar" data-orderbar hidden>
+  <a class="filled orderbar__btn" href="/kiosk/cart">
+    <span class="icon" aria-hidden="true">{glyph('shopping_bag_outlined')}</span>
+    <span data-orderbar-label>View order</span>
+  </a>
+</footer>
+
+<dialog class="sheet" data-sheet aria-label="Item details"></dialog>
+<div class="snack" role="status" aria-live="polite" data-snack hidden></div>
+</Kiosk>
+
+<style is:global>
+.menu { display: flex; height: 100dvh; }
+.main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+
+/* Sidebar (>= 1000px), lib/widgets/kiosk/sidebar.dart */
+.sidebar { display: none; width: 216px; flex: none; background: var(--paper); border-right: 2px solid var(--pink); padding: 24px 12px; overflow-y: auto; }
+.sidebar__title { font-size: 34px; margin: 0; padding: 0 12px 24px; }
+.tile { display: flex; align-items: center; gap: 16px; width: 100%; min-height: 56px; margin-bottom: 8px; padding: 12px; border-radius: var(--radius); text-align: left; color: var(--ink); }
+.tile__icon { font-size: 22px; color: var(--pink-ink); flex: none; }
+.tile__title { font-size: 15px; font-weight: 700; line-height: 23px; letter-spacing: .5px; }
+.tile[aria-current="true"] { background: var(--plate); color: var(--on-plate); }
+.tile[aria-current="true"] .tile__icon { color: var(--on-plate); }
+.tile:hover:not([aria-current="true"]) { background: rgb(236 28 114 / .06); }
+
+/* Header */
+.top { display: flex; align-items: center; padding: 12px 16px; background: var(--paper); }
+.top__logo { width: auto; height: 48px; margin-right: 12px; }
+.top__title { flex: 1; min-width: 0; margin: 0; font-size: 20px; letter-spacing: -.4px; }
+.iconbtn { position: relative; display: grid; place-items: center; width: 48px; height: 48px; border-radius: var(--radius); color: var(--pink-ink); flex: none; }
+.iconbtn:hover { background: rgb(236 28 114 / .06); }
+.badge { position: absolute; top: 6px; right: 4px; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 8px; background: var(--plate); color: var(--on-plate); font-size: 11px; font-weight: 500; line-height: 16px; text-align: center; }
+.more { position: relative; }
+.popup { position: absolute; right: 0; top: 48px; z-index: 5; min-width: 160px; padding: 8px 0; background: var(--paper); border: 1px solid var(--rule); border-radius: var(--radius); box-shadow: var(--shadow-md); }
+.popup button { display: block; width: 100%; padding: 12px 16px; text-align: left; font-size: 14px; line-height: 1.4; }
+.popup button:hover { background: rgb(236 28 114 / .06); }
+
+/* Category chips (< 1000px), lib/widgets/kiosk/category_bar.dart */
+.chips { display: flex; gap: 8px; padding: 8px 16px; overflow-x: auto; background: var(--paper); border-bottom: 2px solid var(--pink); scrollbar-width: none; flex: none; }
+.chips::-webkit-scrollbar { display: none; }
+.chip { display: inline-flex; align-items: center; gap: 8px; flex: none; height: 34px; padding: 0 18px; margin: 3px 0; background: var(--card); color: var(--ink); border: 1.5px solid var(--pink-ink); border-radius: var(--radius); font-size: 14px; font-weight: 700; line-height: 1.4; letter-spacing: .1px; white-space: nowrap; background-clip: padding-box; }
+.chip { position: relative; }
+.chip::after { content: ""; position: absolute; inset: -7px 0; }
+.chip__check { display: none; font-size: 18px; }
+.chip[aria-selected="true"] { background: var(--plate); border-color: var(--plate); color: var(--on-plate); padding-left: 12px; }
+.chip[aria-selected="true"] .chip__check { display: inline-block; }
+
+/* Grid, lib/screens/menu_page.dart _buildProductGrid */
+.scroll { flex: 1; overflow-y: auto; container-type: inline-size; --gutter: 16px; --cols: 2; padding-bottom: env(safe-area-inset-bottom); }
+.section__head { margin: 14px var(--gutter) 6px; padding: 12px 16px 11px; background: var(--paper); border-radius: var(--radius); border-bottom: 3px solid var(--pink); }
+.section__title { margin: 0; font-size: 26px; }
+.section__sub { margin: 4px 0 0; font-size: 14px; line-height: 1.4; color: var(--ink-soft); }
+.band { margin: 24px var(--gutter) 4px; padding: 8px 12px; background: var(--plate); color: var(--on-plate); font-size: 15px; font-weight: 700; letter-spacing: 1.2px; line-height: 1.2; }
+.grid {
+  display: grid; grid-template-columns: repeat(var(--cols), minmax(0, 1fr)); gap: 16px;
+  padding: 12px var(--gutter) 20px;
+  grid-auto-rows: calc((100cqw - 2 * var(--gutter) - 16px * (var(--cols) - 1)) / var(--cols) * .8 + 148px);
+}
+@container (min-width: 600px) { .section__head, .band, .grid { --gutter: 28px; } }
+@container (min-width: 780px) { .grid { --cols: 3; } }
+@container (min-width: 1040px) { .grid { --cols: 4; } }
+
+.card { display: flex; flex-direction: column; min-height: 0; text-align: left; position: relative; background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow-card); overflow: hidden; }
+.card::after { content: ""; position: absolute; inset: 0; border: 1px solid var(--rule); border-radius: inherit; pointer-events: none; }
+.card:hover { background: #fffbfc; }
+.card__photo { position: relative; flex: 1; min-height: 0; padding: 6px 6px 0; }
+.card__photo img { width: 100%; height: 100%; object-fit: cover; }
+.tape { position: absolute; top: 14px; left: 0; padding: 5px 10px; background: var(--butter); font-size: 12px; font-weight: 800; line-height: 1.4; transform: rotate(-.035rad); transform-origin: center; }
+.card__body { display: flex; flex-direction: column; padding: 10px 12px 12px; }
+.card__name { min-height: 38.4px; font-size: 16px; font-weight: 600; line-height: 1.2; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.card__rule { display: block; height: 1px; margin: 5.5px 0; background: var(--rule); }
+.card__row { display: flex; align-items: center; }
+.card__price { flex: 1; }
+.card__price .price { font-size: 20px; }
+.card__from { font-size: 13px; line-height: 1.4; color: var(--ink-soft); }
+.card__add { display: grid; place-items: center; width: 36px; height: 36px; border-radius: var(--radius); background: var(--plate); color: var(--on-plate); }
+.card__add .icon { font-size: 22px; }
+
+/* Order bar */
+.orderbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 4; padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); background: var(--paper); border-top: 2px solid var(--pink); }
+.filled { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 52px; padding: 0 24px; border-radius: var(--radius); background: var(--plate); color: var(--on-plate); font-size: 16px; font-weight: 700; line-height: 1.4; text-align: center; }
+.filled .icon { font-size: 18px; }
+.filled:disabled, .filled[aria-disabled="true"] { background: var(--blush-paper); color: var(--ink-soft); cursor: default; }
+.orderbar__btn { max-width: 700px; margin: 0 auto; }
+body:has(.orderbar:not([hidden])) .scroll { padding-bottom: 0; }
+body:has(.orderbar:not([hidden])) .menu { height: calc(100dvh - 78px - env(safe-area-inset-bottom)); }
+
+@media (min-width: 1000px) {
+  .sidebar { display: block; }
+  .chips { display: none; }
+  .top { padding: 12px 28px 10px; border-bottom: 2px solid var(--pink); }
+  .top__logo { height: 56px; }
+  .top__title { font-size: 26px; letter-spacing: -.52px; }
+}
+@container (min-width: 600px) {
+  .section__head { margin-top: 22px; margin-bottom: 8px; padding: 16px 18px 15px; }
+  .section__title { font-size: 34px; }
+}
+
+/* Item sheet, lib/widgets/kiosk/customization_modal.dart */
+.sheet { position: fixed; inset: auto 0 0 0; margin: 0 auto; width: 100%; max-width: 960px; max-height: 90dvh; padding: 0; border: 0; border-radius: 10px 10px 0 0; background: var(--paper); color: var(--ink); overflow: hidden; }
+.sheet[open] { display: flex; flex-direction: column; }
+.sheet::backdrop { background: rgb(0 0 0 / .54); }
+.sheet--short { max-height: min(460px, 90dvh); }
+.sheet__grab { width: 36px; height: 4px; margin: 10px auto 2px; border-radius: 2px; background: var(--rule); flex: none; }
+.sheet__bar { display: flex; align-items: center; padding: 4px 8px 4px 20px; flex: none; }
+.sheet__bar .label { flex: 1; font-size: 12px; }
+.sheet__bar .iconbtn { color: var(--pink-ink); }
+.sheet__rule { height: 2px; background: var(--pink); flex: none; }
+.sheet__scroll { overflow-y: auto; padding: 20px; flex: 1 1 auto; min-height: 0; }
+.sheet__body { display: flex; flex-direction: column; gap: 20px; }
+.sheet__photo { height: 170px; padding: 6px; background: var(--card); box-shadow: 0 12px 22px -8px rgb(179 14 82 / .22); }
+.sheet__photo img { width: 100%; height: 100%; object-fit: cover; }
+.sheet__name { margin: 0; font-size: 32px; }
+.sheet__tape { align-self: flex-start; margin-top: 12px; padding: 6px 10px; background: var(--butter); font-size: 13px; font-weight: 800; line-height: 1.4; }
+.sheet__desc { margin: 12px 0 0; font-size: 15px; line-height: 1.4; color: var(--ink-soft); }
+.sheet__opts { margin-top: 24px; }
+.sheet__opts .label { font-size: 12px; }
+.sheet__count { margin: 6px 0 0; font-size: 14px; line-height: 1.4; color: var(--ink-soft); }
+.opt { display: flex; align-items: center; gap: 16px; width: 100%; min-height: 56px; margin-top: 10px; padding: 4px 12px; background: var(--card); border: 1px solid var(--rule); border-radius: var(--radius); text-align: left; cursor: pointer; }
+.opt:first-of-type { margin-top: 12px; }
+.opt[aria-checked="true"] { background: var(--blush-paper); border: 2px solid var(--plate); padding: 3px 11px; }
+.opt__mark { width: 20px; height: 20px; flex: none; border: 2px solid var(--ink-soft); border-radius: 50%; display: grid; place-items: center; }
+.opt__mark--box { border-radius: 2px; }
+.opt[aria-checked="true"] .opt__mark { border-color: var(--plate); }
+.opt[aria-checked="true"] .opt__mark::after { content: ''; width: 10px; height: 10px; border-radius: 50%; background: var(--plate); }
+.opt[aria-checked="true"] .opt__mark--box { background: var(--plate); }
+.opt[aria-checked="true"] .opt__mark--box::after { content: none; }
+.opt__mark--box .icon { display: none; font-size: 16px; color: var(--on-plate); }
+.opt[aria-checked="true"] .opt__mark--box .icon { display: block; }
+.opt__label { flex: 1; font-size: 15px; line-height: 1.4; }
+.opt__price { font-size: 17px; }
+.sheet__foot { flex: none; padding: 12px 20px 16px; background: var(--card); border-top: 1px solid var(--rule); }
+.sheet__hint { margin: 0 0 8px; font-family: var(--hand); font-weight: 600; font-size: 21px; line-height: 1.1; color: var(--pink-ink); }
+.sheet__actions { display: flex; flex-direction: column; align-items: stretch; gap: 8px; }
+.qty { display: flex; align-items: center; align-self: flex-start; }
+.qty__n { width: 36px; text-align: center; font-size: 16px; font-weight: 700; line-height: 1.4; }
+.qty .iconbtn:disabled { color: rgb(42 15 30 / .38); cursor: default; background: none; }
+@media (min-width: 700px) { .sheet__grab { display: none; } }
+@media (min-width: 440px) {
+  .sheet__actions { flex-direction: row; align-items: center; gap: 20px; }
+  .sheet__actions .filled { flex: 1; }
+}
+@media (min-width: 640px) {
+  .sheet__body { flex-direction: row; align-items: flex-start; gap: 28px; }
+  .sheet__photo { width: 240px; height: 260px; flex: none; }
+  .sheet__details { flex: 1; min-width: 0; }
+}
+
+/* SnackBar */
+.snack { position: fixed; left: 50%; bottom: 16px; z-index: 20; transform: translateX(-50%); width: min(100% - 32px, 560px); padding: 14px 16px; border-radius: 4px; background: var(--ink); color: var(--paper); font-size: 14px; line-height: 1.4; box-shadow: var(--shadow-lg); }
+body:has(.orderbar:not([hidden])) .snack { bottom: 94px; }
+</style>
+
+<script>
+import { menuSections, type MenuItem } from '../../data/menu';
+import { cart, peso } from '../../kiosk/cart';
+import { kioskSession } from '../../kiosk/session';
+import { resolvePicks, promoOf, displayPrice } from '../../kiosk/preselect';
+import { glyph } from '../../kiosk/icons';
+import { resetKiosk, watchInactivity } from '../../kiosk/inactivity';
+
+const $ = <T extends Element>(sel: string, root: ParentNode = document) => root.querySelector<T>(sel)!;
+const $$ = <T extends Element>(sel: string, root: ParentNode = document) => [...root.querySelectorAll<T>(sel)];
+const items = new Map(menuSections.flatMap((s) => s.items.map((i) => [i.id, i] as const)));
+const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
+
+function showSection(id: string) {
+  if (!menuSections.some((s) => s.id === id)) id = menuSections[0]!.id;
+  kioskSession.setCategory(id);
+  for (const p of $$<HTMLElement>('[data-panel]')) p.hidden = p.dataset.panel !== id;
+  for (const t of $$<HTMLElement>('.tile')) t.setAttribute('aria-current', String(t.dataset.section === id));
+  for (const c of $$<HTMLElement>('.chip')) c.setAttribute('aria-selected', String(c.dataset.section === id));
+  $<HTMLElement>('[data-scroll]').scrollTop = 0;
+}
+
+for (const b of $$<HTMLElement>('[data-section]')) b.addEventListener('click', () => {
+  showSection(b.dataset.section!);
+  if (b.classList.contains('chip')) b.scrollIntoView({ inline: 'nearest', block: 'nearest' });
+});
+
+cart.subscribe(() => {
+  const count = cart.totalCount();
+  const badge = $<HTMLElement>('[data-cart-badge]');
+  badge.hidden = count === 0;
+  badge.textContent = String(count);
+  $('[data-cart-link]').setAttribute('aria-label', `View order, ${count} items`);
+  $<HTMLElement>('[data-orderbar]').hidden = count === 0;
+  $('[data-orderbar-label]').textContent = `View order (${count}) · ${peso(cart.totalPrice())}`;
+});
+
+// Utilities menu.
+const more = $<HTMLButtonElement>('[data-more]');
+const popup = $<HTMLElement>('[data-popup]');
+more.addEventListener('click', (e) => {
+  e.stopPropagation();
+  popup.hidden = !popup.hidden;
+  more.setAttribute('aria-expanded', String(!popup.hidden));
+});
+document.addEventListener('click', () => { popup.hidden = true; more.setAttribute('aria-expanded', 'false'); });
+$('[data-reset]').addEventListener('click', resetKiosk);
+
+// Snackbar.
+const snack = $<HTMLElement>('[data-snack]');
+let snackTimer = 0;
+function toast(text: string, ms = 4000) {
+  snack.textContent = text;
+  snack.hidden = false;
+  clearTimeout(snackTimer);
+  snackTimer = window.setTimeout(() => { snack.hidden = true; }, ms);
+}
+
+// Item sheet.
+const sheet = $<HTMLDialogElement>('[data-sheet]');
+
+function openSheet(item: MenuItem): Promise<void> {
+  const variants = item.variants ?? [];
+  const multi = item.allowMultiSelect ?? false;
+  const maxSelect = item.maxSelect ?? 1;
+  let qty = 1;
+  let picked = -1;
+  const chosen = new Set<number>();
+  const promo = promoOf(item);
+  const price = () => {
+    if (multi) return [...chosen].reduce((t, i) => t + variants[i]!.price, item.price ?? 0);
+    if (variants.length) return picked < 0 ? displayPrice(item) : variants[picked]!.price;
+    return item.price ?? 0;
+  };
+  const canAdd = () => (multi ? chosen.size > 0 : variants.length === 0 || picked >= 0);
+  const label = () => (multi ? [...chosen].map((i) => variants[i]!.label).join(', ') : picked < 0 ? '' : variants[picked]!.label);
+
+  const narrow = innerWidth < 700;
+  sheet.classList.toggle('sheet--short', variants.length === 0 && !narrow);
+  sheet.innerHTML = `
+    ${narrow ? '<div class="sheet__grab"></div>' : ''}
+    <div class="sheet__bar"><span class="label">Item details</span>
+      <button type="button" class="iconbtn" data-close aria-label="Close item details"><span class="icon" aria-hidden="true">${glyph('close')}</span></button></div>
+    <div class="sheet__rule"></div>
+    <div class="sheet__scroll"><div class="sheet__body">
+      <div class="sheet__photo"><img src="/kiosk/${esc(item.imageUrl || 'images/luna_logo.webp')}" alt=""></div>
+      <div class="sheet__details">
+        <h2 class="heading sheet__name">${esc(item.name)}</h2>
+        ${promo ? `<div class="sheet__tape">${esc(promo)}</div>` : ''}
+        ${item.description ? `<p class="sheet__desc">${esc(item.description)}</p>` : ''}
+        ${variants.length ? `<div class="sheet__opts" role="${multi ? 'group' : 'radiogroup'}" aria-label="${esc(item.optionHeader ?? 'CHOOSE OPTION')}">
+          <div class="label">${esc((item.optionHeader ?? 'CHOOSE OPTION').toUpperCase())}</div>
+          ${multi ? `<p class="sheet__count" data-count></p>` : ''}
+          ${variants.map((v, i) => `<button type="button" class="opt" role="${multi ? 'checkbox' : 'radio'}" aria-checked="false" data-opt="${i}">
+            <span class="opt__mark${multi ? ' opt__mark--box' : ''}">${multi ? `<span class="icon" aria-hidden="true">${glyph('check')}</span>` : ''}</span>
+            <span class="opt__label">${esc(v.label)}</span>${v.price > 0 ? `<span class="price opt__price">${peso(v.price)}</span>` : ''}</button>`).join('')}
+        </div>` : ''}
+      </div>
+    </div></div>
+    <div class="sheet__foot">
+      <p class="sheet__hint" data-hint>Choose an option to continue.</p>
+      <div class="sheet__actions">
+        <div class="qty">
+          <button type="button" class="iconbtn" data-dec aria-label="Decrease quantity"><span class="icon" aria-hidden="true">${glyph('remove')}</span></button>
+          <span class="qty__n" aria-live="polite" data-qty>1</span>
+          <button type="button" class="iconbtn" data-inc aria-label="Increase quantity"><span class="icon" aria-hidden="true">${glyph('add')}</span></button>
+        </div>
+        <button type="button" class="filled" data-add></button>
+      </div>
+    </div>`;
+
+  const render = () => {
+    for (const o of $$<HTMLElement>('[data-opt]', sheet)) {
+      const i = Number(o.dataset.opt);
+      o.setAttribute('aria-checked', String(multi ? chosen.has(i) : picked === i));
+    }
+    const count = sheet.querySelector('[data-count]');
+    if (count) count.textContent = `Choose up to ${maxSelect} · ${chosen.size} selected`;
+    $<HTMLElement>('[data-hint]', sheet).hidden = canAdd();
+    $('[data-qty]', sheet).textContent = String(qty);
+    $('[data-qty]', sheet).setAttribute('aria-label', `Quantity ${qty}`);
+    $<HTMLButtonElement>('[data-dec]', sheet).disabled = qty <= 1;
+    const add = $<HTMLButtonElement>('[data-add]', sheet);
+    add.disabled = !canAdd();
+    add.textContent = `Add to order · ${peso(price() * qty)}`;
+  };
+
+  for (const o of $$<HTMLElement>('[data-opt]', sheet)) o.addEventListener('click', () => {
+    const i = Number(o.dataset.opt);
+    if (!multi) picked = i;
+    else if (chosen.has(i)) chosen.delete(i);
+    else if (chosen.size < maxSelect) chosen.add(i);
+    else toast(`Choose up to ${maxSelect} flavours.`, 2000);
+    render();
+  });
+  $('[data-dec]', sheet).addEventListener('click', () => { if (qty > 1) qty--; render(); });
+  $('[data-inc]', sheet).addEventListener('click', () => { qty++; render(); });
+  $('[data-close]', sheet).addEventListener('click', () => sheet.close());
+  $('[data-add]', sheet).addEventListener('click', () => {
+    if (!canAdd()) return;
+    cart.add({ id: String(Date.now()), name: item.name, emoji: item.emoji, imageUrl: item.imageUrl ?? '', variant: label(), price: price(), quantity: qty });
+    sheet.close();
+  });
+  render();
+  sheet.showModal();
+  return new Promise((done) => sheet.addEventListener('close', () => done(), { once: true }));
+}
+
+sheet.addEventListener('click', (e) => { if (e.target === sheet) sheet.close(); });
+for (const card of $$<HTMLElement>('[data-item]')) card.addEventListener('click', () => {
+  const item = items.get(card.dataset.item!);
+  if (item) void openSheet(item);
+});
+
+// Storefront picks: ?pick=... is read once, then dropped from the address.
+async function applyPicks() {
+  const params = new URLSearchParams(location.search);
+  const picks = params.getAll('pick');
+  if (!picks.length) return;
+  params.delete('pick');
+  history.replaceState(null, '', `${location.pathname}${params.size ? `?${params}` : ''}${location.hash}`);
+  const result = resolvePicks(picks);
+  if (!result.ready.length && !result.needsChoice.length && !result.sectionId) return;
+  const before = cart.totalCount();
+  for (const item of result.ready) cart.add(item);
+  if (result.sectionId) showSection(result.sectionId);
+  for (const item of result.needsChoice) await openSheet(item);
+  const added = cart.totalCount() - before;
+  const lead = added > 0 ? `Added ${added} from the menu board. ` : '';
+  toast(result.sectionPick ? `${lead}Choose your drink below, then tap View order.`
+    : added > 0 ? `${lead}Keep adding, or tap View order.` : 'Pick what you want from the menu.');
+}
+
+showSection(kioskSession.category());
+void applyPicks();
+watchInactivity();
+</script>

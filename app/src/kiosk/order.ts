@@ -1,0 +1,184 @@
+// Order rules and the checkout pipeline, from lib/services/order_policy.dart,
+// order_service.dart, telegram_service.dart, delivery.dart, utils/format.dart
+// and utils/validate.dart. Everything above placeOrder is pure so Node tests
+// can run it without a browser.
+import type { CartItem } from './cart';
+
+export type OrderType = 'Pickup' | 'Delivery' | 'Walk-In';
+export type PaymentMethod = 'Cash' | 'GCash';
+
+export const MAX_ITEMS = 50;
+export const MAX_NAME_LENGTH = 100;
+
+/** Status fields a new order may carry under firestore.rules. */
+export function statusesFor(isStaff: boolean, paymentMethod: PaymentMethod) {
+  if (isStaff) return { status: 'Pending', paymentStatus: 'PAID', entryType: 'Staff' } as const;
+  return {
+    status: 'Pending',
+    paymentStatus: paymentMethod === 'GCash' ? 'AWAITING_PAYMENT' : 'NOT PAID',
+    entryType: 'Kiosk',
+  } as const;
+}
+
+/** A reason the rules would reject this order, or null if they accept it. */
+export function rejectionFor(customerName: string, itemCount: number): string | null {
+  if (customerName.length === 0) return 'Please enter a name for this order.';
+  if (customerName.length > MAX_NAME_LENGTH) {
+    return `Name is too long. Please keep it under ${MAX_NAME_LENGTH} characters.`;
+  }
+  if (itemCount > MAX_ITEMS) {
+    return `An order can have up to ${MAX_ITEMS} different items. Please split it into two orders.`;
+  }
+  return null;
+}
+
+export function validateName(v: string, max = 100): string | null {
+  if (v.trim().length === 0) return 'Name is required';
+  if (v.trim().length > max) return 'Name too long';
+  return null;
+}
+
+export function validatePhone(v: string): string | null {
+  const p = v.trim().replace(/[\s-]/g, '');
+  if (p.length === 0) return 'Phone is required';
+  if (!/^(\+?63|0)9\d{9}$/.test(p)) return 'Enter a valid PH mobile number';
+  return null;
+}
+
+const two = (n: number) => String(n).padStart(2, '0');
+
+/** Wall-clock fields in Philippine time (UTC+8, no DST). */
+function pht(at: Date) {
+  const d = new Date(at.getTime() + 8 * 3600_000);
+  return { y: d.getUTCFullYear(), mo: d.getUTCMonth() + 1, d: d.getUTCDate(), h: d.getUTCHours(), mi: d.getUTCMinutes(), s: d.getUTCSeconds() };
+}
+
+/** 'YYYY-MM-DD' in PHT. */
+export function phtDateLabel(at = new Date()): string {
+  const t = pht(at);
+  return `${t.y}-${two(t.mo)}-${two(t.d)}`;
+}
+
+/** 'LU-YYMMDD-HHMMSS' in PHT. */
+export function orderNumberFor(at = new Date()): string {
+  const t = pht(at);
+  return `LU-${two(t.y % 100)}${two(t.mo)}${two(t.d)}-${two(t.h)}${two(t.mi)}${two(t.s)}`;
+}
+
+/** Device-local 'YYYY-MM-DD  HH:MM', as the receipt and Telegram show it. */
+export function localStamp(at = new Date()): string {
+  return `${at.getFullYear()}-${two(at.getMonth() + 1)}-${two(at.getDate())}  ${two(at.getHours())}:${two(at.getMinutes())}`;
+}
+
+export const STORE = { lat: 9.020509, lng: 125.517591 };
+export const BASE2 = { lat: 9.121259, lng: 125.5429739 };
+
+export function haversine(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const p = 0.017453292519943295;
+  const a = 0.5 - Math.cos((lat2 - lat1) * p) / 2 + (Math.cos(lat1 * p) * Math.cos(lat2 * p) * (1 - Math.cos((lng2 - lng1) * p))) / 2;
+  return 12742 * Math.asin(Math.sqrt(a));
+}
+
+/** Kilometres from the nearer kitchen. */
+export function deliveryDistance(lat: number, lng: number): number {
+  return Math.min(haversine(STORE.lat, STORE.lng, lat, lng), haversine(BASE2.lat, BASE2.lng, lat, lng));
+}
+
+export interface OrderItem {
+  name: string;
+  variant: string;
+  price: number;
+  quantity: number;
+}
+
+export interface Order {
+  orderId: string;
+  items: OrderItem[];
+  totalAmount: number;
+  timestamp: Date;
+  dateLabel: string;
+  type: OrderType;
+  entryType: 'Kiosk' | 'Staff';
+  customerName: string;
+  customerPhone: string;
+  customerAddress: string;
+  lat: number | null;
+  lng: number | null;
+  deliveryFee: number;
+  totalDistance: number;
+  paymentMethod: PaymentMethod;
+  paymentStatus: string;
+  status: string;
+}
+
+export const orderItems = (items: readonly CartItem[]): OrderItem[] =>
+  items.map((i) => ({ name: i.name, variant: i.variant, price: i.price, quantity: i.quantity }));
+
+/** OrderModel.toJson, minus the timestamp, which the caller turns into a Firestore Timestamp. */
+export function orderFields(order: Order) {
+  return {
+    orderId: order.orderId,
+    items: order.items.map((i) => ({ ...i, total: i.price * i.quantity })),
+    totalAmount: order.totalAmount,
+    dateLabel: order.dateLabel,
+    type: order.type,
+    entryType: order.entryType,
+    customerName: order.customerName,
+    customerPhone: order.customerPhone,
+    customerAddress: order.customerAddress,
+    lat: order.lat,
+    lng: order.lng,
+    deliveryFee: order.deliveryFee,
+    totalDistance: order.totalDistance,
+    paymentMethod: order.paymentMethod,
+    paymentStatus: order.paymentStatus,
+    status: order.status,
+    checkoutSessionId: null,
+    paymongoPaymentId: null,
+  };
+}
+
+/** The sendOrderNotification payload. */
+export function notificationFor(order: Order, timeStr: string, orderDocId: string) {
+  return {
+    orderDocId,
+    orderNumber: order.orderId,
+    customerName: order.customerName,
+    customerAddress: order.customerAddress,
+    customerPhone: order.customerPhone,
+    items: order.items,
+    total: order.totalAmount,
+    timeStr,
+    orderType: order.type,
+    deliveryFee: order.deliveryFee,
+    paymentMethod: order.paymentMethod,
+    paymentStatus: order.paymentStatus,
+    lat: order.lat,
+    lng: order.lng,
+  };
+}
+
+/**
+ * Save the order, then announce it on Telegram. The write comes first so a
+ * failed notification can never lose an order. docId is null when the write failed.
+ */
+export async function placeOrder(order: Order, timeStr: string): Promise<{ docId: string | null; telegramSent: boolean }> {
+  const { firebase, callFn } = await import('./firebase');
+  let docId: string;
+  try {
+    const [{ db }, fs] = await Promise.all([firebase(), import('firebase/firestore')]);
+    const ref = fs.doc(fs.collection(db, 'orders'));
+    await fs.setDoc(ref, { ...orderFields(order), timestamp: fs.Timestamp.fromDate(order.timestamp) });
+    docId = ref.id;
+  } catch (e) {
+    console.error(`Error saving order ${order.orderId}`, e);
+    return { docId: null, telegramSent: false };
+  }
+  try {
+    const data = await callFn<{ success?: boolean }>('sendOrderNotification', notificationFor(order, timeStr, docId));
+    return { docId, telegramSent: data.success === true };
+  } catch (e) {
+    console.error(`Telegram notification error for order ${order.orderId}`, e);
+    return { docId, telegramSent: false };
+  }
+}

@@ -47,7 +47,9 @@ One TypeScript codebase that serves the storefront, customer ordering and the st
 | Dashboard | `#/dashboard` | `/staff/dashboard` |
 | Analytics, lifetime analytics | `#/analytics`, `#/lifetime-analytics` | `/staff/analytics`, `/staff/lifetime` |
 
-Not yet in the automated set (need taps): the item customisation sheet, the staff menu dialog and the delivery map picker. They are captured by hand in the PR that rebuilds them.
+Not yet in the automated set (need taps): the item customisation sheet and the staff menu dialog. They are captured by hand in the PR that rebuilds them.
+
+TypeScript only, no Flutter baseline (the preview harness cannot reach them): checkout with a pinned delivery (`kiosk-checkout-delivery`) and the map picker (`kiosk-map`, `/kiosk/map`).
 
 ## Backend contracts that must not change
 
@@ -57,7 +59,7 @@ Callable Functions used by the client: `createCheckoutSession`, `verifyCheckoutP
 
 1. **Baseline** (this PR): parity harness (`tool/parity/`), Flutter screenshots of every screen, this spec.
 2. **Foundation**: Astro + TypeScript app in `app/`, storefront ported (same markup and CSS), typed menu in `app/src/data/menu.ts` that the storefront prints prices from, CI job.
-3. **Customer ordering**: kiosk tokens as CSS variables, order types, menu, cart, checkout, GCash/PayMongo, receipt. Replaces `/kiosk/` for customers.
+3. **Customer ordering**: kiosk tokens as CSS variables, order types, menu, cart, checkout, delivery map, GCash/PayMongo, receipt. Built into `build/app/kiosk/` but left out of the deployed site by `tool/assemble_site.dart`; step 5 switches `/kiosk/` over. Build-time settings: `PUBLIC_MAPTILER_KEY` (map tiles), `PUBLIC_RECAPTCHA_SITE_KEY` (App Check), `PUBLIC_FIREBASE_EMULATORS=1` (local emulators). `tool/parity/order_e2e.mjs` places real orders against the emulators.
 4. **Staff**: login, kitchen display, dashboard, analytics, PWA.
 5. **Cutover**: delete Flutter and Dart, update deploy workflows and `firebase.json`.
 

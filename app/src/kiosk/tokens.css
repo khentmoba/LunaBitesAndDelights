@@ -1,0 +1,131 @@
+/* The pink order pad, as lib/widgets/kiosk/kiosk_theme.dart and menu_theme.dart
+   define it. Same static font instances as the Flutter app (assets/fonts/). */
+
+@font-face { font-family: Bricolage; src: url('/kiosk/fonts/Bricolage-400.ttf') format('truetype'); font-weight: 400; font-display: block; }
+@font-face { font-family: Bricolage; src: url('/kiosk/fonts/Bricolage-500.ttf') format('truetype'); font-weight: 500; font-display: block; }
+@font-face { font-family: Bricolage; src: url('/kiosk/fonts/Bricolage-600.ttf') format('truetype'); font-weight: 600; font-display: block; }
+@font-face { font-family: Bricolage; src: url('/kiosk/fonts/Bricolage-700.ttf') format('truetype'); font-weight: 700; font-display: block; }
+@font-face { font-family: Bricolage; src: url('/kiosk/fonts/Bricolage-800.ttf') format('truetype'); font-weight: 800; font-display: block; }
+@font-face { font-family: Caveat; src: url('/kiosk/fonts/Caveat-600.ttf') format('truetype'); font-weight: 600; font-display: block; }
+@font-face { font-family: Caveat; src: url('/kiosk/fonts/Caveat-700.ttf') format('truetype'); font-weight: 700; font-display: block; }
+/* Material Icons, the subset the Flutter build ships (same glyphs, same codepoints). */
+@font-face { font-family: 'Material Icons'; src: url('/kiosk/fonts/material-icons.woff2') format('woff2'); font-display: block; }
+
+:root {
+  --ground: #FEB7C9;
+  --paper: #FFFAFB;
+  --card: #FFFFFF;
+  --blush-paper: #FFF0F4;
+  --blush-light: #FFE3EC;
+  --surface-grey: #F8EEF2;
+  --rule: #F4AFC8;
+  --pink: #EC1C72;
+  --pink-ink: #B30E52;
+  --plate: #D91566;
+  --on-plate: #FFFFFF;
+  --butter: #FCD04E;
+  --ink: #2A0F1E;
+  --ink-soft: #6B3A52;
+  --ink-muted: #7D4D64;
+  --success: #1E7A3C;
+  --warning: #B45309;
+  --error: #B3261E;
+  --info: #1F5FAD;
+
+  --radius: 6px;
+  --radius-sm: 4px;
+  --radius-lg: 8px;
+  --radius-xl: 10px;
+
+  --shadow-sm: 0 2px 8px rgb(179 14 82 / .08);
+  --shadow-md: 0 8px 18px -4px rgb(179 14 82 / .12), 0 1px 2px rgb(179 14 82 / .06);
+  --shadow-lg: 0 14px 26px -8px rgb(179 14 82 / .16), 0 1px 2px rgb(179 14 82 / .06);
+  --shadow-xl: 0 18px 34px -10px rgb(179 14 82 / .2);
+  --shadow-primary: 0 10px 18px -8px rgb(179 14 82 / .32);
+  --shadow-card: 0 10px 18px -6px rgb(179 14 82 / .18);
+
+  --print: Bricolage, system-ui, sans-serif;
+  --hand: Caveat, cursive;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body {
+  font-family: var(--print);
+  /* Material 3 bodyMedium tracking, which every Flutter Text without its own letterSpacing inherits. */
+  letter-spacing: .25px;
+  color: var(--ink);
+  background: var(--ground);
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
+button { font: inherit; letter-spacing: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
+a { color: inherit; text-decoration: none; }
+img { display: block; }
+[hidden] { display: none !important; }
+
+.icon {
+  font-family: 'Material Icons';
+  font-weight: normal;
+  font-style: normal;
+  font-size: 24px;
+  line-height: 1;
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  overflow: hidden;
+  white-space: nowrap;
+  font-feature-settings: 'liga' 0;
+  user-select: none;
+}
+
+/* MenuTheme.heading: w800, height 1.02, tracking -2% of size. */
+.heading { font-weight: 800; line-height: 1.02; letter-spacing: -.02em; }
+/* MenuTheme.label: w700, tracking 14% of size. */
+.label { font-weight: 700; letter-spacing: .14em; line-height: 1.2; color: var(--pink-ink); }
+.price { font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; }
+
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* AppBar from the kiosk ThemeData: paper, 56 tall, centred headerSmall title, 2px logo-pink rule. */
+.appbar { position: relative; display: flex; align-items: center; height: 56px; padding: 0 4px; background: var(--paper) linear-gradient(var(--pink), var(--pink)) bottom / 100% 2px no-repeat; flex: none; }
+.appbar__lead { display: grid; place-items: center; width: 48px; height: 48px; border-radius: 50%; color: var(--pink-ink); }
+.appbar__lead .icon { font-size: 24px; }
+.appbar__title { position: absolute; left: 72px; right: 72px; top: 0; bottom: 0; display: flex; align-items: center; justify-content: center; margin: 0; font-size: 20px; font-weight: 800; line-height: 1.2; letter-spacing: 1.5px; color: var(--ink); white-space: nowrap; overflow: hidden; }
+.appbar__actions { margin-left: auto; display: flex; align-items: center; padding-right: 4px; }
+@media (max-width: 699px) {
+  .appbar__lead .icon { font-size: 20px; }
+  .appbar__title { letter-spacing: .5px; }
+}
+.appbar__lead:hover, .textbtn:hover { background: rgb(42 15 30 / .08); }
+
+/* Material 3 FilledButton with the kiosk theme. Flutter web on a desktop UA uses compact
+   density, which takes 8px off every button's minimum height. */
+.btn-filled { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px; padding: 0 24px; border-radius: var(--radius); background: var(--plate); color: var(--on-plate); font-size: 14px; font-weight: 500; letter-spacing: .1px; line-height: 20px; }
+.btn-filled:hover { background: color-mix(in srgb, var(--plate), white 8%); }
+.textbtn { display: inline-flex; align-items: center; justify-content: center; min-width: 40px; min-height: 36px; padding: 0 12px; border-radius: 22px; }
+
+/* InactivityWatcher's "Are you still there?" dialog. */
+.idle { width: min(280px + 48px, calc(100vw - 80px)); max-width: 560px; padding: 24px; border: 1px solid var(--rule); border-radius: var(--radius-lg); background: var(--paper); color: var(--ink); box-shadow: 0 11px 15px -7px rgb(0 0 0 / .2), 0 24px 38px 3px rgb(0 0 0 / .14); text-align: center; }
+.idle::backdrop { background: rgb(0 0 0 / .54); }
+.idle__title { margin: 0 0 16px; font-size: 20px; font-weight: 800; letter-spacing: 1.5px; line-height: 1.2; color: var(--pink-ink); }
+.idle__body { margin: 12px 0 20px; font-size: 14px; font-weight: 500; color: var(--ink-soft); line-height: 1.43; }
+.idle__count { display: grid; place-items: center; width: 84px; height: 84px; margin: 0 auto 12px; border-radius: 50%; background: var(--blush-paper); color: var(--pink-ink); font-size: 34px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.idle .btn-filled { width: 100%; margin-top: 24px; }
+
+/* Floating SnackBar from the kiosk SnackBarTheme. */
+.snack { position: fixed; left: 15px; right: 15px; bottom: calc(10px + env(safe-area-inset-bottom)); z-index: 100; display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 14px 16px; border-radius: var(--radius); background: var(--ink); color: var(--paper); font-size: 14px; font-weight: 400; line-height: 20px; box-shadow: 0 3px 5px -1px rgb(0 0 0 / .2), 0 6px 10px rgb(0 0 0 / .14), 0 1px 18px rgb(0 0 0 / .12); }
+.snack__icon { font-size: 20px; flex: none; }
+.snack__text { flex: 1; }
+.snack__action { flex: none; margin: -8px -8px -8px 0; padding: 8px 12px; border-radius: 20px; font-weight: 500; letter-spacing: .1px; }
+
+/* An AppBar painted with the plate colour, as checkout, GCash and the map use. */
+.appbar--plate { background-color: var(--plate); color: var(--on-plate); }
+.appbar--plate .appbar__lead { color: var(--on-plate); }
+.appbar--plate .appbar__lead .icon { font-size: 24px; }
+.appbar--plate .appbar__title { color: var(--on-plate); }
+.appbar--plate .appbar__lead:hover { background: rgb(255 255 255 / .08); }
+
+.spinner { display: inline-block; width: 24px; height: 24px; border: 2.5px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: spin .8s linear infinite; }
+@keyframes spin { to { transform: rotate(1turn); } }
+@media (prefers-reduced-motion: reduce) { .spinner { animation-duration: 2.4s; } }

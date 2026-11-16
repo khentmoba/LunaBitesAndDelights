@@ -1,0 +1,185 @@
+---
+import Kiosk from '../../layouts/Kiosk.astro';
+import { glyph } from '../../kiosk/icons';
+---
+<Kiosk title="GCash payment · Luna Bites & Delights">
+<div class="page">
+  <header class="appbar appbar--plate">
+    <button type="button" class="appbar__lead" data-cancel aria-label="Back">
+      <span class="icon" aria-hidden="true">{glyph('arrow_back')}</span>
+    </button>
+    <h1 class="appbar__title gc-title">GCASH PAYMENT</h1>
+  </header>
+
+  <main class="gc">
+    <div class="gc-state" data-loading>
+      <span class="gc-spinner" aria-hidden="true"></span>
+      <p class="gc-wait">Preparing GCash checkout...</p>
+    </div>
+
+    <div class="gc-state" data-error hidden>
+      <div class="gc-error">
+        <span class="icon gc-error__icon" aria-hidden="true">{glyph('error_outline_rounded')}</span>
+        <h2 class="gc-error__title">Payment Error</h2>
+        <p class="gc-error__text" data-error-text></p>
+        <button type="button" class="btn-filled gc-icon-btn" data-cancel><span class="icon" aria-hidden="true">{glyph('arrow_back')}</span>GO BACK</button>
+      </div>
+    </div>
+
+    <div class="gc-state" data-ready hidden>
+      <div class="gc-card">
+        <span class="icon gc-phone" aria-hidden="true">{glyph('phone_android_rounded')}</span>
+        <h2 class="gc-head">Complete GCash Payment</h2>
+        <p class="gc-body" data-summary></p>
+        <button type="button" class="btn-filled gc-icon-btn gc-open" data-open><span class="icon" aria-hidden="true">{glyph('open_in_new_rounded')}</span>OPEN PAYMENT PAGE</button>
+        <p class="gc-verify-error" data-verify-error hidden><span class="icon" aria-hidden="true">{glyph('error_outline_rounded')}</span><span data-verify-text></span></p>
+        <button type="button" class="btn-filled gc-icon-btn" data-paid><span class="icon" aria-hidden="true" data-paid-icon>{glyph('check_circle_outline_rounded')}</span><span data-paid-label>I HAVE PAID — VIEW RECEIPT</span></button>
+        <button type="button" class="gc-outlined" data-cancel data-cancel-pay>CANCEL PAYMENT</button>
+      </div>
+    </div>
+  </main>
+</div>
+</Kiosk>
+
+<style is:global>
+body { overflow: hidden; }
+.page { display: flex; flex-direction: column; height: 100dvh; background: #fff; }
+.gc-title { font-size: 16px; letter-spacing: 2px; line-height: 1.42; }
+
+/* lib/screens/gcash_checkout_page.dart, web checkout */
+.gc { flex: 1; min-height: 0; overflow-y: auto; display: flex; padding-bottom: env(safe-area-inset-bottom); }
+.gc-state { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.gc-state[hidden] { display: none; }
+.gc-spinner { width: 36px; height: 36px; border: 4px solid var(--plate); border-right-color: transparent; border-radius: 50%; animation: spin 1s linear infinite; }
+.gc-wait { margin: 16px 0 0; font-size: 14px; color: var(--ink-soft); letter-spacing: .25px; }
+
+.gc-card { width: 100%; max-width: calc(460px + 48px); margin: auto; padding: 24px; display: flex; flex-direction: column; align-items: center; text-align: center; }
+.gc-phone { font-size: 56px; color: #007DFE; }
+.gc-head { margin: 16px 0 0; font-size: 20px; font-weight: 800; letter-spacing: -.2px; line-height: 1.2; }
+.gc-body { margin: 10px 0 24px; font-size: 14px; font-weight: 500; line-height: 1.5; color: var(--ink-soft); white-space: pre-line; }
+/* FilledButton.icon: 16px start, 24px end, an 18px icon and an 8px gap. */
+.gc-icon-btn { width: 100%; padding: 0 24px 0 16px; }
+.gc-icon-btn .icon { font-size: 18px; }
+.gc-open { margin-bottom: 12px; background: #007DFE; }
+.gc-open:hover { background: color-mix(in srgb, #007DFE, white 8%); }
+.gc-icon-btn:disabled { cursor: default; opacity: 1; }
+.gc-btn-spinner { width: 18px; height: 18px; border-width: 2px; }
+.gc-verify-error { display: flex; align-items: flex-start; gap: 8px; width: 100%; margin: 0 0 14px; padding: 12px; border: 1px solid rgb(179 38 30 / .35); border-radius: var(--radius-sm); background: rgb(179 38 30 / .08); color: var(--error); font-size: 12px; font-weight: 600; line-height: 1.4; text-align: left; }
+.gc-verify-error .icon { flex: none; font-size: 18px; }
+/* OutlinedButton: stadium, 1px outline, 40px less the 8px compact density. */
+.gc-outlined { width: 100%; min-height: 32px; margin-top: 12px; padding: 0 24px; border: 1px solid var(--pink-ink); border-radius: 999px; color: var(--plate); font-size: 14px; font-weight: 500; letter-spacing: .1px; line-height: 20px; }
+.gc-outlined:hover { background: rgb(217 21 102 / .08); }
+.gc-outlined:disabled { border-color: rgb(42 15 30 / .12); color: rgb(42 15 30 / .38); cursor: default; }
+
+.gc-error { padding: 32px; display: flex; flex-direction: column; align-items: center; text-align: center; }
+.gc-error__icon { font-size: 64px; color: var(--error); }
+.gc-error__title { margin: 16px 0 8px; font-size: 20px; font-weight: 800; letter-spacing: -.2px; line-height: 1.2; color: var(--error); }
+.gc-error__text { margin: 0 0 24px; font-size: 13px; font-weight: 500; line-height: 1.5; color: var(--ink-soft); }
+.gc-error .gc-icon-btn { width: auto; }
+</style>
+
+<script>
+import { cart } from '../../kiosk/cart';
+import { callFn } from '../../kiosk/firebase';
+import { DRAFT, PENDING, RECEIPT, load, save, type CheckoutDraft, type PendingPayment } from '../../kiosk/handoff';
+import { glyph } from '../../kiosk/icons';
+import { popTo } from '../../kiosk/inactivity';
+
+const $ = <T extends Element = HTMLElement>(sel: string) => document.querySelector<T>(sel)!;
+const pending = load<PendingPayment>(PENDING);
+
+let checkoutUrl: string | null = null;
+let sessionId: string | null = null;
+let verifying = false;
+
+/** Navigator.pop(context, false): back to checkout, which says the payment did not go through. */
+function cancel() {
+  const draft = load<CheckoutDraft>(DRAFT);
+  if (draft) save(DRAFT, { ...draft, gcashCancelled: true });
+  popTo('/kiosk/checkout');
+}
+
+function show(state: 'loading' | 'error' | 'ready') {
+  $('[data-loading]').hidden = state !== 'loading';
+  $('[data-error]').hidden = state !== 'error';
+  $('[data-ready]').hidden = state !== 'ready';
+}
+
+function setVerifyError(message: string | null) {
+  $('[data-verify-error]').hidden = message === null;
+  $('[data-verify-text]').textContent = message ?? '';
+}
+
+function setVerifying(on: boolean) {
+  verifying = on;
+  const paid = $<HTMLButtonElement>('[data-paid]');
+  paid.disabled = on;
+  $<HTMLButtonElement>('[data-cancel-pay]').disabled = on;
+  const icon = $('[data-paid-icon]');
+  icon.className = on ? 'gc-btn-spinner spinner' : 'icon';
+  icon.textContent = on ? '' : glyph('check_circle_outline_rounded');
+  $('[data-paid-label]').textContent = on ? 'VERIFYING PAYMENT...' : 'I HAVE PAID — VIEW RECEIPT';
+}
+
+const openPayment = () => {
+  if (checkoutUrl) window.open(checkoutUrl, '_blank');
+};
+
+async function start(p: PendingPayment) {
+  try {
+    const data = await callFn<{ checkoutUrl: string; checkoutSessionId?: unknown }>('createCheckoutSession', {
+      orderDocId: p.orderDocId,
+      orderId: p.orderId,
+      amount: p.amount,
+      items: p.items,
+      customerName: p.customerName,
+      customerPhone: p.customerPhone,
+    });
+    checkoutUrl = data.checkoutUrl;
+    sessionId = data.checkoutSessionId == null ? null : String(data.checkoutSessionId);
+    show('ready');
+    openPayment();
+  } catch (e) {
+    $('[data-error-text]').textContent = e instanceof Error ? e.message : String(e);
+    show('error');
+  }
+}
+
+async function verify(p: PendingPayment) {
+  if (verifying) return;
+  if (!sessionId) {
+    setVerifyError('Checkout session is not ready yet. Please wait.');
+    return;
+  }
+  setVerifying(true);
+  setVerifyError(null);
+  try {
+    const res = await callFn<{ paid?: boolean; paymentStatus?: string }>('verifyCheckoutPayment', { orderDocId: p.orderDocId, checkoutSessionId: sessionId });
+    if (res.paid === true) {
+      cart.clear();
+      save(DRAFT, null);
+      save(PENDING, null);
+      save(RECEIPT, p.receipt);
+      location.replace('/kiosk/receipt');
+      return;
+    }
+    setVerifying(false);
+    setVerifyError(res.paymentStatus === 'PAYMENT_FAILED'
+      ? 'Payment was declined or failed. Please try paying again.'
+      : 'Payment has not cleared yet. Finish authorizing in the PayMongo tab, then tap again.');
+  } catch {
+    setVerifying(false);
+    setVerifyError('Unable to verify payment right now. Check your connection and try again.');
+  }
+}
+
+if (!pending) {
+  location.replace('/kiosk/checkout');
+} else {
+  $('[data-summary]').textContent = `Order #${pending.orderId} · ₱${pending.amount}\nFinish authorizing your payment in the PayMongo tab, then return here.`;
+  document.querySelectorAll('[data-cancel]').forEach((b) => b.addEventListener('click', cancel));
+  $('[data-open]').addEventListener('click', openPayment);
+  $('[data-paid]').addEventListener('click', () => void verify(pending));
+  void start(pending);
+}
+</script>

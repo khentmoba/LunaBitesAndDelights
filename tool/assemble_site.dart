@@ -41,6 +41,9 @@ void main() {
     final rel = entity.path
         .substring(storefront.path.length + 1)
         .replaceAll('\\', '/');
+    // The TypeScript kiosk ships beside the Flutter one until the cutover
+    // removes Flutter; production keeps serving Flutter at /kiosk/.
+    if (rel.startsWith('kiosk/')) continue;
     if (rel.endsWith('.json') &&
         (rel.startsWith('img/') || rel.startsWith('images/'))) {
       continue;
