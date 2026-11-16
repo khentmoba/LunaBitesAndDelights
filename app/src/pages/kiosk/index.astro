@@ -39,6 +39,15 @@ import Kiosk from '../../layouts/Kiosk.astro';
 })();
 </script>
 
+<script>
+// Staff go from the splash to the admin dashboard, as _onStart does for session.isStaff.
+import { hasStoredStaffUser } from '../../kiosk/staff-hint';
+
+void hasStoredStaffUser().then((staff) => {
+  if (staff) document.querySelector<HTMLAnchorElement>('.splash__start')!.href = '/staff/dashboard';
+});
+</script>
+
 <style is:global>
 body { overflow: hidden; }
 /* lib/screens/splash_screen.dart */

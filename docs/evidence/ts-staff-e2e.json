@@ -1,0 +1,62 @@
+{
+  "steps": [
+    {
+      "step": "wrong PIN",
+      "error": "Invalid PIN. Please try again.",
+      "stillOnLogin": true
+    },
+    {
+      "step": "right PIN",
+      "reachedKdsMs": 468,
+      "snack": "Welcome, anna! (STAFF)",
+      "authUser": {
+        "uid": "staff_anna",
+        "tokenRole": "staff"
+      },
+      "login": "ts-staff-e2e-kds-pending-1440.png"
+    },
+    {
+      "step": "tap START PREPARING",
+      "button": "START PREPARING",
+      "expected": "START PREPARING",
+      "savedStatus": "Preparing",
+      "mirrorStatus": "Preparing",
+      "nextButton": "MARK AS READY",
+      "snack": "Order updated: Preparing"
+    },
+    {
+      "step": "tap MARK AS READY",
+      "button": "MARK AS READY",
+      "expected": "MARK AS READY",
+      "savedStatus": "Ready",
+      "mirrorStatus": "Ready",
+      "nextButton": "COMPLETE & DISPATCH",
+      "snack": "Order updated: Ready"
+    },
+    {
+      "step": "board after",
+      "screenshot": "ts-staff-e2e-kds-ready-1440.png"
+    },
+    {
+      "step": "dashboard",
+      "stats": [
+        "Today's Sales: ₱263",
+        "Orders: 1",
+        "Avg order: ₱263",
+        "Items sold: 3"
+      ],
+      "welcome": "Welcome, anna!",
+      "recent": [
+        "LU-E2E-001"
+      ],
+      "screenshot": "ts-staff-e2e-dashboard-1440.png"
+    },
+    {
+      "step": "logout",
+      "landedOn": "/",
+      "staffRowsLeft": 0,
+      "kioskOrdersButtonHidden": true
+    }
+  ],
+  "errors": []
+}

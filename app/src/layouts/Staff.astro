@@ -1,0 +1,35 @@
+---
+import '../kiosk/tokens.css';
+import '../staff/staff.css';
+
+interface Props {
+  title: string;
+  /** The Scaffold colour behind the screen and its sign-in gate. */
+  ground?: 'ground' | 'blush';
+}
+const { title, ground = 'ground' } = Astro.props;
+---
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#EC1C72">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Luna Staff">
+<link rel="manifest" href="/staff/manifest.webmanifest">
+<link rel="icon" type="image/png" href="/img/favicon-32.png">
+<link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
+<link rel="preload" href="/kiosk/fonts/Bricolage-700.ttf" as="font" type="font/ttf" crossorigin>
+<link rel="preload" href="/kiosk/fonts/Bricolage-800.ttf" as="font" type="font/ttf" crossorigin>
+<link rel="preload" href="/kiosk/fonts/material-icons.woff2" as="font" type="font/woff2" crossorigin>
+<title>{title}</title>
+</head>
+<body class:list={['staff', { 'staff--blush': ground === 'blush' }]}>
+<slot />
+<script is:inline>
+if ('serviceWorker' in navigator) addEventListener('load', function () { navigator.serviceWorker.register('/staff/sw.js', { scope: '/staff/' }).catch(function () {}); });
+</script>
+</body>
+</html>

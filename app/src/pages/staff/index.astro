@@ -1,0 +1,13 @@
+---
+import Staff from '../../layouts/Staff.astro';
+import '../../staff/kds.css';
+---
+<Staff title="Luna Live Operations" ground="ground">
+<div id="app" class="staff-boot"></div>
+</Staff>
+<script>
+import { gate } from '../../staff/gate.ts';
+import { mountKds } from '../../staff/kds.ts';
+
+gate(document.getElementById('app')!, mountKds);
+</script>

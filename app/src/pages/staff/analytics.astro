@@ -1,0 +1,13 @@
+---
+import Staff from '../../layouts/Staff.astro';
+import '../../staff/reports.css';
+---
+<Staff title="Luna Sales Dashboard" ground="blush">
+<div id="app" class="staff-boot"></div>
+</Staff>
+<script>
+import { gate } from '../../staff/gate.ts';
+import { mountAnalytics } from '../../staff/reports.ts';
+
+gate(document.getElementById('app')!, mountAnalytics);
+</script>

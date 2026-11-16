@@ -359,6 +359,230 @@
       "file": "kiosk-map-1440.webp",
       "path": "/kiosk/map",
       "ready": true
+    },
+    {
+      "name": "staff-console",
+      "width": 320,
+      "file": "staff-console-320.webp",
+      "path": "/kiosk/menu?staff=1",
+      "ready": true
+    },
+    {
+      "name": "staff-console",
+      "width": 390,
+      "file": "staff-console-390.webp",
+      "path": "/kiosk/menu?staff=1",
+      "ready": true
+    },
+    {
+      "name": "staff-console",
+      "width": 768,
+      "file": "staff-console-768.webp",
+      "path": "/kiosk/menu?staff=1",
+      "ready": true
+    },
+    {
+      "name": "staff-console",
+      "width": 1440,
+      "file": "staff-console-1440.webp",
+      "path": "/kiosk/menu?staff=1",
+      "ready": true
+    },
+    {
+      "name": "staff-login",
+      "width": 320,
+      "file": "staff-login-320.webp",
+      "path": "/staff/",
+      "ready": true
+    },
+    {
+      "name": "staff-login",
+      "width": 390,
+      "file": "staff-login-390.webp",
+      "path": "/staff/",
+      "ready": true
+    },
+    {
+      "name": "staff-login",
+      "width": 768,
+      "file": "staff-login-768.webp",
+      "path": "/staff/",
+      "ready": true
+    },
+    {
+      "name": "staff-login",
+      "width": 1440,
+      "file": "staff-login-1440.webp",
+      "path": "/staff/",
+      "ready": true
+    },
+    {
+      "name": "staff-kds",
+      "width": 320,
+      "file": "staff-kds-320.webp",
+      "path": "/staff/kds?staff=1",
+      "ready": true
+    },
+    {
+      "name": "staff-kds",
+      "width": 390,
+      "file": "staff-kds-390.webp",
+      "path": "/staff/kds?staff=1",
+      "ready": true
+    },
+    {
+      "name": "staff-kds",
+      "width": 768,
+      "file": "staff-kds-768.webp",
+      "path": "/staff/kds?staff=1",
+      "ready": true
+    },
+    {
+      "name": "staff-kds",
+      "width": 1440,
+      "file": "staff-kds-1440.webp",
+      "path": "/staff/kds?staff=1",
+      "ready": true
+    },
+    {
+      "name": "staff-dashboard",
+      "width": 320,
+      "file": "staff-dashboard-320.webp",
+      "path": "/staff/dashboard?staff=1",
+      "ready": true
+    },
+    {
+      "name": "staff-dashboard",
+      "width": 390,
+      "file": "staff-dashboard-390.webp",
+      "path": "/staff/dashboard?staff=1",
+      "ready": true
+    },
+    {
+      "name": "staff-dashboard",
+      "width": 768,
+      "file": "staff-dashboard-768.webp",
+      "path": "/staff/dashboard?staff=1",
+      "ready": true
+    },
+    {
+      "name": "staff-dashboard",
+      "width": 1440,
+      "file": "staff-dashboard-1440.webp",
+      "path": "/staff/dashboard?staff=1",
+      "ready": true
+    },
+    {
+      "name": "staff-analytics",
+      "width": 320,
+      "file": "staff-analytics-320.webp",
+      "path": "/staff/analytics?staff=1",
+      "ready": true
+    },
+    {
+      "name": "staff-analytics",
+      "width": 390,
+      "file": "staff-analytics-390.webp",
+      "path": "/staff/analytics?staff=1",
+      "ready": true
+    },
+    {
+      "name": "staff-analytics",
+      "width": 768,
+      "file": "staff-analytics-768.webp",
+      "path": "/staff/analytics?staff=1",
+      "ready": true
+    },
+    {
+      "name": "staff-analytics",
+      "width": 1440,
+      "file": "staff-analytics-1440.webp",
+      "path": "/staff/analytics?staff=1",
+      "ready": true
+    },
+    {
+      "name": "staff-lifetime",
+      "width": 320,
+      "file": "staff-lifetime-320.webp",
+      "path": "/staff/lifetime?staff=1",
+      "ready": true
+    },
+    {
+      "name": "staff-lifetime",
+      "width": 390,
+      "file": "staff-lifetime-390.webp",
+      "path": "/staff/lifetime?staff=1",
+      "ready": true
+    },
+    {
+      "name": "staff-lifetime",
+      "width": 768,
+      "file": "staff-lifetime-768.webp",
+      "path": "/staff/lifetime?staff=1",
+      "ready": true
+    },
+    {
+      "name": "staff-lifetime",
+      "width": 1440,
+      "file": "staff-lifetime-1440.webp",
+      "path": "/staff/lifetime?staff=1",
+      "ready": true
+    },
+    {
+      "name": "staff-menu",
+      "width": 320,
+      "file": "staff-menu-320.webp",
+      "path": "/kiosk/menu?staff=1",
+      "ready": true
+    },
+    {
+      "name": "staff-menu",
+      "width": 390,
+      "file": "staff-menu-390.webp",
+      "path": "/kiosk/menu?staff=1",
+      "ready": true
+    },
+    {
+      "name": "staff-menu",
+      "width": 768,
+      "file": "staff-menu-768.webp",
+      "path": "/kiosk/menu?staff=1",
+      "ready": true
+    },
+    {
+      "name": "staff-menu",
+      "width": 1440,
+      "file": "staff-menu-1440.webp",
+      "path": "/kiosk/menu?staff=1",
+      "ready": true
+    },
+    {
+      "name": "staff-checkout",
+      "width": 320,
+      "file": "staff-checkout-320.webp",
+      "path": "/kiosk/checkout?cart=1&staff=1",
+      "ready": true
+    },
+    {
+      "name": "staff-checkout",
+      "width": 390,
+      "file": "staff-checkout-390.webp",
+      "path": "/kiosk/checkout?cart=1&staff=1",
+      "ready": true
+    },
+    {
+      "name": "staff-checkout",
+      "width": 768,
+      "file": "staff-checkout-768.webp",
+      "path": "/kiosk/checkout?cart=1&staff=1",
+      "ready": true
+    },
+    {
+      "name": "staff-checkout",
+      "width": 1440,
+      "file": "staff-checkout-1440.webp",
+      "path": "/kiosk/checkout?cart=1&staff=1",
+      "ready": true
     }
   ],
   "timedOut": [],

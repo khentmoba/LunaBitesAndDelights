@@ -443,6 +443,62 @@
       "file": "staff-lifetime-1440.webp",
       "path": "/kiosk/?staff=1#/lifetime-analytics",
       "ready": true
+    },
+    {
+      "name": "staff-menu",
+      "width": 320,
+      "file": "staff-menu-320.webp",
+      "path": "/kiosk/?staff=1#/menu",
+      "ready": true
+    },
+    {
+      "name": "staff-menu",
+      "width": 390,
+      "file": "staff-menu-390.webp",
+      "path": "/kiosk/?staff=1#/menu",
+      "ready": true
+    },
+    {
+      "name": "staff-menu",
+      "width": 768,
+      "file": "staff-menu-768.webp",
+      "path": "/kiosk/?staff=1#/menu",
+      "ready": true
+    },
+    {
+      "name": "staff-menu",
+      "width": 1440,
+      "file": "staff-menu-1440.webp",
+      "path": "/kiosk/?staff=1#/menu",
+      "ready": true
+    },
+    {
+      "name": "staff-checkout",
+      "width": 320,
+      "file": "staff-checkout-320.webp",
+      "path": "/kiosk/?staff=1&cart=1&push=checkout#/menu",
+      "ready": true
+    },
+    {
+      "name": "staff-checkout",
+      "width": 390,
+      "file": "staff-checkout-390.webp",
+      "path": "/kiosk/?staff=1&cart=1&push=checkout#/menu",
+      "ready": true
+    },
+    {
+      "name": "staff-checkout",
+      "width": 768,
+      "file": "staff-checkout-768.webp",
+      "path": "/kiosk/?staff=1&cart=1&push=checkout#/menu",
+      "ready": true
+    },
+    {
+      "name": "staff-checkout",
+      "width": 1440,
+      "file": "staff-checkout-1440.webp",
+      "path": "/kiosk/?staff=1&cart=1&push=checkout#/menu",
+      "ready": true
     }
   ],
   "timedOut": [],

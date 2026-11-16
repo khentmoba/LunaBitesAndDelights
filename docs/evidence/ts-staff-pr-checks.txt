@@ -1,0 +1,51 @@
+# Local run of .github/workflows/pr-checks.yml — 2026-11-15T18:04:48Z
+
+## flutter: analyze
+Analyzing luna-ts-staff...                                      
+No issues found! (ran in 45.0s)
+Analyzer issues: 0 (baseline 0).
+baseline exit 0
+
+## flutter: format (changed Dart files)
+tool/assemble_site.dart
+tool/parity/flutter_preview.dart
+Formatted 2 files (0 changed) in 0.01 seconds.
+format exit 0
+
+## flutter: test
+00:04 +84: All tests passed!
+
+## flutter: web build
+√ Built build\web
+
+## functions: build + audit
+npm run build: exit 0
+npm audit --audit-level=high: exit 0
+
+## rules: emulator tests (JDK 21)
+ℹ tests 23
+ℹ pass 23
+ℹ fail 0
+exit 0
+
+## site: npm ci + astro check + build + tests
+- 0 errors
+- 0 warnings
+- 0 hints
+02:08:14 [build] 17 page(s) built in 820ms
+02:08:14 [build] Complete!
+ℹ tests 47
+ℹ pass 47
+ℹ fail 0
+
+## deploy assembly (firebase-hosting-merge.yml steps)
+flutter build web --release --wasm --base-href /kiosk/ && dart run tool/assemble_site.dart
+storefront: build/web/index.html (+60 files)
+kiosk: build/web/kiosk/index.html  (Flutter; no TypeScript kiosk or staff pages copied: build/web/staff does not exist)
+(run with MSYS_NO_PATHCONV=1 so Git Bash keeps --base-href /kiosk/ as written)
+
+## Re-run after review round 1 fixes
+- astro check: 0 errors, 0 warnings, 0 hints
+- npm run build: 17 page(s) built
+- test:site: 47 pass, 0 fail
+- tool/parity/staff_e2e.mjs: exit 0, logout leaves 0 staff_ rows in Auth's IndexedDB

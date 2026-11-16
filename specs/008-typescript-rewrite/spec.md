@@ -47,7 +47,7 @@ One TypeScript codebase that serves the storefront, customer ordering and the st
 | Dashboard | `#/dashboard` | `/staff/dashboard` |
 | Analytics, lifetime analytics | `#/analytics`, `#/lifetime-analytics` | `/staff/analytics`, `/staff/lifetime` |
 
-Not yet in the automated set (need taps): the item customisation sheet and the staff menu dialog. They are captured by hand in the PR that rebuilds them.
+Not yet in the automated set (need taps): the item customisation sheet. The staff console sheet has a TypeScript-only capture (`staff-console`); Flutter's harness cannot open it. POS checkout (`staff-menu`, `staff-checkout`) was added to the baseline in step 4.
 
 TypeScript only, no Flutter baseline (the preview harness cannot reach them): checkout with a pinned delivery (`kiosk-checkout-delivery`) and the map picker (`kiosk-map`, `/kiosk/map`).
 
@@ -60,7 +60,7 @@ Callable Functions used by the client: `createCheckoutSession`, `verifyCheckoutP
 1. **Baseline** (this PR): parity harness (`tool/parity/`), Flutter screenshots of every screen, this spec.
 2. **Foundation**: Astro + TypeScript app in `app/`, storefront ported (same markup and CSS), typed menu in `app/src/data/menu.ts` that the storefront prints prices from, CI job.
 3. **Customer ordering**: kiosk tokens as CSS variables, order types, menu, cart, checkout, delivery map, GCash/PayMongo, receipt. Built into `build/app/kiosk/` but left out of the deployed site by `tool/assemble_site.dart`; step 5 switches `/kiosk/` over. Build-time settings: `PUBLIC_MAPTILER_KEY` (map tiles), `PUBLIC_RECAPTCHA_SITE_KEY` (App Check), `PUBLIC_FIREBASE_EMULATORS=1` (local emulators). `tool/parity/order_e2e.mjs` places real orders against the emulators.
-4. **Staff**: login, kitchen display, dashboard, analytics, PWA.
+4. **Staff**: `/staff/` login (PIN and password through `verifyStaff`), `/staff/kds` kitchen display (live `kds_orders` mirror plus the `getActiveOrders` poll, chime, rider dispatch note), `/staff/dashboard`, `/staff/analytics`, `/staff/lifetime`, and an installable PWA manifest scoped to `/staff/`. The kiosk gains the staff hooks: the ORDERS shortcut and "Staff console" sheet on the menu, the splash routing staff to the dashboard, and POS checkout (Walk-In, optional name and phone). Customer pages learn a staff user is signed in by reading the Firebase Auth IndexedDB row, without loading the SDK. Built into `build/app/staff/` and left out of the deployed site like the kiosk. Known differences: Custom date range opens a start/end date dialog instead of Material's calendar, and report numbers print as integers where the dart2wasm build printed `₱1202.0`.
 5. **Cutover**: delete Flutter and Dart, update deploy workflows and `firebase.json`.
 
 The live site keeps running the Flutter kiosk until step 5 merges.
