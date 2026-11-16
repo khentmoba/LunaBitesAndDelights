@@ -129,6 +129,7 @@ let results: Place[] = [];
 let searchTimer = 0;
 let addressTimer = 0;
 let moving = false;
+let userInteracted = false;
 
 const map = L.map($('[data-map]'), { center: [lat, lng], zoom: 17, zoomControl: false, attributionControl: Boolean(tileUrl) });
 if (tileUrl) {
@@ -168,6 +169,10 @@ async function fetchAddress(la: number, ln: number) {
   render();
 }
 
+map.on('movestart', () => {
+  if (!moving) userInteracted = true;
+});
+
 map.on('moveend', () => {
   if (moving) return;
   const c = map.getCenter();
@@ -183,6 +188,7 @@ async function goToMyLocation() {
   lat = pos.lat;
   lng = pos.lng;
   clearTimeout(addressTimer);
+  userInteracted = true;
   moveTo(lat, lng);
   await fetchAddress(lat, lng);
 }
@@ -235,6 +241,7 @@ list.addEventListener('click', (e) => {
   showResults(false);
   setSearching(false);
   clearTimeout(addressTimer);
+  userInteracted = true;
   moveTo(lat, lng);
   render();
 });
@@ -268,7 +275,9 @@ $('[data-back]').addEventListener('click', () => popTo('/kiosk/checkout'));
 
 render();
 void (async () => {
+  if (draft?.pinned) return;
   const pos = await currentPosition();
+  if (userInteracted) return;
   if (pos) {
     lat = pos.lat;
     lng = pos.lng;

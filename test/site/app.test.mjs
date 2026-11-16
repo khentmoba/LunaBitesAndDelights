@@ -447,6 +447,7 @@ test('notice pages render expected headings, links, and inline styles', () => {
     const html = readFileSync(c.file, 'utf8');
     const doc = new JSDOM(html).window.document;
     assert.equal(doc.querySelector('h1')?.textContent, c.heading);
+    assert.equal(doc.querySelector('link[rel="icon"]')?.getAttribute('href'), '/img/favicon-32.png');
     assert.deepEqual([...doc.querySelectorAll('.actions a')].map((a) => a.getAttribute('href')), c.links);
     assert.ok(inlineStyleOf(html).includes('.card{'), `${c.file} keeps inline card styles`);
   }
