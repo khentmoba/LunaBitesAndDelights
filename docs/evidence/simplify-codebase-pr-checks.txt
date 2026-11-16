@@ -1,14 +1,14 @@
-﻿=== functions: npm run build ===
+﻿=== functions: npm run build / lint / test / audit ===
 
 > build
 > tsc
 
-=== functions: npm run lint ===
+
 
 > lint
 > eslint
 
-=== functions: npm test ===
+
 
 > test
 > npm run build && node --test test/telegram_notification.test.js test/payment_reconciliation.test.js test/staff_auth.test.js test/daily_stats.test.js
@@ -17,54 +17,56 @@
 > build
 > tsc
 
-✔ report from day summaries matches the old order scan (24.417ms)
-✔ summing per-write deltas equals recounting the final orders (53.3411ms)
-✔ status-only and bookkeeping writes produce no stats write (0.2917ms)
-✔ a date correction moves the order between days (0.1488ms)
-✔ unpaid GCash orders do not count until payment lands (0.2882ms)
-✔ stored docs round-trip and tolerate missing fields (0.4329ms)
-✔ prefers the order document id from metadata (0.7485ms)
-✔ falls back to reference_number for sessions created before this change (0.1215ms)
-✔ ignores metadata that is not a plain document id (0.1366ms)
-✔ returns null when the payload has no usable id (0.1146ms)
-✔ verifyPaymongoSignature validates HMAC-SHA256 when secret is set (0.6058ms)
-✔ PayMongo payment status helpers identify paid vs failed sessions (0.184ms)
-✔ KDS projection excludes unconfirmed GCash and handles invalid timestamps cleanly (0.358ms)
-✔ hasMatchingCheckoutSession rejects unbound or mismatched orders (0.1364ms)
+✔ report from day summaries matches the old order scan (20.0413ms)
+✔ summing per-write deltas equals recounting the final orders (53.0244ms)
+✔ status-only and bookkeeping writes produce no stats write (0.2788ms)
+✔ a date correction moves the order between days (0.147ms)
+✔ unpaid GCash orders do not count until payment lands (0.2146ms)
+✔ stored docs round-trip and tolerate missing fields (0.3998ms)
+✔ prefers the order document id from metadata (0.7995ms)
+✔ falls back to reference_number for sessions created before this change (0.1286ms)
+✔ ignores metadata that is not a plain document id (0.1304ms)
+✔ returns null when the payload has no usable id (0.1016ms)
+✔ verifyPaymongoSignature validates HMAC-SHA256 when secret is set (0.6199ms)
+✔ PayMongo payment status helpers identify paid vs failed sessions (0.1923ms)
+✔ KDS projection excludes unconfirmed GCash and handles invalid timestamps cleanly (0.3644ms)
+✔ hasMatchingCheckoutSession rejects unbound or mismatched orders (0.1353ms)
+✔ projectOrder projects KDS fields and sums item quantities from quantity or qty (1.3446ms)
+✔ fetchSessionPayments sends Basic auth and handles non-OK responses (0.3388ms)
 ▶ staff auth: scrypt PIN and password verification
-  ✔ hashes and verifies a 4-digit PIN (175.1778ms)
-  ✔ hashes and verifies a staff password (85.1169ms)
-  ✔ timing-safe comparison rejects tampered or mismatched-length hash cleanly (57.6974ms)
-  ✔ isCountableOrder excludes cancelled and unpaid/failed GCash orders (0.1547ms)
-✔ staff auth: scrypt PIN and password verification (319.3343ms)
+  ✔ hashes and verifies a 4-digit PIN (172.7526ms)
+  ✔ hashes and verifies a staff password (86.0823ms)
+  ✔ timing-safe comparison rejects tampered or mismatched-length hash cleanly (58.2ms)
+  ✔ isCountableOrder excludes cancelled and unpaid/failed GCash orders (0.1578ms)
+✔ staff auth: scrypt PIN and password verification (318.2699ms)
 {"error":"ETELEGRAM: 400 Bad Request: can't parse entities: Character '(' is reserved","chatId":"111","severity":"WARNING","message":"sendToAll: MarkdownV2 parsing failed for chat 111; falling back to plain text"}
 {"error":"ETELEGRAM: 400 Bad Request: can't parse entities: Character '(' is reserved","chatId":"222","severity":"WARNING","message":"sendToAll: MarkdownV2 parsing failed for chat 222; falling back to plain text"}
 {"error":"ETELEGRAM: 400 Bad Request: can't parse entities","chatId":"333","severity":"WARNING","message":"sendPhotoToAll: MarkdownV2 parsing failed for chat 333; falling back to plain text caption"}
 {"error":"ETELEGRAM: 400 Bad Request: can't parse entities","chatId":"444","severity":"WARNING","message":"sendPhotoToAll: MarkdownV2 parsing failed for chat 444; falling back to plain text caption"}
-{"severity":"ERROR","message":"Error: sendToAll: 2 of 2 messages failed [\n  { chatId: '111', error: 'network down' },\n  { chatId: '222', error: 'network down' }\n]\n    at entryFromArgs (C:\\Users\\Admin\\.t3\\worktrees\\LunaBites and Delights\\t3-1709f546-1f387696beed5d31\\functions\\node_modules\\firebase-functions\\lib\\logger\\index.js:144:19)\n    at Object.error (C:\\Users\\Admin\\.t3\\worktrees\\LunaBites and Delights\\t3-1709f546-1f387696beed5d31\\functions\\node_modules\\firebase-functions\\lib\\logger\\index.js:131:11)\n    at deliverToAll (C:\\Users\\Admin\\.t3\\worktrees\\LunaBites and Delights\\t3-1709f546-1f387696beed5d31\\functions\\lib\\telegram_api.js:69:37)\n    at async waitForActual (node:assert:646:5)\n    at async strict.rejects (node:assert:769:25)\n    at async TestContext.<anonymous> (C:\\Users\\Admin\\.t3\\worktrees\\LunaBites and Delights\\t3-1709f546-1f387696beed5d31\\functions\\test\\telegram_notification.test.js:363:5)\n    at async Test.run (node:internal/test_runner/test:1409:7)\n    at async Suite.processPendingSubtests (node:internal/test_runner/test:974:7)"}
-{"severity":"ERROR","message":"Error: sendPhotoToAll: 2 of 2 messages failed [\n  { chatId: '111', error: 'network down' },\n  { chatId: '222', error: 'network down' }\n]\n    at entryFromArgs (C:\\Users\\Admin\\.t3\\worktrees\\LunaBites and Delights\\t3-1709f546-1f387696beed5d31\\functions\\node_modules\\firebase-functions\\lib\\logger\\index.js:144:19)\n    at Object.error (C:\\Users\\Admin\\.t3\\worktrees\\LunaBites and Delights\\t3-1709f546-1f387696beed5d31\\functions\\node_modules\\firebase-functions\\lib\\logger\\index.js:131:11)\n    at deliverToAll (C:\\Users\\Admin\\.t3\\worktrees\\LunaBites and Delights\\t3-1709f546-1f387696beed5d31\\functions\\lib\\telegram_api.js:69:37)\n    at async waitForActual (node:assert:646:5)\n    at async strict.rejects (node:assert:769:25)\n    at async TestContext.<anonymous> (C:\\Users\\Admin\\.t3\\worktrees\\LunaBites and Delights\\t3-1709f546-1f387696beed5d31\\functions\\test\\telegram_notification.test.js:364:5)\n    at async Test.run (node:internal/test_runner/test:1409:7)\n    at async Suite.processPendingSubtests (node:internal/test_runner/test:974:7)"}
+{"severity":"ERROR","message":"Error: sendToAll: 2 of 2 messages failed [\n  { chatId: '111', error: 'network down' },\n  { chatId: '222', error: 'network down' }\n]\n    at entryFromArgs (C:\\Users\\Admin\\.t3\\worktrees\\LunaBites and Delights\\t3-8841c8b6-efb0fb4133c6a34e\\functions\\node_modules\\firebase-functions\\lib\\logger\\index.js:144:19)\n    at Object.error (C:\\Users\\Admin\\.t3\\worktrees\\LunaBites and Delights\\t3-8841c8b6-efb0fb4133c6a34e\\functions\\node_modules\\firebase-functions\\lib\\logger\\index.js:131:11)\n    at deliverToAll (C:\\Users\\Admin\\.t3\\worktrees\\LunaBites and Delights\\t3-8841c8b6-efb0fb4133c6a34e\\functions\\lib\\telegram_api.js:69:37)\n    at async waitForActual (node:assert:646:5)\n    at async strict.rejects (node:assert:769:25)\n    at async TestContext.<anonymous> (C:\\Users\\Admin\\.t3\\worktrees\\LunaBites and Delights\\t3-8841c8b6-efb0fb4133c6a34e\\functions\\test\\telegram_notification.test.js:363:5)\n    at async Test.run (node:internal/test_runner/test:1409:7)\n    at async Suite.processPendingSubtests (node:internal/test_runner/test:974:7)"}
+{"severity":"ERROR","message":"Error: sendPhotoToAll: 2 of 2 messages failed [\n  { chatId: '111', error: 'network down' },\n  { chatId: '222', error: 'network down' }\n]\n    at entryFromArgs (C:\\Users\\Admin\\.t3\\worktrees\\LunaBites and Delights\\t3-8841c8b6-efb0fb4133c6a34e\\functions\\node_modules\\firebase-functions\\lib\\logger\\index.js:144:19)\n    at Object.error (C:\\Users\\Admin\\.t3\\worktrees\\LunaBites and Delights\\t3-8841c8b6-efb0fb4133c6a34e\\functions\\node_modules\\firebase-functions\\lib\\logger\\index.js:131:11)\n    at deliverToAll (C:\\Users\\Admin\\.t3\\worktrees\\LunaBites and Delights\\t3-8841c8b6-efb0fb4133c6a34e\\functions\\lib\\telegram_api.js:69:37)\n    at async waitForActual (node:assert:646:5)\n    at async strict.rejects (node:assert:769:25)\n    at async TestContext.<anonymous> (C:\\Users\\Admin\\.t3\\worktrees\\LunaBites and Delights\\t3-8841c8b6-efb0fb4133c6a34e\\functions\\test\\telegram_notification.test.js:364:5)\n    at async Test.run (node:internal/test_runner/test:1409:7)\n    at async Suite.processPendingSubtests (node:internal/test_runner/test:974:7)"}
 ▶ Telegram MarkdownV2 escaping and order notifications
-  ✔ escapeMd escapes all Telegram MarkdownV2 reserved characters (1.0939ms)
-  ✔ escapeMd handles numbers, null, and undefined without throwing (0.1441ms)
-  ✔ item line with variant must have escaped parentheses in MarkdownV2 (0.7308ms)
-  ✔ full order notification messages must be valid MarkdownV2 (0.4759ms)
-  ✔ stripMarkdownV2 removes backslash escapes cleanly for plain-text fallback (0.1695ms)
-  ✔ sendToAll falls back to plain text when Telegram rejects entity parsing (1.1506ms)
-  ✔ map URL helpers generate valid Google and MapTiler URLs (0.2506ms)
-  ✔ formatDeliverySummaryCaption generates valid MarkdownV2 under 1024 chars (0.2335ms)
-  ✔ sendPhotoToAll sends photo with caption and reply_markup, and falls back to plain text on entity parse error (0.5449ms)
-  ✔ isMarkdownParseError matches Telegram entity parse errors without false-matching plain 400 text (0.1575ms)
-  ✔ sendToAll and sendPhotoToAll fail cleanly when unconfigured or all recipients reject (1.3638ms)
-✔ Telegram MarkdownV2 escaping and order notifications (7.7865ms)
-ℹ tests 29
+  ✔ escapeMd escapes all Telegram MarkdownV2 reserved characters (0.9471ms)
+  ✔ escapeMd handles numbers, null, and undefined without throwing (0.1524ms)
+  ✔ item line with variant must have escaped parentheses in MarkdownV2 (0.7919ms)
+  ✔ full order notification messages must be valid MarkdownV2 (0.5026ms)
+  ✔ stripMarkdownV2 removes backslash escapes cleanly for plain-text fallback (0.2044ms)
+  ✔ sendToAll falls back to plain text when Telegram rejects entity parsing (1.43ms)
+  ✔ map URL helpers generate valid Google and MapTiler URLs (0.5439ms)
+  ✔ formatDeliverySummaryCaption generates valid MarkdownV2 under 1024 chars (0.5079ms)
+  ✔ sendPhotoToAll sends photo with caption and reply_markup, and falls back to plain text on entity parse error (0.5496ms)
+  ✔ isMarkdownParseError matches Telegram entity parse errors without false-matching plain 400 text (0.1626ms)
+  ✔ sendToAll and sendPhotoToAll fail cleanly when unconfigured or all recipients reject (1.5109ms)
+✔ Telegram MarkdownV2 escaping and order notifications (8.7835ms)
+ℹ tests 31
 ℹ suites 2
-ℹ pass 29
+ℹ pass 31
 ℹ fail 0
 ℹ cancelled 0
 ℹ skipped 0
 ℹ todo 0
-ℹ duration_ms 598.0427
-=== functions: npm audit --audit-level=high ===
+ℹ duration_ms 593.619
+
 # npm audit report
 
 fast-xml-parser  <=5.11.2
@@ -152,63 +154,64 @@ To address issues that do not require attention, run:
 
 To address all issues (including breaking changes), run:
   npm audit fix --force
-=== app: npm run check ===
+
+=== app: npm run check / build / audit ===
 
 > check
 > astro check
 
-[2m13:03:56[22m [34m[types][39m Generated [2m51ms[22m
-[2m13:03:56[22m [34m[check][39m Getting diagnostics for Astro files in C:\Users\Admin\.t3\worktrees\LunaBites and Delights\t3-1709f546-1f387696beed5d31\app...
-Result (51 files): 
+[2m13:31:12[22m [34m[types][39m Generated [2m52ms[22m
+[2m13:31:12[22m [34m[check][39m Getting diagnostics for Astro files in C:\Users\Admin\.t3\worktrees\LunaBites and Delights\t3-8841c8b6-efb0fb4133c6a34e\app...
+Result (53 files): 
 - 0 errors
 - 0 warnings
 - 0 hints
 
-=== app: npm run build ===
+
 
 > build
 > astro build
 
-[2m13:04:00[22m [34m[types][39m Generated [2m57ms[22m
-[2m13:04:00[22m [34m[build][39m output: [34m"static"[39m
-[2m13:04:00[22m [34m[build][39m mode: [34m"static"[39m
-[2m13:04:00[22m [34m[build][39m directory: [34mC:\Users\Admin\.t3\worktrees\LunaBites and Delights\t3-1709f546-1f387696beed5d31\build\app\[39m
-[2m13:04:00[22m [34m[build][39m Collecting build info...
-[2m13:04:00[22m [34m[build][39m [32m✓ Completed in 80ms.[39m
-[2m13:04:00[22m [34m[build][39m Building static entrypoints...
-[2m13:04:00[22m [34m[vite][39m [32m✓ built in 213ms[39m
-[33m[1m13:04:00[22m [WARN] [vite][39m [33m[plugin builtin:vite-reporter] 
+[2m13:31:16[22m [34m[types][39m Generated [2m59ms[22m
+[2m13:31:16[22m [34m[build][39m output: [34m"static"[39m
+[2m13:31:16[22m [34m[build][39m mode: [34m"static"[39m
+[2m13:31:16[22m [34m[build][39m directory: [34mC:\Users\Admin\.t3\worktrees\LunaBites and Delights\t3-8841c8b6-efb0fb4133c6a34e\build\app\[39m
+[2m13:31:16[22m [34m[build][39m Collecting build info...
+[2m13:31:16[22m [34m[build][39m [32m✓ Completed in 82ms.[39m
+[2m13:31:16[22m [34m[build][39m Building static entrypoints...
+[2m13:31:16[22m [34m[vite][39m [32m✓ built in 218ms[39m
+[33m[1m13:31:16[22m [WARN] [vite][39m [33m[plugin builtin:vite-reporter] 
 (!) Some chunks are larger than 500 kB after minification. Consider:
 - Using dynamic import() to code-split the application
 - Use build.rolldownOptions.output.codeSplitting to improve chunking: https://rolldown.rs/reference/OutputOptions.codeSplitting
 - Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.[39m
-[2m13:04:00[22m [34m[vite][39m [32m✓ built in 293ms[39m
-[2m13:04:00[22m [34m[build][39m Rearranging server assets...
+[2m13:31:16[22m [34m[vite][39m [32m✓ built in 284ms[39m
+[2m13:31:16[22m [34m[build][39m Rearranging server assets...
 
 [42m[30m generating static routes [39m[49m
-[2m13:04:00[22m   [34m├─[39m [2m/404.html[22m [2m(+8ms)[22m 
-[2m13:04:00[22m   [34m├─[39m [2m/kiosk/cart/index.html[22m [2m(+5ms)[22m 
-[2m13:04:00[22m   [34m├─[39m [2m/kiosk/checkout/index.html[22m [2m(+3ms)[22m 
-[2m13:04:00[22m   [34m├─[39m [2m/kiosk/gcash/index.html[22m [2m(+2ms)[22m 
-[2m13:04:00[22m   [34m├─[39m [2m/kiosk/map/index.html[22m [2m(+3ms)[22m 
-[2m13:04:00[22m   [34m├─[39m [2m/kiosk/menu/index.html[22m [2m(+5ms)[22m 
-[2m13:04:00[22m   [34m├─[39m [2m/kiosk/receipt/index.html[22m [2m(+2ms)[22m 
-[2m13:04:00[22m   [34m├─[39m [2m/kiosk/index.html[22m [2m(+2ms)[22m 
-[2m13:04:00[22m   [34m├─[39m [2m/menu/index.html[22m [2m(+4ms)[22m 
-[2m13:04:00[22m   [34m├─[39m [2m/payment/cancel/index.html[22m [2m(+2ms)[22m 
-[2m13:04:00[22m   [34m├─[39m [2m/payment/success/index.html[22m [2m(+2ms)[22m 
-[2m13:04:00[22m   [34m├─[39m [2m/staff/analytics/index.html[22m [2m(+3ms)[22m 
-[2m13:04:00[22m   [34m├─[39m [2m/staff/dashboard/index.html[22m [2m(+2ms)[22m 
-[2m13:04:00[22m   [34m├─[39m [2m/staff/kds/index.html[22m [2m(+2ms)[22m 
-[2m13:04:00[22m   [34m├─[39m [2m/staff/lifetime/index.html[22m [2m(+2ms)[22m 
-[2m13:04:00[22m   [34m├─[39m [2m/staff/index.html[22m [2m(+3ms)[22m 
-[2m13:04:00[22m   [34m├─[39m [2m/index.html[22m [2m(+4ms)[22m 
-[2m13:04:00[22m [32m✓ Completed in 102ms.
+[2m13:31:16[22m   [34m├─[39m [2m/404.html[22m [2m(+9ms)[22m 
+[2m13:31:16[22m   [34m├─[39m [2m/kiosk/cart/index.html[22m [2m(+4ms)[22m 
+[2m13:31:16[22m   [34m├─[39m [2m/kiosk/checkout/index.html[22m [2m(+3ms)[22m 
+[2m13:31:16[22m   [34m├─[39m [2m/kiosk/gcash/index.html[22m [2m(+2ms)[22m 
+[2m13:31:16[22m   [34m├─[39m [2m/kiosk/map/index.html[22m [2m(+3ms)[22m 
+[2m13:31:16[22m   [34m├─[39m [2m/kiosk/menu/index.html[22m [2m(+5ms)[22m 
+[2m13:31:16[22m   [34m├─[39m [2m/kiosk/receipt/index.html[22m [2m(+3ms)[22m 
+[2m13:31:16[22m   [34m├─[39m [2m/kiosk/index.html[22m [2m(+3ms)[22m 
+[2m13:31:16[22m   [34m├─[39m [2m/menu/index.html[22m [2m(+6ms)[22m 
+[2m13:31:16[22m   [34m├─[39m [2m/payment/cancel/index.html[22m [2m(+3ms)[22m 
+[2m13:31:16[22m   [34m├─[39m [2m/payment/success/index.html[22m [2m(+2ms)[22m 
+[2m13:31:16[22m   [34m├─[39m [2m/staff/analytics/index.html[22m [2m(+3ms)[22m 
+[2m13:31:16[22m   [34m├─[39m [2m/staff/dashboard/index.html[22m [2m(+20ms)[22m 
+[2m13:31:16[22m   [34m├─[39m [2m/staff/kds/index.html[22m [2m(+2ms)[22m 
+[2m13:31:16[22m   [34m├─[39m [2m/staff/lifetime/index.html[22m [2m(+2ms)[22m 
+[2m13:31:16[22m   [34m├─[39m [2m/staff/index.html[22m [2m(+2ms)[22m 
+[2m13:31:16[22m   [34m├─[39m [2m/index.html[22m [2m(+5ms)[22m 
+[2m13:31:16[22m [32m✓ Completed in 125ms.
 [39m
-[2m13:04:00[22m [34m[build][39m [32m✓ Completed in 661ms.[39m
-[2m13:04:00[22m [34m[build][39m 17 page(s) built in [1m776ms[22m
-[2m13:04:00[22m [34m[build][39m [1mComplete![22m
-=== app: npm audit --audit-level=high ===
+[2m13:31:16[22m [34m[build][39m [32m✓ Completed in 680ms.[39m
+[2m13:31:16[22m [34m[build][39m 17 page(s) built in [1m791ms[22m
+[2m13:31:16[22m [34m[build][39m [1mComplete![22m
+
 # npm audit report
 
 astro  <=7.4.6
@@ -223,65 +226,69 @@ node_modules/astro
 
 To address all issues, run:
   npm audit fix --force
+
 === root: npm run test:site ===
 
 > test:site
 > node --test test/site/app.test.mjs test/site/hosting.test.mjs test/site/menu.test.mjs test/site/kiosk.test.mjs test/site/staff.test.mjs
 
-✔ both pages inline their script and stylesheet with no external CSS/JS or cache-busting params (1.254ms)
-✔ inline style blocks have valid balanced CSS (0.3185ms)
-✔ the menu page keeps the bar and reveal behaviour (129.7809ms)
-✔ the bar only sticks once the page has scrolled (72.3555ms)
-✔ reduced motion hides nothing and writes no reveal state (40.3431ms)
-✔ without IntersectionObserver the menu and photos appear at once (36.821ms)
-✔ with IntersectionObserver the reveal waits for the section to arrive (35.5958ms)
-✔ a section that never intersects stays unrevealed (27.5803ms)
-✔ the map and street view swap one at a time (40.6795ms)
-✔ a weak device keeps every line visible and starts no observers (24.4464ms)
-✔ both pages flag weak devices before the stylesheet (0.2371ms)
-✔ font preloads match the inline stylesheet so each font is fetched once (0.1653ms)
-✔ the hero logo is responsive and the hidden bar logo is not preloaded (0.1607ms)
-✔ the street view embed is fetched only when its tab is chosen (36.1076ms)
-✔ without script the street view still offers a way out (0.1946ms)
-✔ staff login link remains visible in the header and is not hidden in CSS (0.1971ms)
-✔ the bar publishes its measured height to --bar-h for scroll-margin-top (31.655ms)
-✔ the hero, bar, and footer logos share the 240px AVIF sized for the hero slot (0.1814ms)
-✔ the pruned Bricolage kerning covers every character pair the pages render (52.5108ms)
-✔ both pages define metric-matched fallback fonts and avoid high fetchpriority on mobile-below-fold hero photo (0.2826ms)
-✔ marking rows fills the tally and builds the kiosk link with those picks (51.2591ms)
-✔ tapping a dish name opens its photo, one at a time, without marking it (32.3038ms)
-✔ every menu row carries a kiosk pick and a photo path (22.4569ms)
-✔ lunaexpress: redirect /kiosk{,/**} does not loop (1.371ms)
-✔ lunaexpress: redirect /** does not loop (0.1322ms)
-✔ app-site serves /kiosk/ without an explicit redirect rule (0.6224ms)
-✔ globToRegExp handles the patterns used in firebase.json (0.3603ms)
-✔ the loop check catches the rule that broke production (0.1994ms)
-✔ storefront picks resolve as the Flutter kiosk resolved them (1.7681ms)
-✔ a card shows its cheapest variant (0.1522ms)
-✔ the cart merges same name and variant, and counts and totals lines (0.5566ms)
-✔ new orders carry only the statuses firestore.rules allows (0.2728ms)
-✔ names and PH mobile numbers validate as the Flutter kiosk did (0.2405ms)
-✔ order numbers and date labels use Philippine time (0.1878ms)
-✔ delivery distance is measured from the nearer kitchen (0.1939ms)
-✔ the saved order and its notification match the Flutter payloads (0.3606ms)
-✔ GCash only opens https PayMongo-family checkout links (0.2153ms)
-✔ every menu item has a unique id, a price, and a photo that ships (5.9288ms)
-✔ priceOf reads item and variant prices and rejects unknown ones (0.4781ms)
-✔ month axis labels match the Flutter report (0.8299ms)
-✔ report numbers shorten as _fmt and _shortFmt do (0.1537ms)
-✔ date presets send the range _computeStartDate/_computeEndDate send (1.7637ms)
-✔ staff uids map to usernames as the Flutter session did (0.1175ms)
-✔ kitchen filters and search (0.2943ms)
-✔ live orders win over polled ones, newest first (0.18ms)
-✔ mirror docs become callable-shaped orders (0.1545ms)
-✔ ticket age, colour and the ten-minute delay flag (0.1877ms)
-✔ rider dispatch note carries the order, contact and map link (0.3429ms)
-✔ esc escapes HTML entities and handles nullish and numeric inputs (0.2262ms)
-ℹ tests 49
+✔ both pages inline their script and stylesheet with no external CSS/JS or cache-busting params (1.2027ms)
+✔ inline style blocks have valid balanced CSS (0.3106ms)
+✔ the menu page keeps the bar and reveal behaviour (130.2137ms)
+✔ the bar only sticks once the page has scrolled (72.2518ms)
+✔ reduced motion hides nothing and writes no reveal state (40.6296ms)
+✔ without IntersectionObserver the menu and photos appear at once (37.3679ms)
+✔ with IntersectionObserver the reveal waits for the section to arrive (35.6064ms)
+✔ a section that never intersects stays unrevealed (27.521ms)
+✔ the map and street view swap one at a time (42.1678ms)
+✔ a weak device keeps every line visible and starts no observers (26.08ms)
+✔ both pages flag weak devices before the stylesheet (0.2453ms)
+✔ font preloads match the inline stylesheet so each font is fetched once (0.2041ms)
+✔ the hero logo is responsive and the hidden bar logo is not preloaded (0.1887ms)
+✔ the street view embed is fetched only when its tab is chosen (35.9038ms)
+✔ without script the street view still offers a way out (0.204ms)
+✔ staff login link remains visible in the header and is not hidden in CSS (0.1817ms)
+✔ the bar publishes its measured height to --bar-h for scroll-margin-top (29.3381ms)
+✔ the hero, bar, and footer logos share the 240px AVIF sized for the hero slot (0.1672ms)
+✔ the pruned Bricolage kerning covers every character pair the pages render (45.5586ms)
+✔ both pages define metric-matched fallback fonts and avoid high fetchpriority on mobile-below-fold hero photo (0.2634ms)
+✔ marking rows fills the tally and builds the kiosk link with those picks (51.2805ms)
+✔ tapping a dish name opens its photo, one at a time, without marking it (32.6341ms)
+✔ every menu row carries a kiosk pick and a photo path (22.9518ms)
+✔ notice pages render expected headings, links, and inline styles (36.5517ms)
+✔ lunaexpress: redirect /kiosk{,/**} does not loop (1.2054ms)
+✔ lunaexpress: redirect /** does not loop (0.1519ms)
+✔ app-site serves /kiosk/ without an explicit redirect rule (0.6859ms)
+✔ globToRegExp handles the patterns used in firebase.json (0.4061ms)
+✔ the loop check catches the rule that broke production (0.2668ms)
+✔ storefront picks resolve as the Flutter kiosk resolved them (1.8034ms)
+✔ a card shows its cheapest variant (0.1702ms)
+✔ the cart merges same name and variant, and counts and totals lines (0.55ms)
+✔ new orders carry only the statuses firestore.rules allows (0.2819ms)
+✔ names and PH mobile numbers validate as the Flutter kiosk did (0.251ms)
+✔ order numbers and date labels use Philippine time (0.1912ms)
+✔ delivery distance is measured from the nearer kitchen (0.2012ms)
+✔ the saved order and its notification match the Flutter payloads (0.2697ms)
+✔ GCash only opens https PayMongo-family checkout links (0.2267ms)
+✔ every menu item has a unique id, a price, and a photo that ships (5.6881ms)
+✔ priceOf reads item and variant prices and rejects unknown ones (0.4461ms)
+✔ month axis labels match the Flutter report (0.8942ms)
+✔ report numbers shorten as _fmt and _shortFmt do (0.148ms)
+✔ date presets send the range _computeStartDate/_computeEndDate send (1.3252ms)
+✔ staff uids map to usernames as the Flutter session did (0.1186ms)
+✔ kitchen filters and search (0.3001ms)
+✔ live orders win over polled ones, newest first (0.1831ms)
+✔ mirror docs become callable-shaped orders (0.1534ms)
+✔ ticket age, colour and the ten-minute delay flag (0.1874ms)
+✔ rider dispatch note carries the order, contact and map link (0.3566ms)
+✔ esc escapes HTML entities and handles nullish and numeric inputs (0.2291ms)
+✔ ui helpers format icons and finite numbers cleanly (0.178ms)
+ℹ tests 51
 ℹ suites 0
-ℹ pass 49
+ℹ pass 51
 ℹ fail 0
 ℹ cancelled 0
 ℹ skipped 0
 ℹ todo 0
-ℹ duration_ms 1553.272
+ℹ duration_ms 1510.8652
+
