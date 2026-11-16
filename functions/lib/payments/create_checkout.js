@@ -2,10 +2,10 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.createCheckoutSession = void 0;
 const https_1 = require("firebase-functions/v2/https");
-const firestore_1 = require("firebase-admin/firestore");
 const firebase_functions_1 = require("firebase-functions");
-const index_1 = require("../index");
+const secrets_1 = require("../secrets");
 const security_1 = require("../util/security");
+const paymongo_1 = require("./paymongo");
 const PAYMONGO_API = 'https://api.paymongo.com/v2/checkout_sessions';
 // Server-side price list — single source of truth for payment verification.
 // MUST match lib/data/menu_data.dart. Name → allowed prices (variants/collisions).
@@ -62,7 +62,7 @@ const VARIANT_PRICES = {
     'Shawarma Wrap': { 'Buy 1 Take 1': 99, 'Solo': 60 },
     'Nachos & Fries Overload': { 'Buddy (1–2 pax)': 99, 'Barkada (3–5 pax)': 150 },
 };
-exports.createCheckoutSession = (0, https_1.onCall)({ secrets: [index_1.paymongoSecret] }, // #1
+exports.createCheckoutSession = (0, https_1.onCall)({ secrets: [secrets_1.paymongoSecret] }, // #1
 async (request) => {
     const d = request.data || {};
     const orderDocId = (0, security_1.cleanStr)(d.orderDocId, 64, 'orderDocId');
@@ -71,16 +71,8 @@ async (request) => {
     const customerName = (0, security_1.optStr)(d.customerName, 100);
     const customerPhone = (0, security_1.optStr)(d.customerPhone, 32);
     // The payment result must land on the order document the kiosk wrote.
-    // Firestore auto-ids are alphanumeric; anything else is not a doc id.
-    if (!/^[A-Za-z0-9]{1,64}$/.test(orderDocId)) {
-        throw new https_1.HttpsError('invalid-argument', 'Invalid order reference');
-    }
-    const orderRef = (0, firestore_1.getFirestore)().collection('orders').doc(orderDocId);
-    const orderSnap = await orderRef.get();
-    if (!orderSnap.exists) {
-        throw new https_1.HttpsError('not-found', 'Order not found');
-    }
-    if (orderSnap.data()?.paymentStatus === 'PAID') {
+    const { orderRef, orderData } = await (0, paymongo_1.requireOrderDoc)(orderDocId);
+    if (orderData.paymentStatus === 'PAID') {
         throw new https_1.HttpsError('failed-precondition', 'Order is already paid');
     }
     if (!Array.isArray(d.items) || d.items.length === 0 || d.items.length > 50) {
@@ -118,10 +110,7 @@ async (request) => {
     if (amount !== itemsTotal) {
         throw new https_1.HttpsError('invalid-argument', 'Amount does not match order total');
     }
-    const paymongoKey = index_1.paymongoSecret.value();
-    if (!paymongoKey)
-        throw new https_1.HttpsError('internal', 'Payment service not configured');
-    const auth = Buffer.from(`${paymongoKey}:`).toString('base64');
+    const auth = (0, paymongo_1.paymongoAuthHeader)(true);
     try {
         const response = await fetch(PAYMONGO_API, {
             method: 'POST',

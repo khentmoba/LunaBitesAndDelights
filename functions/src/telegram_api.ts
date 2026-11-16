@@ -1,5 +1,5 @@
 import TelegramBot from 'node-telegram-bot-api';
-import { telegramToken, telegramChatIds } from './index';
+import { telegramToken, telegramChatIds } from './secrets';
 import { logger } from 'firebase-functions';
 
 let bot: TelegramBot;
@@ -30,65 +30,15 @@ export function isMarkdownParseError(err: any): boolean {
   );
 }
 
-export async function sendToAll(message: string, options: any = {}) {
-  const rawIds = telegramChatIds.value().split(',');
-  const ids = rawIds
-    .map(id => id.trim())
-    .filter(id => id.length > 0);
-
-  if (ids.length === 0) {
-    throw new Error('TELEGRAM_CHAT_ID is not configured — no recipients to notify');
-  }
-
-  const telegram = getBot();
-  const sendOpts = {
-    parse_mode: 'MarkdownV2',
-    ...options,
-  };
-
-  const results = await Promise.allSettled(
-    ids.map(async id => {
-      try {
-        return await telegram.sendMessage(id, message, sendOpts);
-      } catch (err: any) {
-        if (sendOpts.parse_mode && isMarkdownParseError(err)) {
-          logger.warn(`sendToAll: MarkdownV2 parsing failed for chat ${id}; falling back to plain text`, {
-            error: err?.message,
-            chatId: id,
-          });
-          const { parse_mode: _, ...plainOpts } = sendOpts;
-          return await telegram.sendMessage(id, stripMarkdownV2(message), plainOpts);
-        }
-        throw err;
-      }
-    })
-  );
-
-  const failures = results.filter(r => r.status === 'rejected');
-  if (failures.length > 0) {
-    logger.error(
-      `sendToAll: ${failures.length} of ${ids.length} messages failed`,
-      failures.map((r, i) => ({
-        chatId: ids[i],
-        error: (r as PromiseRejectedResult).reason?.message || 'unknown'
-      }))
-    );
-  }
-
-  if (failures.length === ids.length) {
-    throw new Error(`All ${ids.length} Telegram messages failed`);
-  }
-
-  return results;
-}
-
-export async function sendPhotoToAll(
-  photo: Buffer | string,
-  caption: string,
-  options: any = {}
+async function deliverToAll(
+  fnName: 'sendToAll' | 'sendPhotoToAll',
+  fallbackNote: string,
+  failLabel: string,
+  options: Record<string, any>,
+  send: (telegram: TelegramBot, id: string, opts: Record<string, any>, plainText: boolean) => Promise<unknown>,
 ) {
-  const rawIds = telegramChatIds.value().split(',');
-  const ids = rawIds
+  const ids = telegramChatIds.value()
+    .split(',')
     .map(id => id.trim())
     .filter(id => id.length > 0);
 
@@ -97,33 +47,23 @@ export async function sendPhotoToAll(
   }
 
   const telegram = getBot();
-  const sendOpts = {
+  const sendOpts: Record<string, any> = {
     parse_mode: 'MarkdownV2',
     ...options,
-  };
-  const fileOpts = {
-    filename: 'delivery_map.png',
-    contentType: 'image/png',
   };
 
   const results = await Promise.allSettled(
     ids.map(async id => {
       try {
-        return await telegram.sendPhoto(id, photo, {
-          caption,
-          ...sendOpts,
-        }, fileOpts);
+        return await send(telegram, id, sendOpts, false);
       } catch (err: any) {
         if (sendOpts.parse_mode && isMarkdownParseError(err)) {
-          logger.warn(`sendPhotoToAll: MarkdownV2 parsing failed for chat ${id}; falling back to plain text caption`, {
+          logger.warn(`${fnName}: MarkdownV2 parsing failed for chat ${id}; ${fallbackNote}`, {
             error: err?.message,
             chatId: id,
           });
           const { parse_mode: _, ...plainOpts } = sendOpts;
-          return await telegram.sendPhoto(id, photo, {
-            caption: stripMarkdownV2(caption),
-            ...plainOpts,
-          }, fileOpts);
+          return await send(telegram, id, plainOpts, true);
         }
         throw err;
       }
@@ -133,7 +73,7 @@ export async function sendPhotoToAll(
   const failures = results.filter(r => r.status === 'rejected');
   if (failures.length > 0) {
     logger.error(
-      `sendPhotoToAll: ${failures.length} of ${ids.length} messages failed`,
+      `${fnName}: ${failures.length} of ${ids.length} messages failed`,
       failures.map((r, i) => ({
         chatId: ids[i],
         error: (r as PromiseRejectedResult).reason?.message || 'unknown',
@@ -142,10 +82,45 @@ export async function sendPhotoToAll(
   }
 
   if (failures.length === ids.length) {
-    throw new Error(`All ${ids.length} Telegram photo messages failed`);
+    throw new Error(`All ${ids.length} ${failLabel} failed`);
   }
 
   return results;
+}
+
+export async function sendToAll(message: string, options: any = {}) {
+  return deliverToAll(
+    'sendToAll',
+    'falling back to plain text',
+    'Telegram messages',
+    options,
+    (telegram, id, opts, plainText) =>
+      telegram.sendMessage(id, plainText ? stripMarkdownV2(message) : message, opts)
+  );
+}
+
+export async function sendPhotoToAll(
+  photo: Buffer | string,
+  caption: string,
+  options: any = {}
+) {
+  const fileOpts = {
+    filename: 'delivery_map.png',
+    contentType: 'image/png',
+  };
+  return deliverToAll(
+    'sendPhotoToAll',
+    'falling back to plain text caption',
+    'Telegram photo messages',
+    options,
+    (telegram, id, opts, plainText) =>
+      telegram.sendPhoto(
+        id,
+        photo,
+        { caption: plainText ? stripMarkdownV2(caption) : caption, ...opts },
+        fileOpts
+      )
+  );
 }
 
 export function escapeMd(text: string | number | null | undefined): string {

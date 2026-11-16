@@ -1,14 +1,16 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
-import { getFirestore } from 'firebase-admin/firestore';
 import { logger } from 'firebase-functions';
-import { paymongoSecret, telegramToken, telegramChatIds } from '../index';
-import { cleanStr } from '../util/security';
+import { paymongoSecret, telegramToken, telegramChatIds } from '../secrets';
+import { ALNUM_DOC_ID, cleanStr } from '../util/security';
 import {
+  paymongoAuthHeader,
+  requireOrderDoc,
   fetchSessionPayments,
   hasPaidPayment,
   hasFailedPayment,
   firstPaymentId,
   markOrderPaidOnce,
+  markOrderPaymentFailed,
 } from './paymongo';
 
 /** Returns true only when the order is bound to the exact checkout session id. */
@@ -33,21 +35,14 @@ export const verifyCheckoutPayment = onCall(
     const orderDocId = cleanStr(d.orderDocId, 64, 'orderDocId');
     const sessionId = cleanStr(d.checkoutSessionId, 128, 'checkoutSessionId');
 
-    if (!/^[A-Za-z0-9]{1,64}$/.test(orderDocId)) {
+    if (!ALNUM_DOC_ID.test(orderDocId)) {
       throw new HttpsError('invalid-argument', 'Invalid order reference');
     }
     if (!/^[A-Za-z0-9_-]{4,128}$/.test(sessionId)) {
       throw new HttpsError('invalid-argument', 'Invalid checkout session');
     }
 
-    const db = getFirestore();
-    const orderRef = db.collection('orders').doc(orderDocId);
-    const snap = await orderRef.get();
-    if (!snap.exists) {
-      throw new HttpsError('not-found', 'Order not found');
-    }
-
-    const orderData = snap.data()!;
+    const { orderRef, orderData } = await requireOrderDoc(orderDocId);
     if (!hasMatchingCheckoutSession(orderData, sessionId)) {
       throw new HttpsError('permission-denied', 'Checkout session does not match order');
     }
@@ -55,11 +50,7 @@ export const verifyCheckoutPayment = onCall(
       return { paid: true, paymentStatus: 'PAID' };
     }
 
-    const paymongoKey = paymongoSecret.value();
-    if (!paymongoKey) {
-      throw new HttpsError('internal', 'Payment service not configured');
-    }
-    const auth = Buffer.from(`${paymongoKey}:`).toString('base64');
+    const auth = paymongoAuthHeader(true);
 
     const payments = await fetchSessionPayments(sessionId, auth);
     if (payments === null) {
@@ -74,11 +65,7 @@ export const verifyCheckoutPayment = onCall(
     }
 
     if (hasFailedPayment(payments)) {
-      await db.runTransaction(async (tx) => {
-        const latest = await tx.get(orderRef);
-        if (!latest.exists || latest.data()?.paymentStatus === 'PAID') return;
-        tx.update(orderRef, { paymentStatus: 'PAYMENT_FAILED' });
-      });
+      await markOrderPaymentFailed(orderRef);
       return { paid: false, paymentStatus: 'PAYMENT_FAILED' };
     }
 

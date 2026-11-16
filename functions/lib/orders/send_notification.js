@@ -10,12 +10,11 @@ exports.fetchMapImage = fetchMapImage;
 const https_1 = require("firebase-functions/v2/https");
 const firestore_1 = require("firebase-admin/firestore");
 const telegram_api_1 = require("../telegram_api");
-const index_1 = require("../index");
+const secrets_1 = require("../secrets");
 const firebase_functions_1 = require("firebase-functions");
 const security_1 = require("../util/security");
 const ORDER_TYPES = ['Walk-In', 'Pickup', 'Delivery'];
 const MAX_ITEMS = 50;
-const DOC_ID = /^[A-Za-z0-9]{1,64}$/;
 /** Records notification outcome on the order. Never fails the request. */
 async function markNotified(orderDocId, sent) {
     if (!orderDocId)
@@ -140,11 +139,8 @@ async function fetchMapImage(url, timeoutMs = 6000) {
         clearTimeout(timer);
     }
 }
-// Public kiosk endpoint: strict validation + sanitization instead of auth (#14).
-exports.sendOrderNotification = (0, https_1.onCall)({ secrets: [index_1.telegramToken, index_1.telegramChatIds, index_1.googleMapsApiKey] }, // #1: secrets server-side only
-async (request) => {
-    const d = request.data || {};
-    const orderDocId = typeof d.orderDocId === 'string' && DOC_ID.test(d.orderDocId) ? d.orderDocId : null;
+function parseOrderNotificationInput(d) {
+    const orderDocId = typeof d.orderDocId === 'string' && security_1.ALNUM_DOC_ID.test(d.orderDocId) ? d.orderDocId : null;
     const orderNumber = (0, security_1.cleanStr)(d.orderNumber, 32, 'orderNumber');
     const customerName = (0, security_1.cleanStr)(d.customerName, 100, 'customerName');
     const customerAddress = (0, security_1.optStr)(d.customerAddress);
@@ -167,80 +163,73 @@ async (request) => {
     // Coordinates must be real numbers or omitted (no string injection into map URL).
     const lat = (typeof d.lat === 'number' && Math.abs(d.lat) <= 90) ? d.lat : null;
     const lng = (typeof d.lng === 'number' && Math.abs(d.lng) <= 180) ? d.lng : null;
-    const notificationData = {
-        orderNumber,
-        customerName,
-        customerAddress,
-        customerPhone,
-        items,
-        total,
-        timeStr,
-        orderType,
-        deliveryFee,
-        paymentMethod,
-        paymentStatus,
-        lat,
-        lng,
+    return {
+        orderDocId,
+        data: {
+            orderNumber,
+            customerName,
+            customerAddress,
+            customerPhone,
+            items,
+            total,
+            timeStr,
+            orderType,
+            deliveryFee,
+            paymentMethod,
+            paymentStatus,
+            lat,
+            lng,
+        },
     };
-    const message = formatOrderNotification(notificationData);
-    firebase_functions_1.logger.info(`Sending order notification for ${orderNumber} to Telegram`);
+}
+function resolveStaticMapUrl(lat, lng) {
+    let gmapKey = '';
     try {
-        if (orderType === 'Delivery' && lat != null && lng != null) {
-            const navigationUrl = getGoogleMapsNavigationUrl(lat, lng);
-            const replyMarkup = {
-                inline_keyboard: [
-                    [
-                        {
-                            text: '📍 Open in Google Maps 🧭',
-                            url: navigationUrl,
-                        },
-                    ],
-                ],
-            };
-            // Determine static map key (Google Maps preferred, MapTiler fallback)
-            let gmapKey = '';
-            try {
-                gmapKey = index_1.googleMapsApiKey.value();
-            }
-            catch (_) {
-                gmapKey = process.env.GOOGLE_MAPS_API_KEY || '';
-            }
-            if (!gmapKey && process.env.GOOGLE_MAPS_API_KEY) {
-                gmapKey = process.env.GOOGLE_MAPS_API_KEY;
-            }
-            const maptilerKey = process.env.MAPTILER_KEY || '';
-            let mapUrl = null;
-            if (gmapKey) {
-                mapUrl = getGoogleStaticMapUrl(lat, lng, gmapKey);
-            }
-            else if (maptilerKey) {
-                mapUrl = getMapTilerStaticMapUrl(lat, lng, maptilerKey);
-            }
-            let photoSent = false;
-            if (mapUrl) {
-                try {
-                    const imageBuffer = await fetchMapImage(mapUrl);
-                    if (imageBuffer) {
-                        if (message.length <= 1024) {
-                            await (0, telegram_api_1.sendPhotoToAll)(imageBuffer, message, { reply_markup: replyMarkup });
-                            photoSent = true;
-                        }
-                        else {
-                            const summaryCaption = formatDeliverySummaryCaption(notificationData);
-                            await (0, telegram_api_1.sendPhotoToAll)(imageBuffer, summaryCaption, { reply_markup: replyMarkup });
-                            await (0, telegram_api_1.sendToAll)(message);
-                            photoSent = true;
-                        }
-                    }
+        gmapKey = secrets_1.googleMapsApiKey.value();
+    }
+    catch {
+        gmapKey = '';
+    }
+    gmapKey || (gmapKey = process.env.GOOGLE_MAPS_API_KEY || '');
+    if (gmapKey)
+        return getGoogleStaticMapUrl(lat, lng, gmapKey);
+    const maptilerKey = process.env.MAPTILER_KEY || '';
+    return maptilerKey ? getMapTilerStaticMapUrl(lat, lng, maptilerKey) : null;
+}
+async function sendDeliveryNotification(data, message, lat, lng) {
+    const replyMarkup = {
+        inline_keyboard: [[{ text: '📍 Open in Google Maps 🧭', url: getGoogleMapsNavigationUrl(lat, lng) }]],
+    };
+    const mapUrl = resolveStaticMapUrl(lat, lng);
+    if (mapUrl) {
+        try {
+            const imageBuffer = await fetchMapImage(mapUrl);
+            if (imageBuffer) {
+                if (message.length <= 1024) {
+                    await (0, telegram_api_1.sendPhotoToAll)(imageBuffer, message, { reply_markup: replyMarkup });
+                    return;
                 }
-                catch (photoError) {
-                    firebase_functions_1.logger.warn(`Photo delivery failed for ${orderNumber}, falling back to text`, photoError);
-                }
+                const summaryCaption = formatDeliverySummaryCaption(data);
+                await (0, telegram_api_1.sendPhotoToAll)(imageBuffer, summaryCaption, { reply_markup: replyMarkup });
+                await (0, telegram_api_1.sendToAll)(message);
+                return;
             }
-            if (!photoSent) {
-                // Fallback to text message, but keep the 1-tap navigation button!
-                await (0, telegram_api_1.sendToAll)(message, { reply_markup: replyMarkup });
-            }
+        }
+        catch (photoError) {
+            firebase_functions_1.logger.warn(`Photo delivery failed for ${data.orderNumber}, falling back to text`, photoError);
+        }
+    }
+    await (0, telegram_api_1.sendToAll)(message, { reply_markup: replyMarkup });
+}
+// Public kiosk endpoint: strict validation + sanitization instead of auth (#14).
+exports.sendOrderNotification = (0, https_1.onCall)({ secrets: [secrets_1.telegramToken, secrets_1.telegramChatIds, secrets_1.googleMapsApiKey] }, // #1: secrets server-side only
+async (request) => {
+    const { orderDocId, data } = parseOrderNotificationInput(request.data || {});
+    const message = formatOrderNotification(data);
+    firebase_functions_1.logger.info(`Sending order notification for ${data.orderNumber} to Telegram`);
+    try {
+        if (data.orderType === 'Delivery' && data.lat != null && data.lng != null) {
+            await sendDeliveryNotification(data, message, data.lat, data.lng);
         }
         else {
             await (0, telegram_api_1.sendToAll)(message);
@@ -250,7 +239,7 @@ async (request) => {
     }
     catch (error) {
         await markNotified(orderDocId, false);
-        firebase_functions_1.logger.error(`Error sending Telegram notification for ${orderNumber}`, error);
+        firebase_functions_1.logger.error(`Error sending Telegram notification for ${data.orderNumber}`, error);
         throw new https_1.HttpsError('internal', 'Failed to send Telegram notification');
     }
 });

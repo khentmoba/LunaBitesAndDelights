@@ -1,9 +1,7 @@
 // Small DOM helpers shared by the staff screens.
 import { glyph, type IconName } from '../kiosk/icons.ts';
 import { snack } from '../kiosk/snackbar.ts';
-
-const ESC: Record<string, string> = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
-export const esc = (v: unknown): string => String(v ?? '').replace(/[&<>"']/g, (c) => ESC[c] ?? c);
+export { esc } from '../kiosk/dom.ts';
 
 /** A Material icon glyph span. */
 export const icon = (name: IconName, cls = ''): string => `<span class="icon${cls ? ` ${cls}` : ''}" aria-hidden="true">${glyph(name)}</span>`;

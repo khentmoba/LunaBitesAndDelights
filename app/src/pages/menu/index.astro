@@ -1,5 +1,5 @@
 ---
-import { priceOf } from '../../data/menu';
+import { storefrontMenuColumns } from '../../data/storefront-menu';
 ---
 <!doctype html>
 <html lang="en">
@@ -67,85 +67,19 @@ if (lite) document.documentElement.setAttribute('data-lite', '');
 <p class="menu__sub">Every item and price. Order in the app; the rider confirms the separate delivery fee.</p>
 </div>
 <div class="menu__cols">
+{storefrontMenuColumns.map((col) => (
 <div class="col">
-<h2 class="col__title">Shawarma favorites</h2>
+{col.map((group) => (<Fragment>
+<h2 class="col__title">{group.title}{group.stamp && <> <span class="mark-stamp" aria-hidden="true">{group.stamp}</span></>}</h2>
+{group.note && <Fragment>{'\n'}<p class="col__note">{group.note}</p></Fragment>}
 <ul class="rows">
-<li class="row"><span class="row__name">Shawarma Wrap</span><span class="row__price">₱{priceOf("s1", "Solo")}</span></li>
-<li class="row"><span class="row__name">Shawarma All Meat</span><span class="row__price">₱{priceOf("s2")}</span></li>
-<li class="row"><span class="row__name">Shawarma Nachos</span><span class="row__price">₱{priceOf("s6")}</span></li>
-<li class="row"><span class="row__name">Shawarma Quesadilla</span><span class="row__price">₱{priceOf("s7")}</span></li>
-<li class="row"><span class="row__name">Shawarma Fries</span><span class="row__price">₱{priceOf("s5")}</span></li>
-<li class="row row--promo"><span class="row__name"><mark>Wrap, buy 1 take 1</mark></span><span class="row__price">₱{priceOf("s1", "Buy 1 Take 1")}</span></li>
-</ul>
-<h2 class="col__title">Combo meals</h2>
-<ul class="rows">
-<li class="row"><span class="row__name">Combo 1 · burger + fries</span><span class="row__price">₱{priceOf("c1")}</span></li>
-<li class="row"><span class="row__name">Combo 2 · shawarma wrap + fries</span><span class="row__price">₱{priceOf("c2")}</span></li>
-<li class="row"><span class="row__name">Super Combo 1 · burger + fries + drink</span><span class="row__price">₱{priceOf("sc1")}</span></li>
-<li class="row"><span class="row__name">Super Combo 2 · wrap + fries + drink</span><span class="row__price">₱{priceOf("sc2")}</span></li>
-<li class="row row--promo"><span class="row__name"><mark>Combo 3 · 2 burgers + regular fries + 2 drinks</mark></span><span class="row__price">₱{priceOf("c3")}</span></li>
-<li class="row"><span class="row__name">Combo 4 · wrap + burger + fries</span><span class="row__price">₱{priceOf("c4_wrap_burger")}</span></li>
-<li class="row"><span class="row__name">Combo 6 · wrap + shawarma burger + drink</span><span class="row__price">₱{priceOf("s10")}</span></li>
-<li class="row"><span class="row__name">Combo Promo · halo-halo + fries + wrap</span><span class="row__price">₱{priceOf("c4")}</span></li>
-<li class="row"><span class="row__name">Quesadilla</span><span class="row__price">₱{priceOf("e1")}</span></li>
-</ul>
+{group.rows.map((r) => (
+<Fragment><li class:list={['row', { 'row--promo': r.promo }]}><span class="row__name">{r.promo ? <mark>{r.name}</mark> : r.name}</span><span class="row__price">₱{r.price}</span></li>{'\n'}</Fragment>
+))}
+</ul>{'\n'}
+</Fragment>))}
 </div>
-<div class="col">
-<h2 class="col__title">French fries</h2>
-<ul class="rows">
-<li class="row"><span class="row__name">D1 · fries + drink</span><span class="row__price">₱{priceOf("fd1")}</span></li>
-<li class="row"><span class="row__name">D2 · fries + hotdog + drink</span><span class="row__price">₱{priceOf("fd2")}</span></li>
-<li class="row"><span class="row__name">D3 · fries + hotdog + cheesestick + drink</span><span class="row__price">₱{priceOf("fd3")}</span></li>
-<li class="row"><span class="row__name">D4 · fries + hotdog + cheesestick + fried siomai + drink</span><span class="row__price">₱{priceOf("fd4")}</span></li>
-<li class="row"><span class="row__name">Fries, buy 1 take 1</span><span class="row__price">₱{priceOf("f4")}</span></li>
-<li class="row"><span class="row__name">Large Fries</span><span class="row__price">₱{priceOf("f3")}</span></li>
-<li class="row"><span class="row__name">Bucket Fries</span><span class="row__price">₱{priceOf("f5")}</span></li>
-<li class="row"><span class="row__name">Terra Fries · 3 flavors</span><span class="row__price">₱{priceOf("f2")}</span></li>
-<li class="row"><span class="row__name">Fries &amp; Nachos Overload · Buddy, 1–2 pax</span><span class="row__price">₱{priceOf("s8", "Buddy (1–2 pax)")}</span></li>
-<li class="row"><span class="row__name">Fries &amp; Nachos Overload · Barkada, 3–5 pax</span><span class="row__price">₱{priceOf("s8", "Barkada (3–5 pax)")}</span></li>
-</ul>
-</div>
-<div class="col">
-<h2 class="col__title">Burger favorites <span class="mark-stamp" aria-hidden="true">B1T1</span></h2>
-<p class="col__note">All burgers below are buy 1 take 1.</p>
-<ul class="rows">
-<li class="row"><span class="row__name">Burger Patty</span><span class="row__price">₱{priceOf("b1")}</span></li>
-<li class="row"><span class="row__name">Ham &amp; Cheese</span><span class="row__price">₱{priceOf("b2")}</span></li>
-<li class="row"><span class="row__name">Cheese Burger</span><span class="row__price">₱{priceOf("b3")}</span></li>
-<li class="row"><span class="row__name">Burger with Egg</span><span class="row__price">₱{priceOf("b4")}</span></li>
-<li class="row"><span class="row__name">Cheese &amp; Egg Burger</span><span class="row__price">₱{priceOf("b5")}</span></li>
-<li class="row"><span class="row__name">Shawarma Burger</span><span class="row__price">₱{priceOf("s4")}</span></li>
-</ul>
-<h2 class="col__title">Sweet · cold</h2>
-<ul class="rows">
-<li class="row"><span class="row__name">Coolers, any three</span><span class="row__price">₱{priceOf("c_3for100")}</span></li>
-<li class="row"><span class="row__name">Coolers, solo · 8 flavors</span><span class="row__price">₱{priceOf("c_taro")}</span></li>
-<li class="row"><span class="row__name">Ube Halo Ice Cream</span><span class="row__price">₱{priceOf("e5")}</span></li>
-<li class="row"><span class="row__name">Mango Graham Ice Cream</span><span class="row__price">₱{priceOf("e3")}</span></li>
-<li class="row"><span class="row__name">Choco Oreo Ice Cream</span><span class="row__price">₱{priceOf("e6")}</span></li>
-<li class="row"><span class="row__name">Vanilla Cheese Ice Cream</span><span class="row__price">₱{priceOf("e7")}</span></li>
-<li class="row"><span class="row__name">Luna Leche Flan</span><span class="row__price">₱{priceOf("e4")}</span></li>
-<li class="row"><span class="row__name">Milo Dinosaur</span><span class="row__price">₱{priceOf("mc1")}</span></li>
-<li class="row"><span class="row__name">Milo Float</span><span class="row__price">₱{priceOf("mc2")}</span></li>
-<li class="row"><span class="row__name">Milo Crunch</span><span class="row__price">₱{priceOf("mc3")}</span></li>
-<li class="row"><span class="row__name">Milo Oreo</span><span class="row__price">₱{priceOf("mc4")}</span></li>
-<li class="row"><span class="row__name">Cookies &amp; Cream Overload</span><span class="row__price">₱{priceOf("oc1")}</span></li>
-<li class="row"><span class="row__name">Chocolate Oreo</span><span class="row__price">₱{priceOf("oc2")}</span></li>
-<li class="row"><span class="row__name">Strawberry Oreo</span><span class="row__price">₱{priceOf("oc3")}</span></li>
-<li class="row"><span class="row__name">Milo Oreo Float</span><span class="row__price">₱{priceOf("oc4")}</span></li>
-<li class="row"><span class="row__name">Coke Float</span><span class="row__price">₱{priceOf("cf_coke")}</span></li>
-<li class="row"><span class="row__name">Chuckie Float</span><span class="row__price">₱{priceOf("cf_chuckie")}</span></li>
-<li class="row"><span class="row__name">Cookies and Cream Float</span><span class="row__price">₱{priceOf("cf_cnc")}</span></li>
-<li class="row"><span class="row__name">Cafe Latte</span><span class="row__price">₱{priceOf("cf_latte")}</span></li>
-<li class="row"><span class="row__name">Caramel Macchiato</span><span class="row__price">₱{priceOf("cf_macchiato")}</span></li>
-<li class="row"><span class="row__name">Ice Cappuccino</span><span class="row__price">₱{priceOf("cf_cappuccino")}</span></li>
-<li class="row"><span class="row__name">Chocolate Coffee</span><span class="row__price">₱{priceOf("cf_choc_coffee")}</span></li>
-<li class="row"><span class="row__name">Classic Lemonade</span><span class="row__price">₱{priceOf("ls1")}</span></li>
-<li class="row"><span class="row__name">Blue Lemonade</span><span class="row__price">₱{priceOf("ls5")}</span></li>
-<li class="row"><span class="row__name">Lemon Strawberry</span><span class="row__price">₱{priceOf("ls3")}</span></li>
-<li class="row"><span class="row__name">Lemon Cucumber</span><span class="row__price">₱{priceOf("ls4")}</span></li>
-</ul>
-</div>
+))}
 </div>
 <div class="offers">
 <p class="offer">

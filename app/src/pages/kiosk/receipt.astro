@@ -109,13 +109,11 @@ body { overflow: hidden; }
 
 <script>
 import { peso } from '../../kiosk/cart';
+import { $, esc } from '../../kiosk/dom';
 import { fitLabels } from '../../kiosk/fit';
 import { RECEIPT, load, save, type Receipt } from '../../kiosk/handoff';
 import { glyph } from '../../kiosk/icons';
 import { snack } from '../../kiosk/snackbar';
-
-const $ = <T extends Element = HTMLElement>(sel: string) => document.querySelector<T>(sel)!;
-const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
 
 const r = load<Receipt>(RECEIPT);
 if (!r) {

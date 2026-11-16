@@ -4,11 +4,11 @@ exports.triggerManualReport = void 0;
 const https_1 = require("firebase-functions/v2/https");
 const aggregator_1 = require("./aggregator");
 const telegram_api_1 = require("../telegram_api");
-const index_1 = require("../index");
+const secrets_1 = require("../secrets");
 const util_1 = require("../util");
 const security_1 = require("../util/security");
 const firebase_functions_1 = require("firebase-functions");
-exports.triggerManualReport = (0, https_1.onCall)({ secrets: [index_1.telegramToken, index_1.telegramChatIds] }, async (request) => {
+exports.triggerManualReport = (0, https_1.onCall)({ secrets: [secrets_1.telegramToken, secrets_1.telegramChatIds] }, async (request) => {
     (0, security_1.requireStaff)(request);
     firebase_functions_1.logger.info('Manual report triggered');
     try {

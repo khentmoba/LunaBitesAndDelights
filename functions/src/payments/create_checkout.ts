@@ -1,8 +1,8 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
-import { getFirestore } from 'firebase-admin/firestore';
 import { logger } from 'firebase-functions';
-import { paymongoSecret } from '../index';
+import { paymongoSecret } from '../secrets';
 import { cleanStr, optStr, cleanInt } from '../util/security';
+import { paymongoAuthHeader, requireOrderDoc } from './paymongo';
 
 const PAYMONGO_API = 'https://api.paymongo.com/v2/checkout_sessions';
 
@@ -74,16 +74,8 @@ export const createCheckoutSession = onCall(
     const customerPhone = optStr(d.customerPhone, 32);
 
     // The payment result must land on the order document the kiosk wrote.
-    // Firestore auto-ids are alphanumeric; anything else is not a doc id.
-    if (!/^[A-Za-z0-9]{1,64}$/.test(orderDocId)) {
-      throw new HttpsError('invalid-argument', 'Invalid order reference');
-    }
-    const orderRef = getFirestore().collection('orders').doc(orderDocId);
-    const orderSnap = await orderRef.get();
-    if (!orderSnap.exists) {
-      throw new HttpsError('not-found', 'Order not found');
-    }
-    if (orderSnap.data()?.paymentStatus === 'PAID') {
+    const { orderRef, orderData } = await requireOrderDoc(orderDocId);
+    if (orderData.paymentStatus === 'PAID') {
       throw new HttpsError('failed-precondition', 'Order is already paid');
     }
 
@@ -124,9 +116,7 @@ export const createCheckoutSession = onCall(
       throw new HttpsError('invalid-argument', 'Amount does not match order total');
     }
 
-    const paymongoKey = paymongoSecret.value();
-    if (!paymongoKey) throw new HttpsError('internal', 'Payment service not configured');
-    const auth = Buffer.from(`${paymongoKey}:`).toString('base64');
+    const auth = paymongoAuthHeader(true);
 
     try {
       const response = await fetch(PAYMONGO_API, {

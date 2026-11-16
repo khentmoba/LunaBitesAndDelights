@@ -5,13 +5,13 @@ const scheduler_1 = require("firebase-functions/v2/scheduler");
 const aggregator_1 = require("./aggregator");
 const telegram_api_1 = require("../telegram_api");
 const util_1 = require("../util");
-const index_1 = require("../index");
+const secrets_1 = require("../secrets");
 const firebase_functions_1 = require("firebase-functions");
 exports.dailySalesReport = (0, scheduler_1.onSchedule)({
     schedule: '0 22 * * *', // 10 PM
     timeZone: 'Asia/Manila',
     memory: '256MiB',
-    secrets: [index_1.telegramToken, index_1.telegramChatIds],
+    secrets: [secrets_1.telegramToken, secrets_1.telegramChatIds],
 }, async () => {
     const dateLabel = (0, util_1.phtDateLabel)();
     firebase_functions_1.logger.info(`Running daily report for ${dateLabel}`);

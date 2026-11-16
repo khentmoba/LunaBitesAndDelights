@@ -1,17 +1,8 @@
 import { initializeApp } from 'firebase-admin/app';
-import { defineSecret } from 'firebase-functions/params';
 
 initializeApp();
 
-// Secrets (NOT params): values stay out of config/logs. Set via:
-//   firebase functions:secrets:set TELEGRAM_TOKEN
-//   firebase functions:secrets:set TELEGRAM_CHAT_ID
-//   firebase functions:secrets:set PAYMONGO_SECRET_KEY
-//   firebase functions:secrets:set GOOGLE_MAPS_API_KEY
-export const telegramToken = defineSecret('TELEGRAM_TOKEN');
-export const telegramChatIds = defineSecret('TELEGRAM_CHAT_ID');
-export const paymongoSecret = defineSecret('PAYMONGO_SECRET_KEY');
-export const googleMapsApiKey = defineSecret('GOOGLE_MAPS_API_KEY');
+export { telegramToken, telegramChatIds, paymongoSecret, googleMapsApiKey } from './secrets';
 
 export { dailySalesReport } from './reporting/daily_report';
 export { triggerManualReport } from './reporting/manual_report';

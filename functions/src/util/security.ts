@@ -46,6 +46,9 @@ export function cleanInt(v: unknown, max: number, field = 'field'): number {
   return n;
 }
 
+/** Alphanumeric Firestore auto-id format used for order documents. */
+export const ALNUM_DOC_ID = /^[A-Za-z0-9]{1,64}$/;
+
 /** Rejects path-traversal / weird doc IDs (#13: parameterized-query equivalent). */
 export function validDocId(v: unknown, field = 'id'): string {
   const s = cleanStr(v, 128, field);

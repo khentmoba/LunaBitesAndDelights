@@ -1,11 +1,10 @@
 ---
 import Kiosk from '../../layouts/Kiosk.astro';
 import { menuSections, type MenuItem } from '../../data/menu';
+import { itemThumb } from '../../kiosk/dom';
 import { categoryIcon, glyph } from '../../kiosk/icons';
 import { displayPrice, promoOf } from '../../kiosk/preselect';
 import { DEFAULT_CATEGORY } from '../../kiosk/session';
-
-const img = (item: MenuItem) => `/kiosk/${item.imageUrl || 'images/luna_logo.webp'}`;
 
 /** Splits a section's items into header labels and runs of cards, as the Flutter slivers do. */
 function groups(items: MenuItem[]) {
@@ -85,7 +84,7 @@ function groups(items: MenuItem[]) {
                     <button type="button" class="card" data-item={item.id}
                       aria-label={`${item.name}, ${from ? 'from ' : ''}₱${displayPrice(item)}`}>
                       <span class="card__photo">
-                        <img src={img(item)} alt="" loading="lazy" decoding="async">
+                        <img src={itemThumb(item.imageUrl)} alt="" loading="lazy" decoding="async">
                         {promo && <span class="tape">{promo}</span>}
                       </span>
                       <span class="card__body">
@@ -271,16 +270,14 @@ body:has(.orderbar:not([hidden])) .snack { bottom: 94px; }
 <script>
 import { menuSections, type MenuItem } from '../../data/menu';
 import { cart, peso } from '../../kiosk/cart';
+import { $, $$, esc, itemThumb } from '../../kiosk/dom';
 import { kioskSession } from '../../kiosk/session';
 import { resolvePicks, promoOf, displayPrice } from '../../kiosk/preselect';
 import { glyph } from '../../kiosk/icons';
 import { resetKiosk, watchInactivity } from '../../kiosk/inactivity';
 import { hasStoredStaffUser } from '../../kiosk/staff-hint';
 
-const $ = <T extends Element>(sel: string, root: ParentNode = document) => root.querySelector<T>(sel)!;
-const $$ = <T extends Element>(sel: string, root: ParentNode = document) => [...root.querySelectorAll<T>(sel)];
 const items = new Map(menuSections.flatMap((s) => s.items.map((i) => [i.id, i] as const)));
-const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
 
 function showSection(id: string) {
   if (!menuSections.some((s) => s.id === id)) id = menuSections[0]!.id;
@@ -361,7 +358,7 @@ function openSheet(item: MenuItem): Promise<void> {
       <button type="button" class="iconbtn" data-close aria-label="Close item details"><span class="icon" aria-hidden="true">${glyph('close')}</span></button></div>
     <div class="sheet__rule"></div>
     <div class="sheet__scroll"><div class="sheet__body">
-      <div class="sheet__photo"><img src="/kiosk/${esc(item.imageUrl || 'images/luna_logo.webp')}" alt=""></div>
+      <div class="sheet__photo"><img src="${esc(itemThumb(item.imageUrl))}" alt=""></div>
       <div class="sheet__details">
         <h2 class="heading sheet__name">${esc(item.name)}</h2>
         ${promo ? `<div class="sheet__tape">${esc(promo)}</div>` : ''}

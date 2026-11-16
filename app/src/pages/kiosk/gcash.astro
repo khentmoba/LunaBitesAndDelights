@@ -80,13 +80,13 @@ body { overflow: hidden; }
 
 <script>
 import { cart } from '../../kiosk/cart';
+import { $ } from '../../kiosk/dom';
 import { callFn } from '../../kiosk/firebase';
 import { DRAFT, PENDING, RECEIPT, load, save, type CheckoutDraft, type PendingPayment } from '../../kiosk/handoff';
 import { glyph } from '../../kiosk/icons';
 import { popTo } from '../../kiosk/inactivity';
 import { isPaymentUrl } from '../../kiosk/payment-host';
 
-const $ = <T extends Element = HTMLElement>(sel: string) => document.querySelector<T>(sel)!;
 const pending = load<PendingPayment>(PENDING);
 
 let checkoutUrl: string | null = null;

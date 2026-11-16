@@ -1,7 +1,7 @@
 import { onCall } from 'firebase-functions/v2/https';
 import { aggregateDailySales, salesReportMessage } from './aggregator';
 import { sendToAll } from '../telegram_api';
-import { telegramToken, telegramChatIds } from '../index';
+import { telegramToken, telegramChatIds } from '../secrets';
 import { phtDateLabel } from '../util';
 import { requireStaff } from '../util/security';
 import { logger } from 'firebase-functions';

@@ -1,6 +1,40 @@
 import { getFirestore, DocumentReference } from 'firebase-admin/firestore';
+import { HttpsError } from 'firebase-functions/v2/https';
 import { logger } from 'firebase-functions';
+import { paymongoSecret } from '../secrets';
 import { sendToAll, escapeMd } from '../telegram_api';
+import { ALNUM_DOC_ID } from '../util/security';
+
+export function paymongoAuthHeader(requireConfigured = false): string {
+  const key = paymongoSecret.value();
+  if (requireConfigured && !key) {
+    throw new HttpsError('internal', 'Payment service not configured');
+  }
+  return Buffer.from(`${key}:`).toString('base64');
+}
+
+export async function requireOrderDoc(orderDocId: string): Promise<{
+  orderRef: DocumentReference;
+  orderData: Record<string, any>;
+}> {
+  if (!ALNUM_DOC_ID.test(orderDocId)) {
+    throw new HttpsError('invalid-argument', 'Invalid order reference');
+  }
+  const orderRef = getFirestore().collection('orders').doc(orderDocId);
+  const snap = await orderRef.get();
+  if (!snap.exists) {
+    throw new HttpsError('not-found', 'Order not found');
+  }
+  return { orderRef, orderData: snap.data()! };
+}
+
+export async function markOrderPaymentFailed(orderRef: DocumentReference): Promise<void> {
+  await getFirestore().runTransaction(async (tx) => {
+    const snap = await tx.get(orderRef);
+    if (!snap.exists || snap.data()?.paymentStatus === 'PAID') return;
+    tx.update(orderRef, { paymentStatus: 'PAYMENT_FAILED' });
+  });
+}
 
 /** PayMongo checkout session statuses derived from session payments. */
 export async function fetchSessionPayments(sessionId: string, auth: string): Promise<any[] | null> {

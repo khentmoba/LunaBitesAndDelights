@@ -14,13 +14,14 @@ import {
   isClosedKdsStatus,
   isDelayed,
   kdsOrderFromDoc,
+  mapsDirectionsUrl,
   mergeKdsOrders,
   numText,
   qtyOf,
   type KdsOrder,
   type TypeFilter,
 } from './kds-data.ts';
-import { fnError, isAuthCode, logout, type Staff } from './session.ts';
+import { fnError, isAuthCode, isAuthErrorText, logout, type Staff } from './session.ts';
 import { ERROR, INK, INK_SOFT, PLATE, SUCCESS, cameFromApp, esc, go, icon, showDialog, staffSnack } from './ui.ts';
 
 const POLL_MS = 10_000;
@@ -278,8 +279,7 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
       banner.innerHTML = '';
       return;
     }
-    const e = error.toLowerCase();
-    const auth = e.includes('sign in') || e.includes('unauthenticated') || e.includes('permission-denied');
+    const auth = isAuthErrorText(error);
     banner.innerHTML = `
   <div class="kerr" role="alert">${icon('warning_amber_rounded')}<span class="kerr__text">${esc(error)}</span>
     ${auth ? '<button type="button" class="kerr__btn kerr__btn--auth" data-act="signin">SIGN IN</button>' : ''}
@@ -351,7 +351,7 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
   ${
     delivery && addr
       ? `<div class="kcard__addr">${icon('place_outlined')}<span class="kcard__addrtext">${esc(addr)}</span>${
-          lat !== null && lng !== null ? `<a class="kcard__map" href="https://www.google.com/maps/dir/?api=1&amp;destination=${lat},${lng}" target="_blank" rel="noopener">MAP</a>` : ''
+          lat !== null && lng !== null ? `<a class="kcard__map" href="${esc(mapsDirectionsUrl(lat, lng))}" target="_blank" rel="noopener">MAP</a>` : ''
         }</div>`
       : ''
   }

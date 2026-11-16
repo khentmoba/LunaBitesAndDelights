@@ -108,3 +108,70 @@ test('hasMatchingCheckoutSession rejects unbound or mismatched orders', () => {
   assert.strictEqual(hasMatchingCheckoutSession({ checkoutSessionId: 'cs_other' }, 'cs_paid_1'), false);
   assert.strictEqual(hasMatchingCheckoutSession({ checkoutSessionId: 'cs_paid_1' }, 'cs_paid_1'), true);
 });
+
+test('projectOrder projects KDS fields and sums item quantities from quantity or qty', () => {
+  const { projectOrder } = require('../lib/orders/kds');
+  const projected = projectOrder('doc_1', {
+    orderId: 'LU-261116-120000',
+    customerName: 'Ana',
+    customerPhone: '09171234567',
+    customerAddress: 'Purok 5',
+    lat: 9.02,
+    lng: 125.51,
+    deliveryFee: '25',
+    paymentMethod: 'GCash',
+    paymentStatus: 'PAID',
+    entryType: 'Kiosk',
+    type: 'Delivery',
+    status: 'Preparing',
+    totalAmount: 258,
+    timestamp: '2026-11-16T04:00:00.000Z',
+    items: [
+      { name: 'Shawarma Wrap', variant: 'Solo', quantity: 2, price: 60 },
+      { name: 'Fries', qty: 3, price: 50 },
+    ],
+  });
+  assert.deepStrictEqual(projected, {
+    id: 'doc_1',
+    orderNumber: 'LU-261116-120000',
+    customerName: 'Ana',
+    customerPhone: '09171234567',
+    customerAddress: 'Purok 5',
+    lat: 9.02,
+    lng: 125.51,
+    deliveryFee: 25,
+    paymentMethod: 'GCash',
+    paymentStatus: 'PAID',
+    entryType: 'Kiosk',
+    items: [
+      { name: 'Shawarma Wrap', variant: 'Solo', qty: 2, quantity: 2, price: 60 },
+      { name: 'Fries', variant: '', qty: 3, quantity: 3, price: 50 },
+    ],
+    itemsCount: 5,
+    total: 258,
+    type: 'Delivery',
+    status: 'Preparing',
+    timestamp: '2026-11-16T04:00:00.000Z',
+  });
+});
+
+test('fetchSessionPayments sends Basic auth and handles non-OK responses', async () => {
+  const { fetchSessionPayments } = require('../lib/payments/paymongo');
+  const origFetch = global.fetch;
+  try {
+    let seen = null;
+    global.fetch = async (url, init) => {
+      seen = { url, init };
+      return { ok: true, json: async () => ({ data: { attributes: { payments: [{ id: 'pay_9' }] } } }) };
+    };
+    const payments = await fetchSessionPayments('cs_123', 'dGVzdDo=');
+    assert.strictEqual(seen.url, 'https://api.paymongo.com/v2/checkout_sessions/cs_123');
+    assert.strictEqual(seen.init.headers.Authorization, 'Basic dGVzdDo=');
+    assert.deepStrictEqual(payments, [{ id: 'pay_9' }]);
+
+    global.fetch = async () => ({ ok: false });
+    assert.strictEqual(await fetchSessionPayments('cs_123', 'dGVzdDo='), null);
+  } finally {
+    global.fetch = origFetch;
+  }
+});

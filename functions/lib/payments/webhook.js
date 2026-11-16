@@ -40,7 +40,8 @@ const https_1 = require("firebase-functions/v2/https");
 const firestore_1 = require("firebase-admin/firestore");
 const firebase_functions_1 = require("firebase-functions");
 const crypto = __importStar(require("crypto"));
-const index_1 = require("../index");
+const secrets_1 = require("../secrets");
+const security_1 = require("../util/security");
 const paymongo_1 = require("./paymongo");
 function verifyPaymongoSignature(sigHeader, rawBody, webhookSecret) {
     if (!sigHeader || typeof sigHeader !== 'string')
@@ -66,21 +67,20 @@ function verifyPaymongoSignature(sigHeader, rawBody, webhookSecret) {
     return crypto.timingSafeEqual(expectedBuf, sigBuf);
 }
 /** Firestore doc ids are alphanumeric; the legacy display number may hold '-' too. */
-const DOC_ID = /^[A-Za-z0-9]{1,64}$/;
 const LEGACY_DOC_ID = /^[A-Za-z0-9_-]{1,64}$/;
 // The kiosk writes the payment result onto the order document it created, and
 // passes that document id through PayMongo metadata. reference_number stays the
 // human-facing order number, so it can no longer be used as the document key.
 function resolveOrderDocId(attrs) {
     const fromMeta = attrs?.metadata?.order_doc_id;
-    if (typeof fromMeta === 'string' && DOC_ID.test(fromMeta))
+    if (typeof fromMeta === 'string' && security_1.ALNUM_DOC_ID.test(fromMeta))
         return fromMeta;
     const fromRef = attrs?.reference_number;
     if (typeof fromRef === 'string' && LEGACY_DOC_ID.test(fromRef))
         return fromRef;
     return null;
 }
-exports.paymongoWebhook = (0, https_1.onRequest)({ secrets: [index_1.paymongoSecret, index_1.telegramToken, index_1.telegramChatIds] }, async (req, res) => {
+exports.paymongoWebhook = (0, https_1.onRequest)({ secrets: [secrets_1.paymongoSecret, secrets_1.telegramToken, secrets_1.telegramChatIds] }, async (req, res) => {
     if (req.method !== 'POST') {
         res.status(405).send('Method Not Allowed');
         return;
@@ -100,8 +100,7 @@ exports.paymongoWebhook = (0, https_1.onRequest)({ secrets: [index_1.paymongoSec
         firebase_functions_1.logger.info(`PayMongo webhook received: ${event.type}`);
         const sessionId = String(event.data.id);
         if (event.type === 'checkout_session.payment.paid') {
-            const auth = Buffer.from(`${index_1.paymongoSecret.value()}:`).toString('base64');
-            const payments = await (0, paymongo_1.fetchSessionPayments)(sessionId, auth);
+            const payments = await (0, paymongo_1.fetchSessionPayments)(sessionId, (0, paymongo_1.paymongoAuthHeader)());
             if (!(0, paymongo_1.hasPaidPayment)(payments)) {
                 firebase_functions_1.logger.warn(`Webhook for ${sessionId} failed API verification — ignored`);
                 res.status(200).send('OK');
@@ -112,15 +111,13 @@ exports.paymongoWebhook = (0, https_1.onRequest)({ secrets: [index_1.paymongoSec
             const paymentId = (0, paymongo_1.firstPaymentId)(payments) || String(attrs.payments?.[0]?.id || '');
             const docId = resolveOrderDocId(attrs);
             if (docId) {
-                const db = (0, firestore_1.getFirestore)();
-                const orderRef = db.collection('orders').doc(docId);
+                const orderRef = (0, firestore_1.getFirestore)().collection('orders').doc(docId);
                 await (0, paymongo_1.markOrderPaidOnce)(orderRef, paymentId, refNumber);
                 firebase_functions_1.logger.info(`Order ${docId} marked as PAID via verified webhook`);
             }
         }
         if (event.type === 'checkout_session.payment.failed') {
-            const auth = Buffer.from(`${index_1.paymongoSecret.value()}:`).toString('base64');
-            const payments = await (0, paymongo_1.fetchSessionPayments)(sessionId, auth);
+            const payments = await (0, paymongo_1.fetchSessionPayments)(sessionId, (0, paymongo_1.paymongoAuthHeader)());
             if (!(0, paymongo_1.hasFailedPayment)(payments)) {
                 firebase_functions_1.logger.warn(`Webhook payment.failed for ${sessionId} failed API verification — ignored`);
                 res.status(200).send('OK');
@@ -128,14 +125,7 @@ exports.paymongoWebhook = (0, https_1.onRequest)({ secrets: [index_1.paymongoSec
             }
             const docId = resolveOrderDocId(event.data?.attributes || {});
             if (docId) {
-                const db = (0, firestore_1.getFirestore)();
-                const orderRef = db.collection('orders').doc(docId);
-                await db.runTransaction(async (tx) => {
-                    const snap = await tx.get(orderRef);
-                    if (!snap.exists || snap.data()?.paymentStatus === 'PAID')
-                        return;
-                    tx.update(orderRef, { paymentStatus: 'PAYMENT_FAILED' });
-                });
+                await (0, paymongo_1.markOrderPaymentFailed)((0, firestore_1.getFirestore)().collection('orders').doc(docId));
                 firebase_functions_1.logger.info(`Order ${docId} payment failed`);
             }
         }

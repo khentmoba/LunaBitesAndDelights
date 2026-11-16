@@ -1,13 +1,45 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.paymongoAuthHeader = paymongoAuthHeader;
+exports.requireOrderDoc = requireOrderDoc;
+exports.markOrderPaymentFailed = markOrderPaymentFailed;
 exports.fetchSessionPayments = fetchSessionPayments;
 exports.hasPaidPayment = hasPaidPayment;
 exports.hasFailedPayment = hasFailedPayment;
 exports.firstPaymentId = firstPaymentId;
 exports.markOrderPaidOnce = markOrderPaidOnce;
 const firestore_1 = require("firebase-admin/firestore");
+const https_1 = require("firebase-functions/v2/https");
 const firebase_functions_1 = require("firebase-functions");
+const secrets_1 = require("../secrets");
 const telegram_api_1 = require("../telegram_api");
+const security_1 = require("../util/security");
+function paymongoAuthHeader(requireConfigured = false) {
+    const key = secrets_1.paymongoSecret.value();
+    if (requireConfigured && !key) {
+        throw new https_1.HttpsError('internal', 'Payment service not configured');
+    }
+    return Buffer.from(`${key}:`).toString('base64');
+}
+async function requireOrderDoc(orderDocId) {
+    if (!security_1.ALNUM_DOC_ID.test(orderDocId)) {
+        throw new https_1.HttpsError('invalid-argument', 'Invalid order reference');
+    }
+    const orderRef = (0, firestore_1.getFirestore)().collection('orders').doc(orderDocId);
+    const snap = await orderRef.get();
+    if (!snap.exists) {
+        throw new https_1.HttpsError('not-found', 'Order not found');
+    }
+    return { orderRef, orderData: snap.data() };
+}
+async function markOrderPaymentFailed(orderRef) {
+    await (0, firestore_1.getFirestore)().runTransaction(async (tx) => {
+        const snap = await tx.get(orderRef);
+        if (!snap.exists || snap.data()?.paymentStatus === 'PAID')
+            return;
+        tx.update(orderRef, { paymentStatus: 'PAYMENT_FAILED' });
+    });
+}
 /** PayMongo checkout session statuses derived from session payments. */
 async function fetchSessionPayments(sessionId, auth) {
     const res = await fetch(`https://api.paymongo.com/v2/checkout_sessions/${sessionId}`, {
