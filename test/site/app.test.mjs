@@ -436,3 +436,18 @@ test('every menu row carries a kiosk pick and a photo path', () => {
     assert.match(row.getAttribute('data-photo') ?? '', /^images\/[\w-]+\.webp$/);
   }
 });
+
+test('notice pages render expected headings, links, and inline styles', () => {
+  const cases = [
+    { file: join(root, 'build', 'app', '404.html'), heading: 'Page not found', links: ['/kiosk/menu', '/menu/', '/'] },
+    { file: join(root, 'build', 'app', 'payment', 'cancel', 'index.html'), heading: 'GCash payment cancelled', links: ['/kiosk/menu', '/'] },
+    { file: join(root, 'build', 'app', 'payment', 'success', 'index.html'), heading: 'GCash payment received', links: ['/kiosk/menu', '/'] },
+  ];
+  for (const c of cases) {
+    const html = readFileSync(c.file, 'utf8');
+    const doc = new JSDOM(html).window.document;
+    assert.equal(doc.querySelector('h1')?.textContent, c.heading);
+    assert.deepEqual([...doc.querySelectorAll('.actions a')].map((a) => a.getAttribute('href')), c.links);
+    assert.ok(inlineStyleOf(html).includes('.card{'), `${c.file} keeps inline card styles`);
+  }
+});

@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 const kds = await import('../../app/src/staff/kds-data.ts');
 const report = await import('../../app/src/staff/report-data.ts');
 const { staffUsernameFor } = await import('../../app/src/kiosk/staff-hint.ts');
-const { esc } = await import('../../app/src/staff/ui.ts');
+const { esc, icon, num, int } = await import('../../app/src/staff/ui.ts');
 
 /// These cases were ported from the Flutter staff screens (removed in the
 /// cutover), so the kitchen and report rules stay the same.
@@ -96,4 +96,12 @@ test('esc escapes HTML entities and handles nullish and numeric inputs', () => {
   assert.equal(esc(null), '');
   assert.equal(esc(undefined), '');
   assert.equal(esc(42), '42');
+});
+
+test('ui helpers format icons and finite numbers cleanly', () => {
+  assert.match(icon('refresh_rounded', 'spin'), /^<span class="icon spin" aria-hidden="true">.*<\/span>$/);
+  assert.equal(num(12.5), 12.5);
+  assert.equal(num(NaN), 0);
+  assert.equal(num('12'), 0);
+  assert.equal(int(199.9), 199);
 });
