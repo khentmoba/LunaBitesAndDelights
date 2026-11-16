@@ -223,12 +223,10 @@ export const sendOrderNotification = onCall(
         let gmapKey = '';
         try {
           gmapKey = googleMapsApiKey.value();
-        } catch (_) {
-          gmapKey = process.env.GOOGLE_MAPS_API_KEY || '';
+        } catch {
+          gmapKey = '';
         }
-        if (!gmapKey && process.env.GOOGLE_MAPS_API_KEY) {
-          gmapKey = process.env.GOOGLE_MAPS_API_KEY;
-        }
+        gmapKey ||= process.env.GOOGLE_MAPS_API_KEY || '';
         const maptilerKey = process.env.MAPTILER_KEY || '';
 
         let mapUrl: string | null = null;

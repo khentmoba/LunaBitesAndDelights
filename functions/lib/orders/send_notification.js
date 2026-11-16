@@ -202,12 +202,10 @@ async (request) => {
             try {
                 gmapKey = index_1.googleMapsApiKey.value();
             }
-            catch (_) {
-                gmapKey = process.env.GOOGLE_MAPS_API_KEY || '';
+            catch {
+                gmapKey = '';
             }
-            if (!gmapKey && process.env.GOOGLE_MAPS_API_KEY) {
-                gmapKey = process.env.GOOGLE_MAPS_API_KEY;
-            }
+            gmapKey || (gmapKey = process.env.GOOGLE_MAPS_API_KEY || '');
             const maptilerKey = process.env.MAPTILER_KEY || '';
             let mapUrl = null;
             if (gmapKey) {
