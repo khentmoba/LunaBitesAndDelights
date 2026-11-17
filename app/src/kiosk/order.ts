@@ -163,10 +163,10 @@ export function notificationFor(order: Order, timeStr: string, orderDocId: strin
  * failed notification can never lose an order. docId is null when the write failed.
  */
 export async function placeOrder(order: Order, timeStr: string): Promise<{ docId: string | null; telegramSent: boolean }> {
-  const { firebase, callFn } = await import('./firebase');
+  const { firebaseDbLite, callFn } = await import('./firebase');
   let docId: string;
   try {
-    const [{ db }, fs] = await Promise.all([firebase(), import('firebase/firestore')]);
+    const [db, fs] = await Promise.all([firebaseDbLite(), import('firebase/firestore/lite')]);
     const ref = fs.doc(fs.collection(db, 'orders'));
     await fs.setDoc(ref, { ...orderFields(order), timestamp: fs.Timestamp.fromDate(order.timestamp) });
     docId = ref.id;

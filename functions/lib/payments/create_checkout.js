@@ -115,6 +115,7 @@ async (request) => {
         const response = await fetch(PAYMONGO_API, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', Authorization: `Basic ${auth}` },
+            signal: AbortSignal.timeout(10000),
             body: JSON.stringify({
                 data: {
                     attributes: {

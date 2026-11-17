@@ -100,7 +100,6 @@ export const updateOrderStatus = onCall(async (request) => {
   const db = getFirestore();
   try {
     const orderRef = db.collection('orders').doc(orderId);
-    if (!(await orderRef.get()).exists) throw new HttpsError('not-found', 'Order not found');
     const update: Record<string, any> = { status };
     if (cancellationReason) update.cancellationReason = cancellationReason;
     await orderRef.update(update);
@@ -108,6 +107,9 @@ export const updateOrderStatus = onCall(async (request) => {
     return { success: true };
   } catch (error: any) {
     if (error instanceof HttpsError) throw error;
+    if (error?.code === 5 || error?.code === 'not-found') {
+      throw new HttpsError('not-found', 'Order not found');
+    }
     logger.error(`Error updating order ${orderId} status:`, error);
     throw new HttpsError('internal', 'Failed to update order status');
   }

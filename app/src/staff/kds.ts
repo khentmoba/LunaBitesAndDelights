@@ -1,7 +1,7 @@
 // KdsPage from lib/screens/kds_page.dart: the live kitchen board. Orders come
 // from the kds_orders mirror in real time, with one getActiveOrders call on
 // open; if the listener fails the board polls every 10 s instead.
-import { callFn, firebase } from '../kiosk/firebase.ts';
+import { callFn, firebaseDb } from '../kiosk/firebase.ts';
 import type { IconName } from '../kiosk/icons.ts';
 import { playOrderChime, setSound, soundEnabled } from './chime.ts';
 import {
@@ -140,7 +140,7 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
     void fetchActive();
     connecting = true;
     try {
-      const [{ db }, fs] = await Promise.all([firebase(), import('firebase/firestore')]);
+      const [db, fs] = await Promise.all([firebaseDb(), import('firebase/firestore')]);
       if (disposed) return;
       const q = fs.query(
         fs.collection(db, 'kds_orders'),

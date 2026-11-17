@@ -28,10 +28,18 @@ export function shortAddress(address: Address | undefined): string {
   return parts.join(', ');
 }
 
+function combineSignal(signal: AbortSignal | undefined, timeoutMs: number): AbortSignal {
+  const timeout = AbortSignal.timeout(timeoutMs);
+  return signal && 'any' in AbortSignal ? AbortSignal.any([signal, timeout]) : signal ?? timeout;
+}
+
 /** Full and short display strings, both empty on failure. */
-export async function reverseGeocode(lat: number, lng: number): Promise<{ full: string; short: string }> {
+export async function reverseGeocode(lat: number, lng: number, signal?: AbortSignal): Promise<{ full: string; short: string }> {
   try {
-    const res = await fetch(`${REVERSE}&lat=${lat}&lon=${lng}`, { headers: { 'Accept-Language': 'en' } });
+    const res = await fetch(`${REVERSE}&lat=${lat}&lon=${lng}`, {
+      headers: { 'Accept-Language': 'en' },
+      signal: combineSignal(signal, 8_000),
+    });
     if (!res.ok) return { full: '', short: '' };
     const data = (await res.json()) as { display_name?: string; address?: Address };
     return { full: data.display_name ?? `${lat}, ${lng}`, short: shortAddress(data.address) };
@@ -41,9 +49,12 @@ export async function reverseGeocode(lat: number, lng: number): Promise<{ full: 
 }
 
 /** Raw Nominatim results, [] on failure. */
-export async function searchAddress(query: string): Promise<Place[]> {
+export async function searchAddress(query: string, signal?: AbortSignal): Promise<Place[]> {
   try {
-    const res = await fetch(`${SEARCH}&q=${encodeURIComponent(query)}`, { headers: { 'Accept-Language': 'en' } });
+    const res = await fetch(`${SEARCH}&q=${encodeURIComponent(query)}`, {
+      headers: { 'Accept-Language': 'en' },
+      signal: combineSignal(signal, 8_000),
+    });
     if (!res.ok) return [];
     const data: unknown = await res.json();
     return Array.isArray(data) ? (data as Place[]) : [];
