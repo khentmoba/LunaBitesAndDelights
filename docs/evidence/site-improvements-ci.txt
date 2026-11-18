@@ -21,3 +21,9 @@ app npm audit exit=0
 ℹ tests 55
 ℹ pass 55
 ℹ fail 0
+
+### Follow-up: firebase 13 test upgrade reverted
+CI rules job on fee0b98 failed every test with `this.getApp(...).firestore is not a function`:
+@firebase/rules-unit-testing 6.0.0 still calls the compat `app.firestore()` API, which firebase 13 does not
+provide. functions devDeps are back to firebase ^12.19.0 / rules-unit-testing ^5.0.2 (what main passes with).
+After revert: functions npm ci ok, npm test 32/32 pass, npm audit --audit-level=high exit 0.

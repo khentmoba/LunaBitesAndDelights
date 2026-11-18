@@ -23,9 +23,9 @@
     "node-telegram-bot-api": "^0.66.0"
   },
   "devDependencies": {
-    "@firebase/rules-unit-testing": "^6.0.0",
+    "@firebase/rules-unit-testing": "^5.0.2",
     "@types/node-telegram-bot-api": "^0.64.14",
-    "firebase": "13.1.0",
+    "firebase": "^12.19.0",
     "typescript": "^5.4.5"
   },
   "private": true,
