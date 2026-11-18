@@ -15,7 +15,7 @@ Hungry people inside delivery range of Purok 5, on phones, arriving from a Faceb
 
 ## Proof and content
 
-Real prices from `lib/data/menu_data.dart`, real photographs, the rider-confirmed delivery-fee policy, the real address, exact coordinates, the 7/11 landmark, the real Facebook page, hours 9am to 8pm, the owner's new circular Luna logo. No phone number, no ratings, no testimonials.
+Real prices from `app/src/data/menu.ts`, real photographs, the rider-confirmed delivery-fee policy, the real address, exact coordinates, the 7/11 landmark, the real Facebook page, hours 9am to 8pm, the owner's new circular Luna logo. No phone number, no ratings, no testimonials.
 
 ## Constraints
 

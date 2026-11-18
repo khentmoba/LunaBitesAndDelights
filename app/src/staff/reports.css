@@ -1,5 +1,4 @@
-/* The dashboard and reports wear KioskTheme (lib/widgets/kiosk/kiosk_theme.dart,
-   lib/widgets/report/report_widgets.dart). Text with no height of its own takes
+/* The dashboard and reports wear the kiosk theme. Text with no height of its own takes
    Material's bodyMedium line height, 1.43. */
 
 :root { --purple: #9C27B0; --orange: #FF9800; --grey-400: #BDBDBD; }

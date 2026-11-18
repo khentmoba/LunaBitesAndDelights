@@ -336,15 +336,15 @@
       },
       "app-heading": {
         "displayName": "App Heading",
-        "purpose": "Flutter category and slip titles."
+        "purpose": "Kiosk category and slip titles."
       },
       "app-body": {
         "displayName": "App Body",
-        "purpose": "Flutter printed copy and controls."
+        "purpose": "Kiosk printed copy and controls."
       },
       "app-hand": {
         "displayName": "App Hand",
-        "purpose": "Flutter quantities and handwritten prompts."
+        "purpose": "Kiosk quantities and handwritten prompts."
       }
     },
     "shadows": [
@@ -455,7 +455,7 @@
   ],
   "narrative": {
     "northStar": "The Pink Order Pad",
-    "overview": "Every Luna surface is a sheet torn from the kiosk's duplicate order booklet. The owner's pink watercolor is the carbon copy underneath; white slips with perforated top edges sit on it; logo pink prints the form, its rules and its column heads; the cashier's handwriting fills in what you are ordering. Prices always sit in one ruled column on the right, the way they do on a real pad, so the eye runs down a single edge to compare them.\n\nThe world has three inks plus paper: logo pink, butter yellow and plum-black ink, on white and blush. Pink prints; butter highlights, tapes and stamps; ink reads. Nothing glows and nothing is glass. Depth is paper lying on paper, and every photograph is a snapshot taped to the slip.\n\nThe storefront (site/) and the Flutter ordering app (/kiosk/) share the logo, palette, fonts and component language. The storefront is the long, scrolling pad; the app is the same pad at work: the menu is the price board, the cart is the order slip being written, and checkout prints the summary.",
+    "overview": "Every Luna surface is a sheet torn from the kiosk's duplicate order booklet. The owner's pink watercolor is the carbon copy underneath; white slips with perforated top edges sit on it; logo pink prints the form, its rules and its column heads; the cashier's handwriting fills in what you are ordering. Prices always sit in one ruled column on the right, the way they do on a real pad, so the eye runs down a single edge to compare them.\n\nThe world has three inks plus paper: logo pink, butter yellow and plum-black ink, on white and blush. Pink prints; butter highlights, tapes and stamps; ink reads. Nothing glows and nothing is glass. Depth is paper lying on paper, and every photograph is a snapshot taped to the slip.\n\nThe storefront (app/src/pages/) and the ordering app (/kiosk/) share the logo, palette, fonts and component language. The storefront is the long, scrolling pad; the app is the same pad at work: the menu is the price board, the cart is the order slip being written, and checkout prints the summary.",
     "keyCharacteristics": [
       "The owner's circular Luna logo is the masthead of the first slip and the mark in every header.",
       "White slips with a perforated top edge (16px notch rhythm) on the pink wash.",

@@ -1,4 +1,4 @@
-// InactivityWatcher (lib/services/inactivity_timer.dart): after two idle
+// Inactivity watcher: after two idle
 // minutes, warn for 15 seconds, then clear the order and go back to the splash.
 import { cart } from './cart';
 import { DRAFT, PENDING, save } from './handoff';

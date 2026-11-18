@@ -1,4 +1,4 @@
-// KioskSession from lib/services/session.dart: the open menu section and the
+// Kiosk session: the open menu section and the
 // dining mode, per tab.
 const CATEGORY = 'luna.category';
 const DINING = 'luna.dining';

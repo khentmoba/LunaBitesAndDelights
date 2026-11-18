@@ -1,4 +1,4 @@
-// Material Icons codepoints, as Flutter's Icons class names them. The glyphs
+// Material Icons codepoints, by their Material icon names. The glyphs
 // come from app/public/kiosk/fonts/material-icons.woff2.
 export const icons = {
   access_time_rounded: 0xf51a,

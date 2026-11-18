@@ -1,45 +1,22 @@
 # Miscellaneous
-*.class
 *.log
-*.pyc
 *.swp
-.DS_Store
-.atom/
-.build/
-.buildlog/
 .history
-.svn/
-.swiftpm/
-migrate_working_dir/
 
-# IntelliJ related
-*.iml
-*.ipr
-*.iws
+# Editors
 .idea/
+*.iml
+# .vscode/ is committed on purpose (shared settings).
 
-# The .vscode folder contains launch configuration and tasks you configure in
-# VS Code which you may wish to be included in version control, so this line
-# is commented out by default.
-#.vscode/
-
+# Build output
 /build/
 /coverage/
+app/.astro/
+# Compiled Cloud Functions (built by `npm run build` and the functions predeploy)
+functions/lib/
 
-# Symbolication related
-app.*.symbols
-
-# Obfuscation related
-app.*.map.json
-
-# Android Studio will place build artifacts here
-/android/app/debug
-/android/app/profile
-/android/app/release
-
-# Web related
+# Dependencies and Firebase local state
 node_modules/
-.web/
 .firebase/
 
 # Environment / secrets
@@ -54,5 +31,5 @@ Thumbs.db
 .live/
 .preview/
 
-# Astro generated types
-app/.astro/
+# Desktop agent app state
+.reasonix/

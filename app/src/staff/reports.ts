@@ -1,6 +1,5 @@
-// The two report pages: AnalyticsPage (lib/screens/analytics_page.dart) and
-// LifetimeAnalyticsPage (lib/screens/lifetime_analytics_page.dart), both in
-// ReportScaffold (lib/widgets/report/report_widgets.dart).
+// The two report pages, today's analytics and lifetime sales, in one shared
+// report layout.
 import { callFn } from '../kiosk/firebase.ts';
 import type { IconName } from '../kiosk/icons.ts';
 import { staffErrorMessage, type Staff } from './session.ts';

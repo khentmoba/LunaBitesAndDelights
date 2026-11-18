@@ -32,7 +32,7 @@ import Kiosk from '../../layouts/Kiosk.astro';
   };
   var to = routes[location.hash];
   if (to) location.replace(to + location.search);
-  // Storefront picks (?pick=...) ride along to the menu, as Flutter reads them after the splash.
+  // Storefront picks (?pick=...) ride along to the menu after the splash.
   else if (location.search) addEventListener('DOMContentLoaded', function () {
     document.querySelector('.splash__start').href = '/kiosk/menu' + location.search;
   });
@@ -50,7 +50,7 @@ void hasStoredStaffUser().then((staff) => {
 
 <style is:global>
 body { overflow: hidden; }
-/* lib/screens/splash_screen.dart */
+/* Splash */
 .splash { position: fixed; inset: 0; background: var(--ground) url('/kiosk/images/pink_wash.jpg') center / cover no-repeat; }
 .splash__scroll { height: 100%; overflow-y: auto; padding: calc(28px + env(safe-area-inset-top)) calc(24px + env(safe-area-inset-right)) calc(28px + env(safe-area-inset-bottom)) calc(24px + env(safe-area-inset-left)); }
 .splash__in { min-height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: space-between; animation: splash-fade .8s ease-out both; }

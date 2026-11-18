@@ -7,7 +7,8 @@ import { paymongoAuthHeader, requireOrderDoc } from './paymongo';
 const PAYMONGO_API = 'https://api.paymongo.com/v2/checkout_sessions';
 
 // Server-side price list — single source of truth for payment verification.
-// MUST match lib/data/menu_data.dart. Name → allowed prices (variants/collisions).
+// MUST match app/src/data/menu.ts; test/site/price-parity.test.mjs fails when it
+// drifts. Name → allowed prices (variants/collisions).
 // #8: never trust client-supplied prices; they only pick name+variant+qty.
 const MENU_PRICES: Record<string, number[]> = {
   'Shawarma Wrap': [99, 60], 'Shawarma All Meat': [80],
@@ -47,8 +48,7 @@ const MENU_PRICES: Record<string, number[]> = {
   'Burger with Egg': [85], 'Cheese & Egg Burger': [95],
   // Cached clients can still submit the previous name for this same ₱95 burger.
   'Egg & Cheese': [95],
-  // Sulit Meals + Chicken Poppers. A parity test in test/menu_price_parity_test.dart
-  // fails the build when this map drifts from lib/data/menu_data.dart.
+  // Sulit Meals + Chicken Poppers.
   'S1 – Hungarian Sausage': [99], 'S2 – Pork Tocino': [99], 'S3 – Shawarma Rice': [99],
   'S4 – Jumbo Hotdog': [99], 'S5 – Korean Spam Musubi': [99], "Luna's Pork Sisig": [99],
   'Korean Barbeque Poppers': [99], 'Korean Yangnyeom Poppers': [99],

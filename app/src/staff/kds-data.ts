@@ -1,5 +1,4 @@
-// The kitchen display's data rules: lib/services/kds_feed.dart and the pure
-// parts of lib/screens/kds_page.dart.
+// The kitchen display's data rules: the order feed and the board's pure logic.
 
 export interface KdsItem {
   name?: string;

@@ -1,4 +1,4 @@
-// The pure parts of LifetimeAnalyticsPage (lib/screens/lifetime_analytics_page.dart):
+// The pure parts of the lifetime sales report:
 // month axis labels, K/M number formatting and the date-range presets.
 
 const MONTHS = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'];

@@ -1,4 +1,4 @@
-// Session from lib/services/session.dart: a staff member is a Firebase user
+// Session: a staff member is a Firebase user
 // minted by the verifyStaff callable (uid `staff_<username>`) whose token
 // carries a `role` claim the rules accept. Anyone else is a customer.
 import { firebaseAuth } from '../kiosk/firebase.ts';
@@ -90,7 +90,7 @@ export async function signInWithToken(token: string): Promise<void> {
   await signInWithCustomToken(auth, token);
 }
 
-/** A callable's error as Flutter's FirebaseFunctionsException saw it. */
+/** A callable's error code and message, or null when it is not a callable error. */
 export function fnError(e: unknown): { code: string; message: string } | null {
   if (!e || typeof e !== 'object' || !('code' in e)) return null;
   const code = String((e as { code: unknown }).code).replace(/^functions\//, '');

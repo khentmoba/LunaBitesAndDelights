@@ -46,7 +46,7 @@ export function showDialog(html: string, cls = 'sdialog'): HTMLDialogElement {
   return d;
 }
 
-/** Flutter runs a topLeft→bottomRight gradient corner to corner; CSS needs the matching angle for each box. */
+/** Runs each gradient exactly corner to corner (top-left to bottom-right) by setting the angle from the box's size. */
 export function diagonals(scope: ParentNode): void {
   for (const el of scope.querySelectorAll<HTMLElement>('[data-ga]')) {
     const { width, height } = el.getBoundingClientRect();

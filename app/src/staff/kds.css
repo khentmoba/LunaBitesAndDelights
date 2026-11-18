@@ -1,4 +1,4 @@
-/* KdsPage (lib/screens/kds_page.dart): MenuTheme's square painted plates. */
+/* Kitchen display: square painted plates. */
 
 .kds { display: flex; flex-direction: column; height: 100dvh; }
 

@@ -1,4 +1,4 @@
-// StaffLoginDialog from lib/screens/staff_login_dialog.dart: a quick PIN pad or
+// Staff sign-in: a quick PIN pad or
 // a username and password, checked by the verifyStaff callable, which returns
 // a custom token for the Firebase staff session.
 import { callFn } from '../kiosk/firebase.ts';
