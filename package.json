@@ -8,6 +8,7 @@
   "devDependencies": {
     "firebase-tools": "^15.15.0",
     "jsdom": "^31.0.0",
+    "pngjs": "7.0.0",
     "yaml": "2.9.1"
   }
 }

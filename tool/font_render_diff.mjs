@@ -1,10 +1,10 @@
 // Renders build/app/index.html and build/app/menu/index.html full-page at 320/390/768/1440
 // with two versions of /fonts/bricolage.woff2 (same HTML), headless and muted,
-// and writes <page>-<width>-{old,new}.png. Compare them with tool/png_diff.py.
+// and writes <page>-<width>-{old,new}.png. Compare them with tool/png_diff.mjs.
 // Used to prove tool/prune_kerning.py changes no rendered pixel.
 //
 //   node tool/font_render_diff.mjs build/app tool/fonts/bricolage-source.woff2 app/public/fonts/bricolage.woff2 <outDir>
-//   python tool/png_diff.py <outDir>
+//   node tool/png_diff.mjs <outDir>
 import { createServer } from 'node:http';
 import { spawn } from 'node:child_process';
 import { readFileSync, writeFileSync, existsSync, statSync, mkdirSync, rmSync } from 'node:fs';
