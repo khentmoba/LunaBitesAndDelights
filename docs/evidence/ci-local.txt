@@ -1,0 +1,28 @@
+Local run of .github/workflows/pr-checks.yml at 55d98bf + working tree, 2026-11-18T14:01:18.221Z, node v24.22.2
+note: functions runs on node 22 in CI
+note: rules runs on node 22 in CI
+note: site runs on node 22 in CI
+
+## functions
+PASS  npm ci (functions) exit=0 31s
+PASS  TypeScript build (functions) exit=0 2s
+PASS  Lint (promise checks) (functions) exit=0 3s
+PASS  Unit tests (functions) exit=0 3s
+PASS  Report outdated npm deps (informational) (functions) exit=0 2s
+PASS  Fail on high/critical runtime vulnerabilities (functions) exit=0 2s
+
+## rules
+PASS  npm ci (functions) exit=0 32s
+PASS  Firestore rules tests (emulator) (functions) exit=0 10s
+PASS  Derived views tests (Functions + Firestore emulators) (functions) exit=0 18s
+
+## site
+PASS  npm ci (.) exit=0 38s
+PASS  npm ci (app) exit=0 38s
+PASS  Astro type check (app) exit=0 7s
+PASS  Lint (promise checks) (app) exit=0 3s
+PASS  Build the storefront (app) exit=0 3s
+PASS  Fail on high/critical runtime vulnerabilities (app) exit=0 2s
+PASS  Storefront tests (.) exit=0 2s
+
+all steps passed
