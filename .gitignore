@@ -56,3 +56,6 @@ Thumbs.db
 
 # Astro generated types
 app/.astro/
+
+# Compiled Cloud Functions (built by `npm run build` and the functions predeploy)
+functions/lib/
