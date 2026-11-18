@@ -26,32 +26,32 @@ This update completes two menu changes:
 
 ### 1. Storefront Menu & Prices (Shawarma Rice Bowl Removed)
 
-![Storefront Menu & Prices at 1440px Desktop](menu-storefront-1440.png)
+![Storefront Menu & Prices at 1440px Desktop](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/menu-storefront-1440.png?raw=true)
 *Desktop 1440px storefront price board showing Shawarma Favorites with Shawarma Wrap, All Meat, Nachos, Quesadilla, Fries, and Wrap B1T1 — Shawarma Rice Bowl is removed.*
 
-![Storefront Menu & Prices at 390px Mobile](menu-storefront-390.png)
+![Storefront Menu & Prices at 390px Mobile](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/menu-storefront-390.png?raw=true)
 *Mobile 390px view of the printed order slip showing Shawarma Favorites with no Shawarma Rice Bowl.*
 
 ### 2. Kiosk App — Shawarma Favorites Category
 
-![Kiosk Shawarma Favorites at 1440px](kiosk-shawarma-1440.png)
+![Kiosk Shawarma Favorites at 1440px](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/kiosk-shawarma-1440.png?raw=true)
 *Desktop 1440px Flutter kiosk ordering app showing Shawarma Favorites category grid without Shawarma Rice Bowl.*
 
-![Kiosk Shawarma Favorites at 390px](kiosk-shawarma-390.png)
+![Kiosk Shawarma Favorites at 390px](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/kiosk-shawarma-390.png?raw=true)
 *Mobile 390px Flutter kiosk ordering app showing Shawarma Favorites category.*
 
 ### 3. Kiosk App — Refreshments Category ("Large" Indicator Removed)
 
-![Kiosk Refreshments at 1440px](kiosk-drinks-1440.png)
+![Kiosk Refreshments at 1440px](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/kiosk-drinks-1440.png?raw=true)
 *Desktop 1440px view showing Refreshments (Coolers) without the yellow "LARGE" banner overlay.*
 
-![Kiosk Refreshments at 768px](kiosk-drinks-768.png)
+![Kiosk Refreshments at 768px](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/kiosk-drinks-768.png?raw=true)
 *Tablet 768px view showing Refreshments category with clean drink cards.*
 
-![Kiosk Refreshments at 390px](kiosk-drinks-390.png)
+![Kiosk Refreshments at 390px](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/kiosk-drinks-390.png?raw=true)
 *Mobile 390px view showing Refreshments category with clean drink cards.*
 
-![Kiosk Refreshments at 320px](kiosk-drinks-320.png)
+![Kiosk Refreshments at 320px](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/kiosk-drinks-320.png?raw=true)
 *Narrow mobile 320px view showing Refreshments category with clean product imagery.*
 
 ## Verification & CI Parity

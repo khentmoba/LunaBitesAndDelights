@@ -4,12 +4,12 @@ The storefront price board now uses a continuous cream menu panel, red category 
 
 ## Rendered evidence
 
-- [Desktop, 1440px](price-board-desktop.png)
-- [Phone, 390px](price-board-mobile.png)
-- [Phone meal offers and delivery notice](price-board-offers-mobile.png)
-- [Small phone, 320px](price-board-320.png)
-- [Tablet, 768px](price-board-tablet.png)
-- [Compact desktop, 1024px](price-board-1024.png)
+- [Desktop, 1440px](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/price-board-desktop.png?raw=true)
+- [Phone, 390px](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/price-board-mobile.png?raw=true)
+- [Phone meal offers and delivery notice](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/price-board-offers-mobile.png?raw=true)
+- [Small phone, 320px](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/price-board-320.png?raw=true)
+- [Tablet, 768px](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/price-board-tablet.png?raw=true)
+- [Compact desktop, 1024px](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/price-board-1024.png?raw=true)
 
 Each file is a section viewport captured from the locally served current `site/` source. They are review evidence, not shipping site assets. The desktop capture shows the complete section; the phone captures show the beginning and the offer strip separately. No new product photography or generated raster assets were introduced.
 

@@ -69,10 +69,10 @@ Added full `FastFoodRestaurant` JSON-LD schema into `site/index.html`:
 ## 3. Visual Verification
 
 ### Mobile (390px Viewport)
-![Storefront Mobile Viewport](seo-storefront-390.png)
+![Storefront Mobile Viewport](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/seo-storefront-390.png?raw=true)
 
 ### Desktop (1440px Viewport)
-![Storefront Desktop Viewport](seo-storefront-1440.png)
+![Storefront Desktop Viewport](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/seo-storefront-1440.png?raw=true)
 
 ---
 

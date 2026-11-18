@@ -41,16 +41,16 @@ Actual assembled Flutter release and storefront served locally. A fresh headless
 
 | View | 320px | 390px | 768px | 1440px |
 | --- | --- | --- | --- | --- |
-| Combo grid | [image](owner-combos-320.png) | [image](owner-combos-390.png) | [image](owner-combos-768.png) | [image](owner-combos-1440.png) |
-| Desserts in Extras | [image](owner-desserts-320.png) | [image](owner-desserts-390.png) | [image](owner-desserts-768.png) | [image](owner-desserts-1440.png) |
-| D1–D4 fries grid | [image](owner-fries-320.png) | [image](owner-fries-390.png) | [image](owner-fries-768.png) | [image](owner-fries-1440.png) |
-| Storefront price board | [image](owner-storefront-320.png) | [image](owner-storefront-390.png) | [image](owner-storefront-768.png) | [image](owner-storefront-1440.png) |
+| Combo grid | [image](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/owner-combos-320.png?raw=true) | [image](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/owner-combos-390.png?raw=true) | [image](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/owner-combos-768.png?raw=true) | [image](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/owner-combos-1440.png?raw=true) |
+| Desserts in Extras | [image](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/owner-desserts-320.png?raw=true) | [image](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/owner-desserts-390.png?raw=true) | [image](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/owner-desserts-768.png?raw=true) | [image](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/owner-desserts-1440.png?raw=true) |
+| D1–D4 fries grid | [image](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/owner-fries-320.png?raw=true) | [image](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/owner-fries-390.png?raw=true) | [image](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/owner-fries-768.png?raw=true) | [image](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/owner-fries-1440.png?raw=true) |
+| Storefront price board | [image](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/owner-storefront-320.png?raw=true) | [image](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/owner-storefront-390.png?raw=true) | [image](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/owner-storefront-768.png?raw=true) | [image](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/owner-storefront-1440.png?raw=true) |
 
-![Desserts at 1440px](owner-desserts-1440.png)
+![Desserts at 1440px](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/owner-desserts-1440.png?raw=true)
 
-![D1–D4 at 390px](owner-fries-390.png)
+![D1–D4 at 390px](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/owner-fries-390.png?raw=true)
 
-![D4 details at 320px](owner-d4-chooser-320.png)
+![D4 details at 320px](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/owner-d4-chooser-320.png?raw=true)
 
 Visual review: menu photographs load; category labels, prices and action buttons remain visible; long D3/D4 grid titles use the existing three-line ellipsis, with the complete D4 title and ingredients readable in its 320px details sheet. The Add to order button shows ₱89 without requiring an option. The fixed-quantity cart behavior is covered by widget tests. Storefront names wrap while amounts stay visible, with no horizontal overflow at any of the four widths. `owner-menu-render-checks.json` records viewport/scroll widths and zero page JavaScript errors for the menu runs. These are viewport captures of each menu category, not proof that every offscreen item fits in one phone viewport.
 

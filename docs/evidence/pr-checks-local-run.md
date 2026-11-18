@@ -56,7 +56,7 @@ The map picker opened and reverse-geocoded the position to
 That address can only come from `currentPosition()` returning a position, so the
 `dart:js_interop` path works at runtime.
 
-![Map picker after the dart:js_interop rewrite](map-picker-geolocation-web-390.png)
+![Map picker after the dart:js_interop rewrite](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/map-picker-geolocation-web-390.png?raw=true)
 
 The map tiles themselves show "Map preview is unavailable" in this local build;
 that is the MapTiler key not being configured locally and is unrelated to this
@@ -65,4 +65,4 @@ change.
 No order was submitted. The checkout confirmation dialog was dismissed with
 Escape rather than clicked, so nothing was written to production Firestore.
 
-![Kiosk menu after the analyzer cleanup](kiosk-after-analyzer-cleanup-390.png)
+![Kiosk menu after the analyzer cleanup](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/kiosk-after-analyzer-cleanup-390.png?raw=true)

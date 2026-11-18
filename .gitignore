@@ -33,3 +33,10 @@ Thumbs.db
 
 # Desktop agent app state
 .reasonix/
+
+# Proof images live on the evidence branch: node tool/publish_evidence.mjs
+docs/evidence/**/*.png
+docs/evidence/**/*.webp
+docs/evidence/**/*.jpg
+docs/evidence/**/*.jpeg
+docs/evidence/**/*.gif

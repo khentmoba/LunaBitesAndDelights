@@ -11,11 +11,11 @@ After = the Astro build (`parity/ts/`). Same script, same viewports, same headle
 
 | Screen | Before (main) | After (Astro) |
 |---|---|---|
-| Home, 390 | ![before](parity/flutter/storefront-home-390.png) | ![after](parity/ts/storefront-home-390.png) |
-| Home, 1440 | ![before](parity/flutter/storefront-home-1440.webp) | ![after](parity/ts/storefront-home-1440.webp) |
-| Menu, 390 | ![before](parity/flutter/storefront-menu-390.webp) | ![after](parity/ts/storefront-menu-390.webp) |
-| Menu, 1440 | ![before](parity/flutter/storefront-menu-1440.webp) | ![after](parity/ts/storefront-menu-1440.webp) |
-| 404, 390 | ![before](parity/flutter/storefront-404-390.webp) | ![after](parity/ts/storefront-404-390.webp) |
+| Home, 390 | ![before](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/flutter/storefront-home-390.png?raw=true) | ![after](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/ts/storefront-home-390.png?raw=true) |
+| Home, 1440 | ![before](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/flutter/storefront-home-1440.webp?raw=true) | ![after](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/ts/storefront-home-1440.webp?raw=true) |
+| Menu, 390 | ![before](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/flutter/storefront-menu-390.webp?raw=true) | ![after](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/ts/storefront-menu-390.webp?raw=true) |
+| Menu, 1440 | ![before](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/flutter/storefront-menu-1440.webp?raw=true) | ![after](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/ts/storefront-menu-1440.webp?raw=true) |
+| 404, 390 | ![before](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/flutter/storefront-404-390.webp?raw=true) | ![after](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/ts/storefront-404-390.webp?raw=true) |
 
 All 12 captures (320, 390, 768, 1440 for each page) are in `parity/ts/`.
 

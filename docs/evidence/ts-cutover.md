@@ -13,26 +13,26 @@ seed data, viewports and headless muted Chrome, against the emulators.
 
 | Screen | Before (Flutter) | After (TypeScript) |
 |---|---|---|
-| Splash, 390 | ![before](parity/flutter/kiosk-splash-390.webp) | ![after](parity/cutover/kiosk-splash-390.webp) |
-| Splash, 1440 | ![before](parity/flutter/kiosk-splash-1440.webp) | ![after](parity/cutover/kiosk-splash-1440.webp) |
-| Menu, 390 | ![before](parity/flutter/kiosk-menu-390.webp) | ![after](parity/cutover/kiosk-menu-390.webp) |
-| Menu, 1440 | ![before](parity/flutter/kiosk-menu-1440.webp) | ![after](parity/cutover/kiosk-menu-1440.webp) |
-| Cart, 390 | ![before](parity/flutter/kiosk-cart-390.webp) | ![after](parity/cutover/kiosk-cart-390.webp) |
-| Cart, 1440 | ![before](parity/flutter/kiosk-cart-1440.webp) | ![after](parity/cutover/kiosk-cart-1440.webp) |
-| Checkout, 390 | ![before](parity/flutter/kiosk-checkout-390.webp) | ![after](parity/cutover/kiosk-checkout-390.webp) |
-| Checkout, 1440 | ![before](parity/flutter/kiosk-checkout-1440.webp) | ![after](parity/cutover/kiosk-checkout-1440.webp) |
-| GCash, 390 | ![before](parity/flutter/kiosk-gcash-390.webp) | ![after](parity/cutover/kiosk-gcash-390.webp) |
-| GCash, 1440 | ![before](parity/flutter/kiosk-gcash-1440.webp) | ![after](parity/cutover/kiosk-gcash-1440.webp) |
-| Receipt, 390 | ![before](parity/flutter/kiosk-receipt-390.webp) | ![after](parity/cutover/kiosk-receipt-390.webp) |
-| Receipt, 1440 | ![before](parity/flutter/kiosk-receipt-1440.webp) | ![after](parity/cutover/kiosk-receipt-1440.webp) |
-| Staff login, 390 | ![before](parity/flutter/staff-login-390.webp) | ![after](parity/cutover/staff-login-390.webp) |
-| Staff login, 1440 | ![before](parity/flutter/staff-login-1440.webp) | ![after](parity/cutover/staff-login-1440.webp) |
-| Kitchen display, 390 | ![before](parity/flutter/staff-kds-390.webp) | ![after](parity/cutover/staff-kds-390.webp) |
-| Kitchen display, 1440 | ![before](parity/flutter/staff-kds-1440.webp) | ![after](parity/cutover/staff-kds-1440.webp) |
-| Dashboard, 390 | ![before](parity/flutter/staff-dashboard-390.webp) | ![after](parity/cutover/staff-dashboard-390.webp) |
-| Dashboard, 1440 | ![before](parity/flutter/staff-dashboard-1440.webp) | ![after](parity/cutover/staff-dashboard-1440.webp) |
-| Sales dashboard, 390 | ![before](parity/flutter/staff-analytics-390.webp) | ![after](parity/cutover/staff-analytics-390.webp) |
-| Sales dashboard, 1440 | ![before](parity/flutter/staff-analytics-1440.webp) | ![after](parity/cutover/staff-analytics-1440.webp) |
+| Splash, 390 | ![before](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/flutter/kiosk-splash-390.webp?raw=true) | ![after](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/cutover/kiosk-splash-390.webp?raw=true) |
+| Splash, 1440 | ![before](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/flutter/kiosk-splash-1440.webp?raw=true) | ![after](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/cutover/kiosk-splash-1440.webp?raw=true) |
+| Menu, 390 | ![before](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/flutter/kiosk-menu-390.webp?raw=true) | ![after](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/cutover/kiosk-menu-390.webp?raw=true) |
+| Menu, 1440 | ![before](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/flutter/kiosk-menu-1440.webp?raw=true) | ![after](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/cutover/kiosk-menu-1440.webp?raw=true) |
+| Cart, 390 | ![before](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/flutter/kiosk-cart-390.webp?raw=true) | ![after](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/cutover/kiosk-cart-390.webp?raw=true) |
+| Cart, 1440 | ![before](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/flutter/kiosk-cart-1440.webp?raw=true) | ![after](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/cutover/kiosk-cart-1440.webp?raw=true) |
+| Checkout, 390 | ![before](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/flutter/kiosk-checkout-390.webp?raw=true) | ![after](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/cutover/kiosk-checkout-390.webp?raw=true) |
+| Checkout, 1440 | ![before](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/flutter/kiosk-checkout-1440.webp?raw=true) | ![after](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/cutover/kiosk-checkout-1440.webp?raw=true) |
+| GCash, 390 | ![before](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/flutter/kiosk-gcash-390.webp?raw=true) | ![after](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/cutover/kiosk-gcash-390.webp?raw=true) |
+| GCash, 1440 | ![before](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/flutter/kiosk-gcash-1440.webp?raw=true) | ![after](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/cutover/kiosk-gcash-1440.webp?raw=true) |
+| Receipt, 390 | ![before](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/flutter/kiosk-receipt-390.webp?raw=true) | ![after](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/cutover/kiosk-receipt-390.webp?raw=true) |
+| Receipt, 1440 | ![before](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/flutter/kiosk-receipt-1440.webp?raw=true) | ![after](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/cutover/kiosk-receipt-1440.webp?raw=true) |
+| Staff login, 390 | ![before](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/flutter/staff-login-390.webp?raw=true) | ![after](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/cutover/staff-login-390.webp?raw=true) |
+| Staff login, 1440 | ![before](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/flutter/staff-login-1440.webp?raw=true) | ![after](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/cutover/staff-login-1440.webp?raw=true) |
+| Kitchen display, 390 | ![before](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/flutter/staff-kds-390.webp?raw=true) | ![after](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/cutover/staff-kds-390.webp?raw=true) |
+| Kitchen display, 1440 | ![before](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/flutter/staff-kds-1440.webp?raw=true) | ![after](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/cutover/staff-kds-1440.webp?raw=true) |
+| Dashboard, 390 | ![before](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/flutter/staff-dashboard-390.webp?raw=true) | ![after](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/cutover/staff-dashboard-390.webp?raw=true) |
+| Dashboard, 1440 | ![before](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/flutter/staff-dashboard-1440.webp?raw=true) | ![after](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/cutover/staff-dashboard-1440.webp?raw=true) |
+| Sales dashboard, 390 | ![before](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/flutter/staff-analytics-390.webp?raw=true) | ![after](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/cutover/staff-analytics-390.webp?raw=true) |
+| Sales dashboard, 1440 | ![before](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/flutter/staff-analytics-1440.webp?raw=true) | ![after](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/cutover/staff-analytics-1440.webp?raw=true) |
 
 All four widths (320, 390, 768, 1440) of every kiosk and staff screen, plus the delivery map, delivery
 checkout and staff console, are in `parity/cutover/`. The storefront did not change: its captures match
@@ -103,7 +103,7 @@ emulator session, after the screenshots, so the dashboard also counts the seeded
 
 | Pickup receipt | Kitchen display after MARK AS READY | Dashboard |
 |---|---|---|
-| ![pickup](cutover/ts-kiosk-order-e2e-pickup-cash-390.png) | ![ready](cutover/ts-staff-e2e-kds-ready-1440.png) | ![dashboard](cutover/ts-staff-e2e-dashboard-1440.png) |
+| ![pickup](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/cutover/ts-kiosk-order-e2e-pickup-cash-390.png?raw=true) | ![ready](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/cutover/ts-staff-e2e-kds-ready-1440.png?raw=true) | ![dashboard](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/cutover/ts-staff-e2e-dashboard-1440.png?raw=true) |
 
 ## GCash link check
 

@@ -7,15 +7,15 @@ The two independent reviewers used GPT-6.1-Sol with thinking set to medium. The 
 
 ## Visual proof
 
-![Mobile opening before and after](review-fixes-mobile.jpg)
+![Mobile opening before and after](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/review-fixes-mobile.jpg?raw=true)
 
 390 x 844, DPR 1. Before, the first food photo starts at approximately y847. After, it starts at y541 and the complete halo-halo 49-peso tag is visible by y706. At 320 x 740 the complete tag is visible by y704. The existing image is reused; there is no duplicate image or new asset request.
 
-![Meal offer layout before and after](review-fixes-offers.jpg)
+![Meal offer layout before and after](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/review-fixes-offers.jpg?raw=true)
 
 390px crops from full-page captures. The meal name and 99-peso price now share the first row; the description spans the next row. Browser assertions checked both offers at 320, 390 and 820px. Name and price baselines differ by less than one pixel.
 
-![Section jump before and after](review-fixes-anchor.jpg)
+![Section jump before and after](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/review-fixes-anchor.jpg?raw=true)
 
 320px after clicking See the board, cropped to the same 500px height. Before, the heading is under the sticky bar. After, the header bottom is y72.5 and the heading starts at y119.2. Direct #window and #find jumps also leave their headings below the header.
 

@@ -98,11 +98,11 @@ og:url:    property="og:url" content="https://lunabitesanddelights.web.app/"
 Opening `https://lunaexpress.web.app/` in a real browser lands on
 `https://lunabitesanddelights.web.app/` (URL read back from the live page).
 
-![Legacy domain after redirect, 390px](migration-redirect-390.png)
+![Legacy domain after redirect, 390px](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/migration-redirect-390.png?raw=true)
 
 The ordering app on the canonical domain renders the menu:
 
-![Kiosk menu on the canonical domain, 390px](migration-kiosk-390.png)
+![Kiosk menu on the canonical domain, 390px](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/migration-kiosk-390.png?raw=true)
 
 ### Local checks
 

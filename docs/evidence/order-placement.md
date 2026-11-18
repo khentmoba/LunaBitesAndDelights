@@ -10,7 +10,7 @@ The initial write now contains only `OrderModel.toJson()`. The notification func
 
 ## Before and after
 
-![Emulator replay output, before and after](order-placement-proof.png)
+![Emulator replay output, before and after](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/order-placement-proof.png?raw=true)
 
 This image displays captured test output, not a screenshot of customer checkout.
 
