@@ -1,5 +1,4 @@
-// Firebase for the kiosk, as lib/services/firebase_init.dart and functions.dart
-// set it up: the lunaexpress web app, App Check through reCAPTCHA Enterprise when
+// Firebase for the kiosk: the lunaexpress web app, App Check through reCAPTCHA Enterprise when
 // a site key is built in, callables in us-central1 with a 15 s timeout, and
 // Firebase Auth for the staff session.
 // Each SDK is loaded lazily on first use so pages only download what they need
@@ -95,7 +94,7 @@ export function firebaseDb(): Promise<Firestore> {
   return dbPromise;
 }
 
-/** callFn from lib/services/functions.dart: the callable's data as an object. */
+/** Calls a Cloud Function and returns its data as an object. */
 export async function callFn<T = Record<string, unknown>>(name: string, params: object = {}, timeoutSecs = 15): Promise<T> {
   const [functions, { httpsCallable }] = await Promise.all([firebaseFunctions(), import('firebase/functions')]);
   const result = await httpsCallable(functions, name, { timeout: timeoutSecs * 1000 })(params);

@@ -1,6 +1,5 @@
-// AudioAlertService.playOrderChime: web/index.html's playOrderAlert, a two-note
-// sine chime (E5 then A5). On by default and kept for this page only, as the
-// Flutter static flag was.
+// The new-order chime: a two-note sine chime (E5 then A5). On by default; the
+// setting lasts only for this page.
 let ctx: AudioContext | null = null;
 export let soundEnabled = true;
 

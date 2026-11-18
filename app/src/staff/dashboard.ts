@@ -1,4 +1,4 @@
-// AdminDashboard from lib/screens/admin_dashboard.dart: today's numbers, the
+// Staff dashboard: today's numbers, the
 // kitchen and walk-in shortcuts, quick actions and the latest orders.
 import { cart } from '../kiosk/cart.ts';
 import { $ } from '../kiosk/dom.ts';

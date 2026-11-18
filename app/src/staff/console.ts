@@ -1,4 +1,4 @@
-// StaffMenuDialog (lib/screens/staff_menu.dart): the staff console bottom
+// The staff console bottom
 // sheet the menu's "Staff console" item opens. Loaded only for staff.
 import './console.css';
 import { cart } from '../kiosk/cart.ts';

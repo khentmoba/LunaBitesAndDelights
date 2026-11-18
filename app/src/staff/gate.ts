@@ -1,5 +1,4 @@
-// Every staff screen sits behind the sign-in gate, as the Flutter pages
-// return _buildStaffAuthGate() while the session is not staff.
+// Every staff screen sits behind the sign-in gate until the session is staff.
 import { mountLogin } from './login.ts';
 import { currentStaff, watchStaff, type Staff } from './session.ts';
 

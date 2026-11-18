@@ -1,5 +1,5 @@
-// What one kiosk page hands the next. Flutter passed these as constructor
-// arguments; here each page is its own document, so they ride in sessionStorage.
+// What one kiosk page hands the next. Each page is its own document, so these
+// ride in sessionStorage.
 import type { OrderItem, OrderType, PaymentMethod } from './order';
 
 /** The checkout form, kept while the shopper visits the map or GCash and comes back. */

@@ -1,4 +1,4 @@
-// lib/services/geocoding.dart and location_web.dart: Nominatim search and
+// Location lookups: Nominatim search and
 // reverse lookups, MapTiler tiles, and a best-effort browser position.
 const SEARCH = 'https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=5';
 const REVERSE = 'https://nominatim.openstreetmap.org/reverse?format=json&zoom=18&addressdetails=1';

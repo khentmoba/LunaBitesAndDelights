@@ -1,5 +1,5 @@
 // Storefront picks (`?pick=s1#Solo&pick=f4&pick=@drinks`) into cart lines and
-// items that still need a choice. Same rules as lib/services/menu_preselect.dart.
+// items that still need a choice.
 import { menuSections, type MenuItem } from '../data/menu.ts';
 import type { CartItem } from './cart';
 

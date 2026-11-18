@@ -1,6 +1,5 @@
-/* Staff screens. The kitchen display and sign-in gate wear MenuTheme's square
-   painted plates (lib/screens/kds_page.dart, staff_login_dialog.dart); the
-   dashboard and reports wear KioskTheme (admin_dashboard.dart, report_widgets.dart). */
+/* Staff screens. The kitchen display and sign-in gate wear square painted
+   plates; the dashboard and reports wear the kiosk theme. */
 
 .staff { background: var(--ground); }
 .staff--blush { background: var(--blush-paper); }

@@ -8,12 +8,13 @@ adaptive
 
 ## Stack
 
-Two surfaces in one Firebase Hosting deploy:
+One Astro project (`app/`) builds every page into a single Firebase Hosting deploy:
 
-- `/` — a static HTML/CSS/JS storefront, built with Astro from `app/src/pages/` (prices come from `app/src/data/menu.ts`).
-- `/kiosk/` — the existing Flutter web ordering app, built with `--base-href /kiosk/`.
+- `/` and `/menu/` — the static storefront (`app/src/pages/index.astro`, `app/src/pages/menu/`).
+- `/kiosk/` — the TypeScript ordering app (`app/src/pages/kiosk/`, scripts in `app/src/kiosk/`).
+- `/staff/` — the staff console: sign-in, dashboard, kitchen display and sales reports (`app/src/pages/staff/`, scripts in `app/src/staff/`).
 
-`tool/assemble_site.dart` moves the Flutter build into `build/web/kiosk/` and copies the Astro build (`build/app/`) to the root of `build/web/`.
+Prices for all three come from `app/src/data/menu.ts`. Cloud Functions (`functions/src/`) handle payments, staff sign-in, Telegram notifications and reporting.
 
 ## Users
 
@@ -38,13 +39,13 @@ A neighbourhood kiosk with the prices printed where you can see them: real per-i
 ## Capabilities and Constraints
 
 - Menu sections: Shawarma Favorites, French Fries, Combo Meals, Extras, Refreshments (coolers), Burgers (buy 1 take 1).
-- Prices live in `lib/data/menu_data.dart`; the storefront must not drift from them.
+- Prices live in `app/src/data/menu.ts`. The checkout function keeps its own list (`functions/src/payments/create_checkout.ts`); `test/site/price-parity.test.mjs` fails when the two drift.
 - Fries & Nachos Overload has Buddy (1–2 pax, ₱99) and Barkada (3–5 pax, ₱150) sizes. Burger favorites retain buy 1 take 1 pricing.
 - The owner's dessert and combo uploads add Ube Halo, Mango Graham, Choco Oreo and Vanilla Cheese ice cream at ₱65 each, Luna Leche Flan at ₱20, and D1–D4 fries/drink bundles at ₱55/₱65/₱75/₱89. Combo 2 is wrap + fries (₱99), Super Combo 1 is burger + fries + drink (₱99), Super Combo 2 is wrap + fries + drink (₱128), Combo 3 is two burgers + regular fries + two drinks (₱169), Combo 4 is wrap + burger + fries (₱139), and Combo 6 is wrap + shawarma burger + drink (₱150). Original uploads and crop mappings are in `docs/reference/menu-update/` and `docs/owner-menu-crops.json`.
 - Shawarma Fries and Shawarma Nachos are ₱99. Milo Craze (Dinosaur, Float, Crunch, Oreo) is ₱65; Cream Float Craze is Coke ₱49, Chuckie ₱65, Milo ₱65 and Cookies and Cream ₱65; every Coffee Foam drink is ₱49.
 - Delivery fee: rider-confirmed and charged separately. The storefront, checkout and receipt show a delivery-fee notice without quoting an amount. Checkout totals and online payments cover food only.
 - Checkout supports cash and GCash; staff verify orders in the dashboard.
-- Routes in the kiosk app: `/menu`, `/cart`, `/checkout_process`, `/kds`, `/analytics`, `/pasugo/*`.
+- Kiosk routes: `/kiosk/`, `/kiosk/menu/`, `/kiosk/cart/`, `/kiosk/map/`, `/kiosk/checkout/`, `/kiosk/gcash/`, `/kiosk/receipt/`. Staff routes: `/staff/`, `/staff/dashboard/`, `/staff/kds/`, `/staff/analytics/`, `/staff/lifetime/`. Old Flutter hash links (`/kiosk/#/menu`) redirect to the new pages.
 - Opening hours are 9am to 8pm, supplied by the owner.
 - Undecided: a contact phone number. The owner will supply it later. Do not invent one.
 
@@ -53,13 +54,13 @@ A neighbourhood kiosk with the prices printed where you can see them: real per-i
 - Name: Luna Bites & Delights. Canonical domain: `https://lunabitesanddelights.web.app`. The legacy `lunaexpress.web.app` domain permanently redirects (301) to it, and "Luna Express" survives only as a search alias in structured data.
 - Tagline in the owner's own words: "Good food, sweet drinks, moonlit vibes."
 - Intro copy from the Facebook page: "Tambayan ng good food, sweet drinks, at moonlit vibes 🌕✨ Feel the comfort, taste the delight — only at Luna Bites & Delights 💛 Located @ Purok 5, Magallanes, Agusan Del Norte."
-- Owner-supplied palette: logo pink `#EC1C72`, blush `#FEB7C9`, pink watercolor wash (`app/public/img/pink-wash.webp`, `images/pink_wash.jpg`), butter yellow `#FCD04E`, paper `#FFFAFB`, plum ink `#2A0F1E`.
-- Logo: `images/luna_logo.png` (and `app/public/img/luna-logo-*.webp`), the owner's circular pink badge with a yellow cooler cup, striped straw, script "Luna" and "Bites & Delights".
+- Owner-supplied palette: logo pink `#EC1C72`, blush `#FEB7C9`, pink watercolor wash (`app/public/img/pink-wash.webp`, `app/public/kiosk/images/pink_wash.jpg`), butter yellow `#FCD04E`, paper `#FFFAFB`, plum ink `#2A0F1E`.
+- Logo: `app/public/kiosk/images/luna_logo.webp` (and `app/public/img/luna-logo-*.webp`), the owner's circular pink badge with a yellow cooler cup, striped straw, script "Luna" and "Bites & Delights".
 
 ## Evidence on Hand
 
-- Real product photography in `images/` (shawarma wrap, fries, burger, three large coolers, couple snack combo, and more) — the kiosk's own menu assets.
-- Real prices and item descriptions in `lib/data/menu_data.dart`.
+- Real product photography in `app/public/kiosk/images/` (shawarma wrap, fries, burger, three large coolers, couple snack combo, and more) — the kiosk's own menu assets.
+- Real prices and item descriptions in `app/src/data/menu.ts`.
 - Public Facebook figures as of capture: 866 followers, 270 talking about this.
 - No testimonials, reviews, awards, or press exist. Do not fabricate any.
 

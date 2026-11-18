@@ -1,4 +1,4 @@
-// KdsPage from lib/screens/kds_page.dart: the live kitchen board. Orders come
+// The live kitchen board. Orders come
 // from the kds_orders mirror in real time, with one getActiveOrders call on
 // open; if the listener fails the board polls every 10 s instead.
 import { callFn, firebaseDb } from '../kiosk/firebase.ts';

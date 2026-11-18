@@ -1,4 +1,4 @@
-// The order being built, as lib/services/cart_notifier.dart keeps it. Kept in
+// The order being built. Kept in
 // sessionStorage so it survives moving between the kiosk pages in one tab.
 
 export interface CartItem {

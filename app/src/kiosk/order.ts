@@ -1,7 +1,6 @@
-// Order rules and the checkout pipeline, from lib/services/order_policy.dart,
-// order_service.dart, telegram_service.dart, delivery.dart, utils/format.dart
-// and utils/validate.dart. Everything above placeOrder is pure so Node tests
-// can run it without a browser.
+// Order rules and the checkout pipeline: validation, delivery details,
+// formatting and placing the order. Everything above placeOrder is pure so
+// Node tests can run it without a browser.
 import type { CartItem } from './cart';
 
 export type OrderType = 'Pickup' | 'Delivery' | 'Walk-In';
