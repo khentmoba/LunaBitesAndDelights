@@ -111,7 +111,7 @@ test('trigger mirrors orders and keeps daily stats exact', async () => {
 });
 
 test('backfill rebuilds dailyStats and the mirror from orders alone', async () => {
-  const { backfill } = require('../scripts/backfill-derived-views');
+  const { backfill } = require('../../scripts/backfill-derived-views');
   const before = await call('getLifetimeSalesReport', {});
   // Simulate pre-trigger history: wipe derived views, add an old-day order.
   for (const c of ['dailyStats', 'kds_orders']) {

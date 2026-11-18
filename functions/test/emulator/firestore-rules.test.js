@@ -30,7 +30,7 @@ before(async () => {
     projectId: 'lunaexpress-test',
     firestore: {
       rules: readFileSync(
-        process.env.FIRESTORE_RULES_FILE || resolve(__dirname, '../../firestore.rules'),
+        process.env.FIRESTORE_RULES_FILE || resolve(__dirname, '../../../firestore.rules'),
         'utf8',
       ),
     },
@@ -57,14 +57,14 @@ describe('orders: kiosk can only create (validated)', () => {
   });
   test('anon can create the complete checkout payload', async () => {
     const payload = JSON.parse(readFileSync(
-      process.env.ORDER_PAYLOAD_FILE || resolve(__dirname, 'fixtures/order-create.json'),
+      process.env.ORDER_PAYLOAD_FILE || resolve(__dirname, '../fixtures/order-create.json'),
       'utf8',
     ));
     payload.timestamp = Timestamp.fromDate(new Date(payload.timestamp));
     await assertSucceeds(addDoc(collection(anon(), 'orders'), payload));
   });
   test('create rejects telegramSent (the field that broke checkout)', async () => {
-    const payload = JSON.parse(readFileSync(resolve(__dirname, 'fixtures/order-create.json'), 'utf8'));
+    const payload = JSON.parse(readFileSync(resolve(__dirname, '../fixtures/order-create.json'), 'utf8'));
     payload.timestamp = Timestamp.fromDate(new Date(payload.timestamp));
     await assertFails(addDoc(collection(anon(), 'orders'), { ...payload, telegramSent: false }));
   });
@@ -91,7 +91,7 @@ describe('orders: kiosk can only create (validated)', () => {
 // Fixtures are the exact writes checkout makes, produced by
 // test/order_service_test.dart. If one fails here, real orders fail in production.
 describe('orders: every checkout combination saves', () => {
-  const dir = resolve(__dirname, 'fixtures/checkout');
+  const dir = resolve(__dirname, '../fixtures/checkout');
   const load = (name) => {
     const payload = JSON.parse(readFileSync(resolve(dir, `${name}.json`), 'utf8'));
     payload.timestamp = Timestamp.fromDate(new Date(payload.timestamp));
