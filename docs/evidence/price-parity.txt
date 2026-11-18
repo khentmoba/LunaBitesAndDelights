@@ -1,0 +1,26 @@
+### Unchanged menu
+✔ the checkout price list knows every menu item at every price the kiosk can charge (0.8307ms)
+✔ items whose variants cost different amounts pin each variant to its price (0.6754ms)
+✔ the parser reads the real price list (0.1219ms)
+ℹ pass 3
+ℹ fail 0
+
+### Drift injected: S1 – Hungarian Sausage set to 105 in menu.ts
+✖ the checkout price list knows every menu item at every price the kiosk can charge (0.9507ms)
+✔ items whose variants cost different amounts pin each variant to its price (0.7144ms)
+✔ the parser reads the real price list (0.1057ms)
+ℹ pass 2
+ℹ fail 1
+✖ failing tests:
+✖ the checkout price list knows every menu item at every price the kiosk can charge (0.9507ms)
+  AssertionError [ERR_ASSERTION]: "S1 – Hungarian Sausage" (sm1) can cost ₱105, but MENU_PRICES allows only 99
+
+### Drift injected: VARIANT_PRICES Buddy set to 150
+✔ the checkout price list knows every menu item at every price the kiosk can charge (0.8331ms)
+✖ items whose variants cost different amounts pin each variant to its price (1.4834ms)
+✔ the parser reads the real price list (0.1087ms)
+ℹ pass 2
+ℹ fail 1
+✖ failing tests:
+✖ items whose variants cost different amounts pin each variant to its price (1.4834ms)
+  AssertionError [ERR_ASSERTION]: VARIANT_PRICES["Nachos & Fries Overload"] does not match the menu's variants
