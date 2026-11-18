@@ -5,7 +5,7 @@ export default defineConfig({
   site: 'https://lunabitesanddelights.web.app',
   outDir: '../build/app',
   output: 'static',
-  compressHTML: false,
+  compressHTML: true,
   build: { format: 'directory', inlineStylesheets: 'always' },
   trailingSlash: 'ignore',
   devToolbar: { enabled: false },

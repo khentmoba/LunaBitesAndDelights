@@ -8,6 +8,7 @@ exports.daysFromOrders = daysFromOrders;
 exports.dayDeltas = dayDeltas;
 exports.incrementPayload = incrementPayload;
 exports.dayFromDoc = dayFromDoc;
+exports.salesAnalyticsFromDay = salesAnalyticsFromDay;
 exports.lifetimeReportFromDays = lifetimeReportFromDays;
 const firestore_1 = require("firebase-admin/firestore");
 const util_1 = require("../util");
@@ -144,6 +145,34 @@ function dayFromDoc(id, d) {
         day.items[k] = { name: String(it?.name ?? k), variant: String(it?.variant ?? ''), qty: num(it?.qty), revenue: num(it?.revenue) };
     }
     return day;
+}
+/** The getSalesAnalytics response body for a single day, built from its dailyStats summary. */
+function salesAnalyticsFromDay(dateLabel, day) {
+    const itemCounts = {};
+    for (const it of Object.values(day.items)) {
+        if (it.qty <= 0)
+            continue;
+        const key = (0, util_1.itemKey)(it.name || 'Unknown', it.variant);
+        itemCounts[key] = (itemCounts[key] || 0) + it.qty;
+    }
+    const topItems = Object.entries(itemCounts)
+        .map(([name, count]) => ({ name, count }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 5);
+    return {
+        success: true,
+        dateLabel,
+        totalRevenue: day.revenue,
+        totalItemsSold: day.itemsSold,
+        orderCount: day.orders,
+        averageOrderValue: day.orders > 0 ? Math.round(day.revenue / day.orders) : 0,
+        breakdown: {
+            walkIn: day.channel.walkIn,
+            delivery: day.channel.delivery,
+            pickup: day.channel.pickup,
+        },
+        topItems,
+    };
 }
 /** The getLifetimeSalesReport response body, built from day summaries. */
 function lifetimeReportFromDays(days, dateRange) {

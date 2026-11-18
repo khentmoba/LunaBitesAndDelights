@@ -40,6 +40,7 @@ export async function markOrderPaymentFailed(orderRef: DocumentReference): Promi
 export async function fetchSessionPayments(sessionId: string, auth: string): Promise<any[] | null> {
   const res = await fetch(`https://api.paymongo.com/v2/checkout_sessions/${sessionId}`, {
     headers: { Authorization: `Basic ${auth}` },
+    signal: AbortSignal.timeout(10_000),
   });
   if (!res.ok) return null;
   const json: any = await res.json();

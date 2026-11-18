@@ -6,12 +6,22 @@ const firestore_1 = require("firebase-admin/firestore");
 const firebase_functions_1 = require("firebase-functions");
 const util_1 = require("../util");
 const security_1 = require("../util/security");
+const daily_stats_1 = require("./daily_stats");
+const STATS_META_DOC = 'stats_meta/dailyStats';
 exports.getSalesAnalytics = (0, https_1.onCall)(async (request) => {
     (0, security_1.requireStaff)(request);
     const db = (0, firestore_1.getFirestore)();
     try {
         const dateLabel = (0, util_1.phtDateLabel)();
         firebase_functions_1.logger.info(`Fetching sales analytics for dateLabel: ${dateLabel}`);
+        const [metaSnap, daySnap] = await Promise.all([
+            db.doc(STATS_META_DOC).get(),
+            db.collection('dailyStats').doc(dateLabel).get(),
+        ]);
+        if (metaSnap.exists && metaSnap.get('backfilledAt')) {
+            const day = daySnap.exists ? (0, daily_stats_1.dayFromDoc)(dateLabel, daySnap.data()) : (0, daily_stats_1.emptyDay)(dateLabel);
+            return (0, daily_stats_1.salesAnalyticsFromDay)(dateLabel, day);
+        }
         const snapshot = await db.collection('orders')
             .where('dateLabel', '==', dateLabel)
             .get();

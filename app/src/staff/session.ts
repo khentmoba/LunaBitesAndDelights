@@ -1,7 +1,7 @@
 // Session from lib/services/session.dart: a staff member is a Firebase user
 // minted by the verifyStaff callable (uid `staff_<username>`) whose token
 // carries a `role` claim the rules accept. Anyone else is a customer.
-import { firebase } from '../kiosk/firebase.ts';
+import { firebaseAuth } from '../kiosk/firebase.ts';
 import { staffUsernameFor } from '../kiosk/staff-hint.ts';
 
 export { hasStoredStaffUser, staffUsernameFor } from '../kiosk/staff-hint.ts';
@@ -40,7 +40,7 @@ function emit(next: Staff | null) {
 async function bind() {
   if (bound) return;
   bound = true;
-  const [{ auth }, { onAuthStateChanged }] = await Promise.all([firebase(), import('firebase/auth')]);
+  const [auth, { onAuthStateChanged }] = await Promise.all([firebaseAuth(), import('firebase/auth')]);
   onAuthStateChanged(auth, (user) => {
     const username = user ? staffUsernameFor(user.uid) : null;
     if (!user || !username) {
@@ -77,7 +77,7 @@ export const currentStaff = (): Staff | null => current ?? null;
 export async function logout(): Promise<void> {
   emit(null);
   try {
-    const [{ auth }, { signOut }] = await Promise.all([firebase(), import('firebase/auth')]);
+    const [auth, { signOut }] = await Promise.all([firebaseAuth(), import('firebase/auth')]);
     await signOut(auth);
   } catch {
     // Already signed out or offline: the session is gone either way.
@@ -86,7 +86,7 @@ export async function logout(): Promise<void> {
 
 /** verifyStaff's custom token, signed in. */
 export async function signInWithToken(token: string): Promise<void> {
-  const [{ auth }, { signInWithCustomToken }] = await Promise.all([firebase(), import('firebase/auth')]);
+  const [auth, { signInWithCustomToken }] = await Promise.all([firebaseAuth(), import('firebase/auth')]);
   await signInWithCustomToken(auth, token);
 }
 

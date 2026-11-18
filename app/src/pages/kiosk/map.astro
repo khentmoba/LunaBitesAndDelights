@@ -130,6 +130,8 @@ let searchTimer = 0;
 let addressTimer = 0;
 let moving = false;
 let userInteracted = false;
+let reverseAbort: AbortController | null = null;
+let searchAbort: AbortController | null = null;
 
 const map = L.map($('[data-map]'), { center: [lat, lng], zoom: 17, zoomControl: false, attributionControl: Boolean(tileUrl) });
 if (tileUrl) {
@@ -159,7 +161,10 @@ function moveTo(la: number, ln: number) {
 }
 
 async function fetchAddress(la: number, ln: number) {
-  const a = await reverseGeocode(la, ln);
+  reverseAbort?.abort();
+  const ac = (reverseAbort = new AbortController());
+  const a = await reverseGeocode(la, ln, ac.signal);
+  if (ac.signal.aborted) return;
   if (a.full) address = a.full;
   if (a.short) addressShort = a.short;
   else if (!address) {
@@ -206,6 +211,7 @@ function setSearching(on: boolean) {
 }
 function onSearch() {
   clearTimeout(searchTimer);
+  searchAbort?.abort();
   const q = query.value.trim();
   if (q.length < 2) {
     results = [];
@@ -215,7 +221,10 @@ function onSearch() {
   }
   setSearching(true);
   searchTimer = window.setTimeout(async () => {
-    results = await searchAddress(q);
+    const ac = (searchAbort = new AbortController());
+    const next = await searchAddress(q, ac.signal);
+    if (ac.signal.aborted) return;
+    results = next;
     list.innerHTML = results
       .map((r, i) => `<li><button type="button" data-i="${i}"><span class="icon" aria-hidden="true">${glyph('location_on')}</span><span>${esc(r.display_name ?? '')}</span></button></li>`)
       .join('');
@@ -232,6 +241,8 @@ list.addEventListener('click', (e) => {
   const b = (e.target as Element).closest<HTMLElement>('[data-i]');
   const r = b ? results[Number(b.dataset.i)] : undefined;
   if (!r) return;
+  clearTimeout(searchTimer);
+  searchAbort?.abort();
   lat = Number.parseFloat(r.lat) || lat;
   lng = Number.parseFloat(r.lon) || lng;
   address = r.display_name ?? '';
@@ -248,12 +259,15 @@ list.addEventListener('click', (e) => {
 $('[data-clear]').addEventListener('click', () => {
   query.value = '';
   clearTimeout(searchTimer);
+  searchAbort?.abort();
   results = [];
   showResults(false);
   setSearching(false);
 });
 
 async function confirm() {
+  userInteracted = true;
+  clearTimeout(addressTimer);
   loading = true;
   render();
   const c = map.getCenter();

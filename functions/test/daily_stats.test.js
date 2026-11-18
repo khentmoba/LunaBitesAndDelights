@@ -3,7 +3,7 @@ const assert = require('node:assert');
 
 const {
   contributionOf, dayDeltas, daysFromOrders, emptyDay, applyToDay,
-  dayFromDoc, lifetimeReportFromDays,
+  dayFromDoc, lifetimeReportFromDays, salesAnalyticsFromDay,
 } = require('../lib/reporting/daily_stats');
 const { itemKey, emptyChannel, addToChannel, isCountableOrder } = require('../lib/util');
 
@@ -192,4 +192,52 @@ test('stored docs round-trip and tolerate missing fields', () => {
   const sparse = dayFromDoc('2026-11-15', { revenue: 5, orders: 1 });
   assert.strictEqual(sparse.channel.pickup.count, 0);
   assert.strictEqual(sparse.date, '2026-11-15');
+});
+
+test('salesAnalyticsFromDay matches scanning today orders', () => {
+  const dateLabel = '2026-11-15';
+  const r = rng(42);
+  const orders = Array.from({ length: 30 }, () => ({ ...randomOrder(r), dateLabel }));
+  const day = daysFromOrders(orders).get(dateLabel) || emptyDay(dateLabel);
+  const fromDay = salesAnalyticsFromDay(dateLabel, day);
+
+  let totalRevenue = 0; let totalItemsSold = 0; let orderCount = 0;
+  const channel = emptyChannel();
+  const itemCounts = {};
+  for (const data of orders) {
+    if (!isCountableOrder(data)) continue;
+    orderCount += 1;
+    totalRevenue += data.totalAmount || 0;
+    addToChannel(channel, data.type || 'Pickup', data.totalAmount || 0);
+    for (const item of data.items || []) {
+      const key = itemKey(item.name || 'Unknown', item.variant);
+      const qty = Number(item.quantity || item.qty) || 1;
+      totalItemsSold += qty;
+      itemCounts[key] = (itemCounts[key] || 0) + qty;
+    }
+  }
+  const topItems = Object.entries(itemCounts)
+    .map(([name, count]) => ({ name, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 5);
+  const expected = {
+    success: true,
+    dateLabel,
+    totalRevenue,
+    totalItemsSold,
+    orderCount,
+    averageOrderValue: orderCount > 0 ? Math.round(totalRevenue / orderCount) : 0,
+    breakdown: {
+      walkIn: channel.walkIn,
+      delivery: channel.delivery,
+      pickup: channel.pickup,
+    },
+    topItems,
+  };
+  assert.strictEqual(fromDay.totalRevenue, expected.totalRevenue);
+  assert.strictEqual(fromDay.totalItemsSold, expected.totalItemsSold);
+  assert.strictEqual(fromDay.orderCount, expected.orderCount);
+  assert.strictEqual(fromDay.averageOrderValue, expected.averageOrderValue);
+  assert.deepStrictEqual(fromDay.breakdown, expected.breakdown);
+  assert.deepStrictEqual(fromDay.topItems.map((t) => t.count), expected.topItems.map((t) => t.count));
 });

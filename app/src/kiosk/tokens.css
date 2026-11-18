@@ -1,13 +1,13 @@
 /* The pink order pad, as lib/widgets/kiosk/kiosk_theme.dart and menu_theme.dart
    define it. Same static font instances as the Flutter app (assets/fonts/). */
 
-@font-face { font-family: Bricolage; src: url('/kiosk/fonts/Bricolage-400.ttf') format('truetype'); font-weight: 400; font-display: block; }
-@font-face { font-family: Bricolage; src: url('/kiosk/fonts/Bricolage-500.ttf') format('truetype'); font-weight: 500; font-display: block; }
-@font-face { font-family: Bricolage; src: url('/kiosk/fonts/Bricolage-600.ttf') format('truetype'); font-weight: 600; font-display: block; }
-@font-face { font-family: Bricolage; src: url('/kiosk/fonts/Bricolage-700.ttf') format('truetype'); font-weight: 700; font-display: block; }
-@font-face { font-family: Bricolage; src: url('/kiosk/fonts/Bricolage-800.ttf') format('truetype'); font-weight: 800; font-display: block; }
-@font-face { font-family: Caveat; src: url('/kiosk/fonts/Caveat-600.ttf') format('truetype'); font-weight: 600; font-display: block; }
-@font-face { font-family: Caveat; src: url('/kiosk/fonts/Caveat-700.ttf') format('truetype'); font-weight: 700; font-display: block; }
+@font-face { font-family: Bricolage; src: url('/kiosk/fonts/Bricolage-400.woff2') format('woff2'); font-weight: 400; font-display: block; }
+@font-face { font-family: Bricolage; src: url('/kiosk/fonts/Bricolage-500.woff2') format('woff2'); font-weight: 500; font-display: block; }
+@font-face { font-family: Bricolage; src: url('/kiosk/fonts/Bricolage-600.woff2') format('woff2'); font-weight: 600; font-display: block; }
+@font-face { font-family: Bricolage; src: url('/kiosk/fonts/Bricolage-700.woff2') format('woff2'); font-weight: 700; font-display: block; }
+@font-face { font-family: Bricolage; src: url('/kiosk/fonts/Bricolage-800.woff2') format('woff2'); font-weight: 800; font-display: block; }
+@font-face { font-family: Caveat; src: url('/kiosk/fonts/Caveat-600.woff2') format('woff2'); font-weight: 600; font-display: block; }
+@font-face { font-family: Caveat; src: url('/kiosk/fonts/Caveat-700.woff2') format('woff2'); font-weight: 700; font-display: block; }
 /* Material Icons, the subset the Flutter build ships (same glyphs, same codepoints). */
 @font-face { font-family: 'Material Icons'; src: url('/kiosk/fonts/material-icons.woff2') format('woff2'); font-display: block; }
 

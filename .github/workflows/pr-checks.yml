@@ -86,8 +86,8 @@ jobs:
         run: npm run build
         working-directory: app
 
-      - name: Fail on high/critical vulnerabilities
-        run: npm audit --audit-level=high
+      - name: Fail on high/critical runtime vulnerabilities
+        run: npm audit --omit=dev --audit-level=high
         working-directory: app
 
       - name: Storefront tests

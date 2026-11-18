@@ -44,6 +44,7 @@ async function markOrderPaymentFailed(orderRef) {
 async function fetchSessionPayments(sessionId, auth) {
     const res = await fetch(`https://api.paymongo.com/v2/checkout_sessions/${sessionId}`, {
         headers: { Authorization: `Basic ${auth}` },
+        signal: AbortSignal.timeout(10000),
     });
     if (!res.ok)
         return null;

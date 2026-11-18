@@ -173,6 +173,35 @@ export function dayFromDoc(id: string, d: Record<string, any>): DayStats {
   return day;
 }
 
+/** The getSalesAnalytics response body for a single day, built from its dailyStats summary. */
+export function salesAnalyticsFromDay(dateLabel: string, day: DayStats) {
+  const itemCounts: Record<string, number> = {};
+  for (const it of Object.values(day.items)) {
+    if (it.qty <= 0) continue;
+    const key = itemKey(it.name || 'Unknown', it.variant);
+    itemCounts[key] = (itemCounts[key] || 0) + it.qty;
+  }
+  const topItems = Object.entries(itemCounts)
+    .map(([name, count]) => ({ name, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 5);
+
+  return {
+    success: true,
+    dateLabel,
+    totalRevenue: day.revenue,
+    totalItemsSold: day.itemsSold,
+    orderCount: day.orders,
+    averageOrderValue: day.orders > 0 ? Math.round(day.revenue / day.orders) : 0,
+    breakdown: {
+      walkIn: day.channel.walkIn,
+      delivery: day.channel.delivery,
+      pickup: day.channel.pickup,
+    },
+    topItems,
+  };
+}
+
 /** The getLifetimeSalesReport response body, built from day summaries. */
 export function lifetimeReportFromDays(
   days: Iterable<DayStats>,

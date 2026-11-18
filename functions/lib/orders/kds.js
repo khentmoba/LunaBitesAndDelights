@@ -101,8 +101,6 @@ exports.updateOrderStatus = (0, https_1.onCall)(async (request) => {
     const db = (0, firestore_1.getFirestore)();
     try {
         const orderRef = db.collection('orders').doc(orderId);
-        if (!(await orderRef.get()).exists)
-            throw new https_1.HttpsError('not-found', 'Order not found');
         const update = { status };
         if (cancellationReason)
             update.cancellationReason = cancellationReason;
@@ -113,6 +111,9 @@ exports.updateOrderStatus = (0, https_1.onCall)(async (request) => {
     catch (error) {
         if (error instanceof https_1.HttpsError)
             throw error;
+        if (error?.code === 5 || error?.code === 'not-found') {
+            throw new https_1.HttpsError('not-found', 'Order not found');
+        }
         firebase_functions_1.logger.error(`Error updating order ${orderId} status:`, error);
         throw new https_1.HttpsError('internal', 'Failed to update order status');
     }
