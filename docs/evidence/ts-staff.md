@@ -14,19 +14,19 @@ the same seeded staff user.
 
 | Screen | Before (Flutter) | After (TypeScript) |
 |---|---|---|
-| Login, 390 | ![before](parity/flutter/staff-login-390.webp) | ![after](parity/ts/staff-login-390.webp) |
-| Login, 1440 | ![before](parity/flutter/staff-login-1440.webp) | ![after](parity/ts/staff-login-1440.webp) |
-| Kitchen display, 390 | ![before](parity/flutter/staff-kds-390.webp) | ![after](parity/ts/staff-kds-390.webp) |
-| Kitchen display, 1440 | ![before](parity/flutter/staff-kds-1440.webp) | ![after](parity/ts/staff-kds-1440.webp) |
-| Dashboard, 390 | ![before](parity/flutter/staff-dashboard-390.webp) | ![after](parity/ts/staff-dashboard-390.webp) |
-| Dashboard, 1440 | ![before](parity/flutter/staff-dashboard-1440.webp) | ![after](parity/ts/staff-dashboard-1440.webp) |
-| Sales dashboard, 390 | ![before](parity/flutter/staff-analytics-390.webp) | ![after](parity/ts/staff-analytics-390.webp) |
-| Sales dashboard, 1440 | ![before](parity/flutter/staff-analytics-1440.webp) | ![after](parity/ts/staff-analytics-1440.webp) |
-| Lifetime report, 390 | ![before](parity/flutter/staff-lifetime-390.webp) | ![after](parity/ts/staff-lifetime-390.webp) |
-| Lifetime report, 1440 | ![before](parity/flutter/staff-lifetime-1440.webp) | ![after](parity/ts/staff-lifetime-1440.webp) |
-| Kiosk menu as staff, 320 | ![before](parity/flutter/staff-menu-320.webp) | ![after](parity/ts/staff-menu-320.webp) |
-| POS checkout, 390 | ![before](parity/flutter/staff-checkout-390.webp) | ![after](parity/ts/staff-checkout-390.webp) |
-| POS checkout, 1440 | ![before](parity/flutter/staff-checkout-1440.webp) | ![after](parity/ts/staff-checkout-1440.webp) |
+| Login, 390 | ![before](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/flutter/staff-login-390.webp?raw=true) | ![after](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/ts/staff-login-390.webp?raw=true) |
+| Login, 1440 | ![before](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/flutter/staff-login-1440.webp?raw=true) | ![after](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/ts/staff-login-1440.webp?raw=true) |
+| Kitchen display, 390 | ![before](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/flutter/staff-kds-390.webp?raw=true) | ![after](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/ts/staff-kds-390.webp?raw=true) |
+| Kitchen display, 1440 | ![before](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/flutter/staff-kds-1440.webp?raw=true) | ![after](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/ts/staff-kds-1440.webp?raw=true) |
+| Dashboard, 390 | ![before](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/flutter/staff-dashboard-390.webp?raw=true) | ![after](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/ts/staff-dashboard-390.webp?raw=true) |
+| Dashboard, 1440 | ![before](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/flutter/staff-dashboard-1440.webp?raw=true) | ![after](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/ts/staff-dashboard-1440.webp?raw=true) |
+| Sales dashboard, 390 | ![before](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/flutter/staff-analytics-390.webp?raw=true) | ![after](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/ts/staff-analytics-390.webp?raw=true) |
+| Sales dashboard, 1440 | ![before](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/flutter/staff-analytics-1440.webp?raw=true) | ![after](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/ts/staff-analytics-1440.webp?raw=true) |
+| Lifetime report, 390 | ![before](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/flutter/staff-lifetime-390.webp?raw=true) | ![after](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/ts/staff-lifetime-390.webp?raw=true) |
+| Lifetime report, 1440 | ![before](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/flutter/staff-lifetime-1440.webp?raw=true) | ![after](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/ts/staff-lifetime-1440.webp?raw=true) |
+| Kiosk menu as staff, 320 | ![before](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/flutter/staff-menu-320.webp?raw=true) | ![after](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/ts/staff-menu-320.webp?raw=true) |
+| POS checkout, 390 | ![before](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/flutter/staff-checkout-390.webp?raw=true) | ![after](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/ts/staff-checkout-390.webp?raw=true) |
+| POS checkout, 1440 | ![before](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/flutter/staff-checkout-1440.webp?raw=true) | ![after](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/ts/staff-checkout-1440.webp?raw=true) |
 
 All four widths (320, 390, 768, 1440) of every screen are in both folders.
 
@@ -43,7 +43,7 @@ Flutter's harness cannot tap the menu's "Staff console" item, so the sheet has n
 
 | Staff console, 390 | Staff console, 1440 |
 |---|---|
-| ![console](parity/ts/staff-console-390.webp) | ![console](parity/ts/staff-console-1440.webp) |
+| ![console](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/ts/staff-console-390.webp?raw=true) | ![console](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/ts/staff-console-1440.webp?raw=true) |
 
 ## Pixel diff
 
@@ -91,7 +91,7 @@ No page errors were logged.
 
 | Kitchen display, pending | After MARK AS READY | Dashboard |
 |---|---|---|
-| ![pending](ts-staff-e2e-kds-pending-1440.png) | ![ready](ts-staff-e2e-kds-ready-1440.png) | ![dashboard](ts-staff-e2e-dashboard-1440.png) |
+| ![pending](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/ts-staff-e2e-kds-pending-1440.png?raw=true) | ![ready](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/ts-staff-e2e-kds-ready-1440.png?raw=true) | ![dashboard](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/ts-staff-e2e-dashboard-1440.png?raw=true) |
 
 The Telegram daily summary in the staff console calls `triggerManualReport`. That needs the Telegram bot
 secrets, so it was not run here. Its three outcomes (sent, error message, crash) port

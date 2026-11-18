@@ -30,14 +30,14 @@ No behavior change. Every baseline check and the added characterization tests pa
 
 | Screen | Capture |
 |---|---|
-| Storefront (390px) | ![Storefront 390px](simplify-codebase/storefront-390.png) |
-| Storefront (1440px) | ![Storefront 1440px](simplify-codebase/storefront-1440.png) |
-| Menu page (390px) | ![Menu 390px](simplify-codebase/menu-390.png) |
-| Kiosk menu (390px) | ![Kiosk menu 390px](simplify-codebase/kiosk-menu-390.png) |
-| Kiosk menu (768px) | ![Kiosk menu 768px](simplify-codebase/kiosk-menu-768.png) |
-| Kiosk menu (1440px) | ![Kiosk menu 1440px](simplify-codebase/kiosk-menu-1440.png) |
-| Kiosk cart (390px) | ![Kiosk cart 390px](simplify-codebase/kiosk-cart-390.png) |
-| Kiosk checkout (390px) | ![Kiosk checkout 390px](simplify-codebase/kiosk-checkout-390.png) |
-| Kiosk receipt (390px) | ![Kiosk receipt 390px](simplify-codebase/kiosk-receipt-390.png) |
-| Staff login (390px) | ![Staff login 390px](simplify-codebase/staff-login-390.png) |
-| 404 page (390px) | ![404 page 390px](simplify-codebase/404-390.png) |
+| Storefront (390px) | ![Storefront 390px](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/simplify-codebase/storefront-390.png?raw=true) |
+| Storefront (1440px) | ![Storefront 1440px](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/simplify-codebase/storefront-1440.png?raw=true) |
+| Menu page (390px) | ![Menu 390px](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/simplify-codebase/menu-390.png?raw=true) |
+| Kiosk menu (390px) | ![Kiosk menu 390px](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/simplify-codebase/kiosk-menu-390.png?raw=true) |
+| Kiosk menu (768px) | ![Kiosk menu 768px](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/simplify-codebase/kiosk-menu-768.png?raw=true) |
+| Kiosk menu (1440px) | ![Kiosk menu 1440px](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/simplify-codebase/kiosk-menu-1440.png?raw=true) |
+| Kiosk cart (390px) | ![Kiosk cart 390px](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/simplify-codebase/kiosk-cart-390.png?raw=true) |
+| Kiosk checkout (390px) | ![Kiosk checkout 390px](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/simplify-codebase/kiosk-checkout-390.png?raw=true) |
+| Kiosk receipt (390px) | ![Kiosk receipt 390px](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/simplify-codebase/kiosk-receipt-390.png?raw=true) |
+| Staff login (390px) | ![Staff login 390px](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/simplify-codebase/staff-login-390.png?raw=true) |
+| 404 page (390px) | ![404 page 390px](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/simplify-codebase/404-390.png?raw=true) |

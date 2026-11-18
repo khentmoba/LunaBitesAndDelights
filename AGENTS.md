@@ -17,10 +17,9 @@
 ## Proof & Evidence Requirements (MANDATORY)
 
 - **Always capture and commit concrete proof / evidence before handing off work or opening a PR.** Never rely on claims alone.
-- **For UI / Visual changes:** Capture real rendered screenshots at supported viewports (e.g. mobile 320px/390px, tablet 768px, desktop 1440px) and save them to `docs/evidence/`.
+- **For UI / Visual changes:** Capture real rendered screenshots at supported viewports (e.g. mobile 320px/390px, tablet 768px, desktop 1440px). Publish them with `node tool/publish_evidence.mjs <files>`: it pushes them to the `evidence` branch, never main, and prints the `![alt](url)` lines to embed. To compare before/after shots, run `node tool/png_diff.mjs` and open only the crops it writes.
 - **For Backend / API / Integration features:** Produce tangible evidence of end-to-end functionality (e.g. test payloads, actual API output artifacts, verified live responses, or simulated message captures) and document the validation in `docs/evidence/<feature-name>.md`.
 - **Embed visual proof in PR descriptions:** Every PR must embed visual proof and screenshots directly into the Evidence section using inline images (`![alt](url)` or `raw=true` URLs), not just text links, so reviewers see the proof immediately without clicking away.
-- **Not enforced by CI:** the `proof` job was removed. Reviewers still check evidence; `tool/check_pr_proof.mjs` remains available for a local check.
 
 ## Branching & Deployment Rules
 
@@ -30,12 +29,10 @@
    - Branch protection on `main` requires the `site`, `functions`, and `rules` checks.
 
 2. **Always create a Pull Request (PR).**
-   - Always use the `$file-pr` skill when making PRs.
    - Create a feature or fix branch (e.g., `fix/descriptive-name` or `feature/descriptive-name`).
    - Push to that branch and open a PR against `main` using `gh pr create`.
    - Let the user review and merge the PR when ready, unless the user says "full send". Then `$full-send` grants the merge once the gate passes.
 
 3. **Verify locally before opening a PR:**
-   - Run every job in `.github/workflows/pr-checks.yml` locally, and save the output to `docs/evidence/`.
+   - Run `npm run ci`. It runs every step of `.github/workflows/pr-checks.yml` and writes `docs/evidence/ci-local.txt`; commit that file.
    - Firestore rules: `firestore.rules` must match production. `cd functions && npm run check:rules-drift` checks it (read-only). Do not deploy rules without explicit user instruction.
-   - Capture concrete proof artifacts in `docs/evidence/` and embed visual proof (`![alt](url)`) directly in the PR body.

@@ -2,10 +2,13 @@
   "name": "luna_bites_and_delights",
   "private": true,
   "scripts": {
-    "test:site": "node --test test/site/app.test.mjs test/site/hosting.test.mjs test/site/menu.test.mjs test/site/kiosk.test.mjs test/site/staff.test.mjs test/site/price-parity.test.mjs"
+    "ci": "node tool/ci-local.mjs",
+    "test:site": "node --test \"test/site/*.test.mjs\""
   },
   "devDependencies": {
     "firebase-tools": "^15.15.0",
-    "jsdom": "^31.0.0"
+    "jsdom": "^31.0.0",
+    "pngjs": "7.0.0",
+    "yaml": "2.9.1"
   }
 }

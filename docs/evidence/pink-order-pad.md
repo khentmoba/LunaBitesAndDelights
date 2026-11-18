@@ -8,20 +8,20 @@ All after captures are real Chrome renders of the local release build, assembled
 
 | View | Capture |
 |---|---|
-| Storefront, 320 × 900 | ![Storefront on a narrow phone](pink-storefront-320.png) |
-| Storefront, 390 × 900 | ![Storefront on a phone](pink-storefront-390.png) |
-| Storefront, 768 × 1024 | ![Storefront on a tablet](pink-storefront-768.png) |
-| Storefront, 1440 × 1000 | ![Storefront on desktop](pink-storefront-1440.png) |
-| Menu and prices, 1440 × 1000 | ![Printed price board](pink-storefront-menu-1440.png) |
-| Kiosk splash, 390 × 844 | ![New logo on the pink wash](pink-kiosk-splash-390.png) |
-| Kiosk menu, 320 × 740 | ![Narrow menu](pink-kiosk-menu-320.png) |
-| Kiosk menu, 390 × 844 | ![Phone menu](pink-kiosk-menu-390.png) |
-| Kiosk menu, 768 × 1024 | ![Tablet menu](pink-kiosk-menu-768.png) |
-| Kiosk menu, 1440 × 900 | ![Desktop menu](pink-kiosk-menu-1440.png) |
-| Item chooser, 390 × 844 | ![Item details](pink-kiosk-chooser-390.png) |
-| Order slip, 390 × 844 | ![Cart with a local item](pink-kiosk-cart-390.png) |
-| Checkout, 390 × 844 | ![Checkout before submission](pink-kiosk-checkout-390.png) |
-| Staff login, 390 × 844 | ![Staff PIN entry](pink-staff-login-390.png) |
+| Storefront, 320 × 900 | ![Storefront on a narrow phone](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/pink-storefront-320.png?raw=true) |
+| Storefront, 390 × 900 | ![Storefront on a phone](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/pink-storefront-390.png?raw=true) |
+| Storefront, 768 × 1024 | ![Storefront on a tablet](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/pink-storefront-768.png?raw=true) |
+| Storefront, 1440 × 1000 | ![Storefront on desktop](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/pink-storefront-1440.png?raw=true) |
+| Menu and prices, 1440 × 1000 | ![Printed price board](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/pink-storefront-menu-1440.png?raw=true) |
+| Kiosk splash, 390 × 844 | ![New logo on the pink wash](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/pink-kiosk-splash-390.png?raw=true) |
+| Kiosk menu, 320 × 740 | ![Narrow menu](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/pink-kiosk-menu-320.png?raw=true) |
+| Kiosk menu, 390 × 844 | ![Phone menu](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/pink-kiosk-menu-390.png?raw=true) |
+| Kiosk menu, 768 × 1024 | ![Tablet menu](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/pink-kiosk-menu-768.png?raw=true) |
+| Kiosk menu, 1440 × 900 | ![Desktop menu](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/pink-kiosk-menu-1440.png?raw=true) |
+| Item chooser, 390 × 844 | ![Item details](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/pink-kiosk-chooser-390.png?raw=true) |
+| Order slip, 390 × 844 | ![Cart with a local item](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/pink-kiosk-cart-390.png?raw=true) |
+| Checkout, 390 × 844 | ![Checkout before submission](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/pink-kiosk-checkout-390.png?raw=true) |
+| Staff login, 390 × 844 | ![Staff PIN entry](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/pink-staff-login-390.png?raw=true) |
 
 The old menu is recorded in [the previous continuity evidence](menu-continuity.md). Those are earlier committed captures, not a fresh baseline from this session.
 

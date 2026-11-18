@@ -10,10 +10,10 @@ Captured from the actual local storefront source in Chrome. The preview serves s
 
 | View | Before | After |
 |---|---|---|
-| 390 × 844 | ![Before on a phone](storefront-first-pass-before-mobile.png) | ![After on a phone](storefront-first-pass-after-mobile.png) |
-| 1440 × 900 | ![Before on desktop](storefront-first-pass-before-desktop.png) | ![After on desktop](storefront-first-pass-after-desktop.png) |
+| 390 × 844 | ![Before on a phone](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/storefront-first-pass-before-mobile.png?raw=true) | ![After on a phone](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/storefront-first-pass-after-mobile.png?raw=true) |
+| 1440 × 900 | ![Before on desktop](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/storefront-first-pass-before-desktop.png?raw=true) | ![After on desktop](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/storefront-first-pass-after-desktop.png?raw=true) |
 
-Additional captures: [320px phone](storefront-first-pass-after-320.png), [expanded delivery estimate at 320px](storefront-first-pass-delivery-320.png).
+Additional captures: [320px phone](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/storefront-first-pass-after-320.png?raw=true), [expanded delivery estimate at 320px](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/storefront-first-pass-delivery-320.png?raw=true).
 
 At 390px, the mounted food photograph starts around y308 and the price board around y718, compared with approximately y541 and y1061 before. The food, per-item price and primary order action fit in the opening 390 × 844 viewport. At 320 × 740, the order action remains in the opening viewport and the two hero actions stack.
 

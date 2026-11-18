@@ -104,7 +104,7 @@ Searching the storefront's own **"Open in Maps"** URL returns:
 
 Luna is not in the list. Searching `Luna Bites and Delights` returns Corner Bites, Fat Chef, Luna Store, and Luna eatery and tindahan — all unrelated. Searching the exact coordinates returns a coordinate pin, not a business.
 
-![Google Maps search for Luna's own Open in Maps query](gbp-maps-search.png)
+![Google Maps search for Luna's own Open in Maps query](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/seo-benchmark-2026-11/gbp-maps-search.png?raw=true)
 
 ---
 
@@ -123,9 +123,9 @@ Measured, not claimed:
 
 Fresh renders:
 
-![Storefront at 390px](storefront-390.png)
+![Storefront at 390px](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/seo-benchmark-2026-11/storefront-390.png?raw=true)
 
-![Storefront at 1440px](storefront-1440.png)
+![Storefront at 1440px](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/seo-benchmark-2026-11/storefront-1440.png?raw=true)
 
 ---
 

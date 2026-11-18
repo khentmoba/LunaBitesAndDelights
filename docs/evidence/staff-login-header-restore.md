@@ -13,15 +13,15 @@ Commit `753a24c` (`fix(mobile): keep sticky nav single-row...`) added `.bar__nav
 
 Before (390 × 844 — `Staff login` hidden):
 
-![Before: 390px header missing Staff login](staff-login-fix-before-390.png)
+![Before: 390px header missing Staff login](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/staff-login-fix-before-390.png?raw=true)
 
 After (390 × 844 — single-row header with `Staff login` visible):
 
-![After: 390px header with Staff login](staff-login-fix-after-390.png)
+![After: 390px header with Staff login](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/staff-login-fix-after-390.png?raw=true)
 
 After (320 × 844 — wrapped header with `Staff login` visible, 0 overflow):
 
-![After: 320px header with Staff login](staff-login-fix-after-320.png)
+![After: 320px header with Staff login](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/staff-login-fix-after-320.png?raw=true)
 
 ## Viewport measurements
 

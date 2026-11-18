@@ -52,12 +52,12 @@ Full run logs saved to [analyze.txt](docs/evidence/audit-bugfixes/analyze.txt) a
   - Clicked desktop `HISTORY` toggle (`clickedRect: { txt: "HISTORY", role: "button", count: 1 }`)
   - `hasDoneColumn: true`, `showsCompletedCustomer: true`, `hidesUnpaidCustomer: true`
 - Captured KDS screenshots (checked against `1440x900`, `768x1024`, `390x844`, `320x640`):
-  - [kds-history-1440.png](docs/evidence/audit-bugfixes/kds-history-1440.png)
-  - [kds-history-768.png](docs/evidence/audit-bugfixes/kds-history-768.png)
-  - [kds-390.png](docs/evidence/audit-bugfixes/kds-390.png)
-  - [kds-320.png](docs/evidence/audit-bugfixes/kds-320.png)
+  - [kds-history-1440.png](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/audit-bugfixes/kds-history-1440.png?raw=true)
+  - [kds-history-768.png](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/audit-bugfixes/kds-history-768.png?raw=true)
+  - [kds-390.png](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/audit-bugfixes/kds-390.png?raw=true)
+  - [kds-320.png](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/audit-bugfixes/kds-320.png?raw=true)
 - Captured Kiosk menu screenshots (`/kiosk/#/menu` across `1440x900`, `768x1024`, `390x844`, `320x640`):
-  - [kiosk-1440.png](docs/evidence/audit-bugfixes/kiosk-1440.png)
-  - [kiosk-768.png](docs/evidence/audit-bugfixes/kiosk-768.png)
-  - [kiosk-390.png](docs/evidence/audit-bugfixes/kiosk-390.png)
-  - [kiosk-320.png](docs/evidence/audit-bugfixes/kiosk-320.png)
+  - [kiosk-1440.png](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/audit-bugfixes/kiosk-1440.png?raw=true)
+  - [kiosk-768.png](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/audit-bugfixes/kiosk-768.png?raw=true)
+  - [kiosk-390.png](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/audit-bugfixes/kiosk-390.png?raw=true)
+  - [kiosk-320.png](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/audit-bugfixes/kiosk-320.png?raw=true)

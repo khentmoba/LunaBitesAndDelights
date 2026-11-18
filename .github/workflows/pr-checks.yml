@@ -30,14 +30,19 @@ jobs:
       - name: TypeScript build
         run: npm run build
 
+      - name: Lint (promise checks)
+        run: npm run lint
+
       - name: Unit tests
         run: npm test
 
       - name: Report outdated npm deps (informational)
         run: npm outdated || true
 
-      - name: Fail on high/critical vulnerabilities
-        run: npm audit --audit-level=high
+      # Runtime deps only, as in the site job: dev tooling never ships, and
+      # typescript-eslint pulls picomatch, whose ReDoS advisory has no fixed release yet.
+      - name: Fail on high/critical runtime vulnerabilities
+        run: npm audit --omit=dev --audit-level=high
 
   rules:
     runs-on: ubuntu-latest
@@ -63,6 +68,9 @@ jobs:
       - name: Firestore rules tests (emulator)
         run: npm run test:rules
 
+      - name: Derived views tests (Functions + Firestore emulators)
+        run: npm run test:derived
+
   site:
     runs-on: ubuntu-latest
     steps:
@@ -83,6 +91,10 @@ jobs:
 
       - name: Astro type check
         run: npm run check
+        working-directory: app
+
+      - name: Lint (promise checks)
+        run: npm run lint
         working-directory: app
 
       - name: Build the storefront

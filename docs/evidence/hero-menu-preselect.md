@@ -14,14 +14,14 @@ Flow: open Shawarma Wrap's photo → mark Shawarma Wrap, Burger with Egg, Large 
 
 | Viewport | Photo open | Marked + tally |
 |---|---|---|
-| 320 | ![](hero-menu-preselect/mobile-320-2-photo-open.webp) | ![](hero-menu-preselect/mobile-320-3-marked-tally.webp) |
-| 390 | ![](hero-menu-preselect/mobile-390-2-photo-open.webp) | ![](hero-menu-preselect/mobile-390-3-marked-tally.webp) |
-| 768 | ![](hero-menu-preselect/tablet-768-2-photo-open.webp) | ![](hero-menu-preselect/tablet-768-3-marked-tally.webp) |
-| 1440 | ![](hero-menu-preselect/desktop-1440-2-photo-open.webp) | ![](hero-menu-preselect/desktop-1440-3-marked-tally.webp) |
+| 320 | ![](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/hero-menu-preselect/mobile-320-2-photo-open.webp?raw=true) | ![](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/hero-menu-preselect/mobile-320-3-marked-tally.webp?raw=true) |
+| 390 | ![](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/hero-menu-preselect/mobile-390-2-photo-open.webp?raw=true) | ![](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/hero-menu-preselect/mobile-390-3-marked-tally.webp?raw=true) |
+| 768 | ![](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/hero-menu-preselect/tablet-768-2-photo-open.webp?raw=true) | ![](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/hero-menu-preselect/tablet-768-3-marked-tally.webp?raw=true) |
+| 1440 | ![](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/hero-menu-preselect/desktop-1440-2-photo-open.webp?raw=true) | ![](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/hero-menu-preselect/desktop-1440-3-marked-tally.webp?raw=true) |
 
-Motion, 80 ms into the reveal: ![](hero-menu-preselect/mobile-390-2-photo-motion-80ms.webp)
+Motion, 80 ms into the reveal: ![](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/hero-menu-preselect/mobile-390-2-photo-motion-80ms.webp?raw=true)
 
-Kiosk: ![](hero-menu-preselect/mobile-390-4-kiosk-choice-sheet.webp) ![](hero-menu-preselect/mobile-390-6-kiosk-menu-with-picks.webp)
+Kiosk: ![](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/hero-menu-preselect/mobile-390-4-kiosk-choice-sheet.webp?raw=true) ![](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/hero-menu-preselect/mobile-390-6-kiosk-menu-with-picks.webp?raw=true)
 
 ## Local CI (`.github/workflows/pr-checks.yml`)
 

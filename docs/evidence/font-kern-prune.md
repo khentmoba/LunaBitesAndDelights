@@ -40,7 +40,7 @@ The control (same font with `GPOS` deleted) proves the diff detects kerning loss
 
 The previous source (`6b4eeba`) had no J, R, X, Z, so Chrome drew them in the fallback face. Re-subsetting from `7470e70` adds them; a render of the old source vs the new pruned font changes only those glyphs (129,326 px across 8 renders, page heights unchanged):
 
-![Capital R before (top) and after (bottom), 390px](bricolage-capital-r-before-after-390.png)
+![Capital R before (top) and after (bottom), 390px](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/bricolage-capital-r-before-after-390.png?raw=true)
 
 The build is deterministic (`recalcTimestamp=False`): three runs give the same SHA-1.
 

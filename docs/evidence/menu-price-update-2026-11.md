@@ -46,70 +46,70 @@ All screenshots were captured headless at 2× device pixel ratio from the assemb
 
 ### Storefront — Menu & prices
 
-![Storefront price board at 1440px](menu-storefront-1440.png)
+![Storefront price board at 1440px](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/menu-storefront-1440.png?raw=true)
 *Desktop 1440px: Shawarma Nachos and Fries at ₱99; Sweet · cold has no Ice Cream Halo-Halo, Milo Dinosaur is ₱65, and Caramel Macchiato is a flat ₱49.*
 
-![Storefront price board at 768px](menu-storefront-768.png)
+![Storefront price board at 768px](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/menu-storefront-768.png?raw=true)
 *Tablet 768px price board.*
 
-![Storefront price board at 390px](menu-storefront-390.png)
+![Storefront price board at 390px](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/menu-storefront-390.png?raw=true)
 *Mobile 390px: Shawarma Favorites with both sides at ₱99.*
 
-![Storefront price board at 320px](menu-storefront-320.png)
+![Storefront price board at 320px](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/menu-storefront-320.png?raw=true)
 *Narrow mobile 320px price board.*
 
-![Storefront Sweet · cold at 390px](menu-storefront-sweet-390.png)
+![Storefront Sweet · cold at 390px](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/menu-storefront-sweet-390.png?raw=true)
 *Mobile 390px Sweet · cold column: no halo-halo row, Milo Dinosaur ₱65, Caramel Macchiato ₱49.*
 
-![Storefront Sweet · cold at 320px](menu-storefront-sweet-320.png)
+![Storefront Sweet · cold at 320px](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/menu-storefront-sweet-320.png?raw=true)
 *Narrow mobile 320px Sweet · cold column.*
 
-![Storefront Sweet · cold at 768px](menu-storefront-sweet-768.png)
+![Storefront Sweet · cold at 768px](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/menu-storefront-sweet-768.png?raw=true)
 *Tablet 768px Sweet · cold column.*
 
 ### Full menu page
 
-![Full menu at 1440px](menu-page-1440.png)
+![Full menu at 1440px](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/menu-page-1440.png?raw=true)
 *Desktop 1440px full menu with the same rows and Schema.org prices.*
 
-![Full menu at 768px](menu-page-768.png)
+![Full menu at 768px](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/menu-page-768.png?raw=true)
 *Tablet 768px full menu.*
 
-![Full menu at 390px](menu-page-390.png)
+![Full menu at 390px](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/menu-page-390.png?raw=true)
 *Mobile 390px full menu.*
 
-![Full menu at 320px](menu-page-320.png)
+![Full menu at 320px](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/menu-page-320.png?raw=true)
 *Narrow mobile 320px full menu.*
 
 ### Kiosk — Refreshments
 
-![Kiosk Lemon Series at 1440px](kiosk-drinks-1440.png)
+![Kiosk Lemon Series at 1440px](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/kiosk-drinks-1440.png?raw=true)
 *Desktop 1440px LEMON SERIES: Classic Lemonade, Lemon Strawberry, Lemon Cucumber — no Lemon Yakult or Lemon Yogurt.*
 
-![Kiosk Lemon Series at 390px](kiosk-drinks-390.png)
+![Kiosk Lemon Series at 390px](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/kiosk-drinks-390.png?raw=true)
 *Mobile 390px LEMON SERIES with the same three drinks.*
 
-![Kiosk Milo Craze at 1440px](kiosk-milo-craze-1440.png)
+![Kiosk Milo Craze at 1440px](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/kiosk-milo-craze-1440.png?raw=true)
 *Desktop 1440px MILO CRAZE: Dinosaur, Float, Crunch, and Oreo all at ₱65.*
 
-![Kiosk Cream Float and Coffee at 1440px](kiosk-coffee-1440.png)
+![Kiosk Cream Float and Coffee at 1440px](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/kiosk-coffee-1440.png?raw=true)
 *Desktop 1440px CREAM FLOAT CRAZE (Coke Float ₱49, Chuckie Float ₱65, Milo Float ₱65, Cookies and Cream Float ₱65) and COFFEE FOAM (all four at ₱49).*
 
-![Kiosk Coke Float chooser at 390px](kiosk-coke-chooser-390.png)
+![Kiosk Coke Float chooser at 390px](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/kiosk-coke-chooser-390.png?raw=true)
 *Mobile 390px item details for Coke Float: no size options, "Add to order · ₱49".*
 
 ### Kiosk — Burgers and Extras
 
-![Kiosk Burgers at 1440px](kiosk-burgers-1440.png)
+![Kiosk Burgers at 1440px](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/kiosk-burgers-1440.png?raw=true)
 *Desktop 1440px Burgers category: five buy-1-take-1 burgers, no Hotdog Sandwich.*
 
-![Kiosk Burgers at 390px](kiosk-burgers-390.png)
+![Kiosk Burgers at 390px](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/kiosk-burgers-390.png?raw=true)
 *Mobile 390px Burgers category.*
 
-![Kiosk Extras at 1440px](kiosk-extras-1440.png)
+![Kiosk Extras at 1440px](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/kiosk-extras-1440.png?raw=true)
 *Desktop 1440px Extras: Quesadilla and the four ice creams, no Ice Cream Halo-Halo.*
 
-![Kiosk Extras at 390px](kiosk-extras-390.png)
+![Kiosk Extras at 390px](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/kiosk-extras-390.png?raw=true)
 *Mobile 390px Extras category.*
 
 ## Verification & CI Parity

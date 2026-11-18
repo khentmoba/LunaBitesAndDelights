@@ -34,16 +34,16 @@ The storefront (`site/index.html`, `site/menu/index.html`, `site/llms.txt`) neve
 
 Captured headless at 1× device pixel ratio from the assembled `build/web` bundle (`flutter build web --release --base-href /kiosk/` plus `dart run tool/assemble_site.dart`).
 
-![Kiosk Lemon Series at 1440px](kiosk-lemon-series-blue-1440.png)
+![Kiosk Lemon Series at 1440px](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/kiosk-lemon-series-blue-1440.png?raw=true)
 *Desktop 1440px: Classic Lemonade, Blue Lemonade, Lemon Strawberry, and Lemon Cucumber, all ₱49, with OREO CRAZE directly below — no SODA POP section.*
 
-![Kiosk Lemon Series at 390px](kiosk-lemon-series-blue-390.png)
+![Kiosk Lemon Series at 390px](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/kiosk-lemon-series-blue-390.png?raw=true)
 *Mobile 390px: the Lemon Series with Blue Lemonade at ₱49.*
 
-![Kiosk Refreshments at 1440px](kiosk-refreshments-no-soda-1440.png)
+![Kiosk Refreshments at 1440px](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/kiosk-refreshments-no-soda-1440.png?raw=true)
 *Desktop 1440px: the Lemon Series runs straight into OREO CRAZE — no SODA POP section between them.*
 
-![Kiosk Refreshments at 390px](kiosk-refreshments-no-soda-390.png)
+![Kiosk Refreshments at 390px](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/kiosk-refreshments-no-soda-390.png?raw=true)
 *Mobile 390px: the Coolers flow into the Lemon Series with no soda cards.*
 
 ## Verification & CI Parity

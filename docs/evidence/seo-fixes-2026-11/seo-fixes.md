@@ -70,29 +70,29 @@ Before: PR #25, `docs/evidence/seo-benchmark-2026-11/storefront-390.png` and `st
 
 After:
 
-![Storefront at 320px](storefront-320.png)
+![Storefront at 320px](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/seo-fixes-2026-11/storefront-320.png?raw=true)
 
-![Storefront at 390px](storefront-390.png)
+![Storefront at 390px](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/seo-fixes-2026-11/storefront-390.png?raw=true)
 
-![Storefront at 768px](storefront-768.png)
+![Storefront at 768px](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/seo-fixes-2026-11/storefront-768.png?raw=true)
 
-![Storefront at 1440px](storefront-1440.png)
+![Storefront at 1440px](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/seo-fixes-2026-11/storefront-1440.png?raw=true)
 
-![Menu at 320px](menu-320.png)
+![Menu at 320px](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/seo-fixes-2026-11/menu-320.png?raw=true)
 
-![Menu at 390px](menu-390.png)
+![Menu at 390px](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/seo-fixes-2026-11/menu-390.png?raw=true)
 
-![Menu at 768px](menu-768.png)
+![Menu at 768px](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/seo-fixes-2026-11/menu-768.png?raw=true)
 
-![Menu at 1440px](menu-1440.png)
+![Menu at 1440px](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/seo-fixes-2026-11/menu-1440.png?raw=true)
 
-![Menu footer at 390px](menu-390-foot.png)
+![Menu footer at 390px](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/seo-fixes-2026-11/menu-390-foot.png?raw=true)
 
-![Menu page bottom at 390px](menu-390-bottom.png)
+![Menu page bottom at 390px](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/seo-fixes-2026-11/menu-390-bottom.png?raw=true)
 
-![Storefront menu footer at 390px](storefront-menu-foot-390.png)
+![Storefront menu footer at 390px](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/seo-fixes-2026-11/storefront-menu-foot-390.png?raw=true)
 
-![Storefront menu footer at 1440px](storefront-menu-foot-1440.png)
+![Storefront menu footer at 1440px](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/seo-fixes-2026-11/storefront-menu-foot-1440.png?raw=true)
 
 ---
 

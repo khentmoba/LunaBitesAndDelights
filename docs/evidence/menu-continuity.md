@@ -10,15 +10,15 @@ Captures show the actual Flutter web app, not a mockup. Before captures use the 
 
 | Screen | Before | After |
 |---|---|---|
-| Phone, 390 × 844 | ![Old menu](menu-before-mobile.png) | ![New menu](menu-after-mobile.png) |
-| Desktop, 1280 × 800 | ![Old desktop menu](menu-before-desktop.png) | ![New desktop menu](menu-after-desktop.png) |
+| Phone, 390 × 844 | ![Old menu](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/menu-before-mobile.png?raw=true) | ![New menu](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/menu-after-mobile.png?raw=true) |
+| Desktop, 1280 × 800 | ![Old desktop menu](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/menu-before-desktop.png?raw=true) | ![New desktop menu](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/menu-after-desktop.png?raw=true) |
 
 Additional evidence:
 
-- [320px phone](menu-after-320.png) and [768px tablet](menu-after-tablet.png).
-- Item details on [phone](menu-chooser-mobile.png), [tablet](menu-chooser-tablet.png) and [desktop](menu-chooser-desktop.png). Fixed-price desktop details have a compact 460px maximum height; options remain scrollable in larger sheets.
-- Selected Overload halo-halo, quantity two, total ₱130 at [320px](menu-options-320.png) and [desktop](menu-options-desktop.png).
-- [Populated order action](menu-order-bar-mobile.png), after adding two ₱99 meals locally. This is an in-memory cart, not a submitted order.
+- [320px phone](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/menu-after-320.png?raw=true) and [768px tablet](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/menu-after-tablet.png?raw=true).
+- Item details on [phone](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/menu-chooser-mobile.png?raw=true), [tablet](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/menu-chooser-tablet.png?raw=true) and [desktop](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/menu-chooser-desktop.png?raw=true). Fixed-price desktop details have a compact 460px maximum height; options remain scrollable in larger sheets.
+- Selected Overload halo-halo, quantity two, total ₱130 at [320px](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/menu-options-320.png?raw=true) and [desktop](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/menu-options-desktop.png?raw=true).
+- [Populated order action](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/menu-order-bar-mobile.png?raw=true), after adding two ₱99 meals locally. This is an in-memory cart, not a submitted order.
 
 ## Behavior and accessibility
 

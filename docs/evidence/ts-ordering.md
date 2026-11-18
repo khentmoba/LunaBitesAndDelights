@@ -13,16 +13,16 @@ Same script (`tool/parity/shoot.mjs`), seed data, viewports and headless Chrome,
 
 | Screen | Before (Flutter) | After (TypeScript) |
 |---|---|---|
-| Splash, 390 | ![before](parity/flutter/kiosk-splash-390.webp) | ![after](parity/ts/kiosk-splash-390.webp) |
-| Menu, 390 | ![before](parity/flutter/kiosk-menu-390.webp) | ![after](parity/ts/kiosk-menu-390.webp) |
-| Menu, 1440 | ![before](parity/flutter/kiosk-menu-1440.webp) | ![after](parity/ts/kiosk-menu-1440.webp) |
-| Cart, 390 | ![before](parity/flutter/kiosk-cart-390.webp) | ![after](parity/ts/kiosk-cart-390.webp) |
-| Empty cart, 390 | ![before](parity/flutter/kiosk-cart-empty-390.webp) | ![after](parity/ts/kiosk-cart-empty-390.webp) |
-| Checkout, 390 | ![before](parity/flutter/kiosk-checkout-390.webp) | ![after](parity/ts/kiosk-checkout-390.webp) |
-| Checkout, 1440 | ![before](parity/flutter/kiosk-checkout-1440.webp) | ![after](parity/ts/kiosk-checkout-1440.webp) |
-| GCash, 390 | ![before](parity/flutter/kiosk-gcash-390.webp) | ![after](parity/ts/kiosk-gcash-390.webp) |
-| Receipt, 390 | ![before](parity/flutter/kiosk-receipt-390.webp) | ![after](parity/ts/kiosk-receipt-390.webp) |
-| Receipt, 1440 | ![before](parity/flutter/kiosk-receipt-1440.webp) | ![after](parity/ts/kiosk-receipt-1440.webp) |
+| Splash, 390 | ![before](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/flutter/kiosk-splash-390.webp?raw=true) | ![after](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/ts/kiosk-splash-390.webp?raw=true) |
+| Menu, 390 | ![before](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/flutter/kiosk-menu-390.webp?raw=true) | ![after](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/ts/kiosk-menu-390.webp?raw=true) |
+| Menu, 1440 | ![before](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/flutter/kiosk-menu-1440.webp?raw=true) | ![after](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/ts/kiosk-menu-1440.webp?raw=true) |
+| Cart, 390 | ![before](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/flutter/kiosk-cart-390.webp?raw=true) | ![after](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/ts/kiosk-cart-390.webp?raw=true) |
+| Empty cart, 390 | ![before](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/flutter/kiosk-cart-empty-390.webp?raw=true) | ![after](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/ts/kiosk-cart-empty-390.webp?raw=true) |
+| Checkout, 390 | ![before](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/flutter/kiosk-checkout-390.webp?raw=true) | ![after](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/ts/kiosk-checkout-390.webp?raw=true) |
+| Checkout, 1440 | ![before](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/flutter/kiosk-checkout-1440.webp?raw=true) | ![after](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/ts/kiosk-checkout-1440.webp?raw=true) |
+| GCash, 390 | ![before](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/flutter/kiosk-gcash-390.webp?raw=true) | ![after](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/ts/kiosk-gcash-390.webp?raw=true) |
+| Receipt, 390 | ![before](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/flutter/kiosk-receipt-390.webp?raw=true) | ![after](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/ts/kiosk-receipt-390.webp?raw=true) |
+| Receipt, 1440 | ![before](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/flutter/kiosk-receipt-1440.webp?raw=true) | ![after](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/ts/kiosk-receipt-1440.webp?raw=true) |
 
 All 28 captures (320, 390, 768, 1440 for each screen) are in `parity/ts/`.
 
@@ -33,7 +33,7 @@ Flutter's preview harness cannot open these, so there is no baseline image. Both
 
 | Delivery checkout, 390 | Map picker, 390 |
 |---|---|
-| ![delivery checkout](parity/ts/kiosk-checkout-delivery-390.webp) | ![map picker](parity/ts/kiosk-map-390.webp) |
+| ![delivery checkout](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/ts/kiosk-checkout-delivery-390.webp?raw=true) | ![map picker](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/ts/kiosk-map-390.webp?raw=true) |
 
 The map was captured with no MapTiler key built in, so it shows Flutter's "Map preview is unavailable"
 notice in place of tiles. With `PUBLIC_MAPTILER_KEY` set, Leaflet draws MapTiler streets-v2 tiles and
@@ -87,7 +87,7 @@ saved before the notification is tried.
 
 | Pickup receipt | Delivery receipt |
 |---|---|
-| ![pickup](ts-kiosk-order-e2e-pickup-cash-390.png) | ![delivery](ts-kiosk-order-e2e-delivery-cash-390.png) |
+| ![pickup](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/ts-kiosk-order-e2e-pickup-cash-390.png?raw=true) | ![delivery](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/ts-kiosk-order-e2e-delivery-cash-390.png?raw=true) |
 
 GCash was not run end to end: it needs PayMongo. The GCash screen is covered by the parity capture,
 which answers `createCheckoutSession` in the page. The verify and cancel paths port

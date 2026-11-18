@@ -12,5 +12,5 @@
 - `cd functions && npm run build`: `tsc` exited `0`
 
 ## Visual Proof
-- Mobile (`390x844`): [checkout-gcash-coming-soon-mobile.png](checkout-gcash-coming-soon-mobile.png)
-- Desktop (`1440x900`): [checkout-gcash-coming-soon-desktop.png](checkout-gcash-coming-soon-desktop.png)
+- Mobile (`390x844`): [checkout-gcash-coming-soon-mobile.png](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/checkout-gcash-coming-soon-mobile.png?raw=true)
+- Desktop (`1440x900`): [checkout-gcash-coming-soon-desktop.png](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/checkout-gcash-coming-soon-desktop.png?raw=true)

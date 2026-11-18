@@ -31,7 +31,7 @@ immutable and the redirect has to keep serving.
 
 ## Proof
 
-![Receipt page at 390px, header reads LUNA BITES & DELIGHTS](rename-luna-bites-delights-receipt-390.png)
+![Receipt page at 390px, header reads LUNA BITES & DELIGHTS](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/rename-luna-bites-delights-receipt-390.png?raw=true)
 
 Real render of `ReceiptPage` at 390×844 @3x with the app's own Bricolage and
 Caveat fonts loaded, captured through `flutter_tester`. Two changes are visible:
@@ -45,7 +45,7 @@ appears anywhere on the page.
 
 ### Stale web copy of the logo
 
-![web/images/luna_logo.png before and after](rename-luna-bites-delights-stale-web-copy.png)
+![web/images/luna_logo.png before and after](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/rename-luna-bites-delights-stale-web-copy.png?raw=true)
 
 `web/images/luna_logo.png` still held the pre-`75f4ea5` artwork (mean absolute
 difference 0.3/255 against the old logo, 63.1/255 against the current one). It

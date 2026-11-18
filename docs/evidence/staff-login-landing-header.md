@@ -17,27 +17,27 @@ Before: no baseline screenshot was captured. The storefront header before this c
 
 Storefront header at 320 px. Order drops to the second row.
 
-![Storefront header at 320 px](staff-login-header-320.png)
+![Storefront header at 320 px](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/staff-login-header-320.png?raw=true)
 
 Storefront header at 390 px.
 
-![Storefront header at 390 px](staff-login-header-390.png)
+![Storefront header at 390 px](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/staff-login-header-390.png?raw=true)
 
 Storefront header at 768 px.
 
-![Storefront header at 768 px](staff-login-header-768.png)
+![Storefront header at 768 px](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/staff-login-header-768.png?raw=true)
 
 Storefront header at 1440 px.
 
-![Storefront header at 1440 px](staff-login-header-1440.png)
+![Storefront header at 1440 px](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/staff-login-header-1440.png?raw=true)
 
 Kiosk overflow menu at 390 px while signed out. Only "Start over" is listed.
 
-![Kiosk overflow menu, signed out, 390 px](staff-login-kiosk-menu-logged-out-390.png)
+![Kiosk overflow menu, signed out, 390 px](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/staff-login-kiosk-menu-logged-out-390.png?raw=true)
 
 "Staff login" on the storefront opens the Staff Operations PIN gate at 390 px.
 
-![Staff login link opens the PIN gate, 390 px](staff-login-link-opens-kiosk-gate-390.png)
+![Staff login link opens the PIN gate, 390 px](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/staff-login-link-opens-kiosk-gate-390.png?raw=true)
 
 ## Header measurements
 

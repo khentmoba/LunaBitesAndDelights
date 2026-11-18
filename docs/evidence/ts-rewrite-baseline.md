@@ -11,21 +11,21 @@ Each later rewrite PR runs `shoot.mjs --target=ts` with the same seed, screens a
 
 | Screen | 390 | 1440 |
 |---|---|---|
-| Storefront home | <img src="parity/flutter/storefront-home-390.png" width="180"> | <img src="parity/flutter/storefront-home-1440.webp" width="320"> |
-| Storefront menu | <img src="parity/flutter/storefront-menu-390.webp" width="180"> | <img src="parity/flutter/storefront-menu-1440.webp" width="320"> |
-| Storefront 404 | <img src="parity/flutter/storefront-404-390.webp" width="180"> | <img src="parity/flutter/storefront-404-1440.webp" width="320"> |
-| Kiosk splash | <img src="parity/flutter/kiosk-splash-390.webp" width="180"> | <img src="parity/flutter/kiosk-splash-1440.webp" width="320"> |
-| Menu | <img src="parity/flutter/kiosk-menu-390.webp" width="180"> | <img src="parity/flutter/kiosk-menu-1440.webp" width="320"> |
-| Cart, empty | <img src="parity/flutter/kiosk-cart-empty-390.webp" width="180"> | <img src="parity/flutter/kiosk-cart-empty-1440.webp" width="320"> |
-| Cart | <img src="parity/flutter/kiosk-cart-390.webp" width="180"> | <img src="parity/flutter/kiosk-cart-1440.webp" width="320"> |
-| Checkout | <img src="parity/flutter/kiosk-checkout-390.webp" width="180"> | <img src="parity/flutter/kiosk-checkout-1440.webp" width="320"> |
-| Receipt | <img src="parity/flutter/kiosk-receipt-390.webp" width="180"> | <img src="parity/flutter/kiosk-receipt-1440.webp" width="320"> |
-| GCash payment | <img src="parity/flutter/kiosk-gcash-390.webp" width="180"> | <img src="parity/flutter/kiosk-gcash-1440.webp" width="320"> |
-| Staff login | <img src="parity/flutter/staff-login-390.webp" width="180"> | <img src="parity/flutter/staff-login-1440.webp" width="320"> |
-| Kitchen display | <img src="parity/flutter/staff-kds-390.webp" width="180"> | <img src="parity/flutter/staff-kds-1440.webp" width="320"> |
-| Dashboard | <img src="parity/flutter/staff-dashboard-390.webp" width="180"> | <img src="parity/flutter/staff-dashboard-1440.webp" width="320"> |
-| Sales analytics | <img src="parity/flutter/staff-analytics-390.webp" width="180"> | <img src="parity/flutter/staff-analytics-1440.webp" width="320"> |
-| Lifetime report | <img src="parity/flutter/staff-lifetime-390.webp" width="180"> | <img src="parity/flutter/staff-lifetime-1440.webp" width="320"> |
+| Storefront home | <img src="https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/flutter/storefront-home-390.png?raw=true" width="180"> | <img src="https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/flutter/storefront-home-1440.webp?raw=true" width="320"> |
+| Storefront menu | <img src="https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/flutter/storefront-menu-390.webp?raw=true" width="180"> | <img src="https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/flutter/storefront-menu-1440.webp?raw=true" width="320"> |
+| Storefront 404 | <img src="https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/flutter/storefront-404-390.webp?raw=true" width="180"> | <img src="https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/flutter/storefront-404-1440.webp?raw=true" width="320"> |
+| Kiosk splash | <img src="https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/flutter/kiosk-splash-390.webp?raw=true" width="180"> | <img src="https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/flutter/kiosk-splash-1440.webp?raw=true" width="320"> |
+| Menu | <img src="https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/flutter/kiosk-menu-390.webp?raw=true" width="180"> | <img src="https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/flutter/kiosk-menu-1440.webp?raw=true" width="320"> |
+| Cart, empty | <img src="https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/flutter/kiosk-cart-empty-390.webp?raw=true" width="180"> | <img src="https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/flutter/kiosk-cart-empty-1440.webp?raw=true" width="320"> |
+| Cart | <img src="https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/flutter/kiosk-cart-390.webp?raw=true" width="180"> | <img src="https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/flutter/kiosk-cart-1440.webp?raw=true" width="320"> |
+| Checkout | <img src="https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/flutter/kiosk-checkout-390.webp?raw=true" width="180"> | <img src="https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/flutter/kiosk-checkout-1440.webp?raw=true" width="320"> |
+| Receipt | <img src="https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/flutter/kiosk-receipt-390.webp?raw=true" width="180"> | <img src="https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/flutter/kiosk-receipt-1440.webp?raw=true" width="320"> |
+| GCash payment | <img src="https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/flutter/kiosk-gcash-390.webp?raw=true" width="180"> | <img src="https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/flutter/kiosk-gcash-1440.webp?raw=true" width="320"> |
+| Staff login | <img src="https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/flutter/staff-login-390.webp?raw=true" width="180"> | <img src="https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/flutter/staff-login-1440.webp?raw=true" width="320"> |
+| Kitchen display | <img src="https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/flutter/staff-kds-390.webp?raw=true" width="180"> | <img src="https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/flutter/staff-kds-1440.webp?raw=true" width="320"> |
+| Dashboard | <img src="https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/flutter/staff-dashboard-390.webp?raw=true" width="180"> | <img src="https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/flutter/staff-dashboard-1440.webp?raw=true" width="320"> |
+| Sales analytics | <img src="https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/flutter/staff-analytics-390.webp?raw=true" width="180"> | <img src="https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/flutter/staff-analytics-1440.webp?raw=true" width="320"> |
+| Lifetime report | <img src="https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/flutter/staff-lifetime-390.webp?raw=true" width="180"> | <img src="https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/parity/flutter/staff-lifetime-1440.webp?raw=true" width="320"> |
 
 ## Checks on this branch
 
