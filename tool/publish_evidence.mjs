@@ -1,7 +1,7 @@
 // Publishes proof images to the `evidence` branch (an orphan branch holding only
 // images) and prints a URL to embed for each, so screenshots never land on main.
 //
-//   node tool/publish_evidence.mjs docs/evidence/my-feature-390.png [...]
+//   node tool/publish_evidence.mjs docs/evidence/<shot>.png [...]
 //   git ls-files docs/evidence | node tool/publish_evidence.mjs -   # paths on stdin
 //
 // A file under docs/evidence/ keeps its path; any other file goes to
