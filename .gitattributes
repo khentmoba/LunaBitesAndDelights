@@ -1,0 +1,7 @@
+# LF everywhere, even on machines with core.autocrlf=true, so scripted edits
+# (sed, perl, node) see the same bytes git stores.
+* text=auto eol=lf
+*.bat text eol=crlf
+
+# Proof artifacts: collapsed in GitHub PR diffs.
+docs/evidence/** linguist-generated=true
