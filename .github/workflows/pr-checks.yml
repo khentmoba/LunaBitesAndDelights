@@ -39,8 +39,10 @@ jobs:
       - name: Report outdated npm deps (informational)
         run: npm outdated || true
 
-      - name: Fail on high/critical vulnerabilities
-        run: npm audit --audit-level=high
+      # Runtime deps only, as in the site job: dev tooling never ships, and
+      # typescript-eslint pulls picomatch, whose ReDoS advisory has no fixed release yet.
+      - name: Fail on high/critical runtime vulnerabilities
+        run: npm audit --omit=dev --audit-level=high
 
   rules:
     runs-on: ubuntu-latest

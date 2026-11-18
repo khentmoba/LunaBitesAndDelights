@@ -88,8 +88,8 @@ describe('orders: kiosk can only create (validated)', () => {
   });
 });
 
-// Fixtures are the exact writes checkout makes, produced by
-// test/order_service_test.dart. If one fails here, real orders fail in production.
+// Fixtures are the exact writes checkout makes, captured from the checkout
+// tests before the TypeScript port. If one fails here, real orders fail in production.
 describe('orders: every checkout combination saves', () => {
   const dir = resolve(__dirname, '../fixtures/checkout');
   const load = (name) => {
