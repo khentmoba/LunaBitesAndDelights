@@ -3,21 +3,10 @@ import { getFirestore } from 'firebase-admin/firestore';
 import { sendToAll, sendPhotoToAll, escapeMd } from '../telegram_api';
 import { telegramToken, telegramChatIds, googleMapsApiKey } from '../secrets';
 import { logger } from 'firebase-functions';
-import { ALNUM_DOC_ID, cleanStr, optStr, cleanInt } from '../util/security';
+import { ALNUM_DOC_ID, cleanStr, optStr } from '../util/security';
 
 const ORDER_TYPES = ['Walk-In', 'Pickup', 'Delivery'];
 const MAX_ITEMS = 50;
-
-/** Records notification outcome on the order. Never fails the request. */
-async function markNotified(orderDocId: string | null, sent: boolean) {
-  if (!orderDocId) return;
-  try {
-    await getFirestore().collection('orders').doc(orderDocId)
-      .set({ telegramSent: sent }, { merge: true });
-  } catch (error: any) {
-    logger.warn(`Could not record notification status for ${orderDocId}`, error);
-  }
-}
 
 export const itemLines = (items: any[]): string =>
   items
@@ -153,57 +142,6 @@ export async function fetchMapImage(url: string, timeoutMs = 6000): Promise<Buff
   }
 }
 
-function parseOrderNotificationInput(d: any): {
-  orderDocId: string | null;
-  data: OrderNotificationData;
-} {
-  const orderDocId =
-    typeof d.orderDocId === 'string' && ALNUM_DOC_ID.test(d.orderDocId) ? d.orderDocId : null;
-  const orderNumber = cleanStr(d.orderNumber, 32, 'orderNumber');
-  const customerName = cleanStr(d.customerName, 100, 'customerName');
-  const customerAddress = optStr(d.customerAddress);
-  const customerPhone = optStr(d.customerPhone, 32);
-  const total = cleanInt(d.total, 1000000, 'total');
-  const timeStr = optStr(d.timeStr, 64);
-  const orderType = ORDER_TYPES.includes(d.orderType) ? d.orderType : 'Pickup'; // #8
-  const deliveryFee = cleanInt(d.deliveryFee ?? 0, 5000, 'deliveryFee');
-  const paymentMethod = optStr(d.paymentMethod, 32);
-  const paymentStatus = optStr(d.paymentStatus, 32);
-
-  if (!Array.isArray(d.items) || d.items.length === 0 || d.items.length > MAX_ITEMS) {
-    throw new HttpsError('invalid-argument', 'Invalid items');
-  }
-  const items = d.items.map((i: any) => ({
-    name: cleanStr(i?.name, 120, 'item name'),
-    variant: optStr(i?.variant, 120),
-    price: cleanInt(i?.price, 100000, 'item price'),
-    quantity: cleanInt(i?.quantity ?? 1, 99, 'item quantity') || 1,
-  }));
-
-  // Coordinates must be real numbers or omitted (no string injection into map URL).
-  const lat = (typeof d.lat === 'number' && Math.abs(d.lat) <= 90) ? d.lat : null;
-  const lng = (typeof d.lng === 'number' && Math.abs(d.lng) <= 180) ? d.lng : null;
-
-  return {
-    orderDocId,
-    data: {
-      orderNumber,
-      customerName,
-      customerAddress,
-      customerPhone,
-      items,
-      total,
-      timeStr,
-      orderType,
-      deliveryFee,
-      paymentMethod,
-      paymentStatus,
-      lat,
-      lng,
-    },
-  };
-}
-
 function resolveStaticMapUrl(lat: number, lng: number): string | null {
   let gmapKey = '';
   try {
@@ -247,41 +185,129 @@ async function sendDeliveryNotification(
   await sendToAll(message, { reply_markup: replyMarkup });
 }
 
-// Public kiosk endpoint: strict validation + order-doc verification instead of auth (#14).
+/** Builds notification data strictly from the authoritative Firestore order document. */
+export function notificationDataFromOrder(
+  orderData: Record<string, any>,
+  fallbackOrderId: string,
+  timeStrOverride = '',
+): OrderNotificationData {
+  const orderType = ORDER_TYPES.includes(orderData.type) ? orderData.type : 'Pickup';
+  const rawItems = Array.isArray(orderData.items) ? orderData.items : [];
+  const items = rawItems.slice(0, MAX_ITEMS).map((i: any) => ({
+    name: String(i?.name || 'Unknown').slice(0, 120),
+    variant: String(i?.variant || '').slice(0, 120),
+    price: Number(i?.price) || 0,
+    quantity: Number(i?.quantity ?? i?.qty) || 1,
+  }));
+  const lat = typeof orderData.lat === 'number' && Number.isFinite(orderData.lat) && Math.abs(orderData.lat) <= 90
+    ? orderData.lat
+    : null;
+  const lng = typeof orderData.lng === 'number' && Number.isFinite(orderData.lng) && Math.abs(orderData.lng) <= 180
+    ? orderData.lng
+    : null;
+
+  let timeStr = timeStrOverride;
+  if (!timeStr) {
+    const rawTs = orderData.timestamp;
+    const d = typeof rawTs?.toDate === 'function' ? rawTs.toDate() : new Date();
+    const pht = new Date(d.getTime() + 8 * 3600_000);
+    const two = (n: number) => String(n).padStart(2, '0');
+    timeStr = `${pht.getUTCFullYear()}-${two(pht.getUTCMonth() + 1)}-${two(pht.getUTCDate())}  ${two(pht.getUTCHours())}:${two(pht.getUTCMinutes())}`;
+  }
+
+  return {
+    orderNumber: String(orderData.orderId || fallbackOrderId),
+    customerName: String(orderData.customerName || ''),
+    customerAddress: String(orderData.customerAddress || ''),
+    customerPhone: String(orderData.customerPhone || ''),
+    items,
+    total: Number(orderData.totalAmount) || 0,
+    timeStr,
+    orderType,
+    deliveryFee: Number(orderData.deliveryFee) || 0,
+    paymentMethod: String(orderData.paymentMethod || 'Cash'),
+    paymentStatus: String(orderData.paymentStatus || 'NOT PAID'),
+    lat,
+    lng,
+  };
+}
+
+/**
+ * Atomically claims Telegram notification delivery for an order so concurrent
+ * trigger + callable invocations never double-send, and always renders from
+ * the authoritative Firestore order document.
+ */
+export async function notifyOrderOnce(
+  orderDocId: string,
+  orderData: Record<string, any>,
+  timeStrOverride = '',
+): Promise<{ sent: boolean; alreadySent: boolean }> {
+  const db = getFirestore();
+  const orderRef = db.collection('orders').doc(orderDocId);
+
+  let claimed = false;
+  await db.runTransaction(async (tx) => {
+    const snap = await tx.get(orderRef);
+    if (!snap.exists) return;
+    const current = snap.data()!;
+    if (current.telegramSent === true || current.telegramStatus === 'sending') return;
+    claimed = true;
+    tx.set(orderRef, { telegramStatus: 'sending' }, { merge: true });
+  });
+
+  if (!claimed) {
+    return { sent: false, alreadySent: true };
+  }
+
+  const data = notificationDataFromOrder(orderData, orderDocId, timeStrOverride);
+  const message = formatOrderNotification(data);
+
+  logger.info(`Sending order notification for ${data.orderNumber} to Telegram`);
+  try {
+    if (data.orderType === 'Delivery' && data.lat != null && data.lng != null) {
+      await sendDeliveryNotification(data, message, data.lat, data.lng);
+    } else {
+      await sendToAll(message);
+    }
+
+    await orderRef.set({ telegramSent: true, telegramStatus: 'sent' }, { merge: true });
+    return { sent: true, alreadySent: false };
+  } catch (error: any) {
+    await orderRef.set({ telegramSent: false, telegramStatus: 'failed' }, { merge: true }).catch((e) => {
+      logger.warn(`Could not record failed notification status for ${orderDocId}`, e);
+    });
+    logger.error(`Error sending Telegram notification for ${data.orderNumber}`, error);
+    throw error;
+  }
+}
+
+// Legacy/public kiosk endpoint: reads strictly from the Firestore order doc and
+// deduplicates atomically with onOrderWritten.
 export const sendOrderNotification = onCall(
-  { secrets: [telegramToken, telegramChatIds, googleMapsApiKey] }, // #1: secrets server-side only
+  { secrets: [telegramToken, telegramChatIds, googleMapsApiKey] },
   async (request) => {
-    const { orderDocId, data } = parseOrderNotificationInput(request.data || {});
+    const d = request.data || {};
+    const orderDocId =
+      typeof d.orderDocId === 'string' && ALNUM_DOC_ID.test(d.orderDocId) ? d.orderDocId : null;
     if (!orderDocId) {
       throw new HttpsError('invalid-argument', 'Missing orderDocId');
     }
+    const orderNumber = cleanStr(d.orderNumber, 32, 'orderNumber');
+    const timeStr = optStr(d.timeStr, 64);
+
     const orderSnap = await getFirestore().collection('orders').doc(orderDocId).get();
     if (!orderSnap.exists) {
       throw new HttpsError('not-found', 'Order not found');
     }
     const orderData = orderSnap.data()!;
-    if (orderData.orderId !== data.orderNumber) {
+    if (orderData.orderId !== orderNumber) {
       throw new HttpsError('permission-denied', 'Order reference mismatch');
     }
-    if (orderData.telegramSent === true) {
-      return { success: true, alreadySent: true };
-    }
 
-    const message = formatOrderNotification(data);
-
-    logger.info(`Sending order notification for ${data.orderNumber} to Telegram`);
     try {
-      if (data.orderType === 'Delivery' && data.lat != null && data.lng != null) {
-        await sendDeliveryNotification(data, message, data.lat, data.lng);
-      } else {
-        await sendToAll(message);
-      }
-
-      await markNotified(orderDocId, true);
-      return { success: true };
-    } catch (error: any) {
-      await markNotified(orderDocId, false);
-      logger.error(`Error sending Telegram notification for ${data.orderNumber}`, error);
+      const result = await notifyOrderOnce(orderDocId, orderData, timeStr);
+      return result.alreadySent ? { success: true, alreadySent: true } : { success: true };
+    } catch {
       throw new HttpsError('internal', 'Failed to send Telegram notification');
     }
   });

@@ -84,9 +84,27 @@ export function mountLogin(root: HTMLElement): void {
 
   function setPin(next: string) {
     if (loading) return;
+    const hadError = error !== null;
     pin = next;
     error = null;
-    render();
+    if (hadError || mode !== 'pin') {
+      render();
+      return;
+    }
+    const slotsEl = body.querySelector<HTMLElement>('.login__slots');
+    const submitBtn = body.querySelector<HTMLButtonElement>('[data-submit]');
+    if (!slotsEl || !submitBtn) {
+      render();
+      return;
+    }
+    const canSubmit = pin.length >= 4;
+    slotsEl.setAttribute('aria-label', `${pin.length} digits entered`);
+    slotsEl.innerHTML = Array.from(
+      { length: Math.max(4, pin.length) },
+      (_, i) => `<span class="login__slot${i < pin.length ? ' login__slot--on' : ''}"></span>`,
+    ).join('');
+    submitBtn.disabled = !canSubmit;
+    submitBtn.classList.toggle('is-ready', canSubmit);
   }
 
   async function verify(params: Record<string, string>, fallbackUser: string, failure: string) {

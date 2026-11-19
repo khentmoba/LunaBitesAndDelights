@@ -25,6 +25,9 @@ import { fnError, isAuthCode, isAuthErrorText, logout, type Staff } from './sess
 import { ERROR, INK, INK_SOFT, PLATE, SUCCESS, cameFromApp, esc, go, icon, showDialog, staffSnack } from './ui.ts';
 
 const POLL_MS = 10_000;
+const RECONNECT_MS = 60_000;
+const INITIAL_FALLBACK_MS = 4_000;
+const LOOKBACK_REFRESH_MS = 6 * 60 * 60 * 1000;
 const CANCEL_REASONS = ['Item Out of Stock', 'Customer Requested Cancellation', 'Duplicate / Test Order', 'Store Closing / Capacity'];
 
 type Column = 'Pending' | 'Preparing' | 'Ready' | 'Completed';
@@ -54,6 +57,9 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
   const updating = new Set<string>();
   let unsub: (() => void) | null = null;
   let pollTimer = 0;
+  let reconnectTimer = 0;
+  let initialFallbackTimer = 0;
+  let lookbackTimer = 0;
   let disposed = false;
 
   const back = cameFromApp();
@@ -73,7 +79,7 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
   // ---- data ----
 
   function publish() {
-    const all = mergeKdsOrders(live ?? [], polled);
+    const all = isLive && live !== null ? mergeKdsOrders(live, []) : mergeKdsOrders(live ?? [], polled);
     const visible = showCompleted ? all : all.filter((o) => !isClosedKdsStatus(o.status));
     checkNewOrders(visible);
     orders = visible;
@@ -127,21 +133,29 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
   function fallBackToPolling() {
     unsub?.();
     unsub = null;
+    clearTimeout(initialFallbackTimer);
+    initialFallbackTimer = 0;
     connecting = false;
     isLive = false;
     if (disposed) return;
     renderBar();
+    if (!polled.length) void fetchActive(true);
     pollTimer ||= window.setInterval(() => {
       if (getStaff()) void fetchActive(true);
     }, POLL_MS);
+    reconnectTimer ||= window.setInterval(() => {
+      if (!disposed && !isLive && !connecting && getStaff()) void startLiveListener();
+    }, RECONNECT_MS);
   }
 
-  async function startFeeds() {
-    void fetchActive();
+  async function startLiveListener() {
+    if (disposed || connecting) return;
     connecting = true;
+    renderBar();
     try {
       const [db, fs] = await Promise.all([firebaseDb(), import('firebase/firestore')]);
       if (disposed) return;
+      unsub?.();
       const q = fs.query(
         fs.collection(db, 'kds_orders'),
         fs.where('ts', '>=', fs.Timestamp.fromMillis(Date.now() - KDS_LOOKBACK_MS)),
@@ -153,9 +167,15 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
         q,
         (snap) => {
           if (disposed) return;
+          clearTimeout(initialFallbackTimer);
+          initialFallbackTimer = 0;
           clearInterval(pollTimer);
           pollTimer = 0;
+          clearInterval(reconnectTimer);
+          reconnectTimer = 0;
+          connecting = false;
           isLive = true;
+          polled = [];
           live = snap.docs.map((d) => kdsOrderFromDoc(d.id, d.data(), toDate));
           publish();
         },
@@ -164,6 +184,20 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
     } catch {
       fallBackToPolling();
     }
+  }
+
+  async function startFeeds() {
+    loading = true;
+    renderBar();
+    // Start real-time listener first; only fall back to getActiveOrders if it
+    // does not deliver an initial snapshot within INITIAL_FALLBACK_MS.
+    initialFallbackTimer = window.setTimeout(() => {
+      if (!disposed && !isLive && !polled.length) void fetchActive();
+    }, INITIAL_FALLBACK_MS);
+    await startLiveListener();
+    lookbackTimer ||= window.setInterval(() => {
+      if (!disposed && isLive && getStaff()) void startLiveListener();
+    }, LOOKBACK_REFRESH_MS);
   }
 
   async function updateStatus(orderId: string, status: string, cancellationReason?: string) {
@@ -331,14 +365,14 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
     }
 
     return `
-<article class="kcard${delayed ? ' is-delayed' : ''}">
+<article class="kcard${delayed ? ' is-delayed' : ''}" data-card-id="${esc(id)}">
   <div class="kcard__top">
     <div class="kcard__ids">
       <span class="kcard__num">#${esc(num)}</span>
       <button type="button" class="kcard__ib" data-ticket="${esc(id)}" title="Kitchen Slip Ticket" aria-label="Kitchen slip ticket for #${esc(num)}">${icon('receipt_long_outlined')}</button>
       ${delivery ? `<button type="button" class="kcard__ib kcard__ib--copy" data-copy="${esc(id)}" title="Copy Delivery Dispatch Note" aria-label="Copy dispatch note for #${esc(num)}">${icon('copy_rounded')}</button>` : ''}
     </div>
-    <span class="kcard__age${delayed ? ' is-delayed' : ''}" style="color:${color}">${icon(delayed ? 'warning_amber_rounded' : 'access_time_rounded')}<span>${esc(delayed ? `DELAYED (${elapsed})` : elapsed)}</span></span>
+    <span class="kcard__age${delayed ? ' is-delayed' : ''}" data-age style="color:${color}">${icon(delayed ? 'warning_amber_rounded' : 'access_time_rounded')}<span data-age-text>${esc(delayed ? `DELAYED (${elapsed})` : elapsed)}</span></span>
   </div>
   <div class="kcard__pills">
     <span class="kpill kpill--${delivery ? 'delivery' : pickup ? 'pickup' : 'walkin'}">${icon(delivery ? 'motorcycle_outlined' : pickup ? 'storefront_outlined' : 'shopping_bag_outlined')}<span>${esc(type.toUpperCase())}</span></span>
@@ -607,6 +641,29 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
     renderBoard();
   });
 
+  function refreshElapsedTimes() {
+    let delayChanged = false;
+    for (const cardEl of board.querySelectorAll<HTMLElement>('[data-card-id]')) {
+      const id = cardEl.dataset.cardId;
+      const o = id ? byId(id) : undefined;
+      if (!o) continue;
+      const ts = o.timestamp ?? '';
+      const delayed = isDelayed(o, now);
+      if (cardEl.classList.contains('is-delayed') !== delayed) {
+        delayChanged = true;
+        break;
+      }
+      const ageEl = cardEl.querySelector<HTMLElement>('[data-age]');
+      const textEl = cardEl.querySelector<HTMLElement>('[data-age-text]');
+      if (ageEl && textEl) {
+        const elapsed = formatElapsed(ts, now);
+        ageEl.style.color = elapsedColor(ts, now);
+        textEl.textContent = delayed ? `DELAYED (${elapsed})` : elapsed;
+      }
+    }
+    if (delayChanged) renderBoard();
+  }
+
   const onLayout = () => {
     layout = null;
     renderBoard();
@@ -614,7 +671,7 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
   wideMq.addEventListener('change', onLayout);
   const clock = window.setInterval(() => {
     now = Date.now();
-    renderBoard();
+    refreshElapsedTimes();
   }, 30_000);
 
   renderControls();
@@ -624,7 +681,10 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
   return () => {
     disposed = true;
     unsub?.();
+    clearTimeout(initialFallbackTimer);
     clearInterval(pollTimer);
+    clearInterval(reconnectTimer);
+    clearInterval(lookbackTimer);
     clearInterval(clock);
     wideMq.removeEventListener('change', onLayout);
     root.removeEventListener('click', onRootClick);

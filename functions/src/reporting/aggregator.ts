@@ -1,6 +1,9 @@
 import { getFirestore } from 'firebase-admin/firestore';
 import { itemKey, isCountableOrder } from '../util';
 import { escapeMd } from '../telegram_api';
+import { dayFromDoc } from './daily_stats';
+
+const STATS_META_DOC = 'stats_meta/dailyStats';
 
 export interface DailySales {
   date: string;
@@ -13,6 +16,29 @@ export interface DailySales {
 
 export async function aggregateDailySales(dateLabel: string): Promise<DailySales | null> {
   const db = getFirestore();
+
+  const [metaSnap, daySnap] = await Promise.all([
+    db.doc(STATS_META_DOC).get(),
+    db.collection('dailyStats').doc(dateLabel).get(),
+  ]);
+  if (metaSnap.exists && metaSnap.get('backfilledAt')) {
+    if (!daySnap.exists) return null;
+    const day = dayFromDoc(dateLabel, daySnap.data()!);
+    if (day.orders <= 0) return null;
+    const topItems = Object.values(day.items)
+      .filter((it) => it.qty > 0)
+      .map((it) => ({ name: itemKey(it.name || 'Unknown', it.variant), qty: it.qty }))
+      .sort((a, b) => b.qty - a.qty);
+    return {
+      date: dateLabel,
+      totalSales: day.revenue,
+      kioskSales: day.entryType.kiosk.revenue,
+      staffSales: day.entryType.staff.revenue,
+      totalOrders: day.orders,
+      topItems,
+    };
+  }
+
   const snapshot = await db.collection('orders')
     .where('dateLabel', '==', dateLabel)
     .get();

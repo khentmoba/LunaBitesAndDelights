@@ -5,6 +5,22 @@ import { paymongoSecret } from '../secrets';
 import { sendToAll, escapeMd } from '../telegram_api';
 import { ALNUM_DOC_ID } from '../util/security';
 
+export interface VerifiedCheckoutSession {
+  payments: any[];
+  attributes: Record<string, any>;
+}
+
+/** Returns true only when the order is bound to the exact checkout session id. */
+export function hasMatchingCheckoutSession(
+  orderData: Record<string, any> | undefined,
+  sessionId: string,
+): boolean {
+  const bound = typeof orderData?.checkoutSessionId === 'string'
+    ? orderData.checkoutSessionId.trim()
+    : '';
+  return bound.length > 0 && bound === sessionId;
+}
+
 export function paymongoAuthHeader(requireConfigured = false): string {
   const key = paymongoSecret.value();
   if (requireConfigured && !key) {
@@ -28,23 +44,45 @@ export async function requireOrderDoc(orderDocId: string): Promise<{
   return { orderRef, orderData: snap.data()! };
 }
 
-export async function markOrderPaymentFailed(orderRef: DocumentReference): Promise<void> {
+export async function markOrderPaymentFailed(
+  orderRef: DocumentReference,
+  expectedSessionId?: string,
+): Promise<{ updated: boolean }> {
+  let updated = false;
   await getFirestore().runTransaction(async (tx) => {
     const snap = await tx.get(orderRef);
-    if (!snap.exists || snap.data()?.paymentStatus === 'PAID') return;
+    if (!snap.exists) return;
+    const data = snap.data()!;
+    if (data.paymentStatus === 'PAID') return;
+    if (expectedSessionId && !hasMatchingCheckoutSession(data, expectedSessionId)) return;
+    updated = true;
     tx.update(orderRef, { paymentStatus: 'PAYMENT_FAILED' });
   });
+  return { updated };
 }
 
-/** PayMongo checkout session statuses derived from session payments. */
-export async function fetchSessionPayments(sessionId: string, auth: string): Promise<any[] | null> {
+/** Fetches the authoritative checkout session and its payments from PayMongo. */
+export async function fetchCheckoutSession(
+  sessionId: string,
+  auth: string,
+): Promise<VerifiedCheckoutSession | null> {
   const res = await fetch(`https://api.paymongo.com/v2/checkout_sessions/${sessionId}`, {
     headers: { Authorization: `Basic ${auth}` },
     signal: AbortSignal.timeout(10_000),
   });
   if (!res.ok) return null;
   const json: any = await res.json();
-  return json?.data?.attributes?.payments || [];
+  const attributes = (json?.data?.attributes && typeof json.data.attributes === 'object')
+    ? json.data.attributes
+    : {};
+  const payments = Array.isArray(attributes.payments) ? attributes.payments : [];
+  return { payments, attributes };
+}
+
+/** PayMongo checkout session statuses derived from session payments. */
+export async function fetchSessionPayments(sessionId: string, auth: string): Promise<any[] | null> {
+  const session = await fetchCheckoutSession(sessionId, auth);
+  return session ? session.payments : null;
 }
 
 export function hasPaidPayment(payments: any[] | null): boolean {
@@ -69,6 +107,7 @@ export async function markOrderPaidOnce(
   orderRef: DocumentReference,
   paymentId: string,
   fallbackOrderLabel = '',
+  expectedSessionId?: string,
 ): Promise<{ transitioned: boolean }> {
   const db = getFirestore();
   let orderData: Record<string, any> | null = null;
@@ -80,6 +119,10 @@ export async function markOrderPaidOnce(
     const data = snap.data()!;
     orderData = data;
     if (data.paymentStatus === 'PAID') return;
+    if (expectedSessionId && !hasMatchingCheckoutSession(data, expectedSessionId)) {
+      logger.warn(`Refusing to mark order ${orderRef.id} PAID: checkout session mismatch`);
+      return;
+    }
     transitioned = true;
     tx.set(orderRef, {
       paymentStatus: 'PAID',

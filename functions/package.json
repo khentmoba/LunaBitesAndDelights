@@ -20,12 +20,10 @@
   "main": "lib/index.js",
   "dependencies": {
     "firebase-admin": "^13.1.0",
-    "firebase-functions": "^6.0.1",
-    "node-telegram-bot-api": "^0.66.0"
+    "firebase-functions": "^6.0.1"
   },
   "devDependencies": {
     "@firebase/rules-unit-testing": "^5.0.2",
-    "@types/node-telegram-bot-api": "^0.64.14",
     "eslint": "10.14.0",
     "firebase": "^12.19.0",
     "typescript": "^5.4.5",
@@ -33,7 +31,6 @@
   },
   "private": true,
   "overrides": {
-    "form-data": "^2.5.6",
     "@grpc/grpc-js": "^1.14.0"
   }
 }

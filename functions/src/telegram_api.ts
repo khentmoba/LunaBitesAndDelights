@@ -1,17 +1,80 @@
-import TelegramBot from 'node-telegram-bot-api';
 import { telegramToken, telegramChatIds } from './secrets';
 import { logger } from 'firebase-functions';
 
-let bot: TelegramBot;
+export interface TelegramClient {
+  sendMessage(chatId: string, text: string, opts?: Record<string, any>): Promise<unknown>;
+  sendPhoto(
+    chatId: string,
+    photo: Buffer | string,
+    opts?: Record<string, any>,
+    fileOpts?: { filename?: string; contentType?: string },
+  ): Promise<unknown>;
+}
 
-export function getBot() {
+const TELEGRAM_TIMEOUT_MS = 10_000;
+
+async function telegramRequest(token: string, method: string, init: RequestInit): Promise<unknown> {
+  const res = await fetch(`https://api.telegram.org/bot${token}/${method}`, {
+    ...init,
+    signal: AbortSignal.timeout(TELEGRAM_TIMEOUT_MS),
+  });
+  let body: any = null;
+  try {
+    body = await res.json();
+  } catch {
+    body = null;
+  }
+  if (!res.ok || body?.ok === false) {
+    const desc = body?.description || res.statusText || 'Telegram API error';
+    const err: any = new Error(`ETELEGRAM: ${res.status} ${desc}`);
+    err.response = { statusCode: res.status, body };
+    throw err;
+  }
+  return body?.result;
+}
+
+function createNativeBot(token: string): TelegramClient {
+  return {
+    sendMessage(chatId, text, opts = {}) {
+      return telegramRequest(token, 'sendMessage', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chat_id: chatId, text, ...opts }),
+      });
+    },
+    sendPhoto(chatId, photo, opts = {}, fileOpts = {}) {
+      if (typeof photo === 'string') {
+        return telegramRequest(token, 'sendPhoto', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ chat_id: chatId, photo, ...opts }),
+        });
+      }
+      const form = new FormData();
+      form.append('chat_id', chatId);
+      for (const [k, v] of Object.entries(opts)) {
+        if (v === undefined) continue;
+        form.append(k, typeof v === 'string' ? v : JSON.stringify(v));
+      }
+      const blob = new Blob([new Uint8Array(photo)], {
+        type: fileOpts.contentType || 'application/octet-stream',
+      });
+      form.append('photo', blob, fileOpts.filename || 'photo.png');
+      return telegramRequest(token, 'sendPhoto', { method: 'POST', body: form });
+    },
+  };
+}
+
+let bot: TelegramClient | null = null;
+
+export function getBot(): TelegramClient {
   if (!bot) {
-    bot = new TelegramBot(telegramToken.value(), { polling: false });
+    bot = createNativeBot(telegramToken.value());
   }
   return bot;
 }
 
-export function setBot(customBot: any) {
+export function setBot(customBot: TelegramClient | null) {
   bot = customBot;
 }
 
@@ -35,7 +98,7 @@ async function deliverToAll(
   fallbackNote: string,
   failLabel: string,
   options: Record<string, any>,
-  send: (telegram: TelegramBot, id: string, opts: Record<string, any>, plainText: boolean) => Promise<unknown>,
+  send: (telegram: TelegramClient, id: string, opts: Record<string, any>, plainText: boolean) => Promise<unknown>,
 ) {
   const ids = telegramChatIds.value()
     .split(',')
@@ -70,13 +133,16 @@ async function deliverToAll(
     })
   );
 
-  const failures = results.filter(r => r.status === 'rejected');
+  const failures = results
+    .map((r, i) => ({ r, chatId: ids[i] }))
+    .filter((entry): entry is { r: PromiseRejectedResult; chatId: string } => entry.r.status === 'rejected');
+
   if (failures.length > 0) {
     logger.error(
       `${fnName}: ${failures.length} of ${ids.length} messages failed`,
-      failures.map((r, i) => ({
-        chatId: ids[i],
-        error: (r as PromiseRejectedResult).reason?.message || 'unknown',
+      failures.map(({ r, chatId }) => ({
+        chatId,
+        error: r.reason?.message || 'unknown',
       }))
     );
   }

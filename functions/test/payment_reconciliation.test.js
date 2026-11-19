@@ -48,16 +48,31 @@ test('returns null when the payload has no usable id', () => {
   );
 });
 
-test('verifyPaymongoSignature validates HMAC-SHA256 when secret is set', () => {
+test('verifyPaymongoSignature validates HMAC-SHA256 and timestamp replay window when secret is set', () => {
   const secret = 'whsec_test_123';
   const rawBody = JSON.stringify({ data: { id: 'cs_1' } });
   const t = '1700000000';
+  const nowSec = 1700000050;
   const sig = crypto.createHmac('sha256', secret).update(`${t}.${rawBody}`).digest('hex');
-  assert.strictEqual(verifyPaymongoSignature(`t=${t},te=${sig}`, rawBody, secret), true);
-  assert.strictEqual(verifyPaymongoSignature(`t=${t},te=${'0'.repeat(64)}`, rawBody, secret), false);
-  assert.strictEqual(verifyPaymongoSignature(`t=${t},te=${'z'.repeat(64)}`, rawBody, secret), false);
-  assert.strictEqual(verifyPaymongoSignature(`t=${t},te=short`, rawBody, secret), false);
-  assert.strictEqual(verifyPaymongoSignature(undefined, rawBody, secret), false);
+  assert.strictEqual(verifyPaymongoSignature(`t=${t},te=${sig}`, rawBody, secret, nowSec), true);
+  assert.strictEqual(verifyPaymongoSignature(`t=${t},te=${sig}`, rawBody, secret, 1700000400), false, 'stale timestamp rejected');
+  assert.strictEqual(verifyPaymongoSignature(`t=${t},te=${sig}`, rawBody, secret, 1699999600), false, 'future timestamp rejected');
+  assert.strictEqual(verifyPaymongoSignature(`t=${t},te=${'0'.repeat(64)}`, rawBody, secret, nowSec), false);
+  assert.strictEqual(verifyPaymongoSignature(`t=${t},te=${'z'.repeat(64)}`, rawBody, secret, nowSec), false);
+  assert.strictEqual(verifyPaymongoSignature(`t=${t},te=short`, rawBody, secret, nowSec), false);
+  assert.strictEqual(verifyPaymongoSignature(undefined, rawBody, secret, nowSec), false);
+});
+
+test('validateAndPriceItems enforces server prices and rejects tampered totals/variants', () => {
+  const { validateAndPriceItems } = require('../lib/payments/create_checkout');
+  const ok = validateAndPriceItems([
+    { name: 'Shawarma Wrap', variant: 'Solo', price: 60, quantity: 2 },
+    { name: 'Burger Patty', variant: '', price: 55, quantity: 1 },
+  ]);
+  assert.strictEqual(ok.total, 175);
+  assert.strictEqual(ok.items[0].total, 120);
+  assert.throws(() => validateAndPriceItems([{ name: 'Shawarma Wrap', variant: 'Buy 1 Take 1', price: 60, quantity: 1 }]), /Price mismatch/);
+  assert.throws(() => validateAndPriceItems([{ name: 'Fake Item', variant: '', price: 1, quantity: 1 }]), /Unknown item/);
 });
 
 test('PayMongo payment status helpers identify paid vs failed sessions', () => {

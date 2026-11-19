@@ -5,15 +5,20 @@ import { logger } from 'firebase-functions';
 import * as crypto from 'crypto';
 import {
   cleanStr, checkRateLimit, recordLoginFailure, clearLoginAttempts,
-  hashPassword, verifyPassword, requireStaff,
+  hashPasswordAsync, verifyPasswordAsync, requireStaff,
 } from '../util/security';
 
 const GENERIC_FAIL = 'Invalid username or password';
 const GENERIC_PIN_FAIL = 'Invalid PIN. Please try again.';
 const PIN_RE = /^[0-9]{4,8}$/;
+let staffSeeded = false;
 
 async function ensureStaffSeeded(db: Firestore): Promise<void> {
-  if (!(await db.collection('staff_accounts').limit(1).get()).empty) return;
+  if (staffSeeded) return;
+  if (!(await db.collection('staff_accounts').limit(1).get()).empty) {
+    staffSeeded = true;
+    return;
+  }
   const mk = () => crypto.randomBytes(9).toString('base64url');
   const mkPin = () => String(crypto.randomInt(100000, 1000000));
   const seeds = [
@@ -23,16 +28,21 @@ async function ensureStaffSeeded(db: Firestore): Promise<void> {
   const batch = db.batch();
   for (const s of seeds) {
     const pw = mk();
+    const [passwordHash, pinHash] = await Promise.all([
+      hashPasswordAsync(pw),
+      hashPasswordAsync(s.pin),
+    ]);
     batch.set(db.collection('staff_accounts').doc(s.username), {
       username: s.username,
       role: s.role,
-      passwordHash: hashPassword(pw),
-      pinHash: hashPassword(s.pin),
+      passwordHash,
+      pinHash,
       createdAt: new Date(),
     });
     logger.warn(`SEEDED staff account ${s.username} password: ${pw}, pin: ${s.pin} — CHANGE AFTER FIRST LOGIN`);
   }
   await batch.commit();
+  staffSeeded = true;
 }
 
 async function createStaffToken(uidName: string, rawRole: unknown) {
@@ -58,7 +68,7 @@ async function verifyPinLogin(db: Firestore, request: CallableRequest, pin: stri
   for (const doc of staffAccounts.docs) {
     const d = doc.data();
     if (!d.pinHash) continue;
-    const pinRes = verifyPassword(pin, d.pinHash);
+    const pinRes = await verifyPasswordAsync(pin, d.pinHash);
     if (pinRes !== 'bad') {
       matchedUser = { id: doc.id, docRef: doc.ref, ...d };
       matchedPinResult = pinRes;
@@ -74,7 +84,7 @@ async function verifyPinLogin(db: Firestore, request: CallableRequest, pin: stri
 
   const accountName = matchedUser.username || matchedUser.id;
   if (matchedPinResult === 'ok-legacy' && matchedUser.docRef) {
-    await matchedUser.docRef.update({ pinHash: hashPassword(pin) });
+    await matchedUser.docRef.update({ pinHash: await hashPasswordAsync(pin) });
     logger.info(`Upgraded legacy staff PIN hash to scrypt for ${accountName}`);
   }
 
@@ -112,14 +122,14 @@ async function verifyPasswordLogin(db: Firestore, usernameRaw: string | null, pa
     throw new HttpsError('internal', 'Server misconfigured');
   }
 
-  const result = verifyPassword(password, data.passwordHash);
+  const result = await verifyPasswordAsync(password, data.passwordHash);
   if (result === 'bad') {
     logger.info('Staff login failed: bad password');
     return fail();
   }
 
   if (result === 'ok-legacy') {
-    await staffRef.update({ passwordHash: hashPassword(password) });
+    await staffRef.update({ passwordHash: await hashPasswordAsync(password) });
     logger.info('Upgraded legacy staff password hash to scrypt');
   }
 
@@ -162,13 +172,13 @@ export const updateStaffPin = onCall(async (request) => {
   for (const other of allStaff.docs) {
     if (other.id === username) continue;
     const otherHash = other.data().pinHash;
-    if (typeof otherHash === 'string' && otherHash && verifyPassword(newPin, otherHash) !== 'bad') {
+    if (typeof otherHash === 'string' && otherHash && (await verifyPasswordAsync(newPin, otherHash)) !== 'bad') {
       throw new HttpsError('already-exists', 'This PIN is already in use by another account');
     }
   }
 
   await staffRef.update({
-    pinHash: hashPassword(newPin),
+    pinHash: await hashPasswordAsync(newPin),
     updatedAt: FieldValue.serverTimestamp(),
   });
   logger.info(`Updated PIN for staff account ${username}`);
