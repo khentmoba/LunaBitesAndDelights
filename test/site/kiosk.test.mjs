@@ -78,7 +78,8 @@ test('names and PH mobile numbers validate as the Flutter kiosk did', () => {
 test('order numbers and date labels use Philippine time', () => {
   const at = new Date('2026-11-15T17:04:05Z'); // 01:04:05 on the 16th in Manila
   assert.equal(order.phtDateLabel(at), '2026-11-16');
-  assert.equal(order.orderNumberFor(at), 'LU-261116-010405');
+  assert.equal(order.orderNumberFor(at, ''), 'LU-261116-010405');
+  assert.match(order.orderNumberFor(at), /^LU-261116-010405-[A-Z0-9]{3}$/);
   assert.equal(order.phtDateLabel(new Date('2026-12-31T15:59:59Z')), '2026-12-31');
 });
 

@@ -8,9 +8,9 @@ jobs:
   build_and_deploy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: '22'
           cache: 'npm'
@@ -65,8 +65,8 @@ jobs:
         env:
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LUNAEXPRESS }}
         run: |
-          echo "$FIREBASE_SERVICE_ACCOUNT" > "$HOME"/service-account.json
-          export GOOGLE_APPLICATION_CREDENTIALS="$HOME/service-account.json"
+          echo "$FIREBASE_SERVICE_ACCOUNT" > "$RUNNER_TEMP/service-account.json"
+          export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/service-account.json"
           npx firebase-tools deploy --only hosting:lunaexpress --project lunaexpress --non-interactive
 
       # Secrets (TELEGRAM_*, PAYMONGO_*) are read from Secret Manager at runtime
@@ -81,6 +81,6 @@ jobs:
         env:
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LUNAEXPRESS }}
         run: |
-          echo "$FIREBASE_SERVICE_ACCOUNT" > "$HOME"/service-account.json
-          export GOOGLE_APPLICATION_CREDENTIALS="$HOME/service-account.json"
+          echo "$FIREBASE_SERVICE_ACCOUNT" > "$RUNNER_TEMP/service-account.json"
+          export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/service-account.json"
           npx firebase-tools deploy --only functions --project lunaexpress --non-interactive --force

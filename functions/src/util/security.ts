@@ -1,6 +1,9 @@
 import { HttpsError, CallableRequest } from 'firebase-functions/v2/https';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 import * as crypto from 'crypto';
+import { promisify } from 'util';
+
+const scryptAsync = promisify(crypto.scrypt);
 
 /** Max allowed failed logins before lockout, and lockout duration. */
 const MAX_ATTEMPTS = 5;
@@ -111,6 +114,12 @@ export function hashPassword(password: string): string {
   return `scrypt$${salt}$${hash}`;
 }
 
+export async function hashPasswordAsync(password: string): Promise<string> {
+  const salt = crypto.randomBytes(16).toString('hex');
+  const derived = (await scryptAsync(password, salt, 32)) as Buffer;
+  return `scrypt$${salt}$${derived.toString('hex')}`;
+}
+
 /** Verifies scrypt hashes; also accepts legacy unsalted sha256 for migration. */
 export function verifyPassword(password: string, stored: string): 'ok' | 'ok-legacy' | 'bad' {
   if (stored.startsWith('scrypt$')) {
@@ -122,6 +131,21 @@ export function verifyPassword(password: string, stored: string): 'ok' | 'ok-leg
     return crypto.timingSafeEqual(calcBuf, hashBuf) ? 'ok' : 'bad';
   }
   // Legacy sha256 — caller should re-hash with scrypt on success.
+  const legacyBuf = Buffer.from(crypto.createHash('sha256').update(password).digest('hex'), 'utf8');
+  const storedBuf = Buffer.from(stored, 'utf8');
+  if (legacyBuf.length !== storedBuf.length) return 'bad';
+  return crypto.timingSafeEqual(legacyBuf, storedBuf) ? 'ok-legacy' : 'bad';
+}
+
+export async function verifyPasswordAsync(password: string, stored: string): Promise<'ok' | 'ok-legacy' | 'bad'> {
+  if (stored.startsWith('scrypt$')) {
+    const [, salt, hash] = stored.split('$');
+    if (!salt || !hash || !/^[0-9a-f]+$/i.test(hash)) return 'bad';
+    const calcBuf = (await scryptAsync(password, salt, 32)) as Buffer;
+    const hashBuf = Buffer.from(hash, 'hex');
+    if (calcBuf.length !== hashBuf.length) return 'bad';
+    return crypto.timingSafeEqual(calcBuf, hashBuf) ? 'ok' : 'bad';
+  }
   const legacyBuf = Buffer.from(crypto.createHash('sha256').update(password).digest('hex'), 'utf8');
   const storedBuf = Buffer.from(stored, 'utf8');
   if (legacyBuf.length !== storedBuf.length) return 'bad';

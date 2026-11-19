@@ -42,11 +42,12 @@ export function firebaseApp(): Promise<FirebaseApp> {
     if (!emulators) {
       const siteKey = import.meta.env.PUBLIC_RECAPTCHA_SITE_KEY;
       if (siteKey) {
-        import('firebase/app-check')
-          .then(({ initializeAppCheck, ReCaptchaEnterpriseProvider }) =>
-            initializeAppCheck(app, { provider: new ReCaptchaEnterpriseProvider(siteKey), isTokenAutoRefreshEnabled: true }),
-          )
-          .catch((e: unknown) => console.warn('AppCheck activation failed', e));
+        try {
+          const { initializeAppCheck, ReCaptchaEnterpriseProvider } = await import('firebase/app-check');
+          initializeAppCheck(app, { provider: new ReCaptchaEnterpriseProvider(siteKey), isTokenAutoRefreshEnabled: true });
+        } catch (e: unknown) {
+          console.warn('AppCheck activation failed', e);
+        }
       }
     }
     return app;

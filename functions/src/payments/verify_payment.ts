@@ -11,18 +11,10 @@ import {
   firstPaymentId,
   markOrderPaidOnce,
   markOrderPaymentFailed,
+  hasMatchingCheckoutSession,
 } from './paymongo';
 
-/** Returns true only when the order is bound to the exact checkout session id. */
-export function hasMatchingCheckoutSession(
-  orderData: Record<string, any> | undefined,
-  sessionId: string,
-): boolean {
-  const bound = typeof orderData?.checkoutSessionId === 'string'
-    ? orderData.checkoutSessionId.trim()
-    : '';
-  return bound.length > 0 && bound === sessionId;
-}
+export { hasMatchingCheckoutSession };
 
 /**
  * Verifies a GCash/PayMongo checkout session directly against PayMongo before
@@ -59,13 +51,13 @@ export const verifyCheckoutPayment = onCall(
 
     if (hasPaidPayment(payments)) {
       const paymentId = firstPaymentId(payments);
-      await markOrderPaidOnce(orderRef, paymentId, String(orderData.orderId || ''));
+      await markOrderPaidOnce(orderRef, paymentId, String(orderData.orderId || ''), sessionId);
       logger.info(`Order ${orderDocId} verified as PAID via callable`);
       return { paid: true, paymentStatus: 'PAID' };
     }
 
     if (hasFailedPayment(payments)) {
-      await markOrderPaymentFailed(orderRef);
+      await markOrderPaymentFailed(orderRef, sessionId);
       return { paid: false, paymentStatus: 'PAYMENT_FAILED' };
     }
 

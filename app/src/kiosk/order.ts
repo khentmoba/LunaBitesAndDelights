@@ -58,10 +58,21 @@ export function phtDateLabel(at = new Date()): string {
   return `${t.y}-${two(t.mo)}-${two(t.d)}`;
 }
 
-/** 'LU-YYMMDD-HHMMSS' in PHT. */
-export function orderNumberFor(at = new Date()): string {
+function randomSuffix(): string {
+  const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  if (typeof crypto !== 'undefined' && typeof crypto.getRandomValues === 'function') {
+    const bytes = new Uint8Array(3);
+    crypto.getRandomValues(bytes);
+    return Array.from(bytes, (b) => alphabet[b % alphabet.length]).join('');
+  }
+  return Array.from({ length: 3 }, () => alphabet[Math.floor(Math.random() * alphabet.length)]).join('');
+}
+
+/** 'LU-YYMMDD-HHMMSS-XXX' in PHT (3-char suffix prevents same-second collisions). */
+export function orderNumberFor(at = new Date(), suffix = randomSuffix()): string {
   const t = pht(at);
-  return `LU-${two(t.y % 100)}${two(t.mo)}${two(t.d)}-${two(t.h)}${two(t.mi)}${two(t.s)}`;
+  const base = `LU-${two(t.y % 100)}${two(t.mo)}${two(t.d)}-${two(t.h)}${two(t.mi)}${two(t.s)}`;
+  return suffix ? `${base}-${suffix}` : base;
 }
 
 /** Device-local 'YYYY-MM-DD  HH:MM', as the receipt and Telegram show it. */
@@ -158,11 +169,38 @@ export function notificationFor(order: Order, timeStr: string, orderDocId: strin
 }
 
 /**
- * Save the order, then announce it on Telegram. The write comes first so a
- * failed notification can never lose an order. docId is null when the write failed.
+ * Places an order via the server-validated `placeOrder` callable (onOrderWritten
+ * handles Telegram notification reliably). Falls back to direct Firestore write
+ * + `sendOrderNotification` only if the callable is not yet deployed.
  */
 export async function placeOrder(order: Order, timeStr: string): Promise<{ docId: string | null; telegramSent: boolean }> {
   const { firebaseDbLite, callFn } = await import('./firebase');
+  try {
+    const res = await callFn<{ success?: boolean; docId?: string }>('placeOrder', {
+      orderId: order.orderId,
+      items: order.items,
+      type: order.type,
+      customerName: order.customerName,
+      customerPhone: order.customerPhone,
+      customerAddress: order.customerAddress,
+      lat: order.lat,
+      lng: order.lng,
+      totalDistance: order.totalDistance,
+      paymentMethod: order.paymentMethod,
+    });
+    if (res.success === true && typeof res.docId === 'string' && res.docId) {
+      return { docId: res.docId, telegramSent: true };
+    }
+  } catch (e: unknown) {
+    const code = typeof (e as { code?: unknown })?.code === 'string'
+      ? String((e as { code?: unknown }).code).replace(/^functions\//, '')
+      : '';
+    if (code !== 'not-found' && code !== 'unimplemented') {
+      console.error(`Error placing order ${order.orderId}`, e);
+      return { docId: null, telegramSent: false };
+    }
+  }
+
   let docId: string;
   try {
     const [db, fs] = await Promise.all([firebaseDbLite(), import('firebase/firestore/lite')]);

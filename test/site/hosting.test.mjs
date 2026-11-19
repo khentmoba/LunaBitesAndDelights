@@ -91,3 +91,15 @@ test('the loop check catches the rule that broke production', () => {
   const bad = { source: '/kiosk', destination: '/kiosk/', type: 301 };
   assert.ok(slashVariants(bad.destination).some((p) => sourceMatches(bad, p)));
 });
+
+test('app-site sets Content-Security-Policy and 30-day font cache headers', () => {
+  const app = firebase.hosting.find((h) => h.target === 'app-site');
+  const globalHeaders = app.headers.find((h) => h.source === '**')?.headers ?? [];
+  const csp = globalHeaders.find((h) => h.key === 'Content-Security-Policy');
+  assert.ok(csp && csp.value.includes("default-src 'self'") && csp.value.includes("object-src 'none'"));
+  const frameSrc = csp.value.split(';').map((s) => s.trim()).find((d) => d.startsWith('frame-src ')) ?? '';
+  assert.ok(frameSrc.includes('https://maps.google.com'), 'frame-src must allow the landing-page map iframe');
+  assert.ok(frameSrc.includes('https://www.google.com'), 'frame-src must allow Street View and reCAPTCHA iframes');
+  const woff2 = app.headers.find((h) => h.source === '**/*.woff2')?.headers ?? [];
+  assert.ok(woff2.some((h) => h.key === 'Cache-Control' && h.value.includes('max-age=2592000')));
+});

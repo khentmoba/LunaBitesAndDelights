@@ -63,6 +63,49 @@ const VARIANT_PRICES: Record<string, Record<string, number>> = {
   'Nachos & Fries Overload': { 'Buddy (1–2 pax)': 99, 'Barkada (3–5 pax)': 150 },
 };
 
+export interface PricedItem {
+  name: string;
+  variant: string;
+  price: number;
+  quantity: number;
+  total: number;
+}
+
+/** Validates order line items against server MENU_PRICES and VARIANT_PRICES. */
+export function validateAndPriceItems(rawItems: unknown): { items: PricedItem[]; total: number } {
+  if (!Array.isArray(rawItems) || rawItems.length === 0 || rawItems.length > 50) {
+    throw new HttpsError('invalid-argument', 'Invalid items');
+  }
+  let total = 0;
+  const items: PricedItem[] = rawItems.map((i: any) => {
+    const name = cleanStr(i?.name, 120, 'item name');
+    const variant = optStr(i?.variant, 120);
+    const quantity = cleanInt(i?.quantity ?? 1, 99, 'quantity');
+    if (quantity < 1) {
+      throw new HttpsError('invalid-argument', 'Invalid quantity');
+    }
+    const allowed = MENU_PRICES[name];
+    if (!allowed) throw new HttpsError('invalid-argument', `Unknown item: ${name}`);
+    const price = Number(i?.price);
+    if (!allowed.includes(price)) {
+      throw new HttpsError('invalid-argument', `Price mismatch for ${name}`);
+    }
+    const variantMap = VARIANT_PRICES[name];
+    if (variantMap) {
+      if (!variant || variantMap[variant] === undefined) {
+        throw new HttpsError('invalid-argument', `Invalid variant for ${name}`);
+      }
+      if (variantMap[variant] !== price) {
+        throw new HttpsError('invalid-argument', `Price mismatch for ${name} (${variant})`);
+      }
+    }
+    const lineTotal = price * quantity;
+    total += lineTotal;
+    return { name, variant, price, quantity, total: lineTotal };
+  });
+  return { items, total };
+}
+
 export const createCheckoutSession = onCall(
   { secrets: [paymongoSecret] }, // #1
   async (request) => {
@@ -75,41 +118,20 @@ export const createCheckoutSession = onCall(
 
     // The payment result must land on the order document the kiosk wrote.
     const { orderRef, orderData } = await requireOrderDoc(orderDocId);
+    if (orderData.orderId !== orderId) {
+      throw new HttpsError('permission-denied', 'Order reference mismatch');
+    }
     if (orderData.paymentStatus === 'PAID') {
       throw new HttpsError('failed-precondition', 'Order is already paid');
     }
 
-    if (!Array.isArray(d.items) || d.items.length === 0 || d.items.length > 50) {
-      throw new HttpsError('invalid-argument', 'Invalid items');
-    }
-
-    // #8 + #14: verify every line against server prices, recompute total.
-    let itemsTotal = 0;
-    const lineItems = d.items.map((i: any) => {
-      const name = cleanStr(i?.name, 120, 'item name');
-      const variant = optStr(i?.variant, 120);
-      const qty = cleanInt(i?.quantity ?? 1, 99, 'quantity');
-      if (qty < 1) {
-        throw new HttpsError('invalid-argument', 'Invalid quantity');
-      }
-      const allowed = MENU_PRICES[name];
-      if (!allowed) throw new HttpsError('invalid-argument', `Unknown item: ${name}`);
-      const price = Number(i?.price);
-      if (!allowed.includes(price)) {
-        throw new HttpsError('invalid-argument', `Price mismatch for ${name}`);
-      }
-      const variantMap = VARIANT_PRICES[name];
-      if (variantMap) {
-        if (!variant || variantMap[variant] === undefined) {
-          throw new HttpsError('invalid-argument', `Invalid variant for ${name}`);
-        }
-        if (variantMap[variant] !== price) {
-          throw new HttpsError('invalid-argument', `Price mismatch for ${name} (${variant})`);
-        }
-      }
-      itemsTotal += price * qty;
-      return { name, amount: price * 100, currency: 'PHP', quantity: qty };
-    });
+    const { items: pricedItems, total: itemsTotal } = validateAndPriceItems(d.items);
+    const lineItems = pricedItems.map((i) => ({
+      name: i.name,
+      amount: i.price * 100,
+      currency: 'PHP',
+      quantity: i.quantity,
+    }));
 
     // The rider confirms delivery separately; online payment covers food only.
     if (amount !== itemsTotal) {

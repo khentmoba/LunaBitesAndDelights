@@ -1,6 +1,6 @@
 const { describe, test } = require('node:test');
 const assert = require('node:assert/strict');
-const { hashPassword, verifyPassword } = require('../lib/util/security');
+const { hashPassword, verifyPassword, hashPasswordAsync, verifyPasswordAsync } = require('../lib/util/security');
 const { isCountableOrder } = require('../lib/util');
 
 describe('staff auth: scrypt PIN and password verification', () => {
@@ -31,6 +31,13 @@ describe('staff auth: scrypt PIN and password verification', () => {
     assert.equal(verifyPassword('1234', 'scrypt$ab$short'), 'bad');
     assert.equal(verifyPassword('1234', 'scrypt$ab$' + 'g'.repeat(64)), 'bad');
     assert.equal(verifyPassword('1234', 'too-short-legacy'), 'bad');
+  });
+
+  test('async scrypt hashes and verifies without blocking', async () => {
+    const hash = await hashPasswordAsync('2468');
+    assert.ok(hash.startsWith('scrypt$'));
+    assert.equal(await verifyPasswordAsync('2468', hash), 'ok');
+    assert.equal(await verifyPasswordAsync('9999', hash), 'bad');
   });
 
   test('isCountableOrder excludes cancelled and unpaid/failed GCash orders', () => {

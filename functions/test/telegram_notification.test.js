@@ -363,4 +363,54 @@ describe('Telegram MarkdownV2 escaping and order notifications', () => {
     await assert.rejects(() => sendToAll('hello'), /All 2 Telegram messages failed/);
     await assert.rejects(() => sendPhotoToAll(Buffer.from('x'), 'cap'), /All 2 Telegram photo messages failed/);
   });
+
+  test('notificationDataFromOrder builds payload strictly from authoritative Firestore order doc', () => {
+    const { notificationDataFromOrder } = require('../lib/orders/send_notification');
+    const data = notificationDataFromOrder(
+      {
+        orderId: 'LU-261119-120000-ABC',
+        customerName: 'Maria',
+        customerAddress: 'Purok 5',
+        customerPhone: '09171234567',
+        items: [{ name: 'Shawarma Wrap', variant: 'Solo', price: 60, quantity: 2 }],
+        totalAmount: 120,
+        type: 'Delivery',
+        paymentMethod: 'Cash',
+        paymentStatus: 'NOT PAID',
+        lat: 9.02,
+        lng: 125.51,
+      },
+      'doc123',
+      '2026-11-19  12:00',
+    );
+    assert.equal(data.orderNumber, 'LU-261119-120000-ABC');
+    assert.equal(data.total, 120);
+    assert.equal(data.paymentStatus, 'NOT PAID');
+    assert.equal(data.items.length, 1);
+    assert.equal(data.lat, 9.02);
+  });
+
+  test('native fetch Telegram client sends JSON messages without node-telegram-bot-api', async () => {
+    process.env.TELEGRAM_TOKEN = 'test-token-123';
+    process.env.TELEGRAM_CHAT_ID = '555';
+    setBot(null);
+    const origFetch = global.fetch;
+    const calls = [];
+    try {
+      global.fetch = async (url, init) => {
+        calls.push({ url, init });
+        return { ok: true, status: 200, json: async () => ({ ok: true, result: { message_id: 9 } }) };
+      };
+      const results = await sendToAll('hello');
+      assert.equal(results.length, 1);
+      assert.equal(results[0].status, 'fulfilled');
+      assert.equal(calls[0].url, 'https://api.telegram.org/bottest-token-123/sendMessage');
+      const payload = JSON.parse(calls[0].init.body);
+      assert.equal(payload.chat_id, '555');
+      assert.equal(payload.text, 'hello');
+    } finally {
+      global.fetch = origFetch;
+      setBot(null);
+    }
+  });
 });
