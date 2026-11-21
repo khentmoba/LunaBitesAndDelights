@@ -81,6 +81,12 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
   function publish() {
     const all = isLive && live !== null ? mergeKdsOrders(live, []) : mergeKdsOrders(live ?? [], polled);
     const visible = showCompleted ? all : all.filter((o) => !isClosedKdsStatus(o.status));
+    const activeIds = new Set(all.map((o) => String(o.id ?? '')));
+    for (const key of checked) {
+      const sep = key.lastIndexOf('_');
+      const orderId = sep > 0 ? key.slice(0, sep) : key;
+      if (!activeIds.has(orderId)) checked.delete(key);
+    }
     checkNewOrders(visible);
     orders = visible;
     loading = false;
@@ -220,10 +226,17 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
         loading = false;
         staffSnack(`Error: ${data.message}`, ERROR);
       }
-    } catch {
+    } catch (e) {
       if (disposed) return;
       loading = false;
-      staffSnack('Failed to update status. Connection error.', ERROR);
+      const err = fnError(e);
+      if (err && isAuthCode(err.code)) {
+        error = 'Staff session expired. Sign in again to update orders.';
+        renderBanner();
+        staffSnack(error, ERROR);
+      } else {
+        staffSnack(err?.message || 'Failed to update status. Connection error.', ERROR);
+      }
     } finally {
       updating.delete(orderId);
       if (!disposed) renderAll();
@@ -452,10 +465,7 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
       panes.scrollLeft = tab * panes.clientWidth;
       panes.addEventListener('scroll', () => {
         const i = Math.round(panes.scrollLeft / Math.max(1, panes.clientWidth));
-        if (i !== tab) {
-          tab = i;
-          syncTabs();
-        }
+        if (i !== tab) selectTab(i, false);
       }, { passive: true });
     }
     COLUMNS.forEach((c, i) => {
@@ -463,6 +473,25 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
       board.querySelector(`[data-list="${c.status}"]`)!.innerHTML = list(c, b[c.status]);
     });
     syncTabs();
+  }
+
+  function selectTab(i: number, scroll: boolean) {
+    tab = i;
+    if (tab === 3 && !showCompleted) {
+      showCompleted = true;
+      publish();
+    } else {
+      syncTabs();
+    }
+    if (scroll) {
+      const panes = board.querySelector<HTMLElement>('[data-panes]');
+      if (panes) {
+        panes.scrollTo({
+          left: tab * panes.clientWidth,
+          behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+        });
+      }
+    }
   }
 
   function syncTabs() {
@@ -596,20 +625,16 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
       syncControls();
       renderBoard();
     } else if (t.dataset.tab) {
-      tab = Number(t.dataset.tab);
-      if (tab === 3 && !showCompleted) {
-        showCompleted = true;
-        publish();
-      } else {
-        syncTabs();
-      }
-      const panes = board.querySelector<HTMLElement>('[data-panes]')!;
-      panes.scrollTo({ left: tab * panes.clientWidth, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+      selectTab(Number(t.dataset.tab), true);
     } else if (t.dataset.check) {
       const k = t.dataset.check;
-      if (checked.has(k)) checked.delete(k);
-      else checked.add(k);
-      renderBoard();
+      const next = !checked.has(k);
+      if (next) checked.add(k);
+      else checked.delete(k);
+      t.classList.toggle('is-done', next);
+      t.setAttribute('aria-pressed', String(next));
+      const box = t.querySelector<HTMLElement>('.kitem__box');
+      if (box) box.innerHTML = next ? icon('check') : '';
     } else if (t.dataset.status && t.dataset.id !== undefined) void updateStatus(t.dataset.id, t.dataset.status);
     else if (t.dataset.cancel !== undefined) {
       const o = byId(t.dataset.cancel);

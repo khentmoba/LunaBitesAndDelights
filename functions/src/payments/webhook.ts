@@ -3,18 +3,24 @@ import { getFirestore } from 'firebase-admin/firestore';
 import { logger } from 'firebase-functions';
 import * as crypto from 'crypto';
 import { paymongoSecret, telegramToken, telegramChatIds } from '../secrets';
-import { ALNUM_DOC_ID } from '../util/security';
+import { clientIpFromRequest, enforceFixedWindowRateLimit } from '../util/security';
 import {
   paymongoAuthHeader,
   fetchCheckoutSession,
+  resolveOrderDocId,
   hasPaidPayment,
+  paidPaymentAmountCentavos,
   hasFailedPayment,
   firstPaymentId,
   markOrderPaidOnce,
   markOrderPaymentFailed,
 } from './paymongo';
 
+export { resolveOrderDocId };
+
 const MAX_SIG_AGE_SEC = 300;
+const WEBHOOK_RATE_WINDOW_MS = 60 * 1000;
+const WEBHOOK_RATE_MAX = 120;
 
 export function verifyPaymongoSignature(
   sigHeader: string | string[] | undefined,
@@ -23,8 +29,6 @@ export function verifyPaymongoSignature(
   nowSec = Math.floor(Date.now() / 1000),
 ): boolean {
   if (!sigHeader || typeof sigHeader !== 'string') return false;
-  if (!webhookSecret) return true; // Secret not configured; caller verifies session + binding via PayMongo API.
-  if (!rawBody) return false;
   const parts = Object.fromEntries(
     sigHeader.split(',').map((p) => {
       const idx = p.indexOf('=');
@@ -36,23 +40,14 @@ export function verifyPaymongoSignature(
   if (!t || !/^\d{1,12}$/.test(t) || !sig || !/^[0-9a-f]{64}$/i.test(sig)) return false;
   const ts = Number(t);
   if (!Number.isFinite(ts) || Math.abs(nowSec - ts) > MAX_SIG_AGE_SEC) return false;
+  if (!webhookSecret) return true; // Secret not configured; format + timestamp checked, and caller verifies session via PayMongo API.
+  if (!rawBody) return false;
   const payload = `${t}.${Buffer.isBuffer(rawBody) ? rawBody.toString('utf8') : rawBody}`;
   const expected = crypto.createHmac('sha256', webhookSecret).update(payload).digest('hex');
   const expectedBuf = Buffer.from(expected, 'hex');
   const sigBuf = Buffer.from(sig, 'hex');
   if (expectedBuf.length !== sigBuf.length) return false;
   return crypto.timingSafeEqual(expectedBuf, sigBuf);
-}
-
-/** Firestore doc ids are alphanumeric; the legacy display number may hold '-' too. */
-const LEGACY_DOC_ID = /^[A-Za-z0-9_-]{1,64}$/;
-
-export function resolveOrderDocId(attrs: any): string | null {
-  const fromMeta = attrs?.metadata?.order_doc_id;
-  if (typeof fromMeta === 'string' && ALNUM_DOC_ID.test(fromMeta)) return fromMeta;
-  const fromRef = attrs?.reference_number;
-  if (typeof fromRef === 'string' && LEGACY_DOC_ID.test(fromRef)) return fromRef;
-  return null;
 }
 
 export const paymongoWebhook = onRequest(
@@ -63,9 +58,23 @@ export const paymongoWebhook = onRequest(
       return;
     }
     try {
+      const clientIp = clientIpFromRequest(req);
+      if (clientIp) {
+        try {
+          await enforceFixedWindowRateLimit(
+            `webhook:paymongo:${clientIp}`,
+            WEBHOOK_RATE_MAX,
+            WEBHOOK_RATE_WINDOW_MS,
+          );
+        } catch {
+          res.status(429).send('Too Many Requests');
+          return;
+        }
+      }
+
       const webhookSecret = process.env.PAYMONGO_WEBHOOK_SECRET;
       if (!webhookSecret) {
-        logger.warn('PAYMONGO_WEBHOOK_SECRET is not set; relying on PayMongo API session verification');
+        logger.warn('PAYMONGO_WEBHOOK_SECRET is not set; relying on signature format check and PayMongo API session verification');
       }
       if (!verifyPaymongoSignature(
         req.headers['paymongo-signature'],
@@ -73,7 +82,7 @@ export const paymongoWebhook = onRequest(
         webhookSecret,
       )) {
         logger.warn('PayMongo webhook signature invalid or missing');
-        res.status(200).send('OK');
+        res.status(401).send('Invalid signature');
         return;
       }
 
@@ -106,10 +115,17 @@ export const paymongoWebhook = onRequest(
         const attrs = session.attributes;
         const refNumber = String(attrs.reference_number || '');
         const paymentId = firstPaymentId(session.payments);
+        const paidCentavos = paidPaymentAmountCentavos(session.payments);
         const docId = resolveOrderDocId(attrs);
-        if (docId) {
+        if (docId && paidCentavos !== null) {
           const orderRef = getFirestore().collection('orders').doc(docId);
-          const { transitioned } = await markOrderPaidOnce(orderRef, paymentId, refNumber, sessionId);
+          const { transitioned } = await markOrderPaidOnce(
+            orderRef,
+            paymentId,
+            refNumber,
+            sessionId,
+            paidCentavos,
+          );
           if (transitioned) {
             logger.info(`Order ${docId} marked as PAID via verified webhook`);
           }

@@ -5,8 +5,11 @@ import { ALNUM_DOC_ID, cleanStr } from '../util/security';
 import {
   paymongoAuthHeader,
   requireOrderDoc,
-  fetchSessionPayments,
+  fetchCheckoutSession,
+  resolveOrderDocId,
   hasPaidPayment,
+  hasPaidPaymentForAmount,
+  paidPaymentAmountCentavos,
   hasFailedPayment,
   firstPaymentId,
   markOrderPaidOnce,
@@ -44,14 +47,40 @@ export const verifyCheckoutPayment = onCall(
 
     const auth = paymongoAuthHeader(true);
 
-    const payments = await fetchSessionPayments(sessionId, auth);
-    if (payments === null) {
+    const session = await fetchCheckoutSession(sessionId, auth);
+    if (session === null) {
       throw new HttpsError('unavailable', 'Unable to verify payment status with provider');
     }
 
+    const sessionOrderDocId = resolveOrderDocId(session.attributes);
+    if (sessionOrderDocId !== orderDocId) {
+      logger.warn(
+        `Refusing verifyCheckoutPayment for ${orderDocId}: session ${sessionId} belongs to ${sessionOrderDocId}`,
+      );
+      throw new HttpsError('permission-denied', 'Checkout session does not match order');
+    }
+
+    const payments = session.payments;
     if (hasPaidPayment(payments)) {
+      const expectedTotal = Number(orderData.totalAmount);
+      if (!hasPaidPaymentForAmount(payments, expectedTotal)) {
+        logger.warn(
+          `Refusing verifyCheckoutPayment for ${orderDocId}: paid amount does not match order total ${expectedTotal}`,
+        );
+        throw new HttpsError('failed-precondition', 'Paid amount does not match order total');
+      }
       const paymentId = firstPaymentId(payments);
-      await markOrderPaidOnce(orderRef, paymentId, String(orderData.orderId || ''), sessionId);
+      const paidCentavos = paidPaymentAmountCentavos(payments);
+      const { transitioned, alreadyPaid } = await markOrderPaidOnce(
+        orderRef,
+        paymentId,
+        String(orderData.orderId || ''),
+        sessionId,
+        paidCentavos ?? undefined,
+      );
+      if (!transitioned && !alreadyPaid) {
+        throw new HttpsError('failed-precondition', 'Unable to verify payment for order');
+      }
       logger.info(`Order ${orderDocId} verified as PAID via callable`);
       return { paid: true, paymentStatus: 'PAID' };
     }

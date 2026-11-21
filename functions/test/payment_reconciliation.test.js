@@ -3,10 +3,17 @@ const assert = require('node:assert');
 const crypto = require('node:crypto');
 
 const { resolveOrderDocId, verifyPaymongoSignature } = require('../lib/payments/webhook');
-const { hasPaidPayment, hasFailedPayment, firstPaymentId } = require('../lib/payments/paymongo');
+const {
+  hasPaidPayment,
+  hasPaidPaymentForAmount,
+  paidPaymentAmountCentavos,
+  hasFailedPayment,
+  firstPaymentId,
+} = require('../lib/payments/paymongo');
 const { hasMatchingCheckoutSession } = require('../lib/payments/verify_payment');
 const { isOrderVisibleInKds, toIsoTimestamp, clampOrdersLimit } = require('../lib/orders/kds');
-const { kdsMirrorDoc } = require('../lib/orders/derived');
+const { kdsMirrorDoc, shouldNotifyKitchen } = require('../lib/orders/derived');
+const { idempotentOrderDocId } = require('../lib/orders/place_order');
 
 // A paid session must land on the order document the kiosk wrote. PayMongo
 // echoes our metadata back on the webhook, so the document id travels there
@@ -199,4 +206,48 @@ test('clampOrdersLimit bounds caller limits to [1, 200] with default 200', () =>
   assert.strictEqual(clampOrdersLimit('abc'), 200);
   assert.strictEqual(clampOrdersLimit(50), 50);
   assert.strictEqual(clampOrdersLimit(500), 200);
+});
+
+test('hasPaidPaymentForAmount rejects partial or missing payment amounts', () => {
+  const paid500 = [{ id: 'pay_1', attributes: { status: 'paid', amount: 50000 } }];
+  assert.strictEqual(paidPaymentAmountCentavos(paid500), 50000);
+  assert.strictEqual(hasPaidPaymentForAmount(paid500, 500), true);
+  assert.strictEqual(hasPaidPaymentForAmount(paid500, 501), false);
+  assert.strictEqual(hasPaidPaymentForAmount([{ id: 'pay_2', attributes: { status: 'paid', amount: 2000 } }], 500), false);
+  assert.strictEqual(hasPaidPaymentForAmount([{ id: 'pay_3', attributes: { status: 'paid' } }], 500), false);
+});
+
+test('verifyPaymongoSignature still enforces header format and timestamp window when secret is unset', () => {
+  const nowSec = 1700000050;
+  assert.strictEqual(verifyPaymongoSignature('not-a-valid-header', '{}', undefined, nowSec), false);
+  assert.strictEqual(verifyPaymongoSignature(`t=1700000000,li=${'a'.repeat(64)}`, '{}', undefined, nowSec), true);
+  assert.strictEqual(verifyPaymongoSignature(`t=1700000000,li=${'a'.repeat(64)}`, '{}', undefined, 1700000500), false);
+});
+
+test('shouldNotifyKitchen holds unpaid GCash orders until payment confirms', () => {
+  assert.strictEqual(shouldNotifyKitchen(undefined, { paymentMethod: 'Cash', paymentStatus: 'NOT PAID' }), true);
+  assert.strictEqual(shouldNotifyKitchen(undefined, { paymentMethod: 'GCash', paymentStatus: 'AWAITING_PAYMENT' }), false);
+  assert.strictEqual(
+    shouldNotifyKitchen(
+      { paymentMethod: 'GCash', paymentStatus: 'AWAITING_PAYMENT' },
+      { paymentMethod: 'GCash', paymentStatus: 'PAID' },
+    ),
+    true,
+  );
+  assert.strictEqual(
+    shouldNotifyKitchen(
+      { paymentMethod: 'GCash', paymentStatus: 'PAID' },
+      { paymentMethod: 'GCash', paymentStatus: 'PAID', status: 'Preparing' },
+    ),
+    false,
+  );
+});
+
+test('idempotentOrderDocId produces stable alphanumeric Firestore doc IDs', () => {
+  const a = idempotentOrderDocId('key-abc-12345678');
+  const b = idempotentOrderDocId('key-abc-12345678');
+  const c = idempotentOrderDocId('key-xyz-87654321');
+  assert.strictEqual(a, b);
+  assert.notStrictEqual(a, c);
+  assert.match(a, /^[A-Za-z0-9]{1,64}$/);
 });

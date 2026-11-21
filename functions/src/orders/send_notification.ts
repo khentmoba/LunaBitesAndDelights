@@ -257,26 +257,31 @@ export function canClaimNotification(current: Record<string, any> | undefined, n
   return evaluateNotificationClaim(current, nowMs) === 'claimed';
 }
 
+export const ORDER_NOTIFICATIONS_COLLECTION = 'order_notifications';
+
 /**
- * Atomically claims Telegram notification delivery for an order so concurrent
- * trigger + callable invocations never double-send, and always renders from
- * the authoritative Firestore order document.
+ * Atomically claims Telegram notification delivery for an order in a separate
+ * `order_notifications/{orderDocId}` collection so concurrent trigger + callable
+ * invocations never double-send and claiming does not re-trigger `onOrderWritten`.
  */
 export async function notifyOrderOnce(
   orderDocId: string,
   orderData: Record<string, any>,
   timeStrOverride = '',
 ): Promise<{ sent: boolean; alreadySent: boolean; inFlight?: boolean }> {
+  if (orderData.telegramSent === true) {
+    return { sent: false, alreadySent: true, inFlight: false };
+  }
+
   const db = getFirestore();
-  const orderRef = db.collection('orders').doc(orderDocId);
+  const notifRef = db.collection(ORDER_NOTIFICATIONS_COLLECTION).doc(orderDocId);
 
   const nowMs = Date.now();
   const claimStatus = await db.runTransaction<ClaimStatus>(async (tx) => {
-    const snap = await tx.get(orderRef);
-    if (!snap.exists) return 'missing';
-    const status = evaluateNotificationClaim(snap.data(), nowMs);
+    const snap = await tx.get(notifRef);
+    const status = evaluateNotificationClaim(snap.exists ? snap.data() : {}, nowMs);
     if (status === 'claimed') {
-      tx.set(orderRef, { telegramStatus: 'sending', telegramClaimedAt: nowMs }, { merge: true });
+      tx.set(notifRef, { telegramStatus: 'sending', telegramClaimedAt: nowMs }, { merge: true });
     }
     return status;
   });
@@ -299,10 +304,10 @@ export async function notifyOrderOnce(
       await sendToAll(message);
     }
 
-    await orderRef.set({ telegramSent: true, telegramStatus: 'sent' }, { merge: true });
+    await notifRef.set({ telegramSent: true, telegramStatus: 'sent' }, { merge: true });
     return { sent: true, alreadySent: false };
   } catch (error: any) {
-    await orderRef.set({ telegramSent: false, telegramStatus: 'failed' }, { merge: true }).catch((e) => {
+    await notifRef.set({ telegramSent: false, telegramStatus: 'failed' }, { merge: true }).catch((e) => {
       logger.warn(`Could not record failed notification status for ${orderDocId}`, e);
     });
     logger.error(`Error sending Telegram notification for ${data.orderNumber}`, error);

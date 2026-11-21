@@ -106,6 +106,87 @@ export async function clearLoginAttempts(key: string): Promise<void> {
   await getFirestore().collection('login_attempts').doc(hashToken(key)).delete().catch(() => {});
 }
 
+/** Extracts a best-effort client IP string from an Express/Cloud Functions request. */
+export function clientIpFromRequest(rawRequest?: { ip?: unknown }): string {
+  return typeof rawRequest?.ip === 'string' && rawRequest.ip.trim().length > 0
+    ? rawRequest.ip.trim()
+    : '';
+}
+
+/**
+ * Firestore-backed fixed-window rate limiter for public callables/webhooks and
+ * global failure budgets. Throws resource-exhausted when maxRequests is exceeded.
+ */
+export async function enforceFixedWindowRateLimit(
+  key: string,
+  maxRequests: number,
+  windowMs: number,
+  message = 'Too many requests. Please try again shortly.',
+): Promise<void> {
+  const db = getFirestore();
+  const ref = db.collection('rate_limits').doc(hashToken(key));
+  const now = Date.now();
+  await db.runTransaction(async (tx) => {
+    const snap = await tx.get(ref);
+    const d = snap.exists ? snap.data()! : null;
+    const windowStart = typeof d?.windowStart === 'number' ? d.windowStart : 0;
+    const count = typeof d?.count === 'number' ? d.count : 0;
+    if (d && now - windowStart < windowMs) {
+      if (count >= maxRequests) {
+        throw new HttpsError('resource-exhausted', message);
+      }
+      tx.set(ref, { count: count + 1, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+      return;
+    }
+    tx.set(ref, {
+      count: 1,
+      windowStart: now,
+      updatedAt: FieldValue.serverTimestamp(),
+    });
+  });
+}
+
+/** Checks a fixed-window failure counter without incrementing it. */
+export async function checkWindowBudget(
+  key: string,
+  maxFailures: number,
+  windowMs: number,
+  message = 'Too many attempts. Please try again later.',
+): Promise<void> {
+  const db = getFirestore();
+  const ref = db.collection('rate_limits').doc(hashToken(key));
+  const snap = await ref.get();
+  if (!snap.exists) return;
+  const d = snap.data()!;
+  const windowStart = typeof d.windowStart === 'number' ? d.windowStart : 0;
+  const count = typeof d.count === 'number' ? d.count : 0;
+  if (Date.now() - windowStart < windowMs && count >= maxFailures) {
+    throw new HttpsError('resource-exhausted', message);
+  }
+}
+
+/** Records one failure into a fixed-window budget. */
+export async function recordWindowFailure(key: string, windowMs: number): Promise<void> {
+  const db = getFirestore();
+  const ref = db.collection('rate_limits').doc(hashToken(key));
+  const now = Date.now();
+  await db.runTransaction(async (tx) => {
+    const snap = await tx.get(ref);
+    const d = snap.exists ? snap.data()! : null;
+    const windowStart = typeof d?.windowStart === 'number' ? d.windowStart : 0;
+    const count = typeof d?.count === 'number' ? d.count : 0;
+    if (d && now - windowStart < windowMs) {
+      tx.set(ref, { count: count + 1, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+      return;
+    }
+    tx.set(ref, {
+      count: 1,
+      windowStart: now,
+      updatedAt: FieldValue.serverTimestamp(),
+    });
+  });
+}
+
 // ─── Password hashing: scrypt with per-user salt (#10) ───
 
 export function hashPassword(password: string): string {

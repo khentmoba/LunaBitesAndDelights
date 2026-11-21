@@ -3,6 +3,7 @@ import { getFirestore, FieldValue, Timestamp } from 'firebase-admin/firestore';
 import { logger } from 'firebase-functions';
 import { projectOrder, isOrderVisibleInKds, toIsoTimestamp } from './kds';
 import { notifyOrderOnce } from './send_notification';
+import { isPermanentTelegramError } from '../telegram_api';
 import { dayDeltas, incrementPayload } from '../reporting/daily_stats';
 import { telegramToken, telegramChatIds, googleMapsApiKey } from '../secrets';
 
@@ -17,6 +18,17 @@ export function kdsMirrorDoc(id: string, data: FirebaseFirestore.DocumentData) {
     ? data.timestamp
     : Timestamp.fromDate(new Date(toIsoTimestamp(data.timestamp)));
   return { ...projectOrder(id, data), ts };
+}
+
+/**
+ * Returns true when an order first becomes visible to the kitchen (immediately
+ * on create for Cash/Staff orders, or upon payment confirmation for GCash).
+ */
+export function shouldNotifyKitchen(
+  before: FirebaseFirestore.DocumentData | undefined,
+  after: FirebaseFirestore.DocumentData | undefined,
+): boolean {
+  return Boolean(after && isOrderVisibleInKds(after) && (!before || !isOrderVisibleInKds(before)));
 }
 
 function hasTelegramConfig(): boolean {
@@ -74,11 +86,17 @@ export const onOrderWritten = onDocumentWritten(
       }
     });
 
-    const notify = (!before && after && hasTelegramConfig())
-      ? notifyOrderOnce(orderId, after).then((res) => {
+    const notify = (shouldNotifyKitchen(before, after) && hasTelegramConfig())
+      ? notifyOrderOnce(orderId, after!).then((res) => {
           if (res.inFlight) {
             throw new Error(`Telegram notification for ${orderId} is still in-flight; retrying until settled`);
           }
+        }).catch((err) => {
+          if (isPermanentTelegramError(err)) {
+            logger.warn(`Dropping permanent Telegram error for ${orderId} to avoid retry loop`, err);
+            return;
+          }
+          throw err;
         })
       : Promise.resolve();
 

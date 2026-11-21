@@ -56,22 +56,25 @@ function mountReport(root: HTMLElement, getStaff: () => Staff | null, r: Report)
     h1.style.left = `${Math.min(Math.max((W - rw) / 2, 72), W - 64 - rw)}px`;
   }
 
+  let fetchSeq = 0;
+
   async function load() {
     if (!getStaff()) return;
+    const seq = ++fetchSeq;
     loading = true;
     error = null;
     render();
     try {
       const d = await r.fetch();
-      if (disposed) return;
+      if (disposed || seq !== fetchSeq) return;
       if (d.success === true) data = d;
       else error = typeof d.message === 'string' ? d.message : r.failMsg;
     } catch (e) {
-      if (disposed) return;
+      if (disposed || seq !== fetchSeq) return;
       error = staffErrorMessage(e, r.loadMsg, 'Error connecting to server. Please try again.');
     }
     loading = false;
-    if (!disposed) render();
+    if (!disposed && seq === fetchSeq) render();
   }
 
   function render() {

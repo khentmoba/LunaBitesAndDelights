@@ -14,11 +14,25 @@ export interface CartItem {
 const KEY = 'luna.cart';
 const EVENT = 'luna:cart';
 
+function isValidCartItem(v: unknown): v is CartItem {
+  if (!v || typeof v !== 'object') return false;
+  const o = v as Record<string, unknown>;
+  return (
+    typeof o.id === 'string' && o.id.length > 0 &&
+    typeof o.name === 'string' && o.name.length > 0 &&
+    typeof o.emoji === 'string' &&
+    typeof o.imageUrl === 'string' &&
+    typeof o.variant === 'string' &&
+    typeof o.price === 'number' && Number.isFinite(o.price) && o.price >= 0 &&
+    typeof o.quantity === 'number' && Number.isInteger(o.quantity) && o.quantity > 0 && o.quantity <= 99
+  );
+}
+
 function read(): CartItem[] {
   try {
     const raw = sessionStorage.getItem(KEY);
     const items: unknown = raw ? JSON.parse(raw) : [];
-    return Array.isArray(items) ? (items as CartItem[]) : [];
+    return Array.isArray(items) ? items.filter(isValidCartItem) : [];
   } catch {
     return [];
   }

@@ -28,8 +28,12 @@ export function watchInactivity(): void {
 
   let idle = 0;
   let tick = 0;
-  const arm = () => {
+  let lastArmed = 0;
+  const arm = (force = false) => {
     if (dialog.open) return;
+    const now = Date.now();
+    if (!force && now - lastArmed < 1000) return;
+    lastArmed = now;
     clearTimeout(idle);
     idle = window.setTimeout(warn, TIMEOUT_MS);
   };
@@ -50,17 +54,25 @@ export function watchInactivity(): void {
   dialog.querySelector('[data-idle-stay]')!.addEventListener('click', () => {
     clearInterval(tick);
     dialog.close();
-    arm();
+    arm(true);
   });
+  const onActivity = () => arm(false);
   for (const type of ['pointerdown', 'pointermove', 'keydown', 'wheel'] as const) {
-    window.addEventListener(type, arm, { passive: true });
+    window.addEventListener(type, onActivity, { passive: true });
   }
-  arm();
+  arm(true);
 }
 
 /** Navigator.pop: back to the previous kiosk page, else to the given one. */
 export function popTo(fallback: string): void {
-  const ref = document.referrer ? new URL(document.referrer) : null;
+  let ref: URL | null = null;
+  if (document.referrer) {
+    try {
+      ref = new URL(document.referrer);
+    } catch {
+      ref = null;
+    }
+  }
   if (ref && ref.origin === location.origin && ref.pathname.startsWith('/kiosk') && history.length > 1) history.back();
   else location.assign(fallback);
 }

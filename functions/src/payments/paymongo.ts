@@ -10,6 +10,18 @@ export interface VerifiedCheckoutSession {
   attributes: Record<string, any>;
 }
 
+/** Firestore doc ids are alphanumeric; the legacy display number may hold '-' too. */
+const LEGACY_DOC_ID = /^[A-Za-z0-9_-]{1,64}$/;
+
+/** Extracts the target Firestore order doc ID from PayMongo session attributes. */
+export function resolveOrderDocId(attrs: any): string | null {
+  const fromMeta = attrs?.metadata?.order_doc_id;
+  if (typeof fromMeta === 'string' && ALNUM_DOC_ID.test(fromMeta)) return fromMeta;
+  const fromRef = attrs?.reference_number;
+  if (typeof fromRef === 'string' && LEGACY_DOC_ID.test(fromRef)) return fromRef;
+  return null;
+}
+
 /** Returns true only when the order is bound to the exact checkout session id. */
 export function hasMatchingCheckoutSession(
   orderData: Record<string, any> | undefined,
@@ -99,6 +111,24 @@ export function firstPaymentId(payments: any[] | null): string {
   return String(paid?.id || payments?.[0]?.id || '');
 }
 
+/** Returns the integer amount in centavos of the paid PayMongo payment, or null if absent/invalid. */
+export function paidPaymentAmountCentavos(payments: any[] | null): number | null {
+  const paid = payments?.find((p: any) => p?.attributes?.status === 'paid');
+  const amt = paid?.attributes?.amount;
+  return typeof amt === 'number' && Number.isInteger(amt) && amt > 0 ? amt : null;
+}
+
+/** Returns true only when a paid payment matches the expected PHP order total in centavos. */
+export function hasPaidPaymentForAmount(
+  payments: any[] | null,
+  expectedAmountPhp: number,
+): boolean {
+  if (!Number.isFinite(expectedAmountPhp) || expectedAmountPhp <= 0) return false;
+  const expectedCentavos = Math.round(expectedAmountPhp * 100);
+  const paidCentavos = paidPaymentAmountCentavos(payments);
+  return paidCentavos !== null && paidCentavos === expectedCentavos;
+}
+
 /**
  * Atomically transitions an order to PAID once and notifies Telegram only on
  * that first transition, so webhook and client polling cannot double-notify.
@@ -108,20 +138,34 @@ export async function markOrderPaidOnce(
   paymentId: string,
   fallbackOrderLabel = '',
   expectedSessionId?: string,
-): Promise<{ transitioned: boolean }> {
+  paidAmountCentavos?: number,
+): Promise<{ transitioned: boolean; alreadyPaid: boolean }> {
   const db = getFirestore();
   let orderData: Record<string, any> | null = null;
   let transitioned = false;
+  let alreadyPaid = false;
 
   await db.runTransaction(async (tx) => {
     const snap = await tx.get(orderRef);
     if (!snap.exists) return;
     const data = snap.data()!;
     orderData = data;
-    if (data.paymentStatus === 'PAID') return;
+    if (data.paymentStatus === 'PAID') {
+      alreadyPaid = true;
+      return;
+    }
     if (expectedSessionId && !hasMatchingCheckoutSession(data, expectedSessionId)) {
       logger.warn(`Refusing to mark order ${orderRef.id} PAID: checkout session mismatch`);
       return;
+    }
+    if (paidAmountCentavos !== undefined) {
+      const expectedCentavos = Math.round(Number(data.totalAmount) * 100);
+      if (!Number.isFinite(expectedCentavos) || expectedCentavos <= 0 || paidAmountCentavos !== expectedCentavos) {
+        logger.warn(
+          `Refusing to mark order ${orderRef.id} PAID: amount mismatch (paid=${paidAmountCentavos}, expected=${expectedCentavos})`,
+        );
+        return;
+      }
     }
     transitioned = true;
     tx.set(orderRef, {
@@ -149,5 +193,5 @@ export async function markOrderPaidOnce(
     }
   }
 
-  return { transitioned };
+  return { transitioned, alreadyPaid };
 }

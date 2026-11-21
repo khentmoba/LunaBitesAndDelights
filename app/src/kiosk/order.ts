@@ -168,12 +168,25 @@ export function notificationFor(order: Order, timeStr: string, orderDocId: strin
   };
 }
 
+/** Generates an alphanumeric idempotency key for safe order submission retries. */
+export function newIdempotencyKey(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID().replace(/-/g, '');
+  }
+  const alphabet = 'abcdefghijklmnopqrstuvwxyz0123456789';
+  return Array.from({ length: 24 }, () => alphabet[Math.floor(Math.random() * alphabet.length)]).join('');
+}
+
 /**
  * Places an order via the server-validated `placeOrder` callable (onOrderWritten
  * handles Telegram notification reliably). Falls back to direct Firestore write
  * + `sendOrderNotification` only if the callable is not yet deployed.
  */
-export async function placeOrder(order: Order, timeStr: string): Promise<{ docId: string | null; telegramSent: boolean }> {
+export async function placeOrder(
+  order: Order,
+  timeStr: string,
+  idempotencyKey?: string,
+): Promise<{ docId: string | null; telegramSent: boolean }> {
   const { firebaseDbLite, callFn } = await import('./firebase');
   try {
     const res = await callFn<{ success?: boolean; docId?: string }>('placeOrder', {
@@ -187,6 +200,7 @@ export async function placeOrder(order: Order, timeStr: string): Promise<{ docId
       lng: order.lng,
       totalDistance: order.totalDistance,
       paymentMethod: order.paymentMethod,
+      ...(idempotencyKey ? { idempotencyKey } : {}),
     });
     if (res.success === true && typeof res.docId === 'string' && res.docId) {
       return { docId: res.docId, telegramSent: true };

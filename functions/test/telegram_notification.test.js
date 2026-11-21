@@ -350,6 +350,16 @@ describe('Telegram MarkdownV2 escaping and order notifications', () => {
     assert.equal(isMarkdownParseError({ response: { statusCode: 400, body: { description: 'Bad Request: chat not found' } } }), false);
   });
 
+  test('isPermanentTelegramError distinguishes permanent 4xx from transient 429/5xx', () => {
+    const { isPermanentTelegramError } = require('../lib/telegram_api');
+    assert.equal(isPermanentTelegramError({ response: { statusCode: 400 } }), true);
+    assert.equal(isPermanentTelegramError({ response: { statusCode: 403 } }), true);
+    assert.equal(isPermanentTelegramError({ response: { statusCode: 429 } }), false);
+    assert.equal(isPermanentTelegramError({ response: { statusCode: 408 } }), false);
+    assert.equal(isPermanentTelegramError({ response: { statusCode: 502 } }), false);
+    assert.equal(isPermanentTelegramError(new Error('ECONNRESET')), false);
+  });
+
   test('sendToAll and sendPhotoToAll fail cleanly when unconfigured or all recipients reject', async () => {
     process.env.TELEGRAM_CHAT_ID = ' , ';
     await assert.rejects(() => sendToAll('hello'), /TELEGRAM_CHAT_ID is not configured/);

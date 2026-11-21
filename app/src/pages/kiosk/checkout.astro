@@ -214,7 +214,7 @@ import { glyph } from '../../kiosk/icons';
 import { popTo, watchInactivity } from '../../kiosk/inactivity';
 import { DRAFT, PENDING, RECEIPT, load, save, type CheckoutDraft, type PendingPayment, type Receipt } from '../../kiosk/handoff';
 import {
-  STORE, localStamp, orderItems, orderNumberFor, phtDateLabel, placeOrder, rejectionFor, statusesFor,
+  STORE, localStamp, newIdempotencyKey, orderItems, orderNumberFor, phtDateLabel, placeOrder, rejectionFor, statusesFor,
   validateName, validatePhone, type Order, type OrderType, type PaymentMethod,
 } from '../../kiosk/order';
 import { snack } from '../../kiosk/snackbar';
@@ -243,6 +243,7 @@ function clearPending() {
   draft.pendingDocId = null;
   draft.pendingNumber = null;
   delete draft.pendingCart;
+  delete draft.idempotencyKey;
 }
 /** The saved GCash order only stands for the cart it was saved with. */
 const cartKey = () => JSON.stringify(orderItems(cart.items()));
@@ -405,7 +406,11 @@ async function submit() {
   };
 
   if (docId === null || draft.paymentMethod !== 'GCash' || isStaff) {
-    const result = await placeOrder(order, timeStr);
+    if (!draft.idempotencyKey) {
+      draft.idempotencyKey = newIdempotencyKey();
+      persist();
+    }
+    const result = await placeOrder(order, timeStr, draft.idempotencyKey);
     docId = result.docId;
     telegramSent = result.telegramSent;
   }

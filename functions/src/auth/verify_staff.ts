@@ -5,13 +5,17 @@ import { logger } from 'firebase-functions';
 import * as crypto from 'crypto';
 import {
   cleanStr, checkRateLimit, recordLoginFailure, clearLoginAttempts,
+  checkWindowBudget, recordWindowFailure, clientIpFromRequest,
   hashPasswordAsync, verifyPasswordAsync, requireStaff,
 } from '../util/security';
 
 const GENERIC_FAIL = 'Invalid username or password';
 const GENERIC_PIN_FAIL = 'Invalid PIN. Please try again.';
 const PIN_RE = /^[0-9]{4,8}$/;
-const PIN_VERIFY_CONCURRENCY = 8;
+const PIN_VERIFY_CONCURRENCY = 2;
+const GLOBAL_PIN_FAIL_KEY = 'staff:pin_login:global';
+const GLOBAL_PIN_FAIL_MAX = 20;
+const GLOBAL_PIN_WINDOW_MS = 15 * 60 * 1000;
 let staffSeeded = false;
 
 export interface PinAccountEntry<T = any> {
@@ -82,11 +86,15 @@ async function verifyPinLogin(db: Firestore, request: CallableRequest, pin: stri
   if (!PIN_RE.test(pin)) {
     throw new HttpsError('invalid-argument', GENERIC_PIN_FAIL);
   }
-  const clientIp = typeof request.rawRequest?.ip === 'string' && request.rawRequest.ip
-    ? request.rawRequest.ip
-    : '';
+  const clientIp = clientIpFromRequest(request.rawRequest);
   const pinRateKey = clientIp ? `staff:pin_login:${clientIp}` : 'staff:pin_login';
   await checkRateLimit(pinRateKey);
+  await checkWindowBudget(
+    GLOBAL_PIN_FAIL_KEY,
+    GLOBAL_PIN_FAIL_MAX,
+    GLOBAL_PIN_WINDOW_MS,
+    'Too many failed PIN attempts. Please sign in with username and password.',
+  );
 
   const staffAccounts = await db.collection('staff_accounts').get();
   const match = await findMatchingPinAccount(
@@ -99,7 +107,10 @@ async function verifyPinLogin(db: Firestore, request: CallableRequest, pin: stri
 
   if (!match) {
     logger.info('Staff PIN login failed: bad PIN');
-    await recordLoginFailure(pinRateKey);
+    await Promise.all([
+      recordLoginFailure(pinRateKey),
+      recordWindowFailure(GLOBAL_PIN_FAIL_KEY, GLOBAL_PIN_WINDOW_MS),
+    ]);
     return { success: false, message: GENERIC_PIN_FAIL };
   }
 
@@ -179,6 +190,10 @@ export const verifyStaff = onCall(async (request) => {
 
 export const updateStaffPin = onCall(async (request) => {
   const uid = requireStaff(request);
+  const updateRateKey = `staff:pin_update:${uid}`;
+  await checkRateLimit(updateRateKey);
+
+  const currentPassword = cleanStr(request.data?.currentPassword, 200, 'currentPassword');
   const newPin = cleanStr(request.data?.newPin, 16, 'newPin');
   if (!PIN_RE.test(newPin)) {
     throw new HttpsError('invalid-argument', 'PIN must be between 4 and 8 digits');
@@ -192,6 +207,16 @@ export const updateStaffPin = onCall(async (request) => {
     throw new HttpsError('not-found', 'Staff account not found');
   }
 
+  const data = doc.data()!;
+  if (!data.passwordHash) {
+    throw new HttpsError('internal', 'Server misconfigured');
+  }
+  const pwCheck = await verifyPasswordAsync(currentPassword, data.passwordHash);
+  if (pwCheck === 'bad') {
+    await recordLoginFailure(updateRateKey);
+    throw new HttpsError('permission-denied', 'Invalid current password');
+  }
+
   const allStaff = await db.collection('staff_accounts').get();
   const conflict = await findMatchingPinAccount(
     newPin,
@@ -200,9 +225,11 @@ export const updateStaffPin = onCall(async (request) => {
       .map((other) => ({ id: other.id, pinHash: other.data().pinHash, payload: other.id })),
   );
   if (conflict) {
-    throw new HttpsError('already-exists', 'This PIN is already in use by another account');
+    await recordLoginFailure(updateRateKey);
+    throw new HttpsError('invalid-argument', 'Unable to set this PIN. Please choose a different PIN.');
   }
 
+  await clearLoginAttempts(updateRateKey);
   await staffRef.update({
     pinHash: await hashPasswordAsync(newPin),
     updatedAt: FieldValue.serverTimestamp(),

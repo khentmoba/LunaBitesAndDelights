@@ -93,6 +93,17 @@ export function isMarkdownParseError(err: any): boolean {
   );
 }
 
+/**
+ * Returns true for permanent Telegram 4xx failures (e.g. 400 bad request,
+ * 401 unauthorized, 403 bot blocked, 404 chat not found) that will never
+ * succeed on retry. Excludes 408 (timeout) and 429 (rate limit).
+ */
+export function isPermanentTelegramError(err: any): boolean {
+  if (err?.permanent === true) return true;
+  const status = err?.response?.statusCode ?? err?.statusCode;
+  return typeof status === 'number' && status >= 400 && status < 500 && status !== 408 && status !== 429;
+}
+
 async function deliverToAll(
   fnName: 'sendToAll' | 'sendPhotoToAll',
   fallbackNote: string,
@@ -148,7 +159,9 @@ async function deliverToAll(
   }
 
   if (failures.length === ids.length) {
-    throw new Error(`All ${ids.length} ${failLabel} failed`);
+    const err: any = new Error(`All ${ids.length} ${failLabel} failed`);
+    err.permanent = failures.every(({ r }) => isPermanentTelegramError(r.reason));
+    throw err;
   }
 
   return results;

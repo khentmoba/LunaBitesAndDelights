@@ -2,10 +2,13 @@ import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { getFirestore } from 'firebase-admin/firestore';
 import { logger } from 'firebase-functions';
 import { paymongoSecret } from '../secrets';
-import { cleanStr, optStr, cleanInt } from '../util/security';
+import { cleanStr, optStr, cleanInt, clientIpFromRequest, enforceFixedWindowRateLimit } from '../util/security';
 import { paymongoAuthHeader, requireOrderDoc } from './paymongo';
 
 const PAYMONGO_API = 'https://api.paymongo.com/v2/checkout_sessions';
+const CHECKOUT_REUSE_MS = 45 * 60 * 1000;
+const CHECKOUT_RATE_WINDOW_MS = 5 * 60 * 1000;
+const CHECKOUT_RATE_MAX = 30;
 
 // Server-side price list — single source of truth for payment verification.
 // MUST match app/src/data/menu.ts; test/site/price-parity.test.mjs fails when it
@@ -117,16 +120,32 @@ export const createCheckoutSession = onCall(
     const customerName = optStr(d.customerName, 100);
     const customerPhone = optStr(d.customerPhone, 32);
 
+    const role = (request.auth?.token as any)?.role;
+    const isStaff = !!request.auth?.uid && (role === 'staff' || role === 'admin');
+    const clientIp = clientIpFromRequest(request.rawRequest);
+    if (!isStaff && clientIp) {
+      await enforceFixedWindowRateLimit(
+        `checkout:create:${clientIp}`,
+        CHECKOUT_RATE_MAX,
+        CHECKOUT_RATE_WINDOW_MS,
+        'Too many checkout attempts. Please wait a few minutes and try again.',
+      );
+    }
+
     // The payment result must land on the order document the kiosk wrote.
     const { orderRef, orderData } = await requireOrderDoc(orderDocId);
     if (orderData.orderId !== orderId) {
       throw new HttpsError('permission-denied', 'Order reference mismatch');
     }
+    if (orderData.status === 'Cancelled') {
+      throw new HttpsError('failed-precondition', 'Order is cancelled');
+    }
     if (orderData.paymentStatus === 'PAID') {
       throw new HttpsError('failed-precondition', 'Order is already paid');
     }
 
-    const { items: pricedItems, total: itemsTotal } = validateAndPriceItems(d.items);
+    // Price strictly from the authoritative persisted order items, never client-supplied items.
+    const { items: pricedItems, total: itemsTotal } = validateAndPriceItems(orderData.items);
     const lineItems = pricedItems.map((i) => ({
       name: i.name,
       amount: i.price * 100,
@@ -137,6 +156,23 @@ export const createCheckoutSession = onCall(
     // The rider confirms delivery separately; online payment covers food only.
     if (amount !== itemsTotal) {
       throw new HttpsError('invalid-argument', 'Amount does not match order total');
+    }
+
+    // Reuse an existing fresh checkout session for this order instead of creating duplicates.
+    if (
+      orderData.paymentStatus === 'AWAITING_PAYMENT' &&
+      typeof orderData.checkoutUrl === 'string' &&
+      orderData.checkoutUrl.length > 0 &&
+      typeof orderData.checkoutSessionId === 'string' &&
+      orderData.checkoutSessionId.length > 0 &&
+      typeof orderData.checkoutCreatedAt === 'number' &&
+      Date.now() - orderData.checkoutCreatedAt < CHECKOUT_REUSE_MS
+    ) {
+      return {
+        success: true,
+        checkoutUrl: orderData.checkoutUrl,
+        checkoutSessionId: orderData.checkoutSessionId,
+      };
     }
 
     const auth = paymongoAuthHeader(true);
@@ -178,12 +214,17 @@ export const createCheckoutSession = onCall(
         if (!snap.exists) {
           throw new HttpsError('not-found', 'Order not found');
         }
-        if (snap.data()?.paymentStatus === 'PAID') {
+        const current = snap.data()!;
+        if (current.status === 'Cancelled') {
+          throw new HttpsError('failed-precondition', 'Order is cancelled');
+        }
+        if (current.paymentStatus === 'PAID') {
           throw new HttpsError('failed-precondition', 'Order is already paid');
         }
         tx.set(orderRef, {
           checkoutSessionId: checkout.id,
           checkoutUrl: checkout.attributes.checkout_url,
+          checkoutCreatedAt: Date.now(),
           paymentMethod: 'GCash',
           paymentStatus: 'AWAITING_PAYMENT',
           totalAmount: itemsTotal,
