@@ -138,6 +138,8 @@ export function getGoogleMapsNavigationUrl(lat: number, lng: number): string {
   return `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
 }
 
+const MAX_MAP_IMAGE_BYTES = 5 * 1024 * 1024;
+
 /** Safely fetches a static map image buffer with an abort timeout. Returns null on failure. */
 export async function fetchMapImage(url: string, timeoutMs = 6000): Promise<Buffer | null> {
   const controller = new AbortController();
@@ -148,7 +150,21 @@ export async function fetchMapImage(url: string, timeoutMs = 6000): Promise<Buff
       logger.warn(`Static map fetch failed: status ${res.status} (${res.statusText})`);
       return null;
     }
+    const contentType = res.headers?.get?.('content-type')?.toLowerCase() ?? '';
+    if (!contentType.startsWith('image/')) {
+      logger.warn(`Static map fetch rejected unexpected content-type: ${contentType || 'missing'}`);
+      return null;
+    }
+    const contentLength = Number(res.headers?.get?.('content-length') ?? '');
+    if (Number.isFinite(contentLength) && contentLength > MAX_MAP_IMAGE_BYTES) {
+      logger.warn(`Static map fetch rejected oversized content-length: ${contentLength}`);
+      return null;
+    }
     const arrayBuffer = await res.arrayBuffer();
+    if (arrayBuffer.byteLength === 0 || arrayBuffer.byteLength > MAX_MAP_IMAGE_BYTES) {
+      logger.warn(`Static map fetch rejected invalid payload size: ${arrayBuffer.byteLength}`);
+      return null;
+    }
     return Buffer.from(arrayBuffer);
   } catch (err: any) {
     logger.warn('Error fetching static map image', err);

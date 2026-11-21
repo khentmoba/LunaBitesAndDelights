@@ -112,7 +112,8 @@ test('ui helpers format icons and finite numbers cleanly', () => {
 test('staff service worker serves immutable assets cache-first and navigations network-first', () => {
   const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
   const sw = readFileSync(join(root, 'app/public/staff/sw.js'), 'utf8');
-  assert.match(sw, /const immutable\s*=.*\/_astro\/.*\/kiosk\/fonts\//);
+  assert.match(sw, /const immutable\s*=.*\/_astro\//);
+  assert.match(sw, /const fontAsset\s*=.*\/kiosk\/fonts\//);
   assert.match(sw, /caches\.open\(CACHE\)\.then\(\(c\) => c\.match\(req\)\)/);
   assert.match(sw, /if \(immutable\)\s*\{[\s\S]*matchCache\(req\)/);
   assert.match(sw, /req\.mode === 'navigate'/);

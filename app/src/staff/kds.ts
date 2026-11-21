@@ -132,16 +132,36 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
     } catch (e) {
       if (disposed || seq !== fetchSeq) return;
       const fe = fnError(e);
+      if (fe && isAuthCode(fe.code)) {
+        haltOnAuthError(`Staff session expired or unauthorized (${fe.code}). Please sign in again.`);
+        return;
+      }
       error = fe
-        ? isAuthCode(fe.code)
-          ? `Staff session expired or unauthorized (${fe.code}). Please sign in again.`
-          : `Could not load live orders: ${fe.message}`
+        ? `Could not load live orders: ${fe.message}`
         : 'Connection error while loading live orders. Tap RETRY to sync.';
       loading = false;
       renderAll();
     } finally {
       if (seq === fetchSeq) fetchInFlight = false;
     }
+  }
+
+  function haltOnAuthError(message: string) {
+    unsub?.();
+    unsub = null;
+    clearTimeout(initialFallbackTimer);
+    initialFallbackTimer = 0;
+    clearInterval(pollTimer);
+    pollTimer = 0;
+    clearInterval(reconnectTimer);
+    reconnectTimer = 0;
+    clearInterval(lookbackTimer);
+    lookbackTimer = 0;
+    connecting = false;
+    isLive = false;
+    loading = false;
+    error = message;
+    if (!disposed) renderAll();
   }
 
   function fallBackToPolling() {
@@ -193,7 +213,16 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
           live = snap.docs.map((d) => kdsOrderFromDoc(d.id, d.data(), toDate));
           publish();
         },
-        () => fallBackToPolling(),
+        (err) => {
+          const code = typeof (err as { code?: unknown })?.code === 'string'
+            ? String((err as { code: string }).code).replace(/^firestore\//, '')
+            : '';
+          if (isAuthCode(code)) {
+            haltOnAuthError(`Staff session expired or unauthorized (${code}). Please sign in again.`);
+            return;
+          }
+          fallBackToPolling();
+        },
       );
     } catch {
       fallBackToPolling();

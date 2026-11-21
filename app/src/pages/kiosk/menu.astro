@@ -425,7 +425,10 @@ function openSheet(item: MenuItem): Promise<void> {
   $('[data-close]', sheet).addEventListener('click', () => sheet.close());
   $('[data-add]', sheet).addEventListener('click', () => {
     if (!canAdd()) return;
-    cart.add({ id: String(Date.now()), name: item.name, emoji: item.emoji, imageUrl: item.imageUrl ?? '', variant: label(), price: price(), quantity: qty });
+    const lineId = typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    cart.add({ id: lineId, name: item.name, emoji: item.emoji, imageUrl: item.imageUrl ?? '', variant: label(), price: price(), quantity: qty });
     sheet.close();
   });
   render();

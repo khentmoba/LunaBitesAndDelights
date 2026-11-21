@@ -23,10 +23,16 @@ function note(ac: AudioContext, freq: number, gain: number, start: number, end: 
 export function playOrderChime(): void {
   if (!soundEnabled) return;
   try {
-    ctx ??= new AudioContext();
-    if (ctx.state === 'suspended') void ctx.resume();
-    note(ctx, 659.25, 0.25, 0, 0.35);
-    note(ctx, 880, 0.3, 0.15, 0.65);
+    const ac = (ctx ??= new AudioContext());
+    const trigger = () => {
+      note(ac, 659.25, 0.25, 0, 0.35);
+      note(ac, 880, 0.3, 0.15, 0.65);
+    };
+    if (ac.state === 'suspended') {
+      void ac.resume().then(trigger, () => {});
+    } else {
+      trigger();
+    }
   } catch {
     // No audio output: the snack still tells staff about the order.
   }

@@ -34,7 +34,7 @@ self.addEventListener('fetch', (event) => {
   const req = event.request;
   const url = new URL(req.url);
   if (req.method !== 'GET' || url.origin !== location.origin) return;
-  const immutable = url.pathname.startsWith('/_astro/') || url.pathname.startsWith('/kiosk/fonts/');
+  const immutable = url.pathname.startsWith('/_astro/');
   if (immutable) {
     event.respondWith(
       matchCache(req).then((hit) => {
@@ -46,6 +46,26 @@ self.addEventListener('fetch', (event) => {
           }
           return res;
         });
+      }),
+    );
+    return;
+  }
+  const fontAsset = url.pathname.startsWith('/kiosk/fonts/');
+  if (fontAsset) {
+    event.respondWith(
+      matchCache(req).then((hit) => {
+        const net = fetch(req).then((res) => {
+          if (res.ok) {
+            const copy = res.clone();
+            event.waitUntil(cacheAndPrune(req, copy).catch(() => {}));
+          }
+          return res;
+        });
+        if (hit) {
+          event.waitUntil(net.catch(() => {}));
+          return hit;
+        }
+        return net;
       }),
     );
     return;

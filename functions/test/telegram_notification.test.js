@@ -488,4 +488,34 @@ describe('Telegram MarkdownV2 escaping and order notifications', () => {
     });
     assert.ok(caption.length <= 1024, `caption exceeded 1024 chars: ${caption.length}`);
   });
+
+  test('fetchMapImage rejects non-image content types and oversized payloads', async () => {
+    const { fetchMapImage } = require('../lib/orders/send_notification');
+    const origFetch = global.fetch;
+    try {
+      global.fetch = async () => ({
+        ok: true,
+        headers: new Headers({ 'content-type': 'text/html' }),
+        arrayBuffer: async () => new Uint8Array([1, 2, 3]).buffer,
+      });
+      assert.equal(await fetchMapImage('https://example.com/bad'), null);
+
+      global.fetch = async () => ({
+        ok: true,
+        headers: new Headers({ 'content-type': 'image/png', 'content-length': String(6 * 1024 * 1024) }),
+        arrayBuffer: async () => new Uint8Array([1, 2, 3]).buffer,
+      });
+      assert.equal(await fetchMapImage('https://example.com/huge'), null);
+
+      global.fetch = async () => ({
+        ok: true,
+        headers: new Headers({ 'content-type': 'image/png', 'content-length': '3' }),
+        arrayBuffer: async () => new Uint8Array([137, 80, 78]).buffer,
+      });
+      const ok = await fetchMapImage('https://example.com/ok.png');
+      assert.ok(Buffer.isBuffer(ok) && ok.length === 3);
+    } finally {
+      global.fetch = origFetch;
+    }
+  });
 });

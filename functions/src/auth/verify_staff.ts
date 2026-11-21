@@ -69,7 +69,7 @@ async function ensureStaffSeeded(db: Firestore): Promise<void> {
       hashPasswordAsync(pw),
       hashPasswordAsync(s.pin),
     ]);
-    batch.set(db.collection('staff_accounts').doc(s.username), {
+    batch.create(db.collection('staff_accounts').doc(s.username), {
       username: s.username,
       role: s.role,
       passwordHash,
@@ -78,7 +78,11 @@ async function ensureStaffSeeded(db: Firestore): Promise<void> {
     });
     logger.warn(`SEEDED staff account ${s.username} (role: ${s.role}); run functions/scripts/reset-staff-credentials.js to set credentials`);
   }
-  await batch.commit();
+  try {
+    await batch.commit();
+  } catch (err: any) {
+    if (err?.code !== 6 && err?.code !== 'already-exists') throw err;
+  }
   staffSeeded = true;
 }
 
