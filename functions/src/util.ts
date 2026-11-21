@@ -49,7 +49,7 @@ export function isCountableOrder(data: Record<string, any> | undefined): boolean
   if (data.status === "Cancelled") return false;
   const method = String(data.paymentMethod || "").toLowerCase();
   const paymentStatus = String(data.paymentStatus || "");
-  if (method === "gcash" && (paymentStatus === "AWAITING_PAYMENT" || paymentStatus === "PAYMENT_FAILED")) {
+  if (method === "gcash" && paymentStatus !== "PAID") {
     return false;
   }
   return true;

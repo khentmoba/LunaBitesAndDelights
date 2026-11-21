@@ -114,14 +114,16 @@ export async function clearLoginAttempts(key: string): Promise<void> {
 export function clientIpFromRequest(
   rawRequest?: { ip?: unknown; headers?: Record<string, unknown> },
 ): string {
+  const forwarded = rawRequest?.headers?.['x-forwarded-for'];
+  const rawForwarded = Array.isArray(forwarded) ? forwarded[forwarded.length - 1] : forwarded;
+  if (typeof rawForwarded === 'string' && rawForwarded.trim().length > 0) {
+    // On Cloud Run / GFE, the real client IP is appended on the right; index 0 is client-spoofable.
+    const parts = rawForwarded.split(',').map((s) => s.trim()).filter(Boolean);
+    const rightmost = parts[parts.length - 1] || '';
+    if (rightmost.length > 0) return rightmost.slice(0, 64);
+  }
   if (typeof rawRequest?.ip === 'string' && rawRequest.ip.trim().length > 0) {
     return rawRequest.ip.trim().slice(0, 64);
-  }
-  const forwarded = rawRequest?.headers?.['x-forwarded-for'];
-  const rawForwarded = Array.isArray(forwarded) ? forwarded[0] : forwarded;
-  if (typeof rawForwarded === 'string' && rawForwarded.trim().length > 0) {
-    const first = rawForwarded.split(',')[0]?.trim() || '';
-    if (first.length > 0) return first.slice(0, 64);
   }
   return '';
 }

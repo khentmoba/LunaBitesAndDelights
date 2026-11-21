@@ -12,6 +12,7 @@ export const DAILY_STATS_COLLECTION = 'dailyStats';
 const EVENT_GUARD_COLLECTION = 'stats_events';
 const GUARD_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const KDS_MIRROR_TTL_MS = 30 * 24 * 60 * 60 * 1000;
+const MAX_TELEGRAM_RETRY_AGE_MS = 10 * 60 * 1000;
 
 /** Kitchen-screen mirror doc: the same trimmed projection the callable returns, plus a queryable time. */
 export function kdsMirrorDoc(id: string, data: FirebaseFirestore.DocumentData) {
@@ -110,18 +111,23 @@ export const onOrderWritten = onDocumentWritten(
       }
     });
 
+    const notifyTooOld = Date.now() - eventTimeMs > MAX_TELEGRAM_RETRY_AGE_MS;
     const notify = (shouldNotifyKitchen(before, after) && hasTelegramConfig())
-      ? notifyOrderOnce(orderId, after!).then((res) => {
-          if (res.inFlight) {
-            throw new Error(`Telegram notification for ${orderId} is still in-flight; retrying until settled`);
-          }
-        }).catch((err) => {
-          if (isPermanentTelegramError(err)) {
-            logger.warn(`Dropping permanent Telegram error for ${orderId} to avoid retry loop`, err);
-            return;
-          }
-          throw err;
-        })
+      ? (notifyTooOld
+          ? Promise.resolve().then(() => {
+              logger.warn(`Skipping stale Telegram notification retry for ${orderId} (event age > 10m)`);
+            })
+          : notifyOrderOnce(orderId, after!).then((res) => {
+              if (res.inFlight) {
+                throw new Error(`Telegram notification for ${orderId} is still in-flight; retrying until settled`);
+              }
+            }).catch((err) => {
+              if (isPermanentTelegramError(err)) {
+                logger.warn(`Dropping permanent Telegram error for ${orderId} to avoid retry loop`, err);
+                return;
+              }
+              throw err;
+            }))
       : Promise.resolve();
 
     const results = await Promise.allSettled([mirror, stats, notify]);

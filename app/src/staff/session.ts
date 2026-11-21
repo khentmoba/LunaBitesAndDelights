@@ -30,6 +30,7 @@ type Listener = (staff: Staff | null) => void;
 const listeners = new Set<Listener>();
 let current: Staff | null | undefined;
 let bound = false;
+let authSeq = 0;
 
 function emit(next: Staff | null) {
   if (current === next || (current && next && current.username === next.username && current.role === next.role)) return;
@@ -42,20 +43,27 @@ async function bind() {
   bound = true;
   const [auth, { onAuthStateChanged }] = await Promise.all([firebaseAuth(), import('firebase/auth')]);
   onAuthStateChanged(auth, (user) => {
+    const seq = ++authSeq;
     const username = user ? staffUsernameFor(user.uid) : null;
     if (!user || !username) {
       emit(null);
       return;
     }
-    emit(current?.username === username ? current : make(username, username.toLowerCase() === 'admin' ? 'admin' : 'staff'));
     user
       .getIdTokenResult()
       .then((token) => {
+        if (seq !== authSeq) return;
         const role = staffRoleFor(token.claims);
         if (!role) void logout();
         else emit(make(username, role));
       })
-      .catch(() => {});
+      .catch((e: unknown) => {
+        if (seq !== authSeq) return;
+        console.warn('Staff token verification failed', e);
+        const code = typeof (e as { code?: unknown })?.code === 'string' ? (e as { code: string }).code : '';
+        if (code === 'auth/network-request-failed' && current?.username === username) return;
+        void logout();
+      });
   });
 }
 
@@ -75,6 +83,7 @@ export const currentStaff = (): Staff | null => current ?? null;
 
 /** Ends the Firebase staff session too (custom token from verifyStaff). */
 export async function logout(): Promise<void> {
+  authSeq++;
   emit(null);
   try {
     const [auth, { signOut }] = await Promise.all([firebaseAuth(), import('firebase/auth')]);

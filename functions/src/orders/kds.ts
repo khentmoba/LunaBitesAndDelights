@@ -46,7 +46,7 @@ export function toIsoTimestamp(raw: unknown): string {
 export function isOrderVisibleInKds(d: FirebaseFirestore.DocumentData): boolean {
   const method = String(d.paymentMethod || '').toLowerCase();
   const status = String(d.paymentStatus || '');
-  return !(method === 'gcash' && (status === 'AWAITING_PAYMENT' || status === 'PAYMENT_FAILED'));
+  return method !== 'gcash' || status === 'PAID';
 }
 
 const itemQty = (i: any): number => Number(i?.quantity) || Number(i?.qty) || 0;
@@ -92,20 +92,32 @@ export const getActiveOrders = onCall(async (request) => {
   try {
     // 7-day lookback so yesterday's active and history orders are never cut off
     const lookbackThreshold = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-    const snapshot = await db.collection('orders')
-      .where('timestamp', '>=', lookbackThreshold)
-      .orderBy('timestamp', 'desc')
-      .limit(maxDocs)
-      .get();
-
+    const pageSize = Math.min(Math.max(maxDocs * 2, 50), MAX_ORDERS_LIMIT);
+    const maxPages = 3;
     const orders = [];
-    for (const doc of snapshot.docs) {
-      const data = doc.data();
-      if (!isOrderVisibleInKds(data)) continue;
-      const status = data.status || 'Pending';
-      if (includeCompleted || (status !== 'Completed' && status !== 'Cancelled')) {
-        orders.push(projectOrder(doc.id, data));
+    let cursor: FirebaseFirestore.QueryDocumentSnapshot | null = null;
+
+    for (let page = 0; page < maxPages && orders.length < maxDocs; page++) {
+      let q = db.collection('orders')
+        .where('timestamp', '>=', lookbackThreshold)
+        .orderBy('timestamp', 'desc')
+        .limit(pageSize);
+      if (cursor) q = q.startAfter(cursor);
+      const snapshot = await q.get();
+      if (snapshot.empty) break;
+
+      for (const doc of snapshot.docs) {
+        const data = doc.data();
+        if (!isOrderVisibleInKds(data)) continue;
+        const status = data.status || 'Pending';
+        if (includeCompleted || (status !== 'Completed' && status !== 'Cancelled')) {
+          orders.push(projectOrder(doc.id, data));
+          if (orders.length >= maxDocs) break;
+        }
       }
+
+      if (snapshot.docs.length < pageSize) break;
+      cursor = snapshot.docs[snapshot.docs.length - 1];
     }
     return { success: true, orders };
   } catch (error: any) {

@@ -1,7 +1,7 @@
 // Inactivity watcher: after two idle
 // minutes, warn for 15 seconds, then clear the order and go back to the splash.
 import { cart } from './cart';
-import { DRAFT, PENDING, save } from './handoff';
+import { DRAFT, PENDING, RECEIPT, save } from './handoff';
 import { kioskSession } from './session';
 
 const TIMEOUT_MS = 2 * 60 * 1000;
@@ -12,6 +12,7 @@ export function resetKiosk(): void {
   kioskSession.reset();
   save(DRAFT, null);
   save(PENDING, null);
+  save(RECEIPT, null);
   location.replace('/kiosk/');
 }
 

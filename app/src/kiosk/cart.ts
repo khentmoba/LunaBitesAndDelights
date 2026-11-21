@@ -54,6 +54,15 @@ function write(items: CartItem[]): void {
 let memory: CartItem[] | null = null;
 const items = (): CartItem[] => memory ?? (memory = read());
 
+if (typeof window !== 'undefined') {
+  window.addEventListener('pageshow', (e) => {
+    if (e.persisted) {
+      memory = null;
+      window.dispatchEvent(new CustomEvent(EVENT));
+    }
+  });
+}
+
 export const cart = {
   items: (): readonly CartItem[] => items(),
   totalCount: (): number => items().reduce((s, i) => s + i.quantity, 0),

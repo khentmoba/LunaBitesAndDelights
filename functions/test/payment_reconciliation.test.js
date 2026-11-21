@@ -20,6 +20,7 @@ const { isOrderVisibleInKds, toIsoTimestamp, clampOrdersLimit, isAllowedStatusTr
 const { kdsMirrorDoc, shouldNotifyKitchen } = require('../lib/orders/derived');
 const { idempotentOrderDocId, orderPayloadFingerprint } = require('../lib/orders/place_order');
 const { clientIpFromRequest } = require('../lib/util/security');
+const { isCountableOrder } = require('../lib/util');
 const { safeDateLabel } = require('../lib/reporting/daily_stats');
 const { validateAndPriceItems } = require('../lib/payments/create_checkout');
 
@@ -358,16 +359,23 @@ test('orderPayloadFingerprint is deterministic and detects payload tampering', (
   );
 });
 
-test('clientIpFromRequest prefers rawRequest.ip and falls back to x-forwarded-for', () => {
+test('clientIpFromRequest uses rightmost x-forwarded-for hop and falls back to rawRequest.ip', () => {
   assert.strictEqual(clientIpFromRequest({ ip: '1.2.3.4' }), '1.2.3.4');
   assert.strictEqual(
-    clientIpFromRequest({ headers: { 'x-forwarded-for': '5.6.7.8, 10.0.0.1' } }),
-    '5.6.7.8',
+    clientIpFromRequest({ ip: '1.1.1.1', headers: { 'x-forwarded-for': 'spoofed.1.2.3, 203.0.113.9' } }),
+    '203.0.113.9',
   );
   assert.strictEqual(clientIpFromRequest({}), '');
 });
 
-test('isOrderVisibleInKds treats paymentMethod case-insensitively', () => {
+test('isOrderVisibleInKds and isCountableOrder require PAID allowlist for GCash', () => {
   assert.strictEqual(isOrderVisibleInKds({ paymentMethod: 'gcash', paymentStatus: 'AWAITING_PAYMENT' }), false);
+  assert.strictEqual(isOrderVisibleInKds({ paymentMethod: 'GCash', paymentStatus: 'NOT PAID' }), false);
+  assert.strictEqual(isOrderVisibleInKds({ paymentMethod: 'gcash', paymentStatus: '' }), false);
   assert.strictEqual(isOrderVisibleInKds({ paymentMethod: 'gcash', paymentStatus: 'PAID' }), true);
+  assert.strictEqual(isOrderVisibleInKds({ paymentMethod: 'Cash', paymentStatus: 'NOT PAID' }), true);
+
+  assert.strictEqual(isCountableOrder({ status: 'Pending', paymentMethod: 'GCash', paymentStatus: 'NOT PAID' }), false);
+  assert.strictEqual(isCountableOrder({ status: 'Pending', paymentMethod: 'gcash', paymentStatus: 'PAID' }), true);
+  assert.strictEqual(isCountableOrder({ status: 'Cancelled', paymentMethod: 'Cash', paymentStatus: 'PAID' }), false);
 });

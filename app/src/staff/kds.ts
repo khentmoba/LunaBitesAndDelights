@@ -60,6 +60,9 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
   let reconnectTimer = 0;
   let initialFallbackTimer = 0;
   let lookbackTimer = 0;
+  let searchTimer = 0;
+  let fetchInFlight = false;
+  let fetchSeq = 0;
   let disposed = false;
 
   const back = cameFromApp();
@@ -108,13 +111,16 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
 
   async function fetchActive(silent = false) {
     if (!getStaff()) return;
+    if (silent && fetchInFlight) return;
+    const seq = ++fetchSeq;
+    fetchInFlight = true;
     if (!silent) loading = true;
     error = null;
     renderBar();
     renderBanner();
     try {
       const data = await callFn<{ success?: boolean; orders?: KdsOrder[]; message?: string }>('getActiveOrders', { includeCompleted: true });
-      if (disposed) return;
+      if (disposed || seq !== fetchSeq) return;
       if (data.success === true) {
         polled = data.orders ?? [];
         publish();
@@ -124,7 +130,7 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
         renderAll();
       }
     } catch (e) {
-      if (disposed) return;
+      if (disposed || seq !== fetchSeq) return;
       const fe = fnError(e);
       error = fe
         ? isAuthCode(fe.code)
@@ -133,6 +139,8 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
         : 'Connection error while loading live orders. Tap RETRY to sync.';
       loading = false;
       renderAll();
+    } finally {
+      if (seq === fetchSeq) fetchInFlight = false;
     }
   }
 
@@ -614,6 +622,7 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
       showCompleted = !showCompleted;
       publish();
     } else if (act === 'clear') {
+      clearTimeout(searchTimer);
       query = '';
       ctl.querySelector<HTMLInputElement>('[data-search]')!.value = '';
       syncControls();
@@ -663,7 +672,10 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
     if (!t.matches('[data-search]')) return;
     query = t.value;
     syncControls();
-    renderBoard();
+    clearTimeout(searchTimer);
+    searchTimer = window.setTimeout(() => {
+      if (!disposed) renderBoard();
+    }, 150);
   });
 
   function refreshElapsedTimes() {
@@ -707,6 +719,7 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
     disposed = true;
     unsub?.();
     clearTimeout(initialFallbackTimer);
+    clearTimeout(searchTimer);
     clearInterval(pollTimer);
     clearInterval(reconnectTimer);
     clearInterval(lookbackTimer);
