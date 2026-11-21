@@ -119,7 +119,7 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
     renderBar();
     renderBanner();
     try {
-      const data = await callFn<{ success?: boolean; orders?: KdsOrder[]; message?: string }>('getActiveOrders', { includeCompleted: true });
+      const data = await callFn<{ success?: boolean; orders?: KdsOrder[]; message?: string }>('getActiveOrders', { includeCompleted: showCompleted });
       if (disposed || seq !== fetchSeq) return;
       if (data.success === true) {
         polled = data.orders ?? [];
@@ -155,7 +155,7 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
     renderBar();
     if (!polled.length) void fetchActive(true);
     pollTimer ||= window.setInterval(() => {
-      if (getStaff()) void fetchActive(true);
+      if (!document.hidden && getStaff()) void fetchActive(true);
     }, POLL_MS);
     reconnectTimer ||= window.setInterval(() => {
       if (!disposed && !isLive && !connecting && getStaff()) void startLiveListener();
@@ -505,6 +505,7 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
     if (tab === 3 && !showCompleted) {
       showCompleted = true;
       publish();
+      if (!isLive) void fetchActive(true);
     } else {
       syncTabs();
     }
@@ -582,15 +583,26 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
         document.body.append(printHost);
         document.body.classList.add('is-printing-slip');
       }
+      const printMq = window.matchMedia('print');
+      let cleaned = false;
+      let fallbackTimer = 0;
+      const onPrintChange = (e: MediaQueryListEvent) => {
+        if (!e.matches) cleanup();
+      };
       const cleanup = () => {
+        if (cleaned) return;
+        cleaned = true;
+        clearTimeout(fallbackTimer);
         document.body.classList.remove('is-printing-slip');
         printHost?.remove();
         window.removeEventListener('afterprint', cleanup);
+        printMq.removeEventListener('change', onPrintChange);
       };
       window.addEventListener('afterprint', cleanup);
+      printMq.addEventListener('change', onPrintChange);
       d.close();
       window.print();
-      window.setTimeout(cleanup, 1000);
+      fallbackTimer = window.setTimeout(cleanup, 60_000);
       staffSnack('Print dialog opened', SUCCESS);
     });
   }
@@ -658,6 +670,7 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
     else if (act === 'history') {
       showCompleted = !showCompleted;
       publish();
+      if (showCompleted && !isLive) void fetchActive(true);
     } else if (act === 'clear') {
       clearTimeout(searchTimer);
       query = '';
@@ -738,6 +751,10 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
     if (delayChanged) renderBoard();
   }
 
+  const onVisibilityChange = () => {
+    if (!disposed && !document.hidden && !isLive && getStaff()) void fetchActive(true);
+  };
+  document.addEventListener('visibilitychange', onVisibilityChange);
   const onLayout = () => {
     layout = null;
     renderBoard();
@@ -761,6 +778,7 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
     clearInterval(reconnectTimer);
     clearInterval(lookbackTimer);
     clearInterval(clock);
+    document.removeEventListener('visibilitychange', onVisibilityChange);
     wideMq.removeEventListener('change', onLayout);
     root.removeEventListener('click', onRootClick);
   };

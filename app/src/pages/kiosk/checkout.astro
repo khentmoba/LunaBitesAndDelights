@@ -91,7 +91,7 @@ const payments = [tile('pay', 'Cash', 'Cash', 'payments_rounded'), tile('pay', '
         <label class="co-input co-input--area">
           <span class="sr-only">Delivery address</span>
           <span class="icon" aria-hidden="true">{glyph('edit_location_alt')}</span>
-          <textarea name="address" rows="2" placeholder="Address auto-fills from map..." autocomplete="street-address" autocapitalize="sentences" enterkeyhint="next"></textarea>
+          <textarea name="address" rows="2" maxlength="300" placeholder="Address auto-fills from map..." autocomplete="street-address" autocapitalize="sentences" enterkeyhint="next"></textarea>
         </label>
       </div>
 
@@ -395,7 +395,7 @@ async function submit() {
     entryType: statuses.entryType,
     customerName: name,
     customerPhone: phone,
-    customerAddress: address,
+    customerAddress: address.slice(0, 300),
     lat: delivery ? draft.lat : null,
     lng: delivery ? draft.lng : null,
     deliveryFee: 0,
@@ -431,6 +431,8 @@ async function submit() {
       snack('Your order changed since the last attempt. Please tap again to submit.', { color: ERROR, seconds: 6 });
     } else if (errorCode === 'resource-exhausted') {
       snack('Too many orders submitted right now. Please wait a moment and try again.', { color: ERROR, seconds: 6 });
+    } else if (errorCode === 'invalid-argument') {
+      snack('Please check your name, phone number, and delivery address (max 300 characters) and try again.', { color: ERROR, seconds: 6 });
     } else {
       snack('We could not save your order. Please check the connection and try again.', { color: ERROR, seconds: 6 });
     }

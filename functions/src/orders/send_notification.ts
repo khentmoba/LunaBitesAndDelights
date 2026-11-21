@@ -176,7 +176,13 @@ async function sendDeliveryNotification(
   message: string,
   lat: number,
   lng: number,
+  photoAlreadySent = false,
+  onPhotoSent?: () => Promise<void>,
 ): Promise<void> {
+  if (photoAlreadySent) {
+    await sendToAll(message);
+    return;
+  }
   const replyMarkup = {
     inline_keyboard: [[{ text: '📍 Open in Google Maps 🧭', url: getGoogleMapsNavigationUrl(lat, lng) }]],
   };
@@ -193,6 +199,9 @@ async function sendDeliveryNotification(
         const summaryCaption = formatDeliverySummaryCaption(data);
         await sendPhotoToAll(imageBuffer, summaryCaption, { reply_markup: replyMarkup });
         sentSplitPhoto = true;
+        if (onPhotoSent) {
+          await onPhotoSent().catch((e) => logger.warn(`Could not persist photoSent for ${data.orderNumber}`, e));
+        }
       }
     } catch (photoError: any) {
       logger.warn(`Photo delivery failed for ${data.orderNumber}, falling back to text`, photoError);
@@ -298,13 +307,14 @@ export async function notifyOrderOnce(
 
   const nowMs = Date.now();
   const expireAt = Timestamp.fromMillis(nowMs + ORDER_NOTIF_TTL_MS);
-  const claimStatus = await db.runTransaction<ClaimStatus>(async (tx) => {
+  const { status: claimStatus, photoSent } = await db.runTransaction<{ status: ClaimStatus; photoSent: boolean }>(async (tx) => {
     const snap = await tx.get(notifRef);
-    const status = evaluateNotificationClaim(snap.exists ? snap.data() : {}, nowMs);
+    const existing = snap.exists ? snap.data() : {};
+    const status = evaluateNotificationClaim(existing, nowMs);
     if (status === 'claimed') {
       tx.set(notifRef, { telegramStatus: 'sending', telegramClaimedAt: nowMs, expireAt }, { merge: true });
     }
-    return status;
+    return { status, photoSent: existing?.photoSent === true };
   });
 
   if (claimStatus === 'in-flight') {
@@ -320,7 +330,16 @@ export async function notifyOrderOnce(
   logger.info(`Sending order notification for ${data.orderNumber} to Telegram`);
   try {
     if (data.orderType === 'Delivery' && data.lat != null && data.lng != null) {
-      await sendDeliveryNotification(data, message, data.lat, data.lng);
+      await sendDeliveryNotification(
+        data,
+        message,
+        data.lat,
+        data.lng,
+        photoSent,
+        async () => {
+          await notifRef.set({ photoSent: true }, { merge: true });
+        },
+      );
     } else {
       await sendToAll(message);
     }

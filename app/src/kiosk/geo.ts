@@ -42,7 +42,7 @@ export async function reverseGeocode(lat: number, lng: number, signal?: AbortSig
     });
     if (!res.ok) return { full: '', short: '' };
     const data = (await res.json()) as { display_name?: string; address?: Address };
-    return { full: data.display_name ?? `${lat}, ${lng}`, short: shortAddress(data.address) };
+    return { full: (data.display_name ?? `${lat}, ${lng}`).slice(0, 300), short: shortAddress(data.address).slice(0, 300) };
   } catch {
     return { full: '', short: '' };
   }

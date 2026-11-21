@@ -102,7 +102,10 @@ async function verifyPinLogin(db: Firestore, request: CallableRequest, pin: stri
     'Too many failed PIN attempts. Please sign in with username and password.',
   );
 
-  const staffAccounts = await db.collection('staff_accounts').get();
+  const staffAccounts = await db.collection('staff_accounts')
+    .select('pinHash', 'username', 'role')
+    .limit(50)
+    .get();
   const match = await findMatchingPinAccount(
     pin,
     staffAccounts.docs.map((doc) => {
@@ -259,7 +262,10 @@ export const updateStaffPin = onCall(
     throw new HttpsError('permission-denied', 'Invalid current password');
   }
 
-  const allStaff = await db.collection('staff_accounts').get();
+  const allStaff = await db.collection('staff_accounts')
+    .select('pinHash')
+    .limit(50)
+    .get();
   const conflict = await findMatchingPinAccount(
     newPin,
     allStaff.docs

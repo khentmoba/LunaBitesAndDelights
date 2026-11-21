@@ -251,7 +251,7 @@ list.addEventListener('click', (e) => {
   searchAbort?.abort();
   lat = Number.parseFloat(r.lat) || lat;
   lng = Number.parseFloat(r.lon) || lng;
-  address = r.display_name ?? '';
+  address = (r.display_name ?? '').slice(0, 300);
   addressShort = shortAddress(r.address) || address;
   resolvedLat = address ? lat : null;
   resolvedLng = address ? lng : null;
