@@ -150,7 +150,7 @@ function row(item: CartItem): string {
       <div class="stepper">
         <button type="button" data-step="-1" aria-label="One less ${name}"><span class="icon" aria-hidden="true">${glyph('remove_rounded')}</span></button>
         <span class="stepper__qty">${item.quantity}</span>
-        <button type="button" data-step="1" aria-label="One more ${name}"><span class="icon" aria-hidden="true">${glyph('add_rounded')}</span></button>
+        <button type="button" data-step="1" aria-label="One more ${name}"${item.quantity >= 99 ? ' disabled' : ''}><span class="icon" aria-hidden="true">${glyph('add_rounded')}</span></button>
       </div>
     </div>
     <span class="row__price">${peso(item.price * item.quantity)}</span>

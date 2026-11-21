@@ -3,7 +3,11 @@ import { getFirestore } from 'firebase-admin/firestore';
 import { sendToAll, sendPhotoToAll, escapeMd } from '../telegram_api';
 import { telegramToken, telegramChatIds, googleMapsApiKey } from '../secrets';
 import { logger } from 'firebase-functions';
-import { ALNUM_DOC_ID, cleanStr, optStr } from '../util/security';
+import { ALNUM_DOC_ID, cleanStr, clientIpFromRequest, enforceFixedWindowRateLimit } from '../util/security';
+import { isOrderVisibleInKds } from './kds';
+
+const NOTIF_RATE_WINDOW_MS = 10 * 60 * 1000;
+const NOTIF_RATE_MAX = 20;
 
 const ORDER_TYPES = ['Walk-In', 'Pickup', 'Delivery'];
 const MAX_ITEMS = 50;
@@ -320,6 +324,18 @@ export async function notifyOrderOnce(
 export const sendOrderNotification = onCall(
   { secrets: [telegramToken, telegramChatIds, googleMapsApiKey] },
   async (request) => {
+    const role = (request.auth?.token as any)?.role;
+    const isStaff = !!request.auth?.uid && (role === 'staff' || role === 'admin');
+    const clientIp = clientIpFromRequest(request.rawRequest);
+    if (!isStaff && clientIp) {
+      await enforceFixedWindowRateLimit(
+        `notif:send:${clientIp}`,
+        NOTIF_RATE_MAX,
+        NOTIF_RATE_WINDOW_MS,
+        'Too many notification requests. Please try again shortly.',
+      );
+    }
+
     const d = request.data || {};
     const orderDocId =
       typeof d.orderDocId === 'string' && ALNUM_DOC_ID.test(d.orderDocId) ? d.orderDocId : null;
@@ -327,7 +343,6 @@ export const sendOrderNotification = onCall(
       throw new HttpsError('invalid-argument', 'Missing orderDocId');
     }
     const orderNumber = cleanStr(d.orderNumber, 32, 'orderNumber');
-    const timeStr = optStr(d.timeStr, 64);
 
     const orderSnap = await getFirestore().collection('orders').doc(orderDocId).get();
     if (!orderSnap.exists) {
@@ -337,9 +352,13 @@ export const sendOrderNotification = onCall(
     if (orderData.orderId !== orderNumber) {
       throw new HttpsError('permission-denied', 'Order reference mismatch');
     }
+    if (!isOrderVisibleInKds(orderData) || orderData.status === 'Cancelled') {
+      throw new HttpsError('failed-precondition', 'Order is not eligible for kitchen notification');
+    }
 
     try {
-      const result = await notifyOrderOnce(orderDocId, orderData, timeStr);
+      // Ignore caller-supplied timeStr; derive strictly from the stored order timestamp.
+      const result = await notifyOrderOnce(orderDocId, orderData);
       return result.alreadySent ? { success: true, alreadySent: true } : { success: true };
     } catch {
       throw new HttpsError('internal', 'Failed to send Telegram notification');

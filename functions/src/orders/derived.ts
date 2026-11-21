@@ -59,17 +59,36 @@ export const onOrderWritten = onDocumentWritten(
     const after = event.data?.after?.exists ? event.data.after.data() : undefined;
 
     const mirrorRef = db.collection(KDS_COLLECTION).doc(orderId);
+    const eventTimeMs = (() => {
+      const parsed = event.time ? Date.parse(event.time) : NaN;
+      return Number.isFinite(parsed) ? parsed : Date.now();
+    })();
     const mirror = (async () => {
-      if (!after || !isOrderVisibleInKds(after)) return mirrorRef.delete();
-      const next = kdsMirrorDoc(orderId, after);
-      if (
-        before &&
-        isOrderVisibleInKds(before) &&
-        JSON.stringify(kdsMirrorDoc(orderId, before)) === JSON.stringify(next)
-      ) {
+      const shouldExist = Boolean(after && isOrderVisibleInKds(after));
+      if (shouldExist) {
+        const next = kdsMirrorDoc(orderId, after!);
+        if (
+          before &&
+          isOrderVisibleInKds(before) &&
+          JSON.stringify(kdsMirrorDoc(orderId, before)) === JSON.stringify(next)
+        ) {
+          return;
+        }
+        await db.runTransaction(async (tx) => {
+          const snap = await tx.get(mirrorRef);
+          const prevMs = snap.exists ? Number(snap.data()?.sourceEventMs) : 0;
+          if (Number.isFinite(prevMs) && prevMs > eventTimeMs) return;
+          tx.set(mirrorRef, { ...next, sourceEventMs: eventTimeMs });
+        });
         return;
       }
-      return mirrorRef.set(next);
+      await db.runTransaction(async (tx) => {
+        const snap = await tx.get(mirrorRef);
+        if (!snap.exists) return;
+        const prevMs = Number(snap.data()?.sourceEventMs);
+        if (Number.isFinite(prevMs) && prevMs > eventTimeMs) return;
+        tx.delete(mirrorRef);
+      });
     })();
 
     const deltas = dayDeltas(before, after);

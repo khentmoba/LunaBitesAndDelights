@@ -5,7 +5,7 @@ import { logger } from 'firebase-functions';
 import * as crypto from 'crypto';
 import {
   cleanStr, checkRateLimit, recordLoginFailure, clearLoginAttempts,
-  checkWindowBudget, recordWindowFailure, clientIpFromRequest,
+  checkWindowBudget, recordWindowFailure, clientIpFromRequest, enforceFixedWindowRateLimit,
   hashPasswordAsync, verifyPasswordAsync, requireStaff,
 } from '../util/security';
 
@@ -16,6 +16,8 @@ const PIN_VERIFY_CONCURRENCY = 2;
 const GLOBAL_PIN_FAIL_KEY = 'staff:pin_login:global';
 const GLOBAL_PIN_FAIL_MAX = 20;
 const GLOBAL_PIN_WINDOW_MS = 15 * 60 * 1000;
+const PASSWORD_IP_RATE_MAX = 30;
+const PASSWORD_IP_WINDOW_MS = 15 * 60 * 1000;
 let staffSeeded = false;
 
 export interface PinAccountEntry<T = any> {
@@ -129,7 +131,22 @@ async function verifyPinLogin(db: Firestore, request: CallableRequest, pin: stri
   return { success: true, username: accountName, role, customToken };
 }
 
-async function verifyPasswordLogin(db: Firestore, usernameRaw: string | null, password: string | null) {
+async function verifyPasswordLogin(
+  db: Firestore,
+  request: CallableRequest,
+  usernameRaw: string | null,
+  password: string | null,
+) {
+  const clientIp = clientIpFromRequest(request.rawRequest);
+  if (clientIp) {
+    await enforceFixedWindowRateLimit(
+      `staff:pw_ip:${clientIp}`,
+      PASSWORD_IP_RATE_MAX,
+      PASSWORD_IP_WINDOW_MS,
+      'Too many login attempts from this network. Please try again later.',
+    );
+  }
+
   if (!usernameRaw || !password) {
     throw new HttpsError('invalid-argument', GENERIC_FAIL);
   }
@@ -185,7 +202,7 @@ export const verifyStaff = onCall(async (request) => {
   await ensureStaffSeeded(db);
 
   if (pin) return verifyPinLogin(db, request, pin);
-  return verifyPasswordLogin(db, usernameRaw, password);
+  return verifyPasswordLogin(db, request, usernameRaw, password);
 });
 
 export const updateStaffPin = onCall(async (request) => {

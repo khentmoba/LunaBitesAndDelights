@@ -88,15 +88,19 @@ export function validateAndPriceItems(rawItems: unknown): { items: PricedItem[];
     if (quantity < 1) {
       throw new HttpsError('invalid-argument', 'Invalid quantity');
     }
-    const allowed = MENU_PRICES[name];
+    const allowed = Object.prototype.hasOwnProperty.call(MENU_PRICES, name)
+      ? MENU_PRICES[name]
+      : undefined;
     if (!allowed) throw new HttpsError('invalid-argument', `Unknown item: ${name}`);
     const price = Number(i?.price);
     if (!allowed.includes(price)) {
       throw new HttpsError('invalid-argument', `Price mismatch for ${name}`);
     }
-    const variantMap = VARIANT_PRICES[name];
+    const variantMap = Object.prototype.hasOwnProperty.call(VARIANT_PRICES, name)
+      ? VARIANT_PRICES[name]
+      : undefined;
     if (variantMap) {
-      if (!variant || variantMap[variant] === undefined) {
+      if (!variant || !Object.prototype.hasOwnProperty.call(variantMap, variant)) {
         throw new HttpsError('invalid-argument', `Invalid variant for ${name}`);
       }
       if (variantMap[variant] !== price) {
@@ -209,6 +213,8 @@ export const createCheckoutSession = onCall(
       }
 
       const checkout = json.data;
+      let resolvedSessionId = String(checkout.id);
+      let resolvedCheckoutUrl = String(checkout.attributes.checkout_url);
       await getFirestore().runTransaction(async (tx) => {
         const snap = await tx.get(orderRef);
         if (!snap.exists) {
@@ -221,8 +227,30 @@ export const createCheckoutSession = onCall(
         if (current.paymentStatus === 'PAID') {
           throw new HttpsError('failed-precondition', 'Order is already paid');
         }
+        const prevIds: string[] = Array.isArray(current.checkoutSessionIds)
+          ? current.checkoutSessionIds.filter((s: unknown): s is string => typeof s === 'string' && s.length > 0)
+          : (typeof current.checkoutSessionId === 'string' && current.checkoutSessionId.length > 0
+            ? [current.checkoutSessionId]
+            : []);
+        const mergedIds = Array.from(new Set([...prevIds, String(checkout.id)])).slice(-5);
+        if (
+          current.paymentStatus === 'AWAITING_PAYMENT' &&
+          typeof current.checkoutUrl === 'string' &&
+          current.checkoutUrl.length > 0 &&
+          typeof current.checkoutSessionId === 'string' &&
+          current.checkoutSessionId.length > 0 &&
+          typeof current.checkoutCreatedAt === 'number' &&
+          Date.now() - current.checkoutCreatedAt < CHECKOUT_REUSE_MS
+        ) {
+          // Concurrent call won first: keep its URL as primary, but also record this session id so payment still reconciles.
+          resolvedSessionId = current.checkoutSessionId;
+          resolvedCheckoutUrl = current.checkoutUrl;
+          tx.set(orderRef, { checkoutSessionIds: mergedIds }, { merge: true });
+          return;
+        }
         tx.set(orderRef, {
           checkoutSessionId: checkout.id,
+          checkoutSessionIds: mergedIds,
           checkoutUrl: checkout.attributes.checkout_url,
           checkoutCreatedAt: Date.now(),
           paymentMethod: 'GCash',
@@ -232,9 +260,9 @@ export const createCheckoutSession = onCall(
         }, { merge: true });
       });
 
-      logger.info(`Checkout session created for order ${orderId}: ${checkout.id}`);
+      logger.info(`Checkout session resolved for order ${orderId}: ${resolvedSessionId}`);
       // #17: only what the client needs to redirect.
-      return { success: true, checkoutUrl: checkout.attributes.checkout_url, checkoutSessionId: checkout.id };
+      return { success: true, checkoutUrl: resolvedCheckoutUrl, checkoutSessionId: resolvedSessionId };
     } catch (error: any) {
       if (error instanceof HttpsError) throw error;
       logger.error('Error creating PayMongo checkout:', error);

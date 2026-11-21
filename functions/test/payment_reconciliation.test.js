@@ -9,11 +9,14 @@ const {
   paidPaymentAmountCentavos,
   hasFailedPayment,
   firstPaymentId,
+  fetchCheckoutSessionDetailed,
 } = require('../lib/payments/paymongo');
 const { hasMatchingCheckoutSession } = require('../lib/payments/verify_payment');
-const { isOrderVisibleInKds, toIsoTimestamp, clampOrdersLimit } = require('../lib/orders/kds');
+const { isOrderVisibleInKds, toIsoTimestamp, clampOrdersLimit, isAllowedStatusTransition } = require('../lib/orders/kds');
 const { kdsMirrorDoc, shouldNotifyKitchen } = require('../lib/orders/derived');
 const { idempotentOrderDocId } = require('../lib/orders/place_order');
+const { safeDateLabel } = require('../lib/reporting/daily_stats');
+const { validateAndPriceItems } = require('../lib/payments/create_checkout');
 
 // A paid session must land on the order document the kiosk wrote. PayMongo
 // echoes our metadata back on the webhook, so the document id travels there
@@ -250,4 +253,55 @@ test('idempotentOrderDocId produces stable alphanumeric Firestore doc IDs', () =
   assert.strictEqual(a, b);
   assert.notStrictEqual(a, c);
   assert.match(a, /^[A-Za-z0-9]{1,64}$/);
+});
+
+test('validateAndPriceItems rejects prototype keys cleanly with invalid-argument', () => {
+  assert.throws(
+    () => validateAndPriceItems([{ name: 'toString', price: 0, quantity: 1 }]),
+    (err) => err && err.code === 'invalid-argument',
+  );
+  assert.throws(
+    () => validateAndPriceItems([{ name: 'constructor', price: 0, quantity: 1 }]),
+    (err) => err && err.code === 'invalid-argument',
+  );
+});
+
+test('hasMatchingCheckoutSession reconciles both primary and historical checkoutSessionIds', () => {
+  const order = { checkoutSessionId: 'cs_latest', checkoutSessionIds: ['cs_first', 'cs_latest'] };
+  assert.strictEqual(hasMatchingCheckoutSession(order, 'cs_latest'), true);
+  assert.strictEqual(hasMatchingCheckoutSession(order, 'cs_first'), true);
+  assert.strictEqual(hasMatchingCheckoutSession(order, 'cs_other'), false);
+});
+
+test('fetchCheckoutSessionDetailed distinguishes 404 from transient 5xx errors', async () => {
+  const origFetch = global.fetch;
+  try {
+    global.fetch = async () => ({ ok: false, status: 404, json: async () => ({}) });
+    const notFound = await fetchCheckoutSessionDetailed('cs_missing', 'auth');
+    assert.strictEqual(notFound.status, 'not_found');
+
+    global.fetch = async () => ({ ok: false, status: 503, json: async () => ({}) });
+    const transient = await fetchCheckoutSessionDetailed('cs_err', 'auth');
+    assert.strictEqual(transient.status, 'transient_error');
+  } finally {
+    global.fetch = origFetch;
+  }
+});
+
+test('isAllowedStatusTransition blocks illegal terminal transitions', () => {
+  assert.strictEqual(isAllowedStatusTransition('Pending', 'Preparing'), true);
+  assert.strictEqual(isAllowedStatusTransition('Preparing', 'Ready'), true);
+  assert.strictEqual(isAllowedStatusTransition('Ready', 'Completed'), true);
+  assert.strictEqual(isAllowedStatusTransition('Pending', 'Cancelled'), true);
+  assert.strictEqual(isAllowedStatusTransition('Cancelled', 'Pending'), false);
+  assert.strictEqual(isAllowedStatusTransition('Completed', 'Cancelled'), false);
+  assert.strictEqual(isAllowedStatusTransition('Completed', 'Completed'), true);
+  assert.strictEqual(isAllowedStatusTransition('Cancelled', 'Cancelled'), true);
+});
+
+test('safeDateLabel rejects slash/malformed dateLabels to avoid Firestore path errors', () => {
+  assert.strictEqual(safeDateLabel('2026-11-21'), '2026-11-21');
+  assert.strictEqual(safeDateLabel('2026/11/21'), 'unknown');
+  assert.strictEqual(safeDateLabel('../bad'), 'unknown');
+  assert.strictEqual(safeDateLabel(undefined), 'unknown');
 });

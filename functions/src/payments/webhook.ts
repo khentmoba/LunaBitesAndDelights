@@ -6,7 +6,7 @@ import { paymongoSecret, telegramToken, telegramChatIds } from '../secrets';
 import { clientIpFromRequest, enforceFixedWindowRateLimit } from '../util/security';
 import {
   paymongoAuthHeader,
-  fetchCheckoutSession,
+  fetchCheckoutSessionDetailed,
   resolveOrderDocId,
   hasPaidPayment,
   paidPaymentAmountCentavos,
@@ -101,12 +101,18 @@ export const paymongoWebhook = onRequest(
       }
 
       if (event.type === 'checkout_session.payment.paid') {
-        const session = await fetchCheckoutSession(sessionId, paymongoAuthHeader(true));
-        if (!session) {
+        const fetched = await fetchCheckoutSessionDetailed(sessionId, paymongoAuthHeader(true));
+        if (fetched.status === 'not_found') {
+          logger.warn(`PayMongo session ${sessionId} not found — ignoring webhook`);
+          res.status(200).send('OK');
+          return;
+        }
+        if (fetched.status !== 'ok') {
           logger.error(`Transient failure fetching PayMongo session ${sessionId}`);
           res.status(500).send('Retry');
           return;
         }
+        const session = fetched.session;
         if (!hasPaidPayment(session.payments)) {
           logger.warn(`Webhook for ${sessionId} failed API verification — ignored`);
           res.status(200).send('OK');
@@ -133,12 +139,18 @@ export const paymongoWebhook = onRequest(
       }
 
       if (event.type === 'checkout_session.payment.failed') {
-        const session = await fetchCheckoutSession(sessionId, paymongoAuthHeader(true));
-        if (!session) {
+        const fetched = await fetchCheckoutSessionDetailed(sessionId, paymongoAuthHeader(true));
+        if (fetched.status === 'not_found') {
+          logger.warn(`PayMongo session ${sessionId} not found — ignoring payment.failed webhook`);
+          res.status(200).send('OK');
+          return;
+        }
+        if (fetched.status !== 'ok') {
           logger.error(`Transient failure fetching PayMongo session ${sessionId}`);
           res.status(500).send('Retry');
           return;
         }
+        const session = fetched.session;
         if (!hasFailedPayment(session.payments)) {
           logger.warn(`Webhook payment.failed for ${sessionId} failed API verification — ignored`);
           res.status(200).send('OK');

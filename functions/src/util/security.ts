@@ -1,5 +1,5 @@
 import { HttpsError, CallableRequest } from 'firebase-functions/v2/https';
-import { getFirestore, FieldValue } from 'firebase-admin/firestore';
+import { getFirestore, FieldValue, Timestamp } from 'firebase-admin/firestore';
 import * as crypto from 'crypto';
 import { promisify } from 'util';
 
@@ -8,6 +8,8 @@ const scryptAsync = promisify(crypto.scrypt);
 /** Max allowed failed logins before lockout, and lockout duration. */
 const MAX_ATTEMPTS = 5;
 const LOCKOUT_MS = 15 * 60 * 1000;
+const LOGIN_ATTEMPT_TTL_MS = 24 * 60 * 60 * 1000;
+const MIN_RATE_LIMIT_TTL_MS = 60 * 60 * 1000;
 
 /**
  * Requires a signed-in staff/admin user (Firebase Auth custom claims set by
@@ -89,14 +91,16 @@ export async function checkRateLimit(key: string): Promise<void> {
 export async function recordLoginFailure(key: string): Promise<void> {
   const db = getFirestore();
   const ref = db.collection('login_attempts').doc(hashToken(key));
+  const now = Date.now();
   await db.runTransaction(async (tx) => {
     const snap = await tx.get(ref);
     const fails = (snap.data()?.fails || 0) + 1;
     tx.set(ref, {
       fails,
       updatedAt: FieldValue.serverTimestamp(),
+      expireAt: Timestamp.fromMillis(now + LOGIN_ATTEMPT_TTL_MS),
       ...(fails >= MAX_ATTEMPTS
-        ? { lockedUntil: new Date(Date.now() + LOCKOUT_MS) }
+        ? { lockedUntil: new Date(now + LOCKOUT_MS) }
         : {}),
     }, { merge: true });
   });
@@ -126,6 +130,7 @@ export async function enforceFixedWindowRateLimit(
   const db = getFirestore();
   const ref = db.collection('rate_limits').doc(hashToken(key));
   const now = Date.now();
+  const ttlMs = Math.max(windowMs * 2, MIN_RATE_LIMIT_TTL_MS);
   await db.runTransaction(async (tx) => {
     const snap = await tx.get(ref);
     const d = snap.exists ? snap.data()! : null;
@@ -135,13 +140,18 @@ export async function enforceFixedWindowRateLimit(
       if (count >= maxRequests) {
         throw new HttpsError('resource-exhausted', message);
       }
-      tx.set(ref, { count: count + 1, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+      tx.set(ref, {
+        count: count + 1,
+        updatedAt: FieldValue.serverTimestamp(),
+        expireAt: Timestamp.fromMillis(windowStart + ttlMs),
+      }, { merge: true });
       return;
     }
     tx.set(ref, {
       count: 1,
       windowStart: now,
       updatedAt: FieldValue.serverTimestamp(),
+      expireAt: Timestamp.fromMillis(now + ttlMs),
     });
   });
 }
@@ -170,19 +180,25 @@ export async function recordWindowFailure(key: string, windowMs: number): Promis
   const db = getFirestore();
   const ref = db.collection('rate_limits').doc(hashToken(key));
   const now = Date.now();
+  const ttlMs = Math.max(windowMs * 2, MIN_RATE_LIMIT_TTL_MS);
   await db.runTransaction(async (tx) => {
     const snap = await tx.get(ref);
     const d = snap.exists ? snap.data()! : null;
     const windowStart = typeof d?.windowStart === 'number' ? d.windowStart : 0;
     const count = typeof d?.count === 'number' ? d.count : 0;
     if (d && now - windowStart < windowMs) {
-      tx.set(ref, { count: count + 1, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+      tx.set(ref, {
+        count: count + 1,
+        updatedAt: FieldValue.serverTimestamp(),
+        expireAt: Timestamp.fromMillis(windowStart + ttlMs),
+      }, { merge: true });
       return;
     }
     tx.set(ref, {
       count: 1,
       windowStart: now,
       updatedAt: FieldValue.serverTimestamp(),
+      expireAt: Timestamp.fromMillis(now + ttlMs),
     });
   });
 }

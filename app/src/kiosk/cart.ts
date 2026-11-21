@@ -13,6 +13,9 @@ export interface CartItem {
 
 const KEY = 'luna.cart';
 const EVENT = 'luna:cart';
+export const MAX_ITEM_QTY = 99;
+
+const clampQty = (q: number): number => Math.max(1, Math.min(MAX_ITEM_QTY, Math.trunc(q) || 1));
 
 function isValidCartItem(v: unknown): v is CartItem {
   if (!v || typeof v !== 'object') return false;
@@ -56,12 +59,12 @@ export const cart = {
   totalCount: (): number => items().reduce((s, i) => s + i.quantity, 0),
   totalPrice: (): number => items().reduce((s, i) => s + i.price * i.quantity, 0),
 
-  /** Same name and variant adds to the existing line. */
+  /** Same name and variant adds to the existing line (capped at MAX_ITEM_QTY). */
   add(item: CartItem): void {
     const next = items().map((i) => ({ ...i }));
     const existing = next.find((c) => c.name === item.name && c.variant === item.variant);
-    if (existing) existing.quantity += item.quantity;
-    else next.push({ ...item });
+    if (existing) existing.quantity = clampQty(existing.quantity + item.quantity);
+    else next.push({ ...item, quantity: clampQty(item.quantity) });
     write(next);
   },
 
@@ -70,7 +73,7 @@ export const cart = {
   },
 
   increment(id: string): void {
-    write(items().map((c) => (c.id === id ? { ...c, quantity: c.quantity + 1 } : c)));
+    write(items().map((c) => (c.id === id ? { ...c, quantity: clampQty(c.quantity + 1) } : c)));
   },
 
   decrement(id: string): void {

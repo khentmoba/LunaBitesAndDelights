@@ -395,6 +395,7 @@ function openSheet(item: MenuItem): Promise<void> {
     $('[data-qty]', sheet).textContent = String(qty);
     $('[data-qty]', sheet).setAttribute('aria-label', `Quantity ${qty}`);
     $<HTMLButtonElement>('[data-dec]', sheet).disabled = qty <= 1;
+    $<HTMLButtonElement>('[data-inc]', sheet).disabled = qty >= 99;
     const add = $<HTMLButtonElement>('[data-add]', sheet);
     add.disabled = !canAdd();
     add.textContent = `Add to order · ${peso(price() * qty)}`;
@@ -409,7 +410,7 @@ function openSheet(item: MenuItem): Promise<void> {
     render();
   });
   $('[data-dec]', sheet).addEventListener('click', () => { if (qty > 1) qty--; render(); });
-  $('[data-inc]', sheet).addEventListener('click', () => { qty++; render(); });
+  $('[data-inc]', sheet).addEventListener('click', () => { if (qty < 99) qty++; render(); });
   $('[data-close]', sheet).addEventListener('click', () => sheet.close());
   $('[data-add]', sheet).addEventListener('click', () => {
     if (!canAdd()) return;
