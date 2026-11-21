@@ -226,14 +226,14 @@ test('hasPaidPaymentForAmount rejects partial or missing payment amounts', () =>
   assert.strictEqual(hasPaidPaymentForAmount([{ id: 'pay_3', attributes: { status: 'paid' } }], 500), false);
 });
 
-test('verifyPaymongoSignature still enforces header format and timestamp window when secret is unset', () => {
+test('verifyPaymongoSignature fails closed when webhook secret is unset', () => {
   const nowSec = 1700000050;
   assert.strictEqual(verifyPaymongoSignature('not-a-valid-header', '{}', undefined, nowSec), false);
-  assert.strictEqual(verifyPaymongoSignature(`t=1700000000,li=${'a'.repeat(64)}`, '{}', undefined, nowSec), true);
-  assert.strictEqual(verifyPaymongoSignature(`t=1700000000,li=${'a'.repeat(64)}`, '{}', undefined, 1700000500), false);
+  assert.strictEqual(verifyPaymongoSignature(`t=1700000000,li=${'a'.repeat(64)}`, '{}', undefined, nowSec), false);
+  assert.strictEqual(verifyPaymongoSignature(`t=1700000000,li=${'a'.repeat(64)}`, '{}', '', nowSec), false);
 });
 
-test('shouldNotifyKitchen holds unpaid GCash orders until payment confirms', () => {
+test('shouldNotifyKitchen holds unpaid GCash orders and skips cancelled orders', () => {
   assert.strictEqual(shouldNotifyKitchen(undefined, { paymentMethod: 'Cash', paymentStatus: 'NOT PAID' }), true);
   assert.strictEqual(shouldNotifyKitchen(undefined, { paymentMethod: 'GCash', paymentStatus: 'AWAITING_PAYMENT' }), false);
   assert.strictEqual(
@@ -245,10 +245,32 @@ test('shouldNotifyKitchen holds unpaid GCash orders until payment confirms', () 
   );
   assert.strictEqual(
     shouldNotifyKitchen(
+      { paymentMethod: 'GCash', paymentStatus: 'AWAITING_PAYMENT', status: 'Cancelled' },
+      { paymentMethod: 'GCash', paymentStatus: 'PAID', status: 'Cancelled' },
+    ),
+    false,
+  );
+  assert.strictEqual(
+    shouldNotifyKitchen(
       { paymentMethod: 'GCash', paymentStatus: 'PAID' },
       { paymentMethod: 'GCash', paymentStatus: 'PAID', status: 'Preparing' },
     ),
     false,
+  );
+});
+
+test('validateAndPriceItems rejects downgraded prices on single-price coolers', () => {
+  assert.throws(
+    () => validateAndPriceItems([{ name: 'Leche Flan', variant: '', price: 20, quantity: 1 }]),
+    /Price mismatch/,
+  );
+  assert.strictEqual(
+    validateAndPriceItems([{ name: 'Leche Flan', variant: '', price: 39, quantity: 1 }]).total,
+    39,
+  );
+  assert.strictEqual(
+    validateAndPriceItems([{ name: 'Luna Leche Flan', variant: '', price: 20, quantity: 1 }]).total,
+    20,
   );
 });
 

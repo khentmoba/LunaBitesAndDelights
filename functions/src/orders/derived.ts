@@ -30,7 +30,12 @@ export function shouldNotifyKitchen(
   before: FirebaseFirestore.DocumentData | undefined,
   after: FirebaseFirestore.DocumentData | undefined,
 ): boolean {
-  return Boolean(after && isOrderVisibleInKds(after) && (!before || !isOrderVisibleInKds(before)));
+  return Boolean(
+    after &&
+    after.status !== 'Cancelled' &&
+    isOrderVisibleInKds(after) &&
+    (!before || !isOrderVisibleInKds(before)),
+  );
 }
 
 function hasTelegramConfig(): boolean {

@@ -113,6 +113,7 @@ test('staff service worker serves immutable assets cache-first and navigations n
   const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
   const sw = readFileSync(join(root, 'app/public/staff/sw.js'), 'utf8');
   assert.match(sw, /const immutable\s*=.*\/_astro\/.*\/kiosk\/fonts\//);
-  assert.match(sw, /if \(immutable\)\s*\{[\s\S]*caches\.match\(req\)/);
+  assert.match(sw, /caches\.open\(CACHE\)\.then\(\(c\) => c\.match\(req\)\)/);
+  assert.match(sw, /if \(immutable\)\s*\{[\s\S]*matchCache\(req\)/);
   assert.match(sw, /req\.mode === 'navigate'/);
 });

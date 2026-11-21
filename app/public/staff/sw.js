@@ -26,6 +26,10 @@ async function cacheAndPrune(req, res) {
   }
 }
 
+function matchCache(req) {
+  return caches.open(CACHE).then((c) => c.match(req));
+}
+
 self.addEventListener('fetch', (event) => {
   const req = event.request;
   const url = new URL(req.url);
@@ -33,7 +37,7 @@ self.addEventListener('fetch', (event) => {
   const immutable = url.pathname.startsWith('/_astro/') || url.pathname.startsWith('/kiosk/fonts/');
   if (immutable) {
     event.respondWith(
-      caches.match(req).then((hit) => {
+      matchCache(req).then((hit) => {
         if (hit) return hit;
         return fetch(req).then((res) => {
           if (res.ok) {
@@ -57,6 +61,6 @@ self.addEventListener('fetch', (event) => {
         }
         return res;
       })
-      .catch(() => caches.match(req).then((hit) => hit ?? Response.error())),
+      .catch(() => matchCache(req).then((hit) => hit ?? Response.error())),
   );
 });

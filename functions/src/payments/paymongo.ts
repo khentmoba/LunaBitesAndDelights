@@ -195,25 +195,31 @@ export async function markOrderPaidOnce(
       }
     }
     transitioned = true;
-    tx.set(orderRef, {
+    const paidFields: Record<string, any> = {
       paymentStatus: 'PAID',
       paymongoPaymentId: String(paymentId).slice(0, 128),
       paidAt: new Date().toISOString(),
-    }, { merge: true });
+    };
+    if (data.status === 'Cancelled') {
+      paidFields.paidAfterCancel = true;
+    }
+    tx.set(orderRef, paidFields, { merge: true });
   });
 
   if (transitioned && orderData) {
     const data = orderData as Record<string, any>;
     const paidAtPht = new Date().toLocaleString('en-PH', { timeZone: 'Asia/Manila' });
+    const wasCancelled = data.status === 'Cancelled';
     try {
       await sendToAll([
-        `✅ *PAYMENT CONFIRMED*`,
+        wasCancelled ? `⚠️ *PAYMENT RECEIVED FOR CANCELLED ORDER*` : `✅ *PAYMENT CONFIRMED*`,
         `📄 *Order:* ${escapeMd(String(data.orderId || fallbackOrderLabel || orderRef.id))}`,
         `👤 *Customer:* ${escapeMd(String(data.customerName || ''))}`,
         `💰 *Amount:* \u20B1${escapeMd(String(data.totalAmount || 0))}`,
         `💳 *Payment:* GCash via PayMongo`,
         `📦 *Type:* ${escapeMd(String(data.type || ''))}`,
         `🕐 *Paid at:* ${escapeMd(paidAtPht)}`,
+        ...(wasCancelled ? [`🚨 *Action needed:* Order was already Cancelled — do not prepare; review for refund.`] : []),
       ].join('\n'));
     } catch (notifErr) {
       logger.error('Failed to send payment confirmation to Telegram:', notifErr);

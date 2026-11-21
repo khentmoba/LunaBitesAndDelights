@@ -82,7 +82,7 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
   // ---- data ----
 
   function publish() {
-    const all = isLive && live !== null ? mergeKdsOrders(live, []) : mergeKdsOrders(live ?? [], polled);
+    const all = mergeKdsOrders(live ?? [], polled);
     const visible = showCompleted ? all : all.filter((o) => !isClosedKdsStatus(o.status));
     const activeIds = new Set(all.map((o) => String(o.id ?? '')));
     for (const key of checked) {
@@ -628,7 +628,10 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
     if (!t || t.hasAttribute('disabled')) return;
     const act = t.dataset.act;
     if (act === 'back') history.back();
-    else if (act === 'sync') void fetchActive();
+    else if (act === 'sync') {
+      void fetchActive();
+      if (!unsub && !connecting) void startLiveListener();
+    }
     else if (act === 'sound') toggleSound();
     else if (act === 'exit') exit();
     else if (act === 'menu') openMenu(t);

@@ -182,7 +182,7 @@ if (!pending) {
   document.querySelectorAll('[data-cancel]').forEach((b) => b.addEventListener('click', cancel));
   $('[data-open]').addEventListener('click', openPayment);
   $('[data-paid]').addEventListener('click', () => void verify(pending));
-  watchInactivity(5 * 60 * 1000);
+  watchInactivity(5 * 60 * 1000, { pauseWhenHidden: true });
   void start(pending);
 }
 </script>

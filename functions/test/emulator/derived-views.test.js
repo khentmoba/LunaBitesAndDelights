@@ -117,13 +117,19 @@ test('backfill rebuilds dailyStats and the mirror from orders alone', async () =
   for (const c of ['dailyStats', 'kds_orders']) {
     for (const d of (await db.collection(c).get()).docs) await d.ref.delete();
   }
+  await db.doc('orders/unpaid_gcash').set(order({ orderId: 'LU-UNPAID', paymentMethod: 'GCash', paymentStatus: 'AWAITING_PAYMENT' }));
   await db.doc('dailyStats/2020-01-01').set({ date: '2020-01-01', orders: 9, revenue: 999 }); // stale junk
   const dry = await backfill(db, { log: () => {} });
   assert.strictEqual((await db.doc('dailyStats/2020-01-01').get()).get('orders'), 9, 'dry run writes nothing');
   assert.strictEqual(dry.staleDailyStatsDeleted, 1);
   await backfill(db, { apply: true, log: () => {} });
   assert.ok(!(await db.doc('dailyStats/2020-01-01').get()).exists, 'stale day removed');
-  assert.ok((await db.doc('kds_orders/c').get()).exists, 'recent order mirrored');
+  const mirrored = await db.doc('kds_orders/c').get();
+  assert.ok(mirrored.exists, 'recent order mirrored');
+  assert.ok(mirrored.get('expireAt') instanceof Timestamp, 'backfilled mirror sets expireAt TTL');
+  assert.strictEqual(typeof mirrored.get('sourceEventMs'), 'number', 'backfilled mirror sets sourceEventMs');
+  assert.ok(!(await db.doc('kds_orders/unpaid_gcash').get()).exists, 'unpaid GCash order excluded from backfilled mirror');
+  await db.doc('orders/unpaid_gcash').delete();
   const after = await call('getLifetimeSalesReport', {});
   assert.deepStrictEqual(after, before);
 });

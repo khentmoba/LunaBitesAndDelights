@@ -228,7 +228,9 @@ export const verifyStaff = onCall(
   return verifyPasswordLogin(db, request, usernameRaw, password);
 });
 
-export const updateStaffPin = onCall(async (request) => {
+export const updateStaffPin = onCall(
+  { memory: '512MiB', concurrency: 10 },
+  async (request) => {
   const uid = requireStaff(request);
   const updateRateKey = `staff:pin_update:${uid}`;
   await checkRateLimit(updateRateKey);
