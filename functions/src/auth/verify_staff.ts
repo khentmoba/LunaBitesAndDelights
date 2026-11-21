@@ -137,15 +137,13 @@ async function verifyPasswordLogin(
   usernameRaw: string | null,
   password: string | null,
 ) {
-  const clientIp = clientIpFromRequest(request.rawRequest);
-  if (clientIp) {
-    await enforceFixedWindowRateLimit(
-      `staff:pw_ip:${clientIp}`,
-      PASSWORD_IP_RATE_MAX,
-      PASSWORD_IP_WINDOW_MS,
-      'Too many login attempts from this network. Please try again later.',
-    );
-  }
+  const clientIp = clientIpFromRequest(request.rawRequest) || 'unknown';
+  await enforceFixedWindowRateLimit(
+    `staff:pw_ip:${clientIp}`,
+    PASSWORD_IP_RATE_MAX,
+    PASSWORD_IP_WINDOW_MS,
+    'Too many login attempts from this network. Please try again later.',
+  );
 
   if (!usernameRaw || !password) {
     throw new HttpsError('invalid-argument', GENERIC_FAIL);
@@ -154,7 +152,7 @@ async function verifyPasswordLogin(
   const username = cleanStr(usernameRaw, 64, 'username');
   if (!/^[a-z0-9._-]{2,64}$/.test(username)) throw new HttpsError('invalid-argument', GENERIC_FAIL);
 
-  const rateKey = `staff:${username}`;
+  const rateKey = `staff:${username}:${clientIp}`;
   await checkRateLimit(rateKey);
   const fail = async () => {
     await recordLoginFailure(rateKey);

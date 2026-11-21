@@ -186,10 +186,15 @@ export async function placeOrder(
   order: Order,
   timeStr: string,
   idempotencyKey?: string,
-): Promise<{ docId: string | null; telegramSent: boolean }> {
+): Promise<{ docId: string | null; telegramSent: boolean; orderId?: string; totalAmount?: number }> {
   const { firebaseDbLite, callFn } = await import('./firebase');
   try {
-    const res = await callFn<{ success?: boolean; docId?: string }>('placeOrder', {
+    const res = await callFn<{
+      success?: boolean;
+      docId?: string;
+      orderId?: string;
+      totalAmount?: number;
+    }>('placeOrder', {
       orderId: order.orderId,
       items: order.items,
       type: order.type,
@@ -203,8 +208,16 @@ export async function placeOrder(
       ...(idempotencyKey ? { idempotencyKey } : {}),
     });
     if (res.success === true && typeof res.docId === 'string' && res.docId) {
-      return { docId: res.docId, telegramSent: true };
+      return {
+        docId: res.docId,
+        telegramSent: true,
+        orderId: typeof res.orderId === 'string' && res.orderId ? res.orderId : order.orderId,
+        totalAmount: typeof res.totalAmount === 'number' && Number.isFinite(res.totalAmount)
+          ? res.totalAmount
+          : order.totalAmount,
+      };
     }
+    return { docId: null, telegramSent: false };
   } catch (e: unknown) {
     const code = typeof (e as { code?: unknown })?.code === 'string'
       ? String((e as { code?: unknown }).code).replace(/^functions\//, '')

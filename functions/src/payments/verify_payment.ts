@@ -31,8 +31,8 @@ export const verifyCheckoutPayment = onCall(
   async (request) => {
     const role = (request.auth?.token as any)?.role;
     const isStaff = !!request.auth?.uid && (role === 'staff' || role === 'admin');
-    const clientIp = clientIpFromRequest(request.rawRequest);
-    if (!isStaff && clientIp) {
+    const clientIp = clientIpFromRequest(request.rawRequest) || 'unknown';
+    if (!isStaff) {
       await enforceFixedWindowRateLimit(
         `checkout:verify:${clientIp}`,
         VERIFY_RATE_MAX,

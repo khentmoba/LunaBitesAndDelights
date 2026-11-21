@@ -59,6 +59,7 @@ export function mountDashboard(root: HTMLElement, getStaff: () => Staff | null):
   let error: string | null = null;
   let stats: { revenue: number; count: number; avg: number; items: number } = { revenue: 0, count: 0, avg: 0, items: 0 };
   let orders: Tile[] = [];
+  let allOrders: Tile[] | null = null;
   let disposed = false;
   let fetchSeq = 0;
 
@@ -70,11 +71,12 @@ export function mountDashboard(root: HTMLElement, getStaff: () => Staff | null):
     const seq = ++fetchSeq;
     loading = true;
     error = null;
+    allOrders = null;
     render();
     try {
       const [analytics, res] = await Promise.all([
         callFn<Record<string, unknown>>('getSalesAnalytics'),
-        callFn<{ success?: boolean; orders?: Record<string, unknown>[] }>('getActiveOrders', { includeCompleted: true, limit: 50 }),
+        callFn<{ success?: boolean; orders?: Record<string, unknown>[] }>('getActiveOrders', { includeCompleted: true, limit: 10 }),
       ]);
       if (disposed || seq !== fetchSeq) return;
       const raw = res.orders ?? [];
@@ -163,17 +165,33 @@ ${
     diagonals(el);
   }
 
-  function showSheet() {
+  async function showSheet() {
     if (!orders.length) {
       snack('No orders yet today.', { color: 'var(--plate)', seconds: 4 });
       return;
     }
+    let list = allOrders ?? orders;
+    if (allOrders === null && orders.length >= 10) {
+      try {
+        const res = await callFn<{ success?: boolean; orders?: Record<string, unknown>[] }>('getActiveOrders', {
+          includeCompleted: true,
+          limit: 50,
+        });
+        if (disposed) return;
+        if (res.success === true && Array.isArray(res.orders)) {
+          allOrders = res.orders.map(tileFrom);
+          list = allOrders;
+        }
+      } catch {
+        // Fall back to the already-loaded recent orders if the expanded fetch fails.
+      }
+    }
     const d = showDialog(
       `<div class="osheet__panel">
   <span class="osheet__handle"></span>
-  <div class="osheet__head"><h2 class="osheet__title" id="osheet-title">All orders</h2><span class="osheet__count">${orders.length} total</span></div>
+  <div class="osheet__head"><h2 class="osheet__title" id="osheet-title">All orders</h2><span class="osheet__count">${list.length} total</span></div>
   <hr class="kdivider">
-  <div class="osheet__list">${orders.map(orderTile).join('')}</div>
+  <div class="osheet__list">${list.map(orderTile).join('')}</div>
 </div>`,
       'osheet',
     );
@@ -190,7 +208,7 @@ ${
       cart.clear();
       void logout().then(() => go('/'));
     } else if (act === 'analytics') go('/staff/analytics');
-    else if (act === 'history') showSheet();
+    else if (act === 'history') void showSheet();
     else if (act === 'walkin') go('/kiosk/menu');
     else if (act === 'kds') go('/staff/kds');
   });

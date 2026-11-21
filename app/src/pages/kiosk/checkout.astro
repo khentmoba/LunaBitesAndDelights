@@ -377,12 +377,12 @@ async function submit() {
   loading = true;
   renderForm();
 
-  const total = cart.totalPrice();
+  let total = cart.totalPrice();
   const now = new Date();
   const timeStr = localStamp(now);
   const statuses = statusesFor(isStaff, draft.paymentMethod);
   let docId = draft.pendingDocId;
-  const orderNumber = draft.pendingNumber ?? orderNumberFor(now);
+  let orderNumber = draft.pendingNumber ?? orderNumberFor(now);
   let telegramSent = true;
 
   const order: Order = {
@@ -413,6 +413,8 @@ async function submit() {
     const result = await placeOrder(order, timeStr, draft.idempotencyKey);
     docId = result.docId;
     telegramSent = result.telegramSent;
+    if (result.orderId) orderNumber = result.orderId;
+    if (typeof result.totalAmount === 'number') total = result.totalAmount;
   }
 
   loading = false;

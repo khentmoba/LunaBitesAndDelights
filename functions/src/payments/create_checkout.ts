@@ -126,8 +126,8 @@ export const createCheckoutSession = onCall(
 
     const role = (request.auth?.token as any)?.role;
     const isStaff = !!request.auth?.uid && (role === 'staff' || role === 'admin');
-    const clientIp = clientIpFromRequest(request.rawRequest);
-    if (!isStaff && clientIp) {
+    const clientIp = clientIpFromRequest(request.rawRequest) || 'unknown';
+    if (!isStaff) {
       await enforceFixedWindowRateLimit(
         `checkout:create:${clientIp}`,
         CHECKOUT_RATE_MAX,
@@ -140,6 +140,9 @@ export const createCheckoutSession = onCall(
     const { orderRef, orderData } = await requireOrderDoc(orderDocId);
     if (orderData.orderId !== orderId) {
       throw new HttpsError('permission-denied', 'Order reference mismatch');
+    }
+    if (String(orderData.paymentMethod || '').toLowerCase() !== 'gcash') {
+      throw new HttpsError('failed-precondition', 'Checkout session is only available for GCash orders');
     }
     if (orderData.status === 'Cancelled') {
       throw new HttpsError('failed-precondition', 'Order is cancelled');
@@ -198,8 +201,8 @@ export const createCheckoutSession = onCall(
               metadata: {
                 order_id: orderId,
                 order_doc_id: orderDocId,
-                customer_name: customerName,
-                customer_phone: customerPhone,
+                customer_name: String(orderData.customerName || customerName || ''),
+                customer_phone: String(orderData.customerPhone || customerPhone || ''),
               },
             },
           },
@@ -221,6 +224,9 @@ export const createCheckoutSession = onCall(
           throw new HttpsError('not-found', 'Order not found');
         }
         const current = snap.data()!;
+        if (String(current.paymentMethod || '').toLowerCase() !== 'gcash') {
+          throw new HttpsError('failed-precondition', 'Checkout session is only available for GCash orders');
+        }
         if (current.status === 'Cancelled') {
           throw new HttpsError('failed-precondition', 'Order is cancelled');
         }

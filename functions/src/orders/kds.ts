@@ -44,9 +44,9 @@ export function toIsoTimestamp(raw: unknown): string {
 
 /** Excludes unpaid/failed online GCash checkouts from the kitchen display until payment clears. */
 export function isOrderVisibleInKds(d: FirebaseFirestore.DocumentData): boolean {
-  const method = String(d.paymentMethod || '');
+  const method = String(d.paymentMethod || '').toLowerCase();
   const status = String(d.paymentStatus || '');
-  return !(method === 'GCash' && (status === 'AWAITING_PAYMENT' || status === 'PAYMENT_FAILED'));
+  return !(method === 'gcash' && (status === 'AWAITING_PAYMENT' || status === 'PAYMENT_FAILED'));
 }
 
 const itemQty = (i: any): number => Number(i?.quantity) || Number(i?.qty) || 0;

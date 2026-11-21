@@ -2,7 +2,11 @@ const test = require('node:test');
 const assert = require('node:assert');
 const crypto = require('node:crypto');
 
-const { resolveOrderDocId, verifyPaymongoSignature } = require('../lib/payments/webhook');
+const {
+  resolveOrderDocId,
+  verifyPaymongoSignature,
+  extractPaymongoWebhookEvent,
+} = require('../lib/payments/webhook');
 const {
   hasPaidPayment,
   hasPaidPaymentForAmount,
@@ -14,7 +18,8 @@ const {
 const { hasMatchingCheckoutSession } = require('../lib/payments/verify_payment');
 const { isOrderVisibleInKds, toIsoTimestamp, clampOrdersLimit, isAllowedStatusTransition } = require('../lib/orders/kds');
 const { kdsMirrorDoc, shouldNotifyKitchen } = require('../lib/orders/derived');
-const { idempotentOrderDocId } = require('../lib/orders/place_order');
+const { idempotentOrderDocId, orderPayloadFingerprint } = require('../lib/orders/place_order');
+const { clientIpFromRequest } = require('../lib/util/security');
 const { safeDateLabel } = require('../lib/reporting/daily_stats');
 const { validateAndPriceItems } = require('../lib/payments/create_checkout');
 
@@ -304,4 +309,65 @@ test('safeDateLabel rejects slash/malformed dateLabels to avoid Firestore path e
   assert.strictEqual(safeDateLabel('2026/11/21'), 'unknown');
   assert.strictEqual(safeDateLabel('../bad'), 'unknown');
   assert.strictEqual(safeDateLabel(undefined), 'unknown');
+});
+
+test('extractPaymongoWebhookEvent parses real JSON:API envelope and legacy flat shape', () => {
+  assert.deepStrictEqual(
+    extractPaymongoWebhookEvent({
+      data: {
+        id: 'evt_123',
+        type: 'event',
+        attributes: {
+          type: 'checkout_session.payment.paid',
+          data: { id: 'cs_live_abc123' },
+        },
+      },
+    }),
+    { type: 'checkout_session.payment.paid', sessionId: 'cs_live_abc123' },
+  );
+  assert.deepStrictEqual(
+    extractPaymongoWebhookEvent({
+      data: {
+        type: 'checkout_session.payment.failed',
+        data: { id: 'cs_flat_456' },
+      },
+    }),
+    { type: 'checkout_session.payment.failed', sessionId: 'cs_flat_456' },
+  );
+  assert.strictEqual(extractPaymongoWebhookEvent({ data: { type: 'event' } }), null);
+  assert.strictEqual(extractPaymongoWebhookEvent(null), null);
+});
+
+test('orderPayloadFingerprint is deterministic and detects payload tampering', () => {
+  const base = {
+    type: 'Pickup',
+    paymentMethod: 'GCash',
+    customerName: 'Ana',
+    customerPhone: '09171234567',
+    customerAddress: 'Pickup',
+    items: [{ name: 'Classic Lemonade', variant: '', price: 49, quantity: 2 }],
+  };
+  assert.strictEqual(orderPayloadFingerprint(base), orderPayloadFingerprint({ ...base }));
+  assert.notStrictEqual(
+    orderPayloadFingerprint(base),
+    orderPayloadFingerprint({ ...base, customerName: 'Mallory' }),
+  );
+  assert.notStrictEqual(
+    orderPayloadFingerprint(base),
+    orderPayloadFingerprint({ ...base, paymentMethod: 'Cash' }),
+  );
+});
+
+test('clientIpFromRequest prefers rawRequest.ip and falls back to x-forwarded-for', () => {
+  assert.strictEqual(clientIpFromRequest({ ip: '1.2.3.4' }), '1.2.3.4');
+  assert.strictEqual(
+    clientIpFromRequest({ headers: { 'x-forwarded-for': '5.6.7.8, 10.0.0.1' } }),
+    '5.6.7.8',
+  );
+  assert.strictEqual(clientIpFromRequest({}), '');
+});
+
+test('isOrderVisibleInKds treats paymentMethod case-insensitively', () => {
+  assert.strictEqual(isOrderVisibleInKds({ paymentMethod: 'gcash', paymentStatus: 'AWAITING_PAYMENT' }), false);
+  assert.strictEqual(isOrderVisibleInKds({ paymentMethod: 'gcash', paymentStatus: 'PAID' }), true);
 });

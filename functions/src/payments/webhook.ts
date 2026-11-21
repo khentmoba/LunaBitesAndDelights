@@ -22,6 +22,26 @@ const MAX_SIG_AGE_SEC = 300;
 const WEBHOOK_RATE_WINDOW_MS = 60 * 1000;
 const WEBHOOK_RATE_MAX = 120;
 
+/**
+ * Extracts `{ type, sessionId }` from PayMongo's JSON:API webhook envelope
+ * (`data.attributes.{type, data.id}`) as well as flat legacy payloads (`data.{type, data.id}`).
+ */
+export function extractPaymongoWebhookEvent(
+  body: unknown,
+): { type: string; sessionId: string } | null {
+  const root = (body as { data?: any } | null | undefined)?.data;
+  if (!root || typeof root !== 'object') return null;
+  const candidate =
+    root.attributes && typeof root.attributes === 'object' && typeof root.attributes.type === 'string'
+      ? root.attributes
+      : root;
+  const type = typeof candidate?.type === 'string' ? candidate.type : '';
+  const rawId = candidate?.data?.id;
+  const sessionId = typeof rawId === 'string' ? rawId : '';
+  if (!type || !sessionId) return null;
+  return { type, sessionId };
+}
+
 export function verifyPaymongoSignature(
   sigHeader: string | string[] | undefined,
   rawBody: Buffer | string | undefined,
@@ -58,18 +78,16 @@ export const paymongoWebhook = onRequest(
       return;
     }
     try {
-      const clientIp = clientIpFromRequest(req);
-      if (clientIp) {
-        try {
-          await enforceFixedWindowRateLimit(
-            `webhook:paymongo:${clientIp}`,
-            WEBHOOK_RATE_MAX,
-            WEBHOOK_RATE_WINDOW_MS,
-          );
-        } catch {
-          res.status(429).send('Too Many Requests');
-          return;
-        }
+      const clientIp = clientIpFromRequest(req) || 'unknown';
+      try {
+        await enforceFixedWindowRateLimit(
+          `webhook:paymongo:${clientIp}`,
+          WEBHOOK_RATE_MAX,
+          WEBHOOK_RATE_WINDOW_MS,
+        );
+      } catch {
+        res.status(429).send('Too Many Requests');
+        return;
       }
 
       const webhookSecret = process.env.PAYMONGO_WEBHOOK_SECRET;
@@ -86,14 +104,14 @@ export const paymongoWebhook = onRequest(
         return;
       }
 
-      const event = req.body?.data;
-      if (!event?.type || !event?.data?.id) {
+      const event = extractPaymongoWebhookEvent(req.body);
+      if (!event) {
         logger.warn('Invalid webhook payload');
         res.status(200).send('OK');
         return;
       }
       logger.info(`PayMongo webhook received: ${event.type}`);
-      const sessionId = String(event.data.id);
+      const sessionId = event.sessionId;
       if (!/^[A-Za-z0-9_-]{4,128}$/.test(sessionId)) {
         logger.warn('Invalid PayMongo session id in webhook');
         res.status(200).send('OK');

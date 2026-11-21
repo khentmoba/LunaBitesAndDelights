@@ -11,6 +11,7 @@ export const KDS_COLLECTION = 'kds_orders';
 export const DAILY_STATS_COLLECTION = 'dailyStats';
 const EVENT_GUARD_COLLECTION = 'stats_events';
 const GUARD_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+const KDS_MIRROR_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 
 /** Kitchen-screen mirror doc: the same trimmed projection the callable returns, plus a queryable time. */
 export function kdsMirrorDoc(id: string, data: FirebaseFirestore.DocumentData) {
@@ -78,7 +79,11 @@ export const onOrderWritten = onDocumentWritten(
           const snap = await tx.get(mirrorRef);
           const prevMs = snap.exists ? Number(snap.data()?.sourceEventMs) : 0;
           if (Number.isFinite(prevMs) && prevMs > eventTimeMs) return;
-          tx.set(mirrorRef, { ...next, sourceEventMs: eventTimeMs });
+          tx.set(mirrorRef, {
+            ...next,
+            sourceEventMs: eventTimeMs,
+            expireAt: Timestamp.fromMillis(eventTimeMs + KDS_MIRROR_TTL_MS),
+          });
         });
         return;
       }

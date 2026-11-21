@@ -1,5 +1,5 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
-import { getFirestore } from 'firebase-admin/firestore';
+import { getFirestore, Timestamp } from 'firebase-admin/firestore';
 import { sendToAll, sendPhotoToAll, escapeMd } from '../telegram_api';
 import { telegramToken, telegramChatIds, googleMapsApiKey } from '../secrets';
 import { logger } from 'firebase-functions';
@@ -8,6 +8,7 @@ import { isOrderVisibleInKds } from './kds';
 
 const NOTIF_RATE_WINDOW_MS = 10 * 60 * 1000;
 const NOTIF_RATE_MAX = 20;
+const ORDER_NOTIF_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 
 const ORDER_TYPES = ['Walk-In', 'Pickup', 'Delivery'];
 const MAX_ITEMS = 50;
@@ -281,11 +282,12 @@ export async function notifyOrderOnce(
   const notifRef = db.collection(ORDER_NOTIFICATIONS_COLLECTION).doc(orderDocId);
 
   const nowMs = Date.now();
+  const expireAt = Timestamp.fromMillis(nowMs + ORDER_NOTIF_TTL_MS);
   const claimStatus = await db.runTransaction<ClaimStatus>(async (tx) => {
     const snap = await tx.get(notifRef);
     const status = evaluateNotificationClaim(snap.exists ? snap.data() : {}, nowMs);
     if (status === 'claimed') {
-      tx.set(notifRef, { telegramStatus: 'sending', telegramClaimedAt: nowMs }, { merge: true });
+      tx.set(notifRef, { telegramStatus: 'sending', telegramClaimedAt: nowMs, expireAt }, { merge: true });
     }
     return status;
   });
@@ -326,8 +328,8 @@ export const sendOrderNotification = onCall(
   async (request) => {
     const role = (request.auth?.token as any)?.role;
     const isStaff = !!request.auth?.uid && (role === 'staff' || role === 'admin');
-    const clientIp = clientIpFromRequest(request.rawRequest);
-    if (!isStaff && clientIp) {
+    const clientIp = clientIpFromRequest(request.rawRequest) || 'unknown';
+    if (!isStaff) {
       await enforceFixedWindowRateLimit(
         `notif:send:${clientIp}`,
         NOTIF_RATE_MAX,
