@@ -204,7 +204,7 @@ async function goToMyLocation() {
   await fetchAddress(lat, lng);
 }
 
-// Search, as _onSearchChanged: two characters, then 400 ms of quiet.
+// Auto-search after three characters and 800 ms of quiet (Enter searches at two characters immediately).
 const query = $<HTMLInputElement>('[data-query]');
 const list = $('[data-results]');
 function showResults(on: boolean) {
