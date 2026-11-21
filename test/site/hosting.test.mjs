@@ -102,4 +102,8 @@ test('app-site sets Content-Security-Policy and 30-day font cache headers', () =
   assert.ok(frameSrc.includes('https://www.google.com'), 'frame-src must allow Street View and reCAPTCHA iframes');
   const woff2 = app.headers.find((h) => h.source === '**/*.woff2')?.headers ?? [];
   assert.ok(woff2.some((h) => h.key === 'Cache-Control' && h.value.includes('max-age=2592000')));
+  const staffHeaders = app.headers.find((h) => h.source === '/staff{,/**}')?.headers ?? [];
+  const staffCsp = staffHeaders.find((h) => h.key === 'Content-Security-Policy')?.value ?? '';
+  const staffScriptSrc = staffCsp.split(';').map((s) => s.trim()).find((d) => d.startsWith('script-src ')) ?? '';
+  assert.ok(staffScriptSrc.includes("'self'") && !staffScriptSrc.includes("'unsafe-inline'"), '/staff CSP must not allow unsafe-inline scripts');
 });

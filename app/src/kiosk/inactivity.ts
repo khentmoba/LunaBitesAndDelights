@@ -77,6 +77,9 @@ export function watchInactivity(timeoutMs = TIMEOUT_MS, options: WatchInactivity
       if (document.hidden) {
         clearTimeout(idle);
         idle = 0;
+        clearInterval(tick);
+        tick = 0;
+        if (dialog.open) dialog.close();
       } else {
         arm(true);
       }

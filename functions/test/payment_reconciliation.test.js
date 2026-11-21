@@ -14,6 +14,7 @@ const {
   hasFailedPayment,
   firstPaymentId,
   fetchCheckoutSessionDetailed,
+  formatPaymentConfirmedMessage,
 } = require('../lib/payments/paymongo');
 const { hasMatchingCheckoutSession } = require('../lib/payments/verify_payment');
 const { isOrderVisibleInKds, toIsoTimestamp, clampOrdersLimit, isAllowedStatusTransition } = require('../lib/orders/kds');
@@ -400,4 +401,22 @@ test('isOrderVisibleInKds and isCountableOrder require PAID allowlist for GCash'
   assert.strictEqual(isCountableOrder({ status: 'Pending', paymentMethod: 'GCash', paymentStatus: 'NOT PAID' }), false);
   assert.strictEqual(isCountableOrder({ status: 'Pending', paymentMethod: 'gcash', paymentStatus: 'PAID' }), true);
   assert.strictEqual(isCountableOrder({ status: 'Cancelled', paymentMethod: 'Cash', paymentStatus: 'PAID' }), false);
+});
+
+test('formatPaymentConfirmedMessage escapes MarkdownV2 punctuation in cancelled-order refund alerts', () => {
+  const cancelledMsg = formatPaymentConfirmedMessage(
+    { orderId: 'LU-123', customerName: 'Ana', totalAmount: 99, type: 'Delivery', status: 'Cancelled' },
+    'LU-123',
+    '11/21/2026, 5:00:00 PM',
+  );
+  assert.match(cancelledMsg, /PAYMENT RECEIVED FOR CANCELLED ORDER/);
+  assert.match(cancelledMsg, /review for refund\\\./);
+  assert.ok(!/(?<!\\)\./.test(cancelledMsg), 'no unescaped MarkdownV2 period');
+
+  const normalMsg = formatPaymentConfirmedMessage(
+    { orderId: 'LU-124', customerName: 'Ana', totalAmount: 99, type: 'Pickup', status: 'Pending' },
+    'LU-124',
+    '11/21/2026, 5:00:00 PM',
+  );
+  assert.match(normalMsg, /PAYMENT CONFIRMED/);
 });

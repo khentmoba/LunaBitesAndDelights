@@ -181,6 +181,7 @@ async function sendDeliveryNotification(
     inline_keyboard: [[{ text: '📍 Open in Google Maps 🧭', url: getGoogleMapsNavigationUrl(lat, lng) }]],
   };
   const mapUrl = resolveStaticMapUrl(lat, lng);
+  let sentSplitPhoto = false;
   if (mapUrl) {
     try {
       const imageBuffer = await fetchMapImage(mapUrl);
@@ -191,12 +192,15 @@ async function sendDeliveryNotification(
         }
         const summaryCaption = formatDeliverySummaryCaption(data);
         await sendPhotoToAll(imageBuffer, summaryCaption, { reply_markup: replyMarkup });
-        await sendToAll(message);
-        return;
+        sentSplitPhoto = true;
       }
     } catch (photoError: any) {
       logger.warn(`Photo delivery failed for ${data.orderNumber}, falling back to text`, photoError);
     }
+  }
+  if (sentSplitPhoto) {
+    await sendToAll(message);
+    return;
   }
   await sendToAll(message, { reply_markup: replyMarkup });
 }

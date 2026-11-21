@@ -1,4 +1,4 @@
-import { onRequest } from 'firebase-functions/v2/https';
+import { onRequest, HttpsError } from 'firebase-functions/v2/https';
 import { getFirestore } from 'firebase-admin/firestore';
 import { logger } from 'firebase-functions';
 import * as crypto from 'crypto';
@@ -84,8 +84,13 @@ export const paymongoWebhook = onRequest(
           WEBHOOK_RATE_MAX,
           WEBHOOK_RATE_WINDOW_MS,
         );
-      } catch {
-        res.status(429).send('Too Many Requests');
+      } catch (rateErr) {
+        if (rateErr instanceof HttpsError && rateErr.code === 'resource-exhausted') {
+          res.status(429).send('Too Many Requests');
+          return;
+        }
+        logger.error('PayMongo webhook rate-limit check failed:', rateErr);
+        res.status(500).send('Retry');
         return;
       }
 

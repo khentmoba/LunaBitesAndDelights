@@ -439,6 +439,7 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
 
   let layout: 'wide' | 'tabs' | null = null;
   let layoutCols = 0;
+  const lastHtml = new Map<string, string>();
 
   function renderBoard() {
     const b = buckets();
@@ -447,6 +448,7 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
       if (layout !== 'wide' || layoutCols !== cols.length) {
         layout = 'wide';
         layoutCols = cols.length;
+        lastHtml.clear();
         board.className = 'kboard kboard--wide';
         board.innerHTML = cols
           .map(
@@ -461,10 +463,10 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
         board.querySelector(`[data-count="${c.status}"]`)!.textContent = String(b[c.status].length);
         const listEl = board.querySelector<HTMLElement>(`[data-list="${c.status}"]`)!;
         const html = list(c, b[c.status]);
-        if (listEl.dataset.html !== html) {
+        if (lastHtml.get(c.status) !== html) {
           const prevScroll = listEl.scrollTop;
           listEl.innerHTML = html;
-          listEl.dataset.html = html;
+          lastHtml.set(c.status, html);
           listEl.scrollTop = prevScroll;
         }
       }
@@ -472,6 +474,7 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
     }
     if (layout !== 'tabs') {
       layout = 'tabs';
+      lastHtml.clear();
       board.className = 'kboard kboard--tabs';
       board.innerHTML = `
 <div class="ktabs" role="tablist">${COLUMNS.map((c, i) => `<button type="button" class="ktab" role="tab" id="ktab-${i}" aria-controls="kpane-${i}" data-tab="${i}"><span class="ktab__in"><span>${c.tab}</span><span data-tabcount="${i}"></span></span></button>`).join('')}</div>
@@ -487,10 +490,10 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
       board.querySelector(`[data-tabcount="${i}"]`)!.innerHTML = badge(b[c.status].length, c.tone);
       const listEl = board.querySelector<HTMLElement>(`[data-list="${c.status}"]`)!;
       const html = list(c, b[c.status]);
-      if (listEl.dataset.html !== html) {
+      if (lastHtml.get(c.status) !== html) {
         const prevScroll = listEl.scrollTop;
         listEl.innerHTML = html;
-        listEl.dataset.html = html;
+        lastHtml.set(c.status, html);
         listEl.scrollTop = prevScroll;
       }
     });
@@ -569,8 +572,25 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
 </div>`);
     d.querySelector('[data-close]')!.addEventListener('click', () => d.close());
     d.querySelector('[data-print]')!.addEventListener('click', () => {
+      const slipEl = d.querySelector<HTMLElement>('.kslip');
+      document.querySelectorAll('.kslip-print').forEach((el) => el.remove());
+      let printHost: HTMLDivElement | null = null;
+      if (slipEl) {
+        printHost = document.createElement('div');
+        printHost.className = 'kslip-print';
+        printHost.append(slipEl.cloneNode(true));
+        document.body.append(printHost);
+        document.body.classList.add('is-printing-slip');
+      }
+      const cleanup = () => {
+        document.body.classList.remove('is-printing-slip');
+        printHost?.remove();
+        window.removeEventListener('afterprint', cleanup);
+      };
+      window.addEventListener('afterprint', cleanup);
       d.close();
       window.print();
+      window.setTimeout(cleanup, 1000);
       staffSnack('Print dialog opened', SUCCESS);
     });
   }

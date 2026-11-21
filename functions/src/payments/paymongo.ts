@@ -156,6 +156,25 @@ export function hasPaidPaymentForAmount(
   return paidCentavos !== null && paidCentavos === expectedCentavos;
 }
 
+/** Formats the Telegram MarkdownV2 payment confirmation (or refund-review) alert. */
+export function formatPaymentConfirmedMessage(
+  data: Record<string, any>,
+  fallbackOrderLabel: string,
+  paidAtPht: string,
+): string {
+  const wasCancelled = data.status === 'Cancelled';
+  return [
+    wasCancelled ? `⚠️ *PAYMENT RECEIVED FOR CANCELLED ORDER*` : `✅ *PAYMENT CONFIRMED*`,
+    `📄 *Order:* ${escapeMd(String(data.orderId || fallbackOrderLabel))}`,
+    `👤 *Customer:* ${escapeMd(String(data.customerName || ''))}`,
+    `💰 *Amount:* \u20B1${escapeMd(String(data.totalAmount || 0))}`,
+    `💳 *Payment:* GCash via PayMongo`,
+    `📦 *Type:* ${escapeMd(String(data.type || ''))}`,
+    `🕐 *Paid at:* ${escapeMd(paidAtPht)}`,
+    ...(wasCancelled ? [`🚨 *Action needed:* Order was already Cancelled — do not prepare; review for refund\\.`] : []),
+  ].join('\n');
+}
+
 /**
  * Atomically transitions an order to PAID once and notifies Telegram only on
  * that first transition, so webhook and client polling cannot double-notify.
@@ -209,18 +228,8 @@ export async function markOrderPaidOnce(
   if (transitioned && orderData) {
     const data = orderData as Record<string, any>;
     const paidAtPht = new Date().toLocaleString('en-PH', { timeZone: 'Asia/Manila' });
-    const wasCancelled = data.status === 'Cancelled';
     try {
-      await sendToAll([
-        wasCancelled ? `⚠️ *PAYMENT RECEIVED FOR CANCELLED ORDER*` : `✅ *PAYMENT CONFIRMED*`,
-        `📄 *Order:* ${escapeMd(String(data.orderId || fallbackOrderLabel || orderRef.id))}`,
-        `👤 *Customer:* ${escapeMd(String(data.customerName || ''))}`,
-        `💰 *Amount:* \u20B1${escapeMd(String(data.totalAmount || 0))}`,
-        `💳 *Payment:* GCash via PayMongo`,
-        `📦 *Type:* ${escapeMd(String(data.type || ''))}`,
-        `🕐 *Paid at:* ${escapeMd(paidAtPht)}`,
-        ...(wasCancelled ? [`🚨 *Action needed:* Order was already Cancelled — do not prepare; review for refund.`] : []),
-      ].join('\n'));
+      await sendToAll(formatPaymentConfirmedMessage(data, fallbackOrderLabel || orderRef.id, paidAtPht));
     } catch (notifErr) {
       logger.error('Failed to send payment confirmation to Telegram:', notifErr);
     }
