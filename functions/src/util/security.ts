@@ -73,18 +73,26 @@ function hashToken(s: string): string {
 export async function checkRateLimit(key: string): Promise<void> {
   const db = getFirestore();
   const ref = db.collection('login_attempts').doc(hashToken(key));
+  const snap = await ref.get();
+  if (!snap.exists) return;
+  const d = snap.data()!;
+  const fails = d.fails || 0;
+  if (fails < MAX_ATTEMPTS) return;
+  const lockedUntil = d.lockedUntil?.toDate?.() as Date | undefined;
+  if (lockedUntil && lockedUntil.getTime() > Date.now()) {
+    const mins = Math.ceil((lockedUntil.getTime() - Date.now()) / 60000);
+    throw new HttpsError('resource-exhausted', `Too many attempts. Try again in ${mins}m`);
+  }
+  // Stale lockout expired — clear atomically only when needed.
   await db.runTransaction(async (tx) => {
-    const snap = await tx.get(ref);
-    if (!snap.exists) return;
-    const d = snap.data()!;
-    const fails = d.fails || 0;
-    const lockedUntil = d.lockedUntil?.toDate?.() as Date | undefined;
-    if (fails >= MAX_ATTEMPTS && lockedUntil && lockedUntil.getTime() > Date.now()) {
-      const mins = Math.ceil((lockedUntil.getTime() - Date.now()) / 60000);
-      throw new HttpsError('resource-exhausted', `Too many attempts. Try again in ${mins}m`);
+    const fresh = await tx.get(ref);
+    if (!fresh.exists) return;
+    const fd = fresh.data()!;
+    const fFails = fd.fails || 0;
+    const fLockedUntil = fd.lockedUntil?.toDate?.() as Date | undefined;
+    if (fFails >= MAX_ATTEMPTS && (!fLockedUntil || fLockedUntil.getTime() <= Date.now())) {
+      tx.delete(ref);
     }
-    // Stale lockout expired — reset atomically.
-    if (fails >= MAX_ATTEMPTS) tx.delete(ref);
   });
 }
 

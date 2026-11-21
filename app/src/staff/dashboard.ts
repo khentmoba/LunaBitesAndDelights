@@ -81,9 +81,11 @@ export function mountDashboard(root: HTMLElement, getStaff: () => Staff | null):
       if (disposed || seq !== fetchSeq) return;
       const raw = res.orders ?? [];
       let items = int(analytics.totalItemsSold);
-      if (items === 0 && raw.length) {
+      if (analytics.totalItemsSold == null && raw.length) {
         const today = phtDateLabel(new Date());
         for (const o of raw) {
+          if (o.status === 'Cancelled') continue;
+          if (String(o.paymentMethod ?? '').toLowerCase() === 'gcash' && o.paymentStatus !== 'PAID') continue;
           const ts = new Date(String(o.timestamp ?? ''));
           if (!Number.isNaN(ts.getTime()) && phtDateLabel(ts) === today) items += int(o.itemsCount);
         }
@@ -213,25 +215,40 @@ ${
     else if (act === 'kds') go('/staff/kds');
   });
 
+  let resizeRaf = 0;
   const onResize = () => {
-    fitValues(el);
-    diagonals(el);
+    if (resizeRaf) return;
+    resizeRaf = requestAnimationFrame(() => {
+      resizeRaf = 0;
+      if (disposed) return;
+      fitValues(el);
+      diagonals(el);
+    });
   };
   addEventListener('resize', onResize);
   render();
   void fetchData();
   return () => {
     disposed = true;
+    cancelAnimationFrame(resizeRaf);
     removeEventListener('resize', onResize);
   };
 }
 
 /** FittedBox(scaleDown): a value wider than its card shrinks to fit. */
 export function fitValues(scope: HTMLElement): void {
-  for (const v of scope.querySelectorAll<HTMLElement>('[data-fit]')) {
-    v.style.transform = '';
-    const box = v.parentElement!.clientWidth - parseFloat(getComputedStyle(v.parentElement!).paddingLeft) - parseFloat(getComputedStyle(v.parentElement!).paddingRight);
+  const nodes = Array.from(scope.querySelectorAll<HTMLElement>('[data-fit]'));
+  if (!nodes.length) return;
+  for (const v of nodes) v.style.transform = '';
+  const scales = nodes.map((v) => {
+    const parent = v.parentElement!;
+    const cs = getComputedStyle(parent);
+    const box = parent.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
     const w = v.scrollWidth;
-    if (w > box && box > 0) v.style.transform = `scale(${box / w})`;
-  }
+    return w > box && box > 0 ? box / w : 1;
+  });
+  nodes.forEach((v, i) => {
+    const s = scales[i] ?? 1;
+    if (s < 1) v.style.transform = `scale(${s})`;
+  });
 }

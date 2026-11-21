@@ -18,10 +18,6 @@ const GLOBAL_PIN_FAIL_MAX = 20;
 const GLOBAL_PIN_WINDOW_MS = 15 * 60 * 1000;
 const PASSWORD_IP_RATE_MAX = 30;
 const PASSWORD_IP_WINDOW_MS = 15 * 60 * 1000;
-const GLOBAL_PASSWORD_FAIL_KEY = 'staff:pw_login:global';
-const GLOBAL_PASSWORD_FAIL_MAX = 60;
-const USER_PASSWORD_FAIL_MAX = 20;
-const PASSWORD_FAIL_WINDOW_MS = 15 * 60 * 1000;
 let staffSeeded = false;
 
 export interface PinAccountEntry<T = any> {
@@ -164,28 +160,9 @@ async function verifyPasswordLogin(
   if (!/^[a-z0-9._-]{2,64}$/.test(username)) throw new HttpsError('invalid-argument', GENERIC_FAIL);
 
   const rateKey = `staff:${username}:${clientIp}`;
-  const userBudgetKey = `staff:pw_user:${username}`;
-  await Promise.all([
-    checkRateLimit(rateKey),
-    checkWindowBudget(
-      userBudgetKey,
-      USER_PASSWORD_FAIL_MAX,
-      PASSWORD_FAIL_WINDOW_MS,
-      'Too many failed login attempts for this account. Try again in 15 minutes.',
-    ),
-    checkWindowBudget(
-      GLOBAL_PASSWORD_FAIL_KEY,
-      GLOBAL_PASSWORD_FAIL_MAX,
-      PASSWORD_FAIL_WINDOW_MS,
-      'Too many failed login attempts. Try again in 15 minutes.',
-    ),
-  ]);
+  await checkRateLimit(rateKey);
   const fail = async () => {
-    await Promise.all([
-      recordLoginFailure(rateKey),
-      recordWindowFailure(userBudgetKey, PASSWORD_FAIL_WINDOW_MS),
-      recordWindowFailure(GLOBAL_PASSWORD_FAIL_KEY, PASSWORD_FAIL_WINDOW_MS),
-    ]);
+    await recordLoginFailure(rateKey);
     return { success: false, message: GENERIC_FAIL };
   };
 

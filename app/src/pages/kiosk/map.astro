@@ -215,11 +215,12 @@ function setSearching(on: boolean) {
   $('[data-searching]').hidden = !on;
   $('[data-clear]').hidden = on || query.value.length === 0;
 }
-function onSearch() {
+function onSearch(immediate = false) {
   clearTimeout(searchTimer);
   searchAbort?.abort();
   const q = query.value.trim();
-  if (q.length < 2) {
+  const minLen = immediate ? 2 : 3;
+  if (q.length < minLen) {
     results = [];
     showResults(false);
     setSearching(false);
@@ -236,11 +237,11 @@ function onSearch() {
       .join('');
     setSearching(false);
     showResults(true);
-  }, 400);
+  }, immediate ? 0 : 800);
 }
-query.addEventListener('input', onSearch);
+query.addEventListener('input', () => onSearch(false));
 query.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') onSearch();
+  if (e.key === 'Enter') onSearch(true);
 });
 query.addEventListener('focus', () => showResults(true));
 list.addEventListener('click', (e) => {
