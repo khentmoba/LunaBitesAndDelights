@@ -1,5 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const kds = await import('../../app/src/staff/kds-data.ts');
 const report = await import('../../app/src/staff/report-data.ts');
@@ -104,4 +107,12 @@ test('ui helpers format icons and finite numbers cleanly', () => {
   assert.equal(num(NaN), 0);
   assert.equal(num('12'), 0);
   assert.equal(int(199.9), 199);
+});
+
+test('staff service worker serves immutable assets cache-first and navigations network-first', () => {
+  const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
+  const sw = readFileSync(join(root, 'app/public/staff/sw.js'), 'utf8');
+  assert.match(sw, /const immutable\s*=.*\/_astro\/.*\/kiosk\/fonts\//);
+  assert.match(sw, /if \(immutable\)\s*\{[\s\S]*caches\.match\(req\)/);
+  assert.match(sw, /req\.mode === 'navigate'/);
 });

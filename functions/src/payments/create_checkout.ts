@@ -1,4 +1,5 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
+import { getFirestore } from 'firebase-admin/firestore';
 import { logger } from 'firebase-functions';
 import { paymongoSecret } from '../secrets';
 import { cleanStr, optStr, cleanInt } from '../util/security';
@@ -172,14 +173,23 @@ export const createCheckoutSession = onCall(
       }
 
       const checkout = json.data;
-      await orderRef.set({
-        checkoutSessionId: checkout.id,
-        checkoutUrl: checkout.attributes.checkout_url,
-        paymentMethod: 'GCash',
-        paymentStatus: 'AWAITING_PAYMENT',
-        totalAmount: itemsTotal,
-        verifiedTotal: itemsTotal,
-      }, { merge: true });
+      await getFirestore().runTransaction(async (tx) => {
+        const snap = await tx.get(orderRef);
+        if (!snap.exists) {
+          throw new HttpsError('not-found', 'Order not found');
+        }
+        if (snap.data()?.paymentStatus === 'PAID') {
+          throw new HttpsError('failed-precondition', 'Order is already paid');
+        }
+        tx.set(orderRef, {
+          checkoutSessionId: checkout.id,
+          checkoutUrl: checkout.attributes.checkout_url,
+          paymentMethod: 'GCash',
+          paymentStatus: 'AWAITING_PAYMENT',
+          totalAmount: itemsTotal,
+          verifiedTotal: itemsTotal,
+        }, { merge: true });
+      });
 
       logger.info(`Checkout session created for order ${orderId}: ${checkout.id}`);
       // #17: only what the client needs to redirect.

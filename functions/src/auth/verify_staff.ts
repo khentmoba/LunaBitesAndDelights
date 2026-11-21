@@ -11,7 +11,34 @@ import {
 const GENERIC_FAIL = 'Invalid username or password';
 const GENERIC_PIN_FAIL = 'Invalid PIN. Please try again.';
 const PIN_RE = /^[0-9]{4,8}$/;
+const PIN_VERIFY_CONCURRENCY = 8;
 let staffSeeded = false;
+
+export interface PinAccountEntry<T = any> {
+  id: string;
+  pinHash?: unknown;
+  payload: T;
+}
+
+/** Verifies a PIN against candidate staff accounts with bounded concurrency. */
+export async function findMatchingPinAccount<T>(
+  pin: string,
+  entries: readonly PinAccountEntry<T>[],
+  verify: (pin: string, hash: string) => Promise<'ok' | 'ok-legacy' | 'bad'> = verifyPasswordAsync,
+  concurrency = PIN_VERIFY_CONCURRENCY,
+): Promise<{ entry: PinAccountEntry<T>; result: 'ok' | 'ok-legacy' } | null> {
+  const candidates = entries.filter((e) => typeof e.pinHash === 'string' && e.pinHash.length > 0);
+  const step = Math.max(1, concurrency);
+  for (let i = 0; i < candidates.length; i += step) {
+    const batch = candidates.slice(i, i + step);
+    const results = await Promise.all(
+      batch.map(async (entry) => ({ entry, result: await verify(pin, entry.pinHash as string) })),
+    );
+    const hit = results.find((r) => r.result !== 'bad');
+    if (hit) return { entry: hit.entry, result: hit.result as 'ok' | 'ok-legacy' };
+  }
+  return null;
+}
 
 async function ensureStaffSeeded(db: Firestore): Promise<void> {
   if (staffSeeded) return;
@@ -39,7 +66,7 @@ async function ensureStaffSeeded(db: Firestore): Promise<void> {
       pinHash,
       createdAt: new Date(),
     });
-    logger.warn(`SEEDED staff account ${s.username} password: ${pw}, pin: ${s.pin} — CHANGE AFTER FIRST LOGIN`);
+    logger.warn(`SEEDED staff account ${s.username} (role: ${s.role}); run functions/scripts/reset-staff-credentials.js to set credentials`);
   }
   await batch.commit();
   staffSeeded = true;
@@ -62,34 +89,31 @@ async function verifyPinLogin(db: Firestore, request: CallableRequest, pin: stri
   await checkRateLimit(pinRateKey);
 
   const staffAccounts = await db.collection('staff_accounts').get();
-  let matchedUser: any = null;
-  let matchedPinResult: 'ok' | 'ok-legacy' = 'ok';
+  const match = await findMatchingPinAccount(
+    pin,
+    staffAccounts.docs.map((doc) => {
+      const d = doc.data();
+      return { id: doc.id, pinHash: d.pinHash, payload: { id: doc.id, docRef: doc.ref, data: d } };
+    }),
+  );
 
-  for (const doc of staffAccounts.docs) {
-    const d = doc.data();
-    if (!d.pinHash) continue;
-    const pinRes = await verifyPasswordAsync(pin, d.pinHash);
-    if (pinRes !== 'bad') {
-      matchedUser = { id: doc.id, docRef: doc.ref, ...d };
-      matchedPinResult = pinRes;
-      break;
-    }
-  }
-
-  if (!matchedUser) {
+  if (!match) {
     logger.info('Staff PIN login failed: bad PIN');
     await recordLoginFailure(pinRateKey);
     return { success: false, message: GENERIC_PIN_FAIL };
   }
 
-  const accountName = matchedUser.username || matchedUser.id;
+  const matchedUser = match.entry.payload;
+  const matchedPinResult = match.result;
+
+  const accountName = String(matchedUser.data.username || matchedUser.id);
   if (matchedPinResult === 'ok-legacy' && matchedUser.docRef) {
     await matchedUser.docRef.update({ pinHash: await hashPasswordAsync(pin) });
     logger.info(`Upgraded legacy staff PIN hash to scrypt for ${accountName}`);
   }
 
   await clearLoginAttempts(pinRateKey);
-  const { role, customToken } = await createStaffToken(accountName, matchedUser.role);
+  const { role, customToken } = await createStaffToken(accountName, matchedUser.data.role);
   logger.info(`Staff PIN login successful for ${accountName} as ${role}`);
   return { success: true, username: accountName, role, customToken };
 }
@@ -169,12 +193,14 @@ export const updateStaffPin = onCall(async (request) => {
   }
 
   const allStaff = await db.collection('staff_accounts').get();
-  for (const other of allStaff.docs) {
-    if (other.id === username) continue;
-    const otherHash = other.data().pinHash;
-    if (typeof otherHash === 'string' && otherHash && (await verifyPasswordAsync(newPin, otherHash)) !== 'bad') {
-      throw new HttpsError('already-exists', 'This PIN is already in use by another account');
-    }
+  const conflict = await findMatchingPinAccount(
+    newPin,
+    allStaff.docs
+      .filter((other) => other.id !== username)
+      .map((other) => ({ id: other.id, pinHash: other.data().pinHash, payload: other.id })),
+  );
+  if (conflict) {
+    throw new HttpsError('already-exists', 'This PIN is already in use by another account');
   }
 
   await staffRef.update({

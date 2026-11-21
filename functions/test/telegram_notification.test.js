@@ -413,4 +413,35 @@ describe('Telegram MarkdownV2 escaping and order notifications', () => {
       setBot(null);
     }
   });
+
+  test('evaluateNotificationClaim distinguishes in-flight leases from already-sent and recovers stale claims', () => {
+    const {
+      evaluateNotificationClaim,
+      canClaimNotification,
+      TELEGRAM_CLAIM_TTL_MS,
+    } = require('../lib/orders/send_notification');
+    const now = 1_700_000_000_000;
+    assert.equal(evaluateNotificationClaim(undefined, now), 'missing');
+    assert.equal(evaluateNotificationClaim({ telegramSent: true }, now), 'already-sent');
+    assert.equal(evaluateNotificationClaim({ telegramStatus: 'failed' }, now), 'claimed');
+    assert.equal(
+      evaluateNotificationClaim({ telegramStatus: 'sending', telegramClaimedAt: now - 10_000 }, now),
+      'in-flight',
+      'fresh in-flight claim must be distinguished so retryable triggers can retry instead of marking sent',
+    );
+    assert.equal(
+      canClaimNotification({ telegramStatus: 'sending', telegramClaimedAt: now - 10_000 }, now),
+      false,
+    );
+    assert.equal(
+      evaluateNotificationClaim({ telegramStatus: 'sending', telegramClaimedAt: now - TELEGRAM_CLAIM_TTL_MS }, now),
+      'claimed',
+      'expired claim must be reclaimable after crash/timeout',
+    );
+    assert.equal(
+      evaluateNotificationClaim({ telegramStatus: 'sending' }, now),
+      'claimed',
+      'legacy sending doc without timestamp must be reclaimable',
+    );
+  });
 });

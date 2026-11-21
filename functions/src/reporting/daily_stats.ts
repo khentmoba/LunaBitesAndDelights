@@ -1,5 +1,24 @@
-import { FieldValue } from 'firebase-admin/firestore';
+import { FieldValue, Firestore } from 'firebase-admin/firestore';
 import { itemKey, isCountableOrder, ChannelBucket } from '../util';
+
+export const STATS_META_DOC = 'stats_meta/dailyStats';
+let backfilledCached = false;
+
+/** Caches `stats_meta/dailyStats.backfilledAt` once true to skip redundant reads on warm instances. */
+export async function isDailyStatsBackfilled(db: Pick<Firestore, 'doc'>): Promise<boolean> {
+  if (backfilledCached) return true;
+  const snap = await db.doc(STATS_META_DOC).get();
+  if (snap.exists && snap.get('backfilledAt')) {
+    backfilledCached = true;
+    return true;
+  }
+  return false;
+}
+
+/** Resets the in-memory backfill cache (used by tests). */
+export function resetBackfillCache(): void {
+  backfilledCached = false;
+}
 
 /**
  * Per-day sales summary stored at `dailyStats/{YYYY-MM-DD}`.

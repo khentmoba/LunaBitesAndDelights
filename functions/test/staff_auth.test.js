@@ -1,6 +1,7 @@
 const { describe, test } = require('node:test');
 const assert = require('node:assert/strict');
 const { hashPassword, verifyPassword, hashPasswordAsync, verifyPasswordAsync } = require('../lib/util/security');
+const { findMatchingPinAccount } = require('../lib/auth/verify_staff');
 const { isCountableOrder } = require('../lib/util');
 
 describe('staff auth: scrypt PIN and password verification', () => {
@@ -46,5 +47,73 @@ describe('staff auth: scrypt PIN and password verification', () => {
     assert.equal(isCountableOrder({ status: 'Cancelled', paymentMethod: 'Cash', paymentStatus: 'NOT PAID' }), false);
     assert.equal(isCountableOrder({ status: 'Pending', paymentMethod: 'GCash', paymentStatus: 'AWAITING_PAYMENT' }), false);
     assert.equal(isCountableOrder({ status: 'Pending', paymentMethod: 'GCash', paymentStatus: 'PAYMENT_FAILED' }), false);
+  });
+
+  test('findMatchingPinAccount verifies candidate accounts in parallel batches', async () => {
+    const hashA = await hashPasswordAsync('1111');
+    const hashB = await hashPasswordAsync('2222');
+    const entries = [
+      { id: 'no-pin', pinHash: null, payload: 'no-pin' },
+      { id: 'staff1', pinHash: hashA, payload: 'staff1' },
+      { id: 'admin', pinHash: hashB, payload: 'admin' },
+    ];
+    let inFlight = 0;
+    let peak = 0;
+    const trackedVerify = async (pin, hash) => {
+      inFlight += 1;
+      peak = Math.max(peak, inFlight);
+      try {
+        return await verifyPasswordAsync(pin, hash);
+      } finally {
+        inFlight -= 1;
+      }
+    };
+    const match = await findMatchingPinAccount('2222', entries, trackedVerify, 4);
+    assert.equal(match?.entry.id, 'admin');
+    assert.equal(match?.result, 'ok');
+    assert.ok(peak >= 2, `expected parallel verification, peak concurrency was ${peak}`);
+
+    const miss = await findMatchingPinAccount('9999', entries, verifyPasswordAsync, 4);
+    assert.equal(miss, null);
+  });
+
+  test('resetStaffCredentials hashes password and PIN and writes staff_accounts doc', async () => {
+    const { resetStaffCredentials } = require('../scripts/reset-staff-credentials');
+    let written = null;
+    const fakeDb = {
+      collection(name) {
+        assert.equal(name, 'staff_accounts');
+        return {
+          doc(id) {
+            return {
+              async set(data, opts) {
+                written = { id, data, opts };
+              },
+            };
+          },
+        };
+      },
+    };
+
+    const res = await resetStaffCredentials(fakeDb, {
+      username: 'admin',
+      role: 'admin',
+      password: 'NewStrongPassword1',
+      pin: '123456',
+    });
+    assert.deepEqual(res, {
+      username: 'admin',
+      role: 'admin',
+      passwordUpdated: true,
+      pinUpdated: true,
+    });
+    assert.equal(written.id, 'admin');
+    assert.deepEqual(written.opts, { merge: true });
+    assert.equal(await verifyPasswordAsync('NewStrongPassword1', written.data.passwordHash), 'ok');
+    assert.equal(await verifyPasswordAsync('123456', written.data.pinHash), 'ok');
+    await assert.rejects(
+      resetStaffCredentials(fakeDb, { username: 'admin', pin: '12' }),
+      /Invalid PIN/,
+    );
   });
 });

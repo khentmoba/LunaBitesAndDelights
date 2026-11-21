@@ -3,15 +3,14 @@ import { getFirestore } from 'firebase-admin/firestore';
 import { logger } from 'firebase-functions';
 import { phtDateLabel } from '../util';
 import { requireStaff } from '../util/security';
-import { DayStats, dayFromDoc, daysFromOrders, lifetimeReportFromDays } from './daily_stats';
+import { DayStats, dayFromDoc, daysFromOrders, isDailyStatsBackfilled, lifetimeReportFromDays, STATS_META_DOC } from './daily_stats';
+
+export { STATS_META_DOC };
 
 interface LifeTimeReportParams {
   startDate?: string; // YYYY-MM-DD (optional, default: earliest order)
   endDate?: string;   // YYYY-MM-DD (optional, default: today)
 }
-
-/** Written by scripts/backfill-derived-views.js once dailyStats covers all past orders. */
-export const STATS_META_DOC = 'stats_meta/dailyStats';
 
 export const getLifetimeSalesReport = onCall(async (request) => {
   requireStaff(request);
@@ -30,9 +29,9 @@ export const getLifetimeSalesReport = onCall(async (request) => {
     const isAllTime = params.startDate === undefined && params.endDate === undefined;
     const dateRange = { start: effectiveStart, end: effectiveEnd, isAllTime };
 
-    const meta = await db.doc(STATS_META_DOC).get();
+    const backfilled = await isDailyStatsBackfilled(db);
     let days: Iterable<DayStats>;
-    if (meta.exists && meta.get('backfilledAt')) {
+    if (backfilled) {
       // One small doc per trading day instead of every order.
       const statsRef = db.collection('dailyStats');
       const snap = await (isAllTime

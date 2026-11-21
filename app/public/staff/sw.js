@@ -1,8 +1,8 @@
 // Staff app service worker: makes the app installable and keeps the last
 // good copy of each staff page for when the kitchen tablet drops off Wi-Fi.
-// Pages and assets always come from the network first, so a deploy shows up
-// on the next load; orders themselves always need the network.
-const CACHE = 'luna-staff-v2';
+// HTML navigations always come from the network first so deploys show up on
+// the next load; immutable hashed bundles and fonts are served cache-first.
+const CACHE = 'luna-staff-v3';
 const MAX_ASTRO_ENTRIES = 40;
 
 self.addEventListener('install', () => self.skipWaiting());
@@ -30,7 +30,23 @@ self.addEventListener('fetch', (event) => {
   const req = event.request;
   const url = new URL(req.url);
   if (req.method !== 'GET' || url.origin !== location.origin) return;
-  const shell = req.mode === 'navigate' || url.pathname.startsWith('/_astro/') || url.pathname.startsWith('/kiosk/fonts/') || url.pathname.startsWith('/kiosk/images/luna_logo');
+  const immutable = url.pathname.startsWith('/_astro/') || url.pathname.startsWith('/kiosk/fonts/');
+  if (immutable) {
+    event.respondWith(
+      caches.match(req).then((hit) => {
+        if (hit) return hit;
+        return fetch(req).then((res) => {
+          if (res.ok) {
+            const copy = res.clone();
+            event.waitUntil(cacheAndPrune(req, copy).catch(() => {}));
+          }
+          return res;
+        });
+      }),
+    );
+    return;
+  }
+  const shell = req.mode === 'navigate' || url.pathname.startsWith('/kiosk/images/luna_logo');
   if (!shell) return;
   event.respondWith(
     fetch(req)
