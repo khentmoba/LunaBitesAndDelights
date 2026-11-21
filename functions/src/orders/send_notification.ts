@@ -85,22 +85,33 @@ export function formatOrderNotification(data: OrderNotificationData): string {
     ].join('\n');
 }
 
+function truncateField(value: string | null | undefined, maxChars: number): string {
+  const s = String(value ?? '').trim();
+  if (s.length <= maxChars) return s;
+  return `${s.slice(0, Math.max(1, maxChars - 1))}…`;
+}
+
 /** Concise summary caption for photos when the full receipt exceeds Telegram's 1024-char caption limit. */
 export function formatDeliverySummaryCaption(data: OrderNotificationData): string {
-  return [
-    `🔔 *NEW DELIVERY — ${escapeMd(data.orderNumber)}*`,
+  const build = (addrMax: number) => [
+    `🔔 *NEW DELIVERY — ${escapeMd(truncateField(data.orderNumber, 40))}*`,
     `🛵 *Type:* Delivery`,
     '',
-    `👤 *Name:* ${escapeMd(data.customerName)}`,
-    `📍 *Address:* ${escapeMd(data.customerAddress || '')}`,
-    `📞 *Phone:* ${escapeMd(data.customerPhone || '')}`,
+    `👤 *Name:* ${escapeMd(truncateField(data.customerName, 80))}`,
+    `📍 *Address:* ${escapeMd(truncateField(data.customerAddress, addrMax))}`,
+    `📞 *Phone:* ${escapeMd(truncateField(data.customerPhone, 32))}`,
     '',
     `💰 *FOOD TOTAL:* ₱*${escapeMd(data.total.toString())}*`,
     `💳 *Payment:* ${escapeMd(data.paymentMethod || 'Cash')}  \\-  *${escapeMd(data.paymentStatus || 'NOT PAID')}*`,
-    `🕐 *Time:* ${escapeMd(data.timeStr || '')}`,
+    `🕐 *Time:* ${escapeMd(truncateField(data.timeStr, 40))}`,
     '',
     `📋 _Full itemized list sent below\\._`,
   ].join('\n');
+
+  let caption = build(240);
+  if (caption.length > 1024) caption = build(100);
+  if (caption.length > 1024) caption = build(40);
+  return caption;
 }
 
 /** Generates Google Static Maps URL in hybrid mode (satellite imagery + road names). */

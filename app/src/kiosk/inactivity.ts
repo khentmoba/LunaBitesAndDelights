@@ -16,7 +16,7 @@ export function resetKiosk(): void {
   location.replace('/kiosk/');
 }
 
-export function watchInactivity(): void {
+export function watchInactivity(timeoutMs = TIMEOUT_MS): void {
   const dialog = document.createElement('dialog');
   dialog.className = 'idle';
   dialog.setAttribute('aria-labelledby', 'idle-title');
@@ -36,7 +36,7 @@ export function watchInactivity(): void {
     if (!force && now - lastArmed < 1000) return;
     lastArmed = now;
     clearTimeout(idle);
-    idle = window.setTimeout(warn, TIMEOUT_MS);
+    idle = window.setTimeout(warn, timeoutMs);
   };
   const warn = () => {
     let left = COUNTDOWN_S;

@@ -116,7 +116,7 @@ import { $, esc } from '../../kiosk/dom';
 import { DRAFT, load, save, type CheckoutDraft } from '../../kiosk/handoff';
 import { currentPosition, reverseGeocode, searchAddress, shortAddress, tileUrl, type Place } from '../../kiosk/geo';
 import { glyph } from '../../kiosk/icons';
-import { popTo } from '../../kiosk/inactivity';
+import { popTo, watchInactivity } from '../../kiosk/inactivity';
 import { STORE, deliveryDistance } from '../../kiosk/order';
 
 const draft = load<CheckoutDraft>(DRAFT);
@@ -296,7 +296,7 @@ async function confirm() {
     name: '', phone: '', address: '', orderType: 'Delivery', paymentMethod: 'Cash',
     lat: STORE.lat, lng: STORE.lng, pinned: false, distance: 0, pendingDocId: null, pendingNumber: null,
   };
-  save(DRAFT, { ...base, address, lat, lng, pinned: true, distance: deliveryDistance(lat, lng), pendingDocId: null, pendingNumber: null });
+  save(DRAFT, { ...base, address, lat, lng, pinned: true, distance: deliveryDistance(lat, lng), pendingDocId: null, pendingNumber: null, pendingCart: undefined, idempotencyKey: undefined });
   popTo('/kiosk/checkout');
 }
 
@@ -305,6 +305,7 @@ $('[data-locate]').addEventListener('click', () => void goToMyLocation());
 $('[data-back]').addEventListener('click', () => popTo('/kiosk/checkout'));
 
 render();
+watchInactivity();
 void (async () => {
   if (draft?.pinned) return;
   const pos = await currentPosition();

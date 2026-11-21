@@ -270,10 +270,14 @@ export const updateStaffPin = onCall(async (request) => {
   }
 
   await clearLoginAttempts(updateRateKey);
-  await staffRef.update({
+  const updatePayload: Record<string, any> = {
     pinHash: await hashPasswordAsync(newPin),
     updatedAt: FieldValue.serverTimestamp(),
-  });
+  };
+  if (pwCheck === 'ok-legacy') {
+    updatePayload.passwordHash = await hashPasswordAsync(currentPassword);
+  }
+  await staffRef.update(updatePayload);
   logger.info(`Updated PIN for staff account ${username}`);
   return { success: true };
 });

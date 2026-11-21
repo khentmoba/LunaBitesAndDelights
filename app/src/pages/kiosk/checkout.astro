@@ -312,7 +312,7 @@ function restore() {
   nameInput.value = draft.name;
   phoneInput.value = draft.phone;
   addressInput.value = draft.address;
-  if (draft.pendingDocId !== null && draft.pendingCart !== cartKey()) {
+  if ((draft.pendingDocId !== null || draft.idempotencyKey) && draft.pendingCart !== cartKey()) {
     clearPending();
     persist();
   }
@@ -405,14 +405,18 @@ async function submit() {
     status: statuses.status,
   };
 
+  let errorCode: string | undefined;
   if (docId === null || draft.paymentMethod !== 'GCash' || isStaff) {
-    if (!draft.idempotencyKey) {
+    const key = cartKey();
+    if (!draft.idempotencyKey || draft.pendingCart !== key) {
       draft.idempotencyKey = newIdempotencyKey();
+      draft.pendingCart = key;
       persist();
     }
     const result = await placeOrder(order, timeStr, draft.idempotencyKey);
     docId = result.docId;
     telegramSent = result.telegramSent;
+    errorCode = result.errorCode;
     if (result.orderId) orderNumber = result.orderId;
     if (typeof result.totalAmount === 'number') total = result.totalAmount;
   }
@@ -421,7 +425,15 @@ async function submit() {
   renderForm();
 
   if (docId === null) {
-    snack('We could not save your order. Please check the connection and try again.', { color: ERROR, seconds: 6 });
+    if (errorCode === 'already-exists') {
+      clearPending();
+      persist();
+      snack('Your order changed since the last attempt. Please tap again to submit.', { color: ERROR, seconds: 6 });
+    } else if (errorCode === 'resource-exhausted') {
+      snack('Too many orders submitted right now. Please wait a moment and try again.', { color: ERROR, seconds: 6 });
+    } else {
+      snack('We could not save your order. Please check the connection and try again.', { color: ERROR, seconds: 6 });
+    }
     return;
   }
 

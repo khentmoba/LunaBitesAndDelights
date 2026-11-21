@@ -459,7 +459,14 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
       }
       for (const c of cols) {
         board.querySelector(`[data-count="${c.status}"]`)!.textContent = String(b[c.status].length);
-        board.querySelector(`[data-list="${c.status}"]`)!.innerHTML = list(c, b[c.status]);
+        const listEl = board.querySelector<HTMLElement>(`[data-list="${c.status}"]`)!;
+        const html = list(c, b[c.status]);
+        if (listEl.dataset.html !== html) {
+          const prevScroll = listEl.scrollTop;
+          listEl.innerHTML = html;
+          listEl.dataset.html = html;
+          listEl.scrollTop = prevScroll;
+        }
       }
       return;
     }
@@ -478,7 +485,14 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
     }
     COLUMNS.forEach((c, i) => {
       board.querySelector(`[data-tabcount="${i}"]`)!.innerHTML = badge(b[c.status].length, c.tone);
-      board.querySelector(`[data-list="${c.status}"]`)!.innerHTML = list(c, b[c.status]);
+      const listEl = board.querySelector<HTMLElement>(`[data-list="${c.status}"]`)!;
+      const html = list(c, b[c.status]);
+      if (listEl.dataset.html !== html) {
+        const prevScroll = listEl.scrollTop;
+        listEl.innerHTML = html;
+        listEl.dataset.html = html;
+        listEl.scrollTop = prevScroll;
+      }
     });
     syncTabs();
   }

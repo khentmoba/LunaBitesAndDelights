@@ -167,15 +167,44 @@ async function deliverToAll(
   return results;
 }
 
+const TELEGRAM_MAX_TEXT = 3800;
+
+/** Splits a Telegram message into <= maxLen chunks on newline boundaries without breaking escape sequences. */
+export function splitTelegramMessage(text: string, maxLen = TELEGRAM_MAX_TEXT): string[] {
+  if (text.length <= maxLen) return [text];
+  const chunks: string[] = [];
+  let rest = text;
+  while (rest.length > maxLen) {
+    let cut = rest.lastIndexOf('\n', maxLen);
+    if (cut <= 0) cut = maxLen;
+    // Avoid splitting in the middle of a MarkdownV2 backslash escape sequence.
+    let trailingBackslashes = 0;
+    for (let i = cut - 1; i >= 0 && rest[i] === '\\'; i--) trailingBackslashes++;
+    if (trailingBackslashes % 2 === 1 && cut > 1) cut--;
+    chunks.push(rest.slice(0, cut));
+    rest = rest.slice(cut).replace(/^\n/, '');
+  }
+  if (rest.length > 0) chunks.push(rest);
+  return chunks;
+}
+
 export async function sendToAll(message: string, options: any = {}) {
-  return deliverToAll(
-    'sendToAll',
-    'falling back to plain text',
-    'Telegram messages',
-    options,
-    (telegram, id, opts, plainText) =>
-      telegram.sendMessage(id, plainText ? stripMarkdownV2(message) : message, opts)
-  );
+  const chunks = splitTelegramMessage(message);
+  let lastResult: any;
+  for (let i = 0; i < chunks.length; i++) {
+    const isLast = i === chunks.length - 1;
+    const chunk = chunks[i];
+    const chunkOpts = isLast ? options : { ...options, reply_markup: undefined };
+    lastResult = await deliverToAll(
+      'sendToAll',
+      'falling back to plain text',
+      'Telegram messages',
+      chunkOpts,
+      (telegram, id, opts, plainText) =>
+        telegram.sendMessage(id, plainText ? stripMarkdownV2(chunk) : chunk, opts)
+    );
+  }
+  return lastResult;
 }
 
 export async function sendPhotoToAll(

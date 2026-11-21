@@ -186,7 +186,7 @@ export async function placeOrder(
   order: Order,
   timeStr: string,
   idempotencyKey?: string,
-): Promise<{ docId: string | null; telegramSent: boolean; orderId?: string; totalAmount?: number }> {
+): Promise<{ docId: string | null; telegramSent: boolean; orderId?: string; totalAmount?: number; errorCode?: string }> {
   const { firebaseDbLite, callFn } = await import('./firebase');
   try {
     const res = await callFn<{
@@ -224,7 +224,7 @@ export async function placeOrder(
       : '';
     if (code !== 'not-found' && code !== 'unimplemented') {
       console.error(`Error placing order ${order.orderId}`, e);
-      return { docId: null, telegramSent: false };
+      return { docId: null, telegramSent: false, ...(code ? { errorCode: code } : {}) };
     }
   }
 
