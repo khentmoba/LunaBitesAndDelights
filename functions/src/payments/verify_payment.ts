@@ -1,12 +1,15 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { logger } from 'firebase-functions';
 import { paymongoSecret, telegramToken, telegramChatIds } from '../secrets';
-import { ALNUM_DOC_ID, cleanStr } from '../util/security';
+import { ALNUM_DOC_ID, cleanStr, clientIpFromRequest, enforceFixedWindowRateLimit } from '../util/security';
 import {
   paymongoAuthHeader,
   requireOrderDoc,
-  fetchSessionPayments,
+  fetchCheckoutSessionDetailed,
+  resolveOrderDocId,
   hasPaidPayment,
+  hasPaidPaymentForAmount,
+  paidPaymentAmountCentavos,
   hasFailedPayment,
   firstPaymentId,
   markOrderPaidOnce,
@@ -16,6 +19,9 @@ import {
 
 export { hasMatchingCheckoutSession };
 
+const VERIFY_RATE_WINDOW_MS = 5 * 60 * 1000;
+const VERIFY_RATE_MAX = 60;
+
 /**
  * Verifies a GCash/PayMongo checkout session directly against PayMongo before
  * the kiosk shows the order receipt. Prevents client-side bypass of unpaid orders.
@@ -23,6 +29,18 @@ export { hasMatchingCheckoutSession };
 export const verifyCheckoutPayment = onCall(
   { secrets: [paymongoSecret, telegramToken, telegramChatIds] },
   async (request) => {
+    const role = (request.auth?.token as any)?.role;
+    const isStaff = !!request.auth?.uid && (role === 'staff' || role === 'admin');
+    const clientIp = clientIpFromRequest(request.rawRequest) || 'unknown';
+    if (!isStaff) {
+      await enforceFixedWindowRateLimit(
+        `checkout:verify:${clientIp}`,
+        VERIFY_RATE_MAX,
+        VERIFY_RATE_WINDOW_MS,
+        'Too many verification attempts. Please wait a moment and try again.',
+      );
+    }
+
     const d = request.data || {};
     const orderDocId = cleanStr(d.orderDocId, 64, 'orderDocId');
     const sessionId = cleanStr(d.checkoutSessionId, 128, 'checkoutSessionId');
@@ -44,14 +62,44 @@ export const verifyCheckoutPayment = onCall(
 
     const auth = paymongoAuthHeader(true);
 
-    const payments = await fetchSessionPayments(sessionId, auth);
-    if (payments === null) {
+    const fetched = await fetchCheckoutSessionDetailed(sessionId, auth);
+    if (fetched.status === 'not_found') {
+      throw new HttpsError('not-found', 'Checkout session not found');
+    }
+    if (fetched.status !== 'ok') {
       throw new HttpsError('unavailable', 'Unable to verify payment status with provider');
     }
+    const session = fetched.session;
 
+    const sessionOrderDocId = resolveOrderDocId(session.attributes);
+    if (sessionOrderDocId !== orderDocId) {
+      logger.warn(
+        `Refusing verifyCheckoutPayment for ${orderDocId}: session ${sessionId} belongs to ${sessionOrderDocId}`,
+      );
+      throw new HttpsError('permission-denied', 'Checkout session does not match order');
+    }
+
+    const payments = session.payments;
     if (hasPaidPayment(payments)) {
+      const expectedTotal = Number(orderData.totalAmount);
+      if (!hasPaidPaymentForAmount(payments, expectedTotal)) {
+        logger.warn(
+          `Refusing verifyCheckoutPayment for ${orderDocId}: paid amount does not match order total ${expectedTotal}`,
+        );
+        throw new HttpsError('failed-precondition', 'Paid amount does not match order total');
+      }
       const paymentId = firstPaymentId(payments);
-      await markOrderPaidOnce(orderRef, paymentId, String(orderData.orderId || ''), sessionId);
+      const paidCentavos = paidPaymentAmountCentavos(payments);
+      const { transitioned, alreadyPaid } = await markOrderPaidOnce(
+        orderRef,
+        paymentId,
+        String(orderData.orderId || ''),
+        sessionId,
+        paidCentavos ?? undefined,
+      );
+      if (!transitioned && !alreadyPaid) {
+        throw new HttpsError('failed-precondition', 'Unable to verify payment for order');
+      }
       logger.info(`Order ${orderDocId} verified as PAID via callable`);
       return { paid: true, paymentStatus: 'PAID' };
     }

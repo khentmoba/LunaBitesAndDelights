@@ -3,6 +3,7 @@ import { getFirestore, FieldValue, Timestamp } from 'firebase-admin/firestore';
 import { logger } from 'firebase-functions';
 import { projectOrder, isOrderVisibleInKds, toIsoTimestamp } from './kds';
 import { notifyOrderOnce } from './send_notification';
+import { isPermanentTelegramError } from '../telegram_api';
 import { dayDeltas, incrementPayload } from '../reporting/daily_stats';
 import { telegramToken, telegramChatIds, googleMapsApiKey } from '../secrets';
 
@@ -10,6 +11,8 @@ export const KDS_COLLECTION = 'kds_orders';
 export const DAILY_STATS_COLLECTION = 'dailyStats';
 const EVENT_GUARD_COLLECTION = 'stats_events';
 const GUARD_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+const KDS_MIRROR_TTL_MS = 30 * 24 * 60 * 60 * 1000;
+const MAX_TELEGRAM_RETRY_AGE_MS = 10 * 60 * 1000;
 
 /** Kitchen-screen mirror doc: the same trimmed projection the callable returns, plus a queryable time. */
 export function kdsMirrorDoc(id: string, data: FirebaseFirestore.DocumentData) {
@@ -17,6 +20,17 @@ export function kdsMirrorDoc(id: string, data: FirebaseFirestore.DocumentData) {
     ? data.timestamp
     : Timestamp.fromDate(new Date(toIsoTimestamp(data.timestamp)));
   return { ...projectOrder(id, data), ts };
+}
+
+/**
+ * Returns true when an order first becomes visible to the kitchen (immediately
+ * on create for Cash/Staff orders, or upon payment confirmation for GCash).
+ */
+export function shouldNotifyKitchen(
+  before: FirebaseFirestore.DocumentData | undefined,
+  after: FirebaseFirestore.DocumentData | undefined,
+): boolean {
+  return Boolean(after && isOrderVisibleInKds(after) && (!before || !isOrderVisibleInKds(before)));
 }
 
 function hasTelegramConfig(): boolean {
@@ -47,17 +61,40 @@ export const onOrderWritten = onDocumentWritten(
     const after = event.data?.after?.exists ? event.data.after.data() : undefined;
 
     const mirrorRef = db.collection(KDS_COLLECTION).doc(orderId);
+    const eventTimeMs = (() => {
+      const parsed = event.time ? Date.parse(event.time) : NaN;
+      return Number.isFinite(parsed) ? parsed : Date.now();
+    })();
     const mirror = (async () => {
-      if (!after || !isOrderVisibleInKds(after)) return mirrorRef.delete();
-      const next = kdsMirrorDoc(orderId, after);
-      if (
-        before &&
-        isOrderVisibleInKds(before) &&
-        JSON.stringify(kdsMirrorDoc(orderId, before)) === JSON.stringify(next)
-      ) {
+      const shouldExist = Boolean(after && isOrderVisibleInKds(after));
+      if (shouldExist) {
+        const next = kdsMirrorDoc(orderId, after!);
+        if (
+          before &&
+          isOrderVisibleInKds(before) &&
+          JSON.stringify(kdsMirrorDoc(orderId, before)) === JSON.stringify(next)
+        ) {
+          return;
+        }
+        await db.runTransaction(async (tx) => {
+          const snap = await tx.get(mirrorRef);
+          const prevMs = snap.exists ? Number(snap.data()?.sourceEventMs) : 0;
+          if (Number.isFinite(prevMs) && prevMs > eventTimeMs) return;
+          tx.set(mirrorRef, {
+            ...next,
+            sourceEventMs: eventTimeMs,
+            expireAt: Timestamp.fromMillis(eventTimeMs + KDS_MIRROR_TTL_MS),
+          });
+        });
         return;
       }
-      return mirrorRef.set(next);
+      await db.runTransaction(async (tx) => {
+        const snap = await tx.get(mirrorRef);
+        if (!snap.exists) return;
+        const prevMs = Number(snap.data()?.sourceEventMs);
+        if (Number.isFinite(prevMs) && prevMs > eventTimeMs) return;
+        tx.delete(mirrorRef);
+      });
     })();
 
     const deltas = dayDeltas(before, after);
@@ -74,12 +111,23 @@ export const onOrderWritten = onDocumentWritten(
       }
     });
 
-    const notify = (!before && after && hasTelegramConfig())
-      ? notifyOrderOnce(orderId, after).then((res) => {
-          if (res.inFlight) {
-            throw new Error(`Telegram notification for ${orderId} is still in-flight; retrying until settled`);
-          }
-        })
+    const notifyTooOld = Date.now() - eventTimeMs > MAX_TELEGRAM_RETRY_AGE_MS;
+    const notify = (shouldNotifyKitchen(before, after) && hasTelegramConfig())
+      ? (notifyTooOld
+          ? Promise.resolve().then(() => {
+              logger.warn(`Skipping stale Telegram notification retry for ${orderId} (event age > 10m)`);
+            })
+          : notifyOrderOnce(orderId, after!).then((res) => {
+              if (res.inFlight) {
+                throw new Error(`Telegram notification for ${orderId} is still in-flight; retrying until settled`);
+              }
+            }).catch((err) => {
+              if (isPermanentTelegramError(err)) {
+                logger.warn(`Dropping permanent Telegram error for ${orderId} to avoid retry loop`, err);
+                return;
+              }
+              throw err;
+            }))
       : Promise.resolve();
 
     const results = await Promise.allSettled([mirror, stats, notify]);

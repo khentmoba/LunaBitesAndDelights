@@ -66,6 +66,13 @@ export function emptyDay(date: string): DayStats {
   };
 }
 
+const VALID_DATE_LABEL = /^\d{4}-\d{2}-\d{2}$/;
+
+/** Normalizes a Firestore-safe YYYY-MM-DD date label; malformed values fall back to 'unknown'. */
+export function safeDateLabel(raw: unknown): string {
+  return typeof raw === 'string' && VALID_DATE_LABEL.test(raw) ? raw : 'unknown';
+}
+
 /** Same counting rules the lifetime report has always used. */
 export function contributionOf(data: Record<string, any> | undefined): Contribution | null {
   if (!data || !isCountableOrder(data)) return null;
@@ -83,7 +90,7 @@ export function contributionOf(data: Record<string, any> | undefined): Contribut
   }
   const type = data.type || 'Pickup';
   return {
-    date: data.dateLabel || 'unknown',
+    date: safeDateLabel(data.dateLabel),
     amount: data.totalAmount || 0,
     itemsSold,
     channel: type === 'Walk-In' ? 'walkIn' : type === 'Delivery' ? 'delivery' : 'pickup',

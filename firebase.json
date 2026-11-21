@@ -70,7 +70,7 @@
         ]
       },
       {
-        "source": "{/,/index.html,/menu/**,/payment/**,/kiosk/,/kiosk/index.html,/kiosk/*/,/kiosk/*/index.html,/kiosk/sw.js,/kiosk/flutter_service_worker.js,/kiosk/manifest.json,/staff/,/staff/index.html,/staff/*/,/staff/*/index.html,/staff/sw.js,/staff/manifest.webmanifest}",
+        "source": "{/,/index.html,/menu/**,/payment/**,/kiosk/,/kiosk/index.html,/kiosk/*,/kiosk/*/,/kiosk/*/index.html,/kiosk/sw.js,/kiosk/flutter_service_worker.js,/kiosk/manifest.json,/staff/,/staff/index.html,/staff/*,/staff/*/,/staff/*/index.html,/staff/sw.js,/staff/manifest.webmanifest}",
         "headers": [
           {
             "key": "Cache-Control",
@@ -113,7 +113,8 @@
   ],
   "firestore": {
     "database": "(default)",
-    "rules": "firestore.rules"
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
   },
   "storage": {
     "rules": "storage.rules"

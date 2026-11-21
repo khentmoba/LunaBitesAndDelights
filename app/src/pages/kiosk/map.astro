@@ -116,7 +116,7 @@ import { $, esc } from '../../kiosk/dom';
 import { DRAFT, load, save, type CheckoutDraft } from '../../kiosk/handoff';
 import { currentPosition, reverseGeocode, searchAddress, shortAddress, tileUrl, type Place } from '../../kiosk/geo';
 import { glyph } from '../../kiosk/icons';
-import { popTo } from '../../kiosk/inactivity';
+import { popTo, watchInactivity } from '../../kiosk/inactivity';
 import { STORE, deliveryDistance } from '../../kiosk/order';
 
 const draft = load<CheckoutDraft>(DRAFT);
@@ -124,6 +124,8 @@ let address = draft?.address ?? '';
 let addressShort = address;
 let lat = draft?.lat ?? STORE.lat;
 let lng = draft?.lng ?? STORE.lng;
+let resolvedLat: number | null = draft?.pinned && address ? lat : null;
+let resolvedLng: number | null = draft?.pinned && address ? lng : null;
 let loading = false;
 let results: Place[] = [];
 let searchTimer = 0;
@@ -165,12 +167,16 @@ async function fetchAddress(la: number, ln: number) {
   const ac = (reverseAbort = new AbortController());
   const a = await reverseGeocode(la, ln, ac.signal);
   if (ac.signal.aborted) return;
-  if (a.full) address = a.full;
-  if (a.short) addressShort = a.short;
-  else if (!address) {
-    address = `${la.toFixed(6)}, ${ln.toFixed(6)}`;
-    addressShort = address;
+  if (a.full || a.short) {
+    address = a.full || a.short;
+    addressShort = a.short || a.full;
+  } else {
+    const coords = `${la.toFixed(6)}, ${ln.toFixed(6)}`;
+    address = coords;
+    addressShort = coords;
   }
+  resolvedLat = la;
+  resolvedLng = ln;
   render();
 }
 
@@ -247,6 +253,8 @@ list.addEventListener('click', (e) => {
   lng = Number.parseFloat(r.lon) || lng;
   address = r.display_name ?? '';
   addressShort = shortAddress(r.address) || address;
+  resolvedLat = address ? lat : null;
+  resolvedLng = address ? lng : null;
   query.value = '';
   query.blur();
   showResults(false);
@@ -273,14 +281,22 @@ async function confirm() {
   const c = map.getCenter();
   lat = c.lat;
   lng = c.lng;
-  await fetchAddress(lat, lng);
+  const alreadyResolved =
+    resolvedLat !== null &&
+    resolvedLng !== null &&
+    address.length > 0 &&
+    Math.abs(resolvedLat - lat) < 1e-6 &&
+    Math.abs(resolvedLng - lng) < 1e-6;
+  if (!alreadyResolved) {
+    await fetchAddress(lat, lng);
+  }
   loading = false;
   render();
   const base: CheckoutDraft = load<CheckoutDraft>(DRAFT) ?? {
     name: '', phone: '', address: '', orderType: 'Delivery', paymentMethod: 'Cash',
     lat: STORE.lat, lng: STORE.lng, pinned: false, distance: 0, pendingDocId: null, pendingNumber: null,
   };
-  save(DRAFT, { ...base, address, lat, lng, pinned: true, distance: deliveryDistance(lat, lng), pendingDocId: null, pendingNumber: null });
+  save(DRAFT, { ...base, address, lat, lng, pinned: true, distance: deliveryDistance(lat, lng), pendingDocId: null, pendingNumber: null, pendingCart: undefined, idempotencyKey: undefined });
   popTo('/kiosk/checkout');
 }
 
@@ -289,6 +305,7 @@ $('[data-locate]').addEventListener('click', () => void goToMyLocation());
 $('[data-back]').addEventListener('click', () => popTo('/kiosk/checkout'));
 
 render();
+watchInactivity();
 void (async () => {
   if (draft?.pinned) return;
   const pos = await currentPosition();

@@ -1,9 +1,14 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
-import { getFirestore } from 'firebase-admin/firestore';
+import { getFirestore, Timestamp } from 'firebase-admin/firestore';
 import { sendToAll, sendPhotoToAll, escapeMd } from '../telegram_api';
 import { telegramToken, telegramChatIds, googleMapsApiKey } from '../secrets';
 import { logger } from 'firebase-functions';
-import { ALNUM_DOC_ID, cleanStr, optStr } from '../util/security';
+import { ALNUM_DOC_ID, cleanStr, clientIpFromRequest, enforceFixedWindowRateLimit } from '../util/security';
+import { isOrderVisibleInKds } from './kds';
+
+const NOTIF_RATE_WINDOW_MS = 10 * 60 * 1000;
+const NOTIF_RATE_MAX = 20;
+const ORDER_NOTIF_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 
 const ORDER_TYPES = ['Walk-In', 'Pickup', 'Delivery'];
 const MAX_ITEMS = 50;
@@ -80,22 +85,33 @@ export function formatOrderNotification(data: OrderNotificationData): string {
     ].join('\n');
 }
 
+function truncateField(value: string | null | undefined, maxChars: number): string {
+  const s = String(value ?? '').trim();
+  if (s.length <= maxChars) return s;
+  return `${s.slice(0, Math.max(1, maxChars - 1))}…`;
+}
+
 /** Concise summary caption for photos when the full receipt exceeds Telegram's 1024-char caption limit. */
 export function formatDeliverySummaryCaption(data: OrderNotificationData): string {
-  return [
-    `🔔 *NEW DELIVERY — ${escapeMd(data.orderNumber)}*`,
+  const build = (addrMax: number) => [
+    `🔔 *NEW DELIVERY — ${escapeMd(truncateField(data.orderNumber, 40))}*`,
     `🛵 *Type:* Delivery`,
     '',
-    `👤 *Name:* ${escapeMd(data.customerName)}`,
-    `📍 *Address:* ${escapeMd(data.customerAddress || '')}`,
-    `📞 *Phone:* ${escapeMd(data.customerPhone || '')}`,
+    `👤 *Name:* ${escapeMd(truncateField(data.customerName, 80))}`,
+    `📍 *Address:* ${escapeMd(truncateField(data.customerAddress, addrMax))}`,
+    `📞 *Phone:* ${escapeMd(truncateField(data.customerPhone, 32))}`,
     '',
     `💰 *FOOD TOTAL:* ₱*${escapeMd(data.total.toString())}*`,
     `💳 *Payment:* ${escapeMd(data.paymentMethod || 'Cash')}  \\-  *${escapeMd(data.paymentStatus || 'NOT PAID')}*`,
-    `🕐 *Time:* ${escapeMd(data.timeStr || '')}`,
+    `🕐 *Time:* ${escapeMd(truncateField(data.timeStr, 40))}`,
     '',
     `📋 _Full itemized list sent below\\._`,
   ].join('\n');
+
+  let caption = build(240);
+  if (caption.length > 1024) caption = build(100);
+  if (caption.length > 1024) caption = build(40);
+  return caption;
 }
 
 /** Generates Google Static Maps URL in hybrid mode (satellite imagery + road names). */
@@ -257,26 +273,32 @@ export function canClaimNotification(current: Record<string, any> | undefined, n
   return evaluateNotificationClaim(current, nowMs) === 'claimed';
 }
 
+export const ORDER_NOTIFICATIONS_COLLECTION = 'order_notifications';
+
 /**
- * Atomically claims Telegram notification delivery for an order so concurrent
- * trigger + callable invocations never double-send, and always renders from
- * the authoritative Firestore order document.
+ * Atomically claims Telegram notification delivery for an order in a separate
+ * `order_notifications/{orderDocId}` collection so concurrent trigger + callable
+ * invocations never double-send and claiming does not re-trigger `onOrderWritten`.
  */
 export async function notifyOrderOnce(
   orderDocId: string,
   orderData: Record<string, any>,
   timeStrOverride = '',
 ): Promise<{ sent: boolean; alreadySent: boolean; inFlight?: boolean }> {
+  if (orderData.telegramSent === true) {
+    return { sent: false, alreadySent: true, inFlight: false };
+  }
+
   const db = getFirestore();
-  const orderRef = db.collection('orders').doc(orderDocId);
+  const notifRef = db.collection(ORDER_NOTIFICATIONS_COLLECTION).doc(orderDocId);
 
   const nowMs = Date.now();
+  const expireAt = Timestamp.fromMillis(nowMs + ORDER_NOTIF_TTL_MS);
   const claimStatus = await db.runTransaction<ClaimStatus>(async (tx) => {
-    const snap = await tx.get(orderRef);
-    if (!snap.exists) return 'missing';
-    const status = evaluateNotificationClaim(snap.data(), nowMs);
+    const snap = await tx.get(notifRef);
+    const status = evaluateNotificationClaim(snap.exists ? snap.data() : {}, nowMs);
     if (status === 'claimed') {
-      tx.set(orderRef, { telegramStatus: 'sending', telegramClaimedAt: nowMs }, { merge: true });
+      tx.set(notifRef, { telegramStatus: 'sending', telegramClaimedAt: nowMs, expireAt }, { merge: true });
     }
     return status;
   });
@@ -299,10 +321,10 @@ export async function notifyOrderOnce(
       await sendToAll(message);
     }
 
-    await orderRef.set({ telegramSent: true, telegramStatus: 'sent' }, { merge: true });
+    await notifRef.set({ telegramSent: true, telegramStatus: 'sent' }, { merge: true });
     return { sent: true, alreadySent: false };
   } catch (error: any) {
-    await orderRef.set({ telegramSent: false, telegramStatus: 'failed' }, { merge: true }).catch((e) => {
+    await notifRef.set({ telegramSent: false, telegramStatus: 'failed' }, { merge: true }).catch((e) => {
       logger.warn(`Could not record failed notification status for ${orderDocId}`, e);
     });
     logger.error(`Error sending Telegram notification for ${data.orderNumber}`, error);
@@ -315,6 +337,18 @@ export async function notifyOrderOnce(
 export const sendOrderNotification = onCall(
   { secrets: [telegramToken, telegramChatIds, googleMapsApiKey] },
   async (request) => {
+    const role = (request.auth?.token as any)?.role;
+    const isStaff = !!request.auth?.uid && (role === 'staff' || role === 'admin');
+    const clientIp = clientIpFromRequest(request.rawRequest) || 'unknown';
+    if (!isStaff) {
+      await enforceFixedWindowRateLimit(
+        `notif:send:${clientIp}`,
+        NOTIF_RATE_MAX,
+        NOTIF_RATE_WINDOW_MS,
+        'Too many notification requests. Please try again shortly.',
+      );
+    }
+
     const d = request.data || {};
     const orderDocId =
       typeof d.orderDocId === 'string' && ALNUM_DOC_ID.test(d.orderDocId) ? d.orderDocId : null;
@@ -322,7 +356,6 @@ export const sendOrderNotification = onCall(
       throw new HttpsError('invalid-argument', 'Missing orderDocId');
     }
     const orderNumber = cleanStr(d.orderNumber, 32, 'orderNumber');
-    const timeStr = optStr(d.timeStr, 64);
 
     const orderSnap = await getFirestore().collection('orders').doc(orderDocId).get();
     if (!orderSnap.exists) {
@@ -332,9 +365,13 @@ export const sendOrderNotification = onCall(
     if (orderData.orderId !== orderNumber) {
       throw new HttpsError('permission-denied', 'Order reference mismatch');
     }
+    if (!isOrderVisibleInKds(orderData) || orderData.status === 'Cancelled') {
+      throw new HttpsError('failed-precondition', 'Order is not eligible for kitchen notification');
+    }
 
     try {
-      const result = await notifyOrderOnce(orderDocId, orderData, timeStr);
+      // Ignore caller-supplied timeStr; derive strictly from the stored order timestamp.
+      const result = await notifyOrderOnce(orderDocId, orderData);
       return result.alreadySent ? { success: true, alreadySent: true } : { success: true };
     } catch {
       throw new HttpsError('internal', 'Failed to send Telegram notification');

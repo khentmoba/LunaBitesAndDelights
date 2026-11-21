@@ -143,14 +143,14 @@ function row(item: CartItem): string {
   return `<li class="row" data-id="${esc(item.id)}">
   <div class="row__bg" aria-hidden="true"><span class="icon">${glyph('delete_outline_rounded')}</span></div>
   <div class="row__fg">
-    <div class="row__thumb"><img src="${itemThumb(item.imageUrl)}" alt="" onerror="this.onerror=null;this.src='/kiosk/images/luna_logo.webp'"></div>
+    <div class="row__thumb"><img src="${esc(itemThumb(item.imageUrl))}" alt="" data-fallback="/kiosk/images/luna_logo.webp"></div>
     <div class="row__text">
       <p class="row__name">${name}</p>
       ${item.variant ? `<p class="row__variant">${esc(item.variant)}</p>` : ''}
       <div class="stepper">
         <button type="button" data-step="-1" aria-label="One less ${name}"><span class="icon" aria-hidden="true">${glyph('remove_rounded')}</span></button>
         <span class="stepper__qty">${item.quantity}</span>
-        <button type="button" data-step="1" aria-label="One more ${name}"><span class="icon" aria-hidden="true">${glyph('add_rounded')}</span></button>
+        <button type="button" data-step="1" aria-label="One more ${name}"${item.quantity >= 99 ? ' disabled' : ''}><span class="icon" aria-hidden="true">${glyph('add_rounded')}</span></button>
       </div>
     </div>
     <span class="row__price">${peso(item.price * item.quantity)}</span>
@@ -170,6 +170,14 @@ function render() {
   $('[data-total]').textContent = peso(cart.totalPrice());
   $('[data-rows]').innerHTML = items.map(row).join('');
 }
+
+$('[data-rows]').addEventListener('error', (e) => {
+  const img = e.target;
+  if (!(img instanceof HTMLImageElement) || !img.dataset.fallback) return;
+  const fallback = img.dataset.fallback;
+  delete img.dataset.fallback;
+  img.src = fallback;
+}, true);
 
 $('[data-rows]').addEventListener('click', (e) => {
   const step = (e.target as Element).closest<HTMLElement>('[data-step]');

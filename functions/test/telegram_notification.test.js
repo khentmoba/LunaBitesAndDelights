@@ -350,6 +350,16 @@ describe('Telegram MarkdownV2 escaping and order notifications', () => {
     assert.equal(isMarkdownParseError({ response: { statusCode: 400, body: { description: 'Bad Request: chat not found' } } }), false);
   });
 
+  test('isPermanentTelegramError distinguishes permanent 4xx from transient 429/5xx', () => {
+    const { isPermanentTelegramError } = require('../lib/telegram_api');
+    assert.equal(isPermanentTelegramError({ response: { statusCode: 400 } }), true);
+    assert.equal(isPermanentTelegramError({ response: { statusCode: 403 } }), true);
+    assert.equal(isPermanentTelegramError({ response: { statusCode: 429 } }), false);
+    assert.equal(isPermanentTelegramError({ response: { statusCode: 408 } }), false);
+    assert.equal(isPermanentTelegramError({ response: { statusCode: 502 } }), false);
+    assert.equal(isPermanentTelegramError(new Error('ECONNRESET')), false);
+  });
+
   test('sendToAll and sendPhotoToAll fail cleanly when unconfigured or all recipients reject', async () => {
     process.env.TELEGRAM_CHAT_ID = ' , ';
     await assert.rejects(() => sendToAll('hello'), /TELEGRAM_CHAT_ID is not configured/);
@@ -443,5 +453,39 @@ describe('Telegram MarkdownV2 escaping and order notifications', () => {
       'claimed',
       'legacy sending doc without timestamp must be reclaimable',
     );
+  });
+
+  test('splitTelegramMessage chunks >3800-char messages on newlines without splitting escapes', () => {
+    const { splitTelegramMessage } = require('../lib/telegram_api');
+    const line = '• 1x *Shawarma Wrap* \\(Buy 1 Take 1\\) — ₱99\n';
+    const big = line.repeat(120);
+    assert.ok(big.length > 4096);
+    const chunks = splitTelegramMessage(big, 3800);
+    assert.ok(chunks.length >= 2);
+    for (const c of chunks) {
+      assert.ok(c.length <= 3800, `chunk exceeded limit: ${c.length}`);
+      assert.ok(!c.endsWith('\\'), 'chunk must not end with stray escape backslash');
+    }
+    assert.equal(chunks.join('\n').trimEnd().replace(/\n+/g, '\n'), big.trimEnd().replace(/\n+/g, '\n'));
+  });
+
+  test('formatDeliverySummaryCaption stays within Telegram 1024-char photo caption limit', () => {
+    const { formatDeliverySummaryCaption } = require('../lib/orders/send_notification');
+    const caption = formatDeliverySummaryCaption({
+      orderNumber: 'LU-261121-170000-ABC',
+      customerName: 'A.'.repeat(50),
+      customerAddress: 'Purok 5, Brgy. Poblacion (Near 7-Eleven) - '.repeat(10),
+      customerPhone: '09171234567',
+      items: [],
+      total: 12345,
+      timeStr: '2026-11-21  17:00',
+      orderType: 'Delivery',
+      deliveryFee: 0,
+      paymentMethod: 'Cash',
+      paymentStatus: 'NOT PAID',
+      lat: 9.02,
+      lng: 125.51,
+    });
+    assert.ok(caption.length <= 1024, `caption exceeded 1024 chars: ${caption.length}`);
   });
 });

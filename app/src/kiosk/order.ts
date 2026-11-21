@@ -168,15 +168,33 @@ export function notificationFor(order: Order, timeStr: string, orderDocId: strin
   };
 }
 
+/** Generates an alphanumeric idempotency key for safe order submission retries. */
+export function newIdempotencyKey(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID().replace(/-/g, '');
+  }
+  const alphabet = 'abcdefghijklmnopqrstuvwxyz0123456789';
+  return Array.from({ length: 24 }, () => alphabet[Math.floor(Math.random() * alphabet.length)]).join('');
+}
+
 /**
  * Places an order via the server-validated `placeOrder` callable (onOrderWritten
  * handles Telegram notification reliably). Falls back to direct Firestore write
  * + `sendOrderNotification` only if the callable is not yet deployed.
  */
-export async function placeOrder(order: Order, timeStr: string): Promise<{ docId: string | null; telegramSent: boolean }> {
+export async function placeOrder(
+  order: Order,
+  timeStr: string,
+  idempotencyKey?: string,
+): Promise<{ docId: string | null; telegramSent: boolean; orderId?: string; totalAmount?: number; errorCode?: string }> {
   const { firebaseDbLite, callFn } = await import('./firebase');
   try {
-    const res = await callFn<{ success?: boolean; docId?: string }>('placeOrder', {
+    const res = await callFn<{
+      success?: boolean;
+      docId?: string;
+      orderId?: string;
+      totalAmount?: number;
+    }>('placeOrder', {
       orderId: order.orderId,
       items: order.items,
       type: order.type,
@@ -187,17 +205,26 @@ export async function placeOrder(order: Order, timeStr: string): Promise<{ docId
       lng: order.lng,
       totalDistance: order.totalDistance,
       paymentMethod: order.paymentMethod,
+      ...(idempotencyKey ? { idempotencyKey } : {}),
     });
     if (res.success === true && typeof res.docId === 'string' && res.docId) {
-      return { docId: res.docId, telegramSent: true };
+      return {
+        docId: res.docId,
+        telegramSent: true,
+        orderId: typeof res.orderId === 'string' && res.orderId ? res.orderId : order.orderId,
+        totalAmount: typeof res.totalAmount === 'number' && Number.isFinite(res.totalAmount)
+          ? res.totalAmount
+          : order.totalAmount,
+      };
     }
+    return { docId: null, telegramSent: false };
   } catch (e: unknown) {
     const code = typeof (e as { code?: unknown })?.code === 'string'
       ? String((e as { code?: unknown }).code).replace(/^functions\//, '')
       : '';
     if (code !== 'not-found' && code !== 'unimplemented') {
       console.error(`Error placing order ${order.orderId}`, e);
-      return { docId: null, telegramSent: false };
+      return { docId: null, telegramSent: false, ...(code ? { errorCode: code } : {}) };
     }
   }
 

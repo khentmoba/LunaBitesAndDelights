@@ -84,7 +84,7 @@ import { $ } from '../../kiosk/dom';
 import { callFn } from '../../kiosk/firebase';
 import { DRAFT, PENDING, RECEIPT, load, save, type CheckoutDraft, type PendingPayment } from '../../kiosk/handoff';
 import { glyph } from '../../kiosk/icons';
-import { popTo } from '../../kiosk/inactivity';
+import { popTo, watchInactivity } from '../../kiosk/inactivity';
 import { isPaymentUrl } from '../../kiosk/payment-host';
 
 const pending = load<PendingPayment>(PENDING);
@@ -182,6 +182,7 @@ if (!pending) {
   document.querySelectorAll('[data-cancel]').forEach((b) => b.addEventListener('click', cancel));
   $('[data-open]').addEventListener('click', openPayment);
   $('[data-paid]').addEventListener('click', () => void verify(pending));
+  watchInactivity(5 * 60 * 1000);
   void start(pending);
 }
 </script>

@@ -4,8 +4,23 @@ import { logger } from 'firebase-functions';
 import { requireStaff, validDocId, cleanStr, optStr } from '../util/security';
 
 const VALID_STATUSES = ['Pending', 'Preparing', 'Ready', 'Completed', 'Cancelled'];
+const ALLOWED_STATUS_TRANSITIONS: Record<string, ReadonlySet<string>> = {
+  Pending: new Set(['Pending', 'Preparing', 'Ready', 'Completed', 'Cancelled']),
+  Preparing: new Set(['Preparing', 'Ready', 'Completed', 'Cancelled']),
+  Ready: new Set(['Ready', 'Completed', 'Cancelled']),
+  Completed: new Set(['Completed']),
+  Cancelled: new Set(['Cancelled']),
+};
 const EPOCH_ISO = '1970-01-01T00:00:00.000Z';
 const MAX_ORDERS_LIMIT = 200;
+
+/** Validates whether an order can transition from `currentStatus` to `nextStatus`. */
+export function isAllowedStatusTransition(currentStatus: string, nextStatus: string): boolean {
+  const allowed = Object.prototype.hasOwnProperty.call(ALLOWED_STATUS_TRANSITIONS, currentStatus)
+    ? ALLOWED_STATUS_TRANSITIONS[currentStatus]
+    : undefined;
+  return Boolean(allowed && allowed.has(nextStatus));
+}
 
 /** Clamps an optional caller-supplied limit to [1, 200], defaulting to 200. */
 export function clampOrdersLimit(raw: unknown): number {
@@ -29,9 +44,9 @@ export function toIsoTimestamp(raw: unknown): string {
 
 /** Excludes unpaid/failed online GCash checkouts from the kitchen display until payment clears. */
 export function isOrderVisibleInKds(d: FirebaseFirestore.DocumentData): boolean {
-  const method = String(d.paymentMethod || '');
+  const method = String(d.paymentMethod || '').toLowerCase();
   const status = String(d.paymentStatus || '');
-  return !(method === 'GCash' && (status === 'AWAITING_PAYMENT' || status === 'PAYMENT_FAILED'));
+  return method !== 'gcash' || status === 'PAID';
 }
 
 const itemQty = (i: any): number => Number(i?.quantity) || Number(i?.qty) || 0;
@@ -77,20 +92,32 @@ export const getActiveOrders = onCall(async (request) => {
   try {
     // 7-day lookback so yesterday's active and history orders are never cut off
     const lookbackThreshold = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-    const snapshot = await db.collection('orders')
-      .where('timestamp', '>=', lookbackThreshold)
-      .orderBy('timestamp', 'desc')
-      .limit(maxDocs)
-      .get();
-
+    const pageSize = Math.min(Math.max(maxDocs * 2, 50), MAX_ORDERS_LIMIT);
+    const maxPages = 3;
     const orders = [];
-    for (const doc of snapshot.docs) {
-      const data = doc.data();
-      if (!isOrderVisibleInKds(data)) continue;
-      const status = data.status || 'Pending';
-      if (includeCompleted || (status !== 'Completed' && status !== 'Cancelled')) {
-        orders.push(projectOrder(doc.id, data));
+    let cursor: FirebaseFirestore.QueryDocumentSnapshot | null = null;
+
+    for (let page = 0; page < maxPages && orders.length < maxDocs; page++) {
+      let q = db.collection('orders')
+        .where('timestamp', '>=', lookbackThreshold)
+        .orderBy('timestamp', 'desc')
+        .limit(pageSize);
+      if (cursor) q = q.startAfter(cursor);
+      const snapshot = await q.get();
+      if (snapshot.empty) break;
+
+      for (const doc of snapshot.docs) {
+        const data = doc.data();
+        if (!isOrderVisibleInKds(data)) continue;
+        const status = data.status || 'Pending';
+        if (includeCompleted || (status !== 'Completed' && status !== 'Cancelled')) {
+          orders.push(projectOrder(doc.id, data));
+          if (orders.length >= maxDocs) break;
+        }
       }
+
+      if (snapshot.docs.length < pageSize) break;
+      cursor = snapshot.docs[snapshot.docs.length - 1];
     }
     return { success: true, orders };
   } catch (error: any) {
@@ -109,9 +136,23 @@ export const updateOrderStatus = onCall(async (request) => {
   const db = getFirestore();
   try {
     const orderRef = db.collection('orders').doc(orderId);
-    const update: Record<string, any> = { status };
-    if (cancellationReason) update.cancellationReason = cancellationReason;
-    await orderRef.update(update);
+    await db.runTransaction(async (tx) => {
+      const snap = await tx.get(orderRef);
+      if (!snap.exists) {
+        throw new HttpsError('not-found', 'Order not found');
+      }
+      const currentStatus = String(snap.data()?.status || 'Pending');
+      if (!isAllowedStatusTransition(currentStatus, status)) {
+        throw new HttpsError(
+          'failed-precondition',
+          `Cannot transition order from ${currentStatus} to ${status}`,
+        );
+      }
+      if (currentStatus === status && !cancellationReason) return;
+      const update: Record<string, any> = { status };
+      if (cancellationReason) update.cancellationReason = cancellationReason;
+      tx.update(orderRef, update);
+    });
     logger.info(`Order ${orderId} status updated to ${status}`);
     return { success: true };
   } catch (error: any) {

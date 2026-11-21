@@ -2,10 +2,13 @@ import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { getFirestore } from 'firebase-admin/firestore';
 import { logger } from 'firebase-functions';
 import { paymongoSecret } from '../secrets';
-import { cleanStr, optStr, cleanInt } from '../util/security';
+import { cleanStr, optStr, cleanInt, clientIpFromRequest, enforceFixedWindowRateLimit } from '../util/security';
 import { paymongoAuthHeader, requireOrderDoc } from './paymongo';
 
 const PAYMONGO_API = 'https://api.paymongo.com/v2/checkout_sessions';
+const CHECKOUT_REUSE_MS = 45 * 60 * 1000;
+const CHECKOUT_RATE_WINDOW_MS = 5 * 60 * 1000;
+const CHECKOUT_RATE_MAX = 30;
 
 // Server-side price list — single source of truth for payment verification.
 // MUST match app/src/data/menu.ts; test/site/price-parity.test.mjs fails when it
@@ -85,15 +88,19 @@ export function validateAndPriceItems(rawItems: unknown): { items: PricedItem[];
     if (quantity < 1) {
       throw new HttpsError('invalid-argument', 'Invalid quantity');
     }
-    const allowed = MENU_PRICES[name];
+    const allowed = Object.prototype.hasOwnProperty.call(MENU_PRICES, name)
+      ? MENU_PRICES[name]
+      : undefined;
     if (!allowed) throw new HttpsError('invalid-argument', `Unknown item: ${name}`);
     const price = Number(i?.price);
     if (!allowed.includes(price)) {
       throw new HttpsError('invalid-argument', `Price mismatch for ${name}`);
     }
-    const variantMap = VARIANT_PRICES[name];
+    const variantMap = Object.prototype.hasOwnProperty.call(VARIANT_PRICES, name)
+      ? VARIANT_PRICES[name]
+      : undefined;
     if (variantMap) {
-      if (!variant || variantMap[variant] === undefined) {
+      if (!variant || !Object.prototype.hasOwnProperty.call(variantMap, variant)) {
         throw new HttpsError('invalid-argument', `Invalid variant for ${name}`);
       }
       if (variantMap[variant] !== price) {
@@ -117,16 +124,35 @@ export const createCheckoutSession = onCall(
     const customerName = optStr(d.customerName, 100);
     const customerPhone = optStr(d.customerPhone, 32);
 
+    const role = (request.auth?.token as any)?.role;
+    const isStaff = !!request.auth?.uid && (role === 'staff' || role === 'admin');
+    const clientIp = clientIpFromRequest(request.rawRequest) || 'unknown';
+    if (!isStaff) {
+      await enforceFixedWindowRateLimit(
+        `checkout:create:${clientIp}`,
+        CHECKOUT_RATE_MAX,
+        CHECKOUT_RATE_WINDOW_MS,
+        'Too many checkout attempts. Please wait a few minutes and try again.',
+      );
+    }
+
     // The payment result must land on the order document the kiosk wrote.
     const { orderRef, orderData } = await requireOrderDoc(orderDocId);
     if (orderData.orderId !== orderId) {
       throw new HttpsError('permission-denied', 'Order reference mismatch');
     }
+    if (String(orderData.paymentMethod || '').toLowerCase() !== 'gcash') {
+      throw new HttpsError('failed-precondition', 'Checkout session is only available for GCash orders');
+    }
+    if (orderData.status === 'Cancelled') {
+      throw new HttpsError('failed-precondition', 'Order is cancelled');
+    }
     if (orderData.paymentStatus === 'PAID') {
       throw new HttpsError('failed-precondition', 'Order is already paid');
     }
 
-    const { items: pricedItems, total: itemsTotal } = validateAndPriceItems(d.items);
+    // Price strictly from the authoritative persisted order items, never client-supplied items.
+    const { items: pricedItems, total: itemsTotal } = validateAndPriceItems(orderData.items);
     const lineItems = pricedItems.map((i) => ({
       name: i.name,
       amount: i.price * 100,
@@ -137,6 +163,23 @@ export const createCheckoutSession = onCall(
     // The rider confirms delivery separately; online payment covers food only.
     if (amount !== itemsTotal) {
       throw new HttpsError('invalid-argument', 'Amount does not match order total');
+    }
+
+    // Reuse an existing fresh checkout session for this order instead of creating duplicates.
+    if (
+      orderData.paymentStatus === 'AWAITING_PAYMENT' &&
+      typeof orderData.checkoutUrl === 'string' &&
+      orderData.checkoutUrl.length > 0 &&
+      typeof orderData.checkoutSessionId === 'string' &&
+      orderData.checkoutSessionId.length > 0 &&
+      typeof orderData.checkoutCreatedAt === 'number' &&
+      Date.now() - orderData.checkoutCreatedAt < CHECKOUT_REUSE_MS
+    ) {
+      return {
+        success: true,
+        checkoutUrl: orderData.checkoutUrl,
+        checkoutSessionId: orderData.checkoutSessionId,
+      };
     }
 
     const auth = paymongoAuthHeader(true);
@@ -158,8 +201,8 @@ export const createCheckoutSession = onCall(
               metadata: {
                 order_id: orderId,
                 order_doc_id: orderDocId,
-                customer_name: customerName,
-                customer_phone: customerPhone,
+                customer_name: String(orderData.customerName || customerName || ''),
+                customer_phone: String(orderData.customerPhone || customerPhone || ''),
               },
             },
           },
@@ -173,17 +216,49 @@ export const createCheckoutSession = onCall(
       }
 
       const checkout = json.data;
+      let resolvedSessionId = String(checkout.id);
+      let resolvedCheckoutUrl = String(checkout.attributes.checkout_url);
       await getFirestore().runTransaction(async (tx) => {
         const snap = await tx.get(orderRef);
         if (!snap.exists) {
           throw new HttpsError('not-found', 'Order not found');
         }
-        if (snap.data()?.paymentStatus === 'PAID') {
+        const current = snap.data()!;
+        if (String(current.paymentMethod || '').toLowerCase() !== 'gcash') {
+          throw new HttpsError('failed-precondition', 'Checkout session is only available for GCash orders');
+        }
+        if (current.status === 'Cancelled') {
+          throw new HttpsError('failed-precondition', 'Order is cancelled');
+        }
+        if (current.paymentStatus === 'PAID') {
           throw new HttpsError('failed-precondition', 'Order is already paid');
+        }
+        const prevIds: string[] = Array.isArray(current.checkoutSessionIds)
+          ? current.checkoutSessionIds.filter((s: unknown): s is string => typeof s === 'string' && s.length > 0)
+          : (typeof current.checkoutSessionId === 'string' && current.checkoutSessionId.length > 0
+            ? [current.checkoutSessionId]
+            : []);
+        const mergedIds = Array.from(new Set([...prevIds, String(checkout.id)])).slice(-5);
+        if (
+          current.paymentStatus === 'AWAITING_PAYMENT' &&
+          typeof current.checkoutUrl === 'string' &&
+          current.checkoutUrl.length > 0 &&
+          typeof current.checkoutSessionId === 'string' &&
+          current.checkoutSessionId.length > 0 &&
+          typeof current.checkoutCreatedAt === 'number' &&
+          Date.now() - current.checkoutCreatedAt < CHECKOUT_REUSE_MS
+        ) {
+          // Concurrent call won first: keep its URL as primary, but also record this session id so payment still reconciles.
+          resolvedSessionId = current.checkoutSessionId;
+          resolvedCheckoutUrl = current.checkoutUrl;
+          tx.set(orderRef, { checkoutSessionIds: mergedIds }, { merge: true });
+          return;
         }
         tx.set(orderRef, {
           checkoutSessionId: checkout.id,
+          checkoutSessionIds: mergedIds,
           checkoutUrl: checkout.attributes.checkout_url,
+          checkoutCreatedAt: Date.now(),
           paymentMethod: 'GCash',
           paymentStatus: 'AWAITING_PAYMENT',
           totalAmount: itemsTotal,
@@ -191,9 +266,9 @@ export const createCheckoutSession = onCall(
         }, { merge: true });
       });
 
-      logger.info(`Checkout session created for order ${orderId}: ${checkout.id}`);
+      logger.info(`Checkout session resolved for order ${orderId}: ${resolvedSessionId}`);
       // #17: only what the client needs to redirect.
-      return { success: true, checkoutUrl: checkout.attributes.checkout_url, checkoutSessionId: checkout.id };
+      return { success: true, checkoutUrl: resolvedCheckoutUrl, checkoutSessionId: resolvedSessionId };
     } catch (error: any) {
       if (error instanceof HttpsError) throw error;
       logger.error('Error creating PayMongo checkout:', error);

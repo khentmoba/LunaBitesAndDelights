@@ -2,11 +2,27 @@ const test = require('node:test');
 const assert = require('node:assert');
 const crypto = require('node:crypto');
 
-const { resolveOrderDocId, verifyPaymongoSignature } = require('../lib/payments/webhook');
-const { hasPaidPayment, hasFailedPayment, firstPaymentId } = require('../lib/payments/paymongo');
+const {
+  resolveOrderDocId,
+  verifyPaymongoSignature,
+  extractPaymongoWebhookEvent,
+} = require('../lib/payments/webhook');
+const {
+  hasPaidPayment,
+  hasPaidPaymentForAmount,
+  paidPaymentAmountCentavos,
+  hasFailedPayment,
+  firstPaymentId,
+  fetchCheckoutSessionDetailed,
+} = require('../lib/payments/paymongo');
 const { hasMatchingCheckoutSession } = require('../lib/payments/verify_payment');
-const { isOrderVisibleInKds, toIsoTimestamp, clampOrdersLimit } = require('../lib/orders/kds');
-const { kdsMirrorDoc } = require('../lib/orders/derived');
+const { isOrderVisibleInKds, toIsoTimestamp, clampOrdersLimit, isAllowedStatusTransition } = require('../lib/orders/kds');
+const { kdsMirrorDoc, shouldNotifyKitchen } = require('../lib/orders/derived');
+const { idempotentOrderDocId, orderPayloadFingerprint } = require('../lib/orders/place_order');
+const { clientIpFromRequest } = require('../lib/util/security');
+const { isCountableOrder } = require('../lib/util');
+const { safeDateLabel } = require('../lib/reporting/daily_stats');
+const { validateAndPriceItems } = require('../lib/payments/create_checkout');
 
 // A paid session must land on the order document the kiosk wrote. PayMongo
 // echoes our metadata back on the webhook, so the document id travels there
@@ -199,4 +215,167 @@ test('clampOrdersLimit bounds caller limits to [1, 200] with default 200', () =>
   assert.strictEqual(clampOrdersLimit('abc'), 200);
   assert.strictEqual(clampOrdersLimit(50), 50);
   assert.strictEqual(clampOrdersLimit(500), 200);
+});
+
+test('hasPaidPaymentForAmount rejects partial or missing payment amounts', () => {
+  const paid500 = [{ id: 'pay_1', attributes: { status: 'paid', amount: 50000 } }];
+  assert.strictEqual(paidPaymentAmountCentavos(paid500), 50000);
+  assert.strictEqual(hasPaidPaymentForAmount(paid500, 500), true);
+  assert.strictEqual(hasPaidPaymentForAmount(paid500, 501), false);
+  assert.strictEqual(hasPaidPaymentForAmount([{ id: 'pay_2', attributes: { status: 'paid', amount: 2000 } }], 500), false);
+  assert.strictEqual(hasPaidPaymentForAmount([{ id: 'pay_3', attributes: { status: 'paid' } }], 500), false);
+});
+
+test('verifyPaymongoSignature still enforces header format and timestamp window when secret is unset', () => {
+  const nowSec = 1700000050;
+  assert.strictEqual(verifyPaymongoSignature('not-a-valid-header', '{}', undefined, nowSec), false);
+  assert.strictEqual(verifyPaymongoSignature(`t=1700000000,li=${'a'.repeat(64)}`, '{}', undefined, nowSec), true);
+  assert.strictEqual(verifyPaymongoSignature(`t=1700000000,li=${'a'.repeat(64)}`, '{}', undefined, 1700000500), false);
+});
+
+test('shouldNotifyKitchen holds unpaid GCash orders until payment confirms', () => {
+  assert.strictEqual(shouldNotifyKitchen(undefined, { paymentMethod: 'Cash', paymentStatus: 'NOT PAID' }), true);
+  assert.strictEqual(shouldNotifyKitchen(undefined, { paymentMethod: 'GCash', paymentStatus: 'AWAITING_PAYMENT' }), false);
+  assert.strictEqual(
+    shouldNotifyKitchen(
+      { paymentMethod: 'GCash', paymentStatus: 'AWAITING_PAYMENT' },
+      { paymentMethod: 'GCash', paymentStatus: 'PAID' },
+    ),
+    true,
+  );
+  assert.strictEqual(
+    shouldNotifyKitchen(
+      { paymentMethod: 'GCash', paymentStatus: 'PAID' },
+      { paymentMethod: 'GCash', paymentStatus: 'PAID', status: 'Preparing' },
+    ),
+    false,
+  );
+});
+
+test('idempotentOrderDocId produces stable alphanumeric Firestore doc IDs', () => {
+  const a = idempotentOrderDocId('key-abc-12345678');
+  const b = idempotentOrderDocId('key-abc-12345678');
+  const c = idempotentOrderDocId('key-xyz-87654321');
+  assert.strictEqual(a, b);
+  assert.notStrictEqual(a, c);
+  assert.match(a, /^[A-Za-z0-9]{1,64}$/);
+});
+
+test('validateAndPriceItems rejects prototype keys cleanly with invalid-argument', () => {
+  assert.throws(
+    () => validateAndPriceItems([{ name: 'toString', price: 0, quantity: 1 }]),
+    (err) => err && err.code === 'invalid-argument',
+  );
+  assert.throws(
+    () => validateAndPriceItems([{ name: 'constructor', price: 0, quantity: 1 }]),
+    (err) => err && err.code === 'invalid-argument',
+  );
+});
+
+test('hasMatchingCheckoutSession reconciles both primary and historical checkoutSessionIds', () => {
+  const order = { checkoutSessionId: 'cs_latest', checkoutSessionIds: ['cs_first', 'cs_latest'] };
+  assert.strictEqual(hasMatchingCheckoutSession(order, 'cs_latest'), true);
+  assert.strictEqual(hasMatchingCheckoutSession(order, 'cs_first'), true);
+  assert.strictEqual(hasMatchingCheckoutSession(order, 'cs_other'), false);
+});
+
+test('fetchCheckoutSessionDetailed distinguishes 404 from transient 5xx errors', async () => {
+  const origFetch = global.fetch;
+  try {
+    global.fetch = async () => ({ ok: false, status: 404, json: async () => ({}) });
+    const notFound = await fetchCheckoutSessionDetailed('cs_missing', 'auth');
+    assert.strictEqual(notFound.status, 'not_found');
+
+    global.fetch = async () => ({ ok: false, status: 503, json: async () => ({}) });
+    const transient = await fetchCheckoutSessionDetailed('cs_err', 'auth');
+    assert.strictEqual(transient.status, 'transient_error');
+  } finally {
+    global.fetch = origFetch;
+  }
+});
+
+test('isAllowedStatusTransition blocks illegal terminal transitions', () => {
+  assert.strictEqual(isAllowedStatusTransition('Pending', 'Preparing'), true);
+  assert.strictEqual(isAllowedStatusTransition('Preparing', 'Ready'), true);
+  assert.strictEqual(isAllowedStatusTransition('Ready', 'Completed'), true);
+  assert.strictEqual(isAllowedStatusTransition('Pending', 'Cancelled'), true);
+  assert.strictEqual(isAllowedStatusTransition('Cancelled', 'Pending'), false);
+  assert.strictEqual(isAllowedStatusTransition('Completed', 'Cancelled'), false);
+  assert.strictEqual(isAllowedStatusTransition('Completed', 'Completed'), true);
+  assert.strictEqual(isAllowedStatusTransition('Cancelled', 'Cancelled'), true);
+});
+
+test('safeDateLabel rejects slash/malformed dateLabels to avoid Firestore path errors', () => {
+  assert.strictEqual(safeDateLabel('2026-11-21'), '2026-11-21');
+  assert.strictEqual(safeDateLabel('2026/11/21'), 'unknown');
+  assert.strictEqual(safeDateLabel('../bad'), 'unknown');
+  assert.strictEqual(safeDateLabel(undefined), 'unknown');
+});
+
+test('extractPaymongoWebhookEvent parses real JSON:API envelope and legacy flat shape', () => {
+  assert.deepStrictEqual(
+    extractPaymongoWebhookEvent({
+      data: {
+        id: 'evt_123',
+        type: 'event',
+        attributes: {
+          type: 'checkout_session.payment.paid',
+          data: { id: 'cs_live_abc123' },
+        },
+      },
+    }),
+    { type: 'checkout_session.payment.paid', sessionId: 'cs_live_abc123' },
+  );
+  assert.deepStrictEqual(
+    extractPaymongoWebhookEvent({
+      data: {
+        type: 'checkout_session.payment.failed',
+        data: { id: 'cs_flat_456' },
+      },
+    }),
+    { type: 'checkout_session.payment.failed', sessionId: 'cs_flat_456' },
+  );
+  assert.strictEqual(extractPaymongoWebhookEvent({ data: { type: 'event' } }), null);
+  assert.strictEqual(extractPaymongoWebhookEvent(null), null);
+});
+
+test('orderPayloadFingerprint is deterministic and detects payload tampering', () => {
+  const base = {
+    type: 'Pickup',
+    paymentMethod: 'GCash',
+    customerName: 'Ana',
+    customerPhone: '09171234567',
+    customerAddress: 'Pickup',
+    items: [{ name: 'Classic Lemonade', variant: '', price: 49, quantity: 2 }],
+  };
+  assert.strictEqual(orderPayloadFingerprint(base), orderPayloadFingerprint({ ...base }));
+  assert.notStrictEqual(
+    orderPayloadFingerprint(base),
+    orderPayloadFingerprint({ ...base, customerName: 'Mallory' }),
+  );
+  assert.notStrictEqual(
+    orderPayloadFingerprint(base),
+    orderPayloadFingerprint({ ...base, paymentMethod: 'Cash' }),
+  );
+});
+
+test('clientIpFromRequest uses rightmost x-forwarded-for hop and falls back to rawRequest.ip', () => {
+  assert.strictEqual(clientIpFromRequest({ ip: '1.2.3.4' }), '1.2.3.4');
+  assert.strictEqual(
+    clientIpFromRequest({ ip: '1.1.1.1', headers: { 'x-forwarded-for': 'spoofed.1.2.3, 203.0.113.9' } }),
+    '203.0.113.9',
+  );
+  assert.strictEqual(clientIpFromRequest({}), '');
+});
+
+test('isOrderVisibleInKds and isCountableOrder require PAID allowlist for GCash', () => {
+  assert.strictEqual(isOrderVisibleInKds({ paymentMethod: 'gcash', paymentStatus: 'AWAITING_PAYMENT' }), false);
+  assert.strictEqual(isOrderVisibleInKds({ paymentMethod: 'GCash', paymentStatus: 'NOT PAID' }), false);
+  assert.strictEqual(isOrderVisibleInKds({ paymentMethod: 'gcash', paymentStatus: '' }), false);
+  assert.strictEqual(isOrderVisibleInKds({ paymentMethod: 'gcash', paymentStatus: 'PAID' }), true);
+  assert.strictEqual(isOrderVisibleInKds({ paymentMethod: 'Cash', paymentStatus: 'NOT PAID' }), true);
+
+  assert.strictEqual(isCountableOrder({ status: 'Pending', paymentMethod: 'GCash', paymentStatus: 'NOT PAID' }), false);
+  assert.strictEqual(isCountableOrder({ status: 'Pending', paymentMethod: 'gcash', paymentStatus: 'PAID' }), true);
+  assert.strictEqual(isCountableOrder({ status: 'Cancelled', paymentMethod: 'Cash', paymentStatus: 'PAID' }), false);
 });

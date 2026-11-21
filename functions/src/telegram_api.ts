@@ -93,6 +93,17 @@ export function isMarkdownParseError(err: any): boolean {
   );
 }
 
+/**
+ * Returns true for permanent Telegram 4xx failures (e.g. 400 bad request,
+ * 401 unauthorized, 403 bot blocked, 404 chat not found) that will never
+ * succeed on retry. Excludes 408 (timeout) and 429 (rate limit).
+ */
+export function isPermanentTelegramError(err: any): boolean {
+  if (err?.permanent === true) return true;
+  const status = err?.response?.statusCode ?? err?.statusCode;
+  return typeof status === 'number' && status >= 400 && status < 500 && status !== 408 && status !== 429;
+}
+
 async function deliverToAll(
   fnName: 'sendToAll' | 'sendPhotoToAll',
   fallbackNote: string,
@@ -148,21 +159,52 @@ async function deliverToAll(
   }
 
   if (failures.length === ids.length) {
-    throw new Error(`All ${ids.length} ${failLabel} failed`);
+    const err: any = new Error(`All ${ids.length} ${failLabel} failed`);
+    err.permanent = failures.every(({ r }) => isPermanentTelegramError(r.reason));
+    throw err;
   }
 
   return results;
 }
 
+const TELEGRAM_MAX_TEXT = 3800;
+
+/** Splits a Telegram message into <= maxLen chunks on newline boundaries without breaking escape sequences. */
+export function splitTelegramMessage(text: string, maxLen = TELEGRAM_MAX_TEXT): string[] {
+  if (text.length <= maxLen) return [text];
+  const chunks: string[] = [];
+  let rest = text;
+  while (rest.length > maxLen) {
+    let cut = rest.lastIndexOf('\n', maxLen);
+    if (cut <= 0) cut = maxLen;
+    // Avoid splitting in the middle of a MarkdownV2 backslash escape sequence.
+    let trailingBackslashes = 0;
+    for (let i = cut - 1; i >= 0 && rest[i] === '\\'; i--) trailingBackslashes++;
+    if (trailingBackslashes % 2 === 1 && cut > 1) cut--;
+    chunks.push(rest.slice(0, cut));
+    rest = rest.slice(cut).replace(/^\n/, '');
+  }
+  if (rest.length > 0) chunks.push(rest);
+  return chunks;
+}
+
 export async function sendToAll(message: string, options: any = {}) {
-  return deliverToAll(
-    'sendToAll',
-    'falling back to plain text',
-    'Telegram messages',
-    options,
-    (telegram, id, opts, plainText) =>
-      telegram.sendMessage(id, plainText ? stripMarkdownV2(message) : message, opts)
-  );
+  const chunks = splitTelegramMessage(message);
+  let lastResult: any;
+  for (let i = 0; i < chunks.length; i++) {
+    const isLast = i === chunks.length - 1;
+    const chunk = chunks[i];
+    const chunkOpts = isLast ? options : { ...options, reply_markup: undefined };
+    lastResult = await deliverToAll(
+      'sendToAll',
+      'falling back to plain text',
+      'Telegram messages',
+      chunkOpts,
+      (telegram, id, opts, plainText) =>
+        telegram.sendMessage(id, plainText ? stripMarkdownV2(chunk) : chunk, opts)
+    );
+  }
+  return lastResult;
 }
 
 export async function sendPhotoToAll(

@@ -18,6 +18,8 @@ export interface CheckoutDraft {
   pendingNumber: string | null;
   /** The cart lines that order was saved with. */
   pendingCart?: string;
+  /** Stable idempotency key for retrying a timed-out order submission. */
+  idempotencyKey?: string;
   /** Set by the GCash page when the shopper backs out without paying. */
   gcashCancelled?: boolean;
 }

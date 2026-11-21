@@ -113,12 +113,14 @@ import { $, esc } from '../../kiosk/dom';
 import { fitLabels } from '../../kiosk/fit';
 import { RECEIPT, load, save, type Receipt } from '../../kiosk/handoff';
 import { glyph } from '../../kiosk/icons';
+import { watchInactivity } from '../../kiosk/inactivity';
 import { snack } from '../../kiosk/snackbar';
 
 const r = load<Receipt>(RECEIPT);
 if (!r) {
   location.replace('/kiosk/menu');
 } else {
+  watchInactivity();
   const pickup = r.orderType === 'Pickup';
   const delivery = r.orderType === 'Delivery';
   $('[data-headline]').textContent = r.isWalkIn ? 'ORDER COMPLETE' : pickup ? 'PICKUP CONFIRMED!' : 'ORDER PLACED!';

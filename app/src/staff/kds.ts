@@ -60,6 +60,9 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
   let reconnectTimer = 0;
   let initialFallbackTimer = 0;
   let lookbackTimer = 0;
+  let searchTimer = 0;
+  let fetchInFlight = false;
+  let fetchSeq = 0;
   let disposed = false;
 
   const back = cameFromApp();
@@ -81,6 +84,12 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
   function publish() {
     const all = isLive && live !== null ? mergeKdsOrders(live, []) : mergeKdsOrders(live ?? [], polled);
     const visible = showCompleted ? all : all.filter((o) => !isClosedKdsStatus(o.status));
+    const activeIds = new Set(all.map((o) => String(o.id ?? '')));
+    for (const key of checked) {
+      const sep = key.lastIndexOf('_');
+      const orderId = sep > 0 ? key.slice(0, sep) : key;
+      if (!activeIds.has(orderId)) checked.delete(key);
+    }
     checkNewOrders(visible);
     orders = visible;
     loading = false;
@@ -102,13 +111,16 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
 
   async function fetchActive(silent = false) {
     if (!getStaff()) return;
+    if (silent && fetchInFlight) return;
+    const seq = ++fetchSeq;
+    fetchInFlight = true;
     if (!silent) loading = true;
     error = null;
     renderBar();
     renderBanner();
     try {
       const data = await callFn<{ success?: boolean; orders?: KdsOrder[]; message?: string }>('getActiveOrders', { includeCompleted: true });
-      if (disposed) return;
+      if (disposed || seq !== fetchSeq) return;
       if (data.success === true) {
         polled = data.orders ?? [];
         publish();
@@ -118,7 +130,7 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
         renderAll();
       }
     } catch (e) {
-      if (disposed) return;
+      if (disposed || seq !== fetchSeq) return;
       const fe = fnError(e);
       error = fe
         ? isAuthCode(fe.code)
@@ -127,6 +139,8 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
         : 'Connection error while loading live orders. Tap RETRY to sync.';
       loading = false;
       renderAll();
+    } finally {
+      if (seq === fetchSeq) fetchInFlight = false;
     }
   }
 
@@ -220,10 +234,17 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
         loading = false;
         staffSnack(`Error: ${data.message}`, ERROR);
       }
-    } catch {
+    } catch (e) {
       if (disposed) return;
       loading = false;
-      staffSnack('Failed to update status. Connection error.', ERROR);
+      const err = fnError(e);
+      if (err && isAuthCode(err.code)) {
+        error = 'Staff session expired. Sign in again to update orders.';
+        renderBanner();
+        staffSnack(error, ERROR);
+      } else {
+        staffSnack(err?.message || 'Failed to update status. Connection error.', ERROR);
+      }
     } finally {
       updating.delete(orderId);
       if (!disposed) renderAll();
@@ -438,7 +459,14 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
       }
       for (const c of cols) {
         board.querySelector(`[data-count="${c.status}"]`)!.textContent = String(b[c.status].length);
-        board.querySelector(`[data-list="${c.status}"]`)!.innerHTML = list(c, b[c.status]);
+        const listEl = board.querySelector<HTMLElement>(`[data-list="${c.status}"]`)!;
+        const html = list(c, b[c.status]);
+        if (listEl.dataset.html !== html) {
+          const prevScroll = listEl.scrollTop;
+          listEl.innerHTML = html;
+          listEl.dataset.html = html;
+          listEl.scrollTop = prevScroll;
+        }
       }
       return;
     }
@@ -452,17 +480,40 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
       panes.scrollLeft = tab * panes.clientWidth;
       panes.addEventListener('scroll', () => {
         const i = Math.round(panes.scrollLeft / Math.max(1, panes.clientWidth));
-        if (i !== tab) {
-          tab = i;
-          syncTabs();
-        }
+        if (i !== tab) selectTab(i, false);
       }, { passive: true });
     }
     COLUMNS.forEach((c, i) => {
       board.querySelector(`[data-tabcount="${i}"]`)!.innerHTML = badge(b[c.status].length, c.tone);
-      board.querySelector(`[data-list="${c.status}"]`)!.innerHTML = list(c, b[c.status]);
+      const listEl = board.querySelector<HTMLElement>(`[data-list="${c.status}"]`)!;
+      const html = list(c, b[c.status]);
+      if (listEl.dataset.html !== html) {
+        const prevScroll = listEl.scrollTop;
+        listEl.innerHTML = html;
+        listEl.dataset.html = html;
+        listEl.scrollTop = prevScroll;
+      }
     });
     syncTabs();
+  }
+
+  function selectTab(i: number, scroll: boolean) {
+    tab = i;
+    if (tab === 3 && !showCompleted) {
+      showCompleted = true;
+      publish();
+    } else {
+      syncTabs();
+    }
+    if (scroll) {
+      const panes = board.querySelector<HTMLElement>('[data-panes]');
+      if (panes) {
+        panes.scrollTo({
+          left: tab * panes.clientWidth,
+          behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+        });
+      }
+    }
   }
 
   function syncTabs() {
@@ -585,6 +636,7 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
       showCompleted = !showCompleted;
       publish();
     } else if (act === 'clear') {
+      clearTimeout(searchTimer);
       query = '';
       ctl.querySelector<HTMLInputElement>('[data-search]')!.value = '';
       syncControls();
@@ -596,20 +648,16 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
       syncControls();
       renderBoard();
     } else if (t.dataset.tab) {
-      tab = Number(t.dataset.tab);
-      if (tab === 3 && !showCompleted) {
-        showCompleted = true;
-        publish();
-      } else {
-        syncTabs();
-      }
-      const panes = board.querySelector<HTMLElement>('[data-panes]')!;
-      panes.scrollTo({ left: tab * panes.clientWidth, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+      selectTab(Number(t.dataset.tab), true);
     } else if (t.dataset.check) {
       const k = t.dataset.check;
-      if (checked.has(k)) checked.delete(k);
-      else checked.add(k);
-      renderBoard();
+      const next = !checked.has(k);
+      if (next) checked.add(k);
+      else checked.delete(k);
+      t.classList.toggle('is-done', next);
+      t.setAttribute('aria-pressed', String(next));
+      const box = t.querySelector<HTMLElement>('.kitem__box');
+      if (box) box.innerHTML = next ? icon('check') : '';
     } else if (t.dataset.status && t.dataset.id !== undefined) void updateStatus(t.dataset.id, t.dataset.status);
     else if (t.dataset.cancel !== undefined) {
       const o = byId(t.dataset.cancel);
@@ -638,7 +686,10 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
     if (!t.matches('[data-search]')) return;
     query = t.value;
     syncControls();
-    renderBoard();
+    clearTimeout(searchTimer);
+    searchTimer = window.setTimeout(() => {
+      if (!disposed) renderBoard();
+    }, 150);
   });
 
   function refreshElapsedTimes() {
@@ -682,6 +733,7 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
     disposed = true;
     unsub?.();
     clearTimeout(initialFallbackTimer);
+    clearTimeout(searchTimer);
     clearInterval(pollTimer);
     clearInterval(reconnectTimer);
     clearInterval(lookbackTimer);

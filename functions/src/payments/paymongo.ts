@@ -10,15 +10,30 @@ export interface VerifiedCheckoutSession {
   attributes: Record<string, any>;
 }
 
+/** Firestore doc ids are alphanumeric; the legacy display number may hold '-' too. */
+const LEGACY_DOC_ID = /^[A-Za-z0-9_-]{1,64}$/;
+
+/** Extracts the target Firestore order doc ID from PayMongo session attributes. */
+export function resolveOrderDocId(attrs: any): string | null {
+  const fromMeta = attrs?.metadata?.order_doc_id;
+  if (typeof fromMeta === 'string' && ALNUM_DOC_ID.test(fromMeta)) return fromMeta;
+  const fromRef = attrs?.reference_number;
+  if (typeof fromRef === 'string' && LEGACY_DOC_ID.test(fromRef)) return fromRef;
+  return null;
+}
+
 /** Returns true only when the order is bound to the exact checkout session id. */
 export function hasMatchingCheckoutSession(
   orderData: Record<string, any> | undefined,
   sessionId: string,
 ): boolean {
+  if (!sessionId) return false;
   const bound = typeof orderData?.checkoutSessionId === 'string'
     ? orderData.checkoutSessionId.trim()
     : '';
-  return bound.length > 0 && bound === sessionId;
+  if (bound.length > 0 && bound === sessionId) return true;
+  const list = orderData?.checkoutSessionIds;
+  return Array.isArray(list) && list.some((id) => typeof id === 'string' && id.trim() === sessionId);
 }
 
 export function paymongoAuthHeader(requireConfigured = false): string {
@@ -61,22 +76,46 @@ export async function markOrderPaymentFailed(
   return { updated };
 }
 
+export type CheckoutSessionFetchResult =
+  | { status: 'ok'; session: VerifiedCheckoutSession }
+  | { status: 'not_found' }
+  | { status: 'transient_error' };
+
+/**
+ * Fetches the authoritative checkout session from PayMongo, distinguishing
+ * permanent 400/404 responses from transient 429/5xx/network errors.
+ */
+export async function fetchCheckoutSessionDetailed(
+  sessionId: string,
+  auth: string,
+): Promise<CheckoutSessionFetchResult> {
+  try {
+    const res = await fetch(`https://api.paymongo.com/v2/checkout_sessions/${sessionId}`, {
+      headers: { Authorization: `Basic ${auth}` },
+      signal: AbortSignal.timeout(10_000),
+    });
+    if (!res.ok) {
+      if (res.status === 400 || res.status === 404) return { status: 'not_found' };
+      return { status: 'transient_error' };
+    }
+    const json: any = await res.json();
+    const attributes = (json?.data?.attributes && typeof json.data.attributes === 'object')
+      ? json.data.attributes
+      : {};
+    const payments = Array.isArray(attributes.payments) ? attributes.payments : [];
+    return { status: 'ok', session: { payments, attributes } };
+  } catch {
+    return { status: 'transient_error' };
+  }
+}
+
 /** Fetches the authoritative checkout session and its payments from PayMongo. */
 export async function fetchCheckoutSession(
   sessionId: string,
   auth: string,
 ): Promise<VerifiedCheckoutSession | null> {
-  const res = await fetch(`https://api.paymongo.com/v2/checkout_sessions/${sessionId}`, {
-    headers: { Authorization: `Basic ${auth}` },
-    signal: AbortSignal.timeout(10_000),
-  });
-  if (!res.ok) return null;
-  const json: any = await res.json();
-  const attributes = (json?.data?.attributes && typeof json.data.attributes === 'object')
-    ? json.data.attributes
-    : {};
-  const payments = Array.isArray(attributes.payments) ? attributes.payments : [];
-  return { payments, attributes };
+  const result = await fetchCheckoutSessionDetailed(sessionId, auth);
+  return result.status === 'ok' ? result.session : null;
 }
 
 /** PayMongo checkout session statuses derived from session payments. */
@@ -99,6 +138,24 @@ export function firstPaymentId(payments: any[] | null): string {
   return String(paid?.id || payments?.[0]?.id || '');
 }
 
+/** Returns the integer amount in centavos of the paid PayMongo payment, or null if absent/invalid. */
+export function paidPaymentAmountCentavos(payments: any[] | null): number | null {
+  const paid = payments?.find((p: any) => p?.attributes?.status === 'paid');
+  const amt = paid?.attributes?.amount;
+  return typeof amt === 'number' && Number.isInteger(amt) && amt > 0 ? amt : null;
+}
+
+/** Returns true only when a paid payment matches the expected PHP order total in centavos. */
+export function hasPaidPaymentForAmount(
+  payments: any[] | null,
+  expectedAmountPhp: number,
+): boolean {
+  if (!Number.isFinite(expectedAmountPhp) || expectedAmountPhp <= 0) return false;
+  const expectedCentavos = Math.round(expectedAmountPhp * 100);
+  const paidCentavos = paidPaymentAmountCentavos(payments);
+  return paidCentavos !== null && paidCentavos === expectedCentavos;
+}
+
 /**
  * Atomically transitions an order to PAID once and notifies Telegram only on
  * that first transition, so webhook and client polling cannot double-notify.
@@ -108,20 +165,34 @@ export async function markOrderPaidOnce(
   paymentId: string,
   fallbackOrderLabel = '',
   expectedSessionId?: string,
-): Promise<{ transitioned: boolean }> {
+  paidAmountCentavos?: number,
+): Promise<{ transitioned: boolean; alreadyPaid: boolean }> {
   const db = getFirestore();
   let orderData: Record<string, any> | null = null;
   let transitioned = false;
+  let alreadyPaid = false;
 
   await db.runTransaction(async (tx) => {
     const snap = await tx.get(orderRef);
     if (!snap.exists) return;
     const data = snap.data()!;
     orderData = data;
-    if (data.paymentStatus === 'PAID') return;
+    if (data.paymentStatus === 'PAID') {
+      alreadyPaid = true;
+      return;
+    }
     if (expectedSessionId && !hasMatchingCheckoutSession(data, expectedSessionId)) {
       logger.warn(`Refusing to mark order ${orderRef.id} PAID: checkout session mismatch`);
       return;
+    }
+    if (paidAmountCentavos !== undefined) {
+      const expectedCentavos = Math.round(Number(data.totalAmount) * 100);
+      if (!Number.isFinite(expectedCentavos) || expectedCentavos <= 0 || paidAmountCentavos !== expectedCentavos) {
+        logger.warn(
+          `Refusing to mark order ${orderRef.id} PAID: amount mismatch (paid=${paidAmountCentavos}, expected=${expectedCentavos})`,
+        );
+        return;
+      }
     }
     transitioned = true;
     tx.set(orderRef, {
@@ -149,5 +220,5 @@ export async function markOrderPaidOnce(
     }
   }
 
-  return { transitioned };
+  return { transitioned, alreadyPaid };
 }
