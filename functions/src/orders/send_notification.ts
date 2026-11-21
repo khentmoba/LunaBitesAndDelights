@@ -232,6 +232,31 @@ export function notificationDataFromOrder(
   };
 }
 
+export const TELEGRAM_CLAIM_TTL_MS = 60_000;
+
+export type ClaimStatus = 'claimed' | 'already-sent' | 'in-flight' | 'missing';
+
+/** Evaluates whether a notification can be claimed, was already sent, or is actively in-flight within TTL. */
+export function evaluateNotificationClaim(
+  current: Record<string, any> | undefined,
+  nowMs = Date.now(),
+): ClaimStatus {
+  if (!current) return 'missing';
+  if (current.telegramSent === true) return 'already-sent';
+  if (current.telegramStatus === 'sending') {
+    const claimedAt = current.telegramClaimedAt;
+    if (typeof claimedAt === 'number' && Number.isFinite(claimedAt) && nowMs - claimedAt < TELEGRAM_CLAIM_TTL_MS) {
+      return 'in-flight';
+    }
+  }
+  return 'claimed';
+}
+
+/** Returns true if a notification can be claimed (not sent, and not actively claimed within TTL). */
+export function canClaimNotification(current: Record<string, any> | undefined, nowMs = Date.now()): boolean {
+  return evaluateNotificationClaim(current, nowMs) === 'claimed';
+}
+
 /**
  * Atomically claims Telegram notification delivery for an order so concurrent
  * trigger + callable invocations never double-send, and always renders from
@@ -241,22 +266,26 @@ export async function notifyOrderOnce(
   orderDocId: string,
   orderData: Record<string, any>,
   timeStrOverride = '',
-): Promise<{ sent: boolean; alreadySent: boolean }> {
+): Promise<{ sent: boolean; alreadySent: boolean; inFlight?: boolean }> {
   const db = getFirestore();
   const orderRef = db.collection('orders').doc(orderDocId);
 
-  let claimed = false;
-  await db.runTransaction(async (tx) => {
+  const nowMs = Date.now();
+  const claimStatus = await db.runTransaction<ClaimStatus>(async (tx) => {
     const snap = await tx.get(orderRef);
-    if (!snap.exists) return;
-    const current = snap.data()!;
-    if (current.telegramSent === true || current.telegramStatus === 'sending') return;
-    claimed = true;
-    tx.set(orderRef, { telegramStatus: 'sending' }, { merge: true });
+    if (!snap.exists) return 'missing';
+    const status = evaluateNotificationClaim(snap.data(), nowMs);
+    if (status === 'claimed') {
+      tx.set(orderRef, { telegramStatus: 'sending', telegramClaimedAt: nowMs }, { merge: true });
+    }
+    return status;
   });
 
-  if (!claimed) {
-    return { sent: false, alreadySent: true };
+  if (claimStatus === 'in-flight') {
+    return { sent: false, alreadySent: false, inFlight: true };
+  }
+  if (claimStatus !== 'claimed') {
+    return { sent: false, alreadySent: true, inFlight: false };
   }
 
   const data = notificationDataFromOrder(orderData, orderDocId, timeStrOverride);

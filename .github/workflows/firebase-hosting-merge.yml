@@ -15,8 +15,11 @@ jobs:
           node-version: '22'
           cache: 'npm'
           cache-dependency-path: |
+            package-lock.json
             functions/package-lock.json
             app/package-lock.json
+
+      - run: npm ci
 
       - run: npm ci
         working-directory: app
@@ -67,7 +70,7 @@ jobs:
         run: |
           echo "$FIREBASE_SERVICE_ACCOUNT" > "$RUNNER_TEMP/service-account.json"
           export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/service-account.json"
-          npx firebase-tools deploy --only hosting:lunaexpress --project lunaexpress --non-interactive
+          npx --no-install firebase-tools deploy --only hosting:lunaexpress --project lunaexpress --non-interactive
 
       # Secrets (TELEGRAM_*, PAYMONGO_*) are read from Secret Manager at runtime
       # (see functions/src/index.ts). Set values once via:
@@ -83,4 +86,4 @@ jobs:
         run: |
           echo "$FIREBASE_SERVICE_ACCOUNT" > "$RUNNER_TEMP/service-account.json"
           export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/service-account.json"
-          npx firebase-tools deploy --only functions --project lunaexpress --non-interactive --force
+          npx --no-install firebase-tools deploy --only functions --project lunaexpress --non-interactive --force

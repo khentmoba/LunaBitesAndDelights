@@ -3,9 +3,7 @@ import { getFirestore } from 'firebase-admin/firestore';
 import { logger } from 'firebase-functions';
 import { phtDateLabel, emptyChannel, addToChannel, isCountableOrder, itemKey } from '../util';
 import { requireStaff } from '../util/security';
-import { dayFromDoc, emptyDay, salesAnalyticsFromDay } from './daily_stats';
-
-const STATS_META_DOC = 'stats_meta/dailyStats';
+import { dayFromDoc, emptyDay, isDailyStatsBackfilled, salesAnalyticsFromDay } from './daily_stats';
 
 export const getSalesAnalytics = onCall(async (request) => {
   requireStaff(request);
@@ -14,11 +12,11 @@ export const getSalesAnalytics = onCall(async (request) => {
     const dateLabel = phtDateLabel();
     logger.info(`Fetching sales analytics for dateLabel: ${dateLabel}`);
 
-    const [metaSnap, daySnap] = await Promise.all([
-      db.doc(STATS_META_DOC).get(),
+    const [backfilled, daySnap] = await Promise.all([
+      isDailyStatsBackfilled(db),
       db.collection('dailyStats').doc(dateLabel).get(),
     ]);
-    if (metaSnap.exists && metaSnap.get('backfilledAt')) {
+    if (backfilled) {
       const day = daySnap.exists ? dayFromDoc(dateLabel, daySnap.data()!) : emptyDay(dateLabel);
       return salesAnalyticsFromDay(dateLabel, day);
     }

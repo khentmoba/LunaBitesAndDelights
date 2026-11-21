@@ -60,21 +60,23 @@ export function mountDashboard(root: HTMLElement, getStaff: () => Staff | null):
   let stats: { revenue: number; count: number; avg: number; items: number } = { revenue: 0, count: 0, avg: 0, items: 0 };
   let orders: Tile[] = [];
   let disposed = false;
+  let fetchSeq = 0;
 
   root.innerHTML = '<main class="dash" data-dash></main>';
   const el = $('[data-dash]', root);
 
   async function fetchData() {
     if (!getStaff()) return;
+    const seq = ++fetchSeq;
     loading = true;
     error = null;
     render();
     try {
       const [analytics, res] = await Promise.all([
         callFn<Record<string, unknown>>('getSalesAnalytics'),
-        callFn<{ success?: boolean; orders?: Record<string, unknown>[] }>('getActiveOrders', { includeCompleted: true }),
+        callFn<{ success?: boolean; orders?: Record<string, unknown>[] }>('getActiveOrders', { includeCompleted: true, limit: 50 }),
       ]);
-      if (disposed) return;
+      if (disposed || seq !== fetchSeq) return;
       const raw = res.orders ?? [];
       let items = int(analytics.totalItemsSold);
       if (items === 0 && raw.length) {
@@ -89,9 +91,10 @@ export function mountDashboard(root: HTMLElement, getStaff: () => Staff | null):
       }
       if (res.success === true) orders = raw.map(tileFrom);
     } catch (e) {
-      if (disposed) return;
+      if (disposed || seq !== fetchSeq) return;
       error = staffErrorMessage(e, 'Could not load dashboard data', 'Error connecting to server. Tap RETRY to sync.');
     }
+    if (seq !== fetchSeq) return;
     loading = false;
     if (!disposed) render();
   }

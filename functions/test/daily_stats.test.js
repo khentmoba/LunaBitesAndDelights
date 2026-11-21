@@ -241,3 +241,38 @@ test('salesAnalyticsFromDay matches scanning today orders', () => {
   assert.deepStrictEqual(fromDay.breakdown, expected.breakdown);
   assert.deepStrictEqual(fromDay.topItems.map((t) => t.count), expected.topItems.map((t) => t.count));
 });
+
+test('isDailyStatsBackfilled caches true after first observation and does not cache false', async () => {
+  const { isDailyStatsBackfilled, resetBackfillCache } = require('../lib/reporting/daily_stats');
+  resetBackfillCache();
+  let reads = 0;
+  let backfilledAt = null;
+  const fakeDb = {
+    doc() {
+      return {
+        async get() {
+          reads += 1;
+          return {
+            exists: backfilledAt !== null,
+            get(field) {
+              return field === 'backfilledAt' ? backfilledAt : undefined;
+            },
+          };
+        },
+      };
+    },
+  };
+
+  assert.strictEqual(await isDailyStatsBackfilled(fakeDb), false);
+  assert.strictEqual(reads, 1);
+  assert.strictEqual(await isDailyStatsBackfilled(fakeDb), false);
+  assert.strictEqual(reads, 2, 'false must not be permanently cached');
+
+  backfilledAt = '2026-11-21T00:00:00.000Z';
+  assert.strictEqual(await isDailyStatsBackfilled(fakeDb), true);
+  assert.strictEqual(reads, 3);
+  assert.strictEqual(await isDailyStatsBackfilled(fakeDb), true);
+  assert.strictEqual(reads, 3, 'true must be served from module cache');
+
+  resetBackfillCache();
+});

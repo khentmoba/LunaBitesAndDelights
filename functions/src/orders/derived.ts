@@ -75,7 +75,11 @@ export const onOrderWritten = onDocumentWritten(
     });
 
     const notify = (!before && after && hasTelegramConfig())
-      ? notifyOrderOnce(orderId, after)
+      ? notifyOrderOnce(orderId, after).then((res) => {
+          if (res.inFlight) {
+            throw new Error(`Telegram notification for ${orderId} is still in-flight; retrying until settled`);
+          }
+        })
       : Promise.resolve();
 
     const results = await Promise.allSettled([mirror, stats, notify]);

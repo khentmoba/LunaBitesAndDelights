@@ -5,6 +5,14 @@ import { requireStaff, validDocId, cleanStr, optStr } from '../util/security';
 
 const VALID_STATUSES = ['Pending', 'Preparing', 'Ready', 'Completed', 'Cancelled'];
 const EPOCH_ISO = '1970-01-01T00:00:00.000Z';
+const MAX_ORDERS_LIMIT = 200;
+
+/** Clamps an optional caller-supplied limit to [1, 200], defaulting to 200. */
+export function clampOrdersLimit(raw: unknown): number {
+  const n = typeof raw === 'number' ? raw : Number(raw);
+  if (!Number.isInteger(n) || n < 1) return MAX_ORDERS_LIMIT;
+  return Math.min(n, MAX_ORDERS_LIMIT);
+}
 
 /** Converts Firestore timestamps or ISO strings deterministically without crashing on invalid dates. */
 export function toIsoTimestamp(raw: unknown): string {
@@ -65,13 +73,14 @@ export const getActiveOrders = onCall(async (request) => {
   requireStaff(request); // #6 + #7
   const db = getFirestore();
   const includeCompleted = request.data?.includeCompleted === true;
+  const maxDocs = clampOrdersLimit(request.data?.limit);
   try {
     // 7-day lookback so yesterday's active and history orders are never cut off
     const lookbackThreshold = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
     const snapshot = await db.collection('orders')
       .where('timestamp', '>=', lookbackThreshold)
       .orderBy('timestamp', 'desc')
-      .limit(200)
+      .limit(maxDocs)
       .get();
 
     const orders = [];

@@ -5,7 +5,7 @@ const crypto = require('node:crypto');
 const { resolveOrderDocId, verifyPaymongoSignature } = require('../lib/payments/webhook');
 const { hasPaidPayment, hasFailedPayment, firstPaymentId } = require('../lib/payments/paymongo');
 const { hasMatchingCheckoutSession } = require('../lib/payments/verify_payment');
-const { isOrderVisibleInKds, toIsoTimestamp } = require('../lib/orders/kds');
+const { isOrderVisibleInKds, toIsoTimestamp, clampOrdersLimit } = require('../lib/orders/kds');
 const { kdsMirrorDoc } = require('../lib/orders/derived');
 
 // A paid session must land on the order document the kiosk wrote. PayMongo
@@ -189,4 +189,14 @@ test('fetchSessionPayments sends Basic auth and handles non-OK responses', async
   } finally {
     global.fetch = origFetch;
   }
+});
+
+test('clampOrdersLimit bounds caller limits to [1, 200] with default 200', () => {
+  assert.strictEqual(clampOrdersLimit(undefined), 200);
+  assert.strictEqual(clampOrdersLimit(0), 200);
+  assert.strictEqual(clampOrdersLimit(-5), 200);
+  assert.strictEqual(clampOrdersLimit(1.5), 200);
+  assert.strictEqual(clampOrdersLimit('abc'), 200);
+  assert.strictEqual(clampOrdersLimit(50), 50);
+  assert.strictEqual(clampOrdersLimit(500), 200);
 });
