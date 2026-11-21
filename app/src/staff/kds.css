@@ -220,8 +220,14 @@
 .kreason[aria-checked='true'] .kreason__box { background: var(--plate); border: 1px solid var(--pink-ink); }
 .kreason[aria-checked='true'] .kreason__box::after { content: ''; width: 6px; height: 6px; background: var(--on-plate); }
 
+.kslip-print { display: none; }
+
 @media print {
   .kbar, .kctl, .kerr, .kcard__ib, .kact, .kcard__cancel { display: none !important; }
   .kds { height: auto; }
   .kcol__body, .kpane { overflow: visible; }
+  body.is-printing-slip .kds,
+  body.is-printing-slip .sdialog,
+  body.is-printing-slip .ssnack { display: none !important; }
+  body.is-printing-slip .kslip-print { display: block !important; }
 }

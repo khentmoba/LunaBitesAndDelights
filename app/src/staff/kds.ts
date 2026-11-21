@@ -82,7 +82,7 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
   // ---- data ----
 
   function publish() {
-    const all = isLive && live !== null ? mergeKdsOrders(live, []) : mergeKdsOrders(live ?? [], polled);
+    const all = mergeKdsOrders(live ?? [], polled);
     const visible = showCompleted ? all : all.filter((o) => !isClosedKdsStatus(o.status));
     const activeIds = new Set(all.map((o) => String(o.id ?? '')));
     for (const key of checked) {
@@ -119,7 +119,7 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
     renderBar();
     renderBanner();
     try {
-      const data = await callFn<{ success?: boolean; orders?: KdsOrder[]; message?: string }>('getActiveOrders', { includeCompleted: true });
+      const data = await callFn<{ success?: boolean; orders?: KdsOrder[]; message?: string }>('getActiveOrders', { includeCompleted: showCompleted });
       if (disposed || seq !== fetchSeq) return;
       if (data.success === true) {
         polled = data.orders ?? [];
@@ -132,16 +132,36 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
     } catch (e) {
       if (disposed || seq !== fetchSeq) return;
       const fe = fnError(e);
+      if (fe && isAuthCode(fe.code)) {
+        haltOnAuthError(`Staff session expired or unauthorized (${fe.code}). Please sign in again.`);
+        return;
+      }
       error = fe
-        ? isAuthCode(fe.code)
-          ? `Staff session expired or unauthorized (${fe.code}). Please sign in again.`
-          : `Could not load live orders: ${fe.message}`
+        ? `Could not load live orders: ${fe.message}`
         : 'Connection error while loading live orders. Tap RETRY to sync.';
       loading = false;
       renderAll();
     } finally {
       if (seq === fetchSeq) fetchInFlight = false;
     }
+  }
+
+  function haltOnAuthError(message: string) {
+    unsub?.();
+    unsub = null;
+    clearTimeout(initialFallbackTimer);
+    initialFallbackTimer = 0;
+    clearInterval(pollTimer);
+    pollTimer = 0;
+    clearInterval(reconnectTimer);
+    reconnectTimer = 0;
+    clearInterval(lookbackTimer);
+    lookbackTimer = 0;
+    connecting = false;
+    isLive = false;
+    loading = false;
+    error = message;
+    if (!disposed) renderAll();
   }
 
   function fallBackToPolling() {
@@ -155,7 +175,7 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
     renderBar();
     if (!polled.length) void fetchActive(true);
     pollTimer ||= window.setInterval(() => {
-      if (getStaff()) void fetchActive(true);
+      if (!document.hidden && getStaff()) void fetchActive(true);
     }, POLL_MS);
     reconnectTimer ||= window.setInterval(() => {
       if (!disposed && !isLive && !connecting && getStaff()) void startLiveListener();
@@ -193,7 +213,16 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
           live = snap.docs.map((d) => kdsOrderFromDoc(d.id, d.data(), toDate));
           publish();
         },
-        () => fallBackToPolling(),
+        (err) => {
+          const code = typeof (err as { code?: unknown })?.code === 'string'
+            ? String((err as { code: string }).code).replace(/^firestore\//, '')
+            : '';
+          if (isAuthCode(code)) {
+            haltOnAuthError(`Staff session expired or unauthorized (${code}). Please sign in again.`);
+            return;
+          }
+          fallBackToPolling();
+        },
       );
     } catch {
       fallBackToPolling();
@@ -439,6 +468,7 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
 
   let layout: 'wide' | 'tabs' | null = null;
   let layoutCols = 0;
+  const lastHtml = new Map<string, string>();
 
   function renderBoard() {
     const b = buckets();
@@ -447,6 +477,7 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
       if (layout !== 'wide' || layoutCols !== cols.length) {
         layout = 'wide';
         layoutCols = cols.length;
+        lastHtml.clear();
         board.className = 'kboard kboard--wide';
         board.innerHTML = cols
           .map(
@@ -461,10 +492,10 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
         board.querySelector(`[data-count="${c.status}"]`)!.textContent = String(b[c.status].length);
         const listEl = board.querySelector<HTMLElement>(`[data-list="${c.status}"]`)!;
         const html = list(c, b[c.status]);
-        if (listEl.dataset.html !== html) {
+        if (lastHtml.get(c.status) !== html) {
           const prevScroll = listEl.scrollTop;
           listEl.innerHTML = html;
-          listEl.dataset.html = html;
+          lastHtml.set(c.status, html);
           listEl.scrollTop = prevScroll;
         }
       }
@@ -472,6 +503,7 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
     }
     if (layout !== 'tabs') {
       layout = 'tabs';
+      lastHtml.clear();
       board.className = 'kboard kboard--tabs';
       board.innerHTML = `
 <div class="ktabs" role="tablist">${COLUMNS.map((c, i) => `<button type="button" class="ktab" role="tab" id="ktab-${i}" aria-controls="kpane-${i}" data-tab="${i}"><span class="ktab__in"><span>${c.tab}</span><span data-tabcount="${i}"></span></span></button>`).join('')}</div>
@@ -487,10 +519,10 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
       board.querySelector(`[data-tabcount="${i}"]`)!.innerHTML = badge(b[c.status].length, c.tone);
       const listEl = board.querySelector<HTMLElement>(`[data-list="${c.status}"]`)!;
       const html = list(c, b[c.status]);
-      if (listEl.dataset.html !== html) {
+      if (lastHtml.get(c.status) !== html) {
         const prevScroll = listEl.scrollTop;
         listEl.innerHTML = html;
-        listEl.dataset.html = html;
+        lastHtml.set(c.status, html);
         listEl.scrollTop = prevScroll;
       }
     });
@@ -502,6 +534,7 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
     if (tab === 3 && !showCompleted) {
       showCompleted = true;
       publish();
+      if (!isLive) void fetchActive(true);
     } else {
       syncTabs();
     }
@@ -569,8 +602,36 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
 </div>`);
     d.querySelector('[data-close]')!.addEventListener('click', () => d.close());
     d.querySelector('[data-print]')!.addEventListener('click', () => {
+      const slipEl = d.querySelector<HTMLElement>('.kslip');
+      document.querySelectorAll('.kslip-print').forEach((el) => el.remove());
+      let printHost: HTMLDivElement | null = null;
+      if (slipEl) {
+        printHost = document.createElement('div');
+        printHost.className = 'kslip-print';
+        printHost.append(slipEl.cloneNode(true));
+        document.body.append(printHost);
+        document.body.classList.add('is-printing-slip');
+      }
+      const printMq = window.matchMedia('print');
+      let cleaned = false;
+      let fallbackTimer = 0;
+      const onPrintChange = (e: MediaQueryListEvent) => {
+        if (!e.matches) cleanup();
+      };
+      const cleanup = () => {
+        if (cleaned) return;
+        cleaned = true;
+        clearTimeout(fallbackTimer);
+        document.body.classList.remove('is-printing-slip');
+        printHost?.remove();
+        window.removeEventListener('afterprint', cleanup);
+        printMq.removeEventListener('change', onPrintChange);
+      };
+      window.addEventListener('afterprint', cleanup);
+      printMq.addEventListener('change', onPrintChange);
       d.close();
       window.print();
+      fallbackTimer = window.setTimeout(cleanup, 60_000);
       staffSnack('Print dialog opened', SUCCESS);
     });
   }
@@ -628,13 +689,17 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
     if (!t || t.hasAttribute('disabled')) return;
     const act = t.dataset.act;
     if (act === 'back') history.back();
-    else if (act === 'sync') void fetchActive();
+    else if (act === 'sync') {
+      void fetchActive();
+      if (!unsub && !connecting) void startLiveListener();
+    }
     else if (act === 'sound') toggleSound();
     else if (act === 'exit') exit();
     else if (act === 'menu') openMenu(t);
     else if (act === 'history') {
       showCompleted = !showCompleted;
       publish();
+      if (showCompleted && !isLive) void fetchActive(true);
     } else if (act === 'clear') {
       clearTimeout(searchTimer);
       query = '';
@@ -715,6 +780,10 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
     if (delayChanged) renderBoard();
   }
 
+  const onVisibilityChange = () => {
+    if (!disposed && !document.hidden && !isLive && getStaff()) void fetchActive(true);
+  };
+  document.addEventListener('visibilitychange', onVisibilityChange);
   const onLayout = () => {
     layout = null;
     renderBoard();
@@ -738,6 +807,7 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
     clearInterval(reconnectTimer);
     clearInterval(lookbackTimer);
     clearInterval(clock);
+    document.removeEventListener('visibilitychange', onVisibilityChange);
     wideMq.removeEventListener('change', onLayout);
     root.removeEventListener('click', onRootClick);
   };

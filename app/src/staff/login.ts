@@ -59,7 +59,7 @@ export function mountLogin(root: HTMLElement): void {
     const passwordForm = `
   <form class="login__section" data-form novalidate>
     <label class="login__field"><span class="login__label">USERNAME</span>
-      <span class="login__input">${icon('person_outline_rounded')}<input name="user" autocomplete="username" autocapitalize="none" enterkeyhint="next" placeholder="e.g. staff1" value="${esc(user)}"></span>
+      <span class="login__input">${icon('person_outline_rounded')}<input name="user" autocomplete="username" autocapitalize="none" enterkeyhint="next" placeholder="Enter username" value="${esc(user)}"></span>
     </label>
     <label class="login__field"><span class="login__label">PASSWORD</span>
       <span class="login__input">${icon('lock_outline_rounded')}<input name="pass" type="${obscure ? 'password' : 'text'}" autocomplete="current-password" enterkeyhint="go" placeholder="••••••••" value="${esc(pass)}">

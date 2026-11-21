@@ -1,4 +1,4 @@
-import { onRequest } from 'firebase-functions/v2/https';
+import { onRequest, HttpsError } from 'firebase-functions/v2/https';
 import { getFirestore } from 'firebase-admin/firestore';
 import { logger } from 'firebase-functions';
 import * as crypto from 'crypto';
@@ -60,7 +60,7 @@ export function verifyPaymongoSignature(
   if (!t || !/^\d{1,12}$/.test(t) || !sig || !/^[0-9a-f]{64}$/i.test(sig)) return false;
   const ts = Number(t);
   if (!Number.isFinite(ts) || Math.abs(nowSec - ts) > MAX_SIG_AGE_SEC) return false;
-  if (!webhookSecret) return true; // Secret not configured; format + timestamp checked, and caller verifies session via PayMongo API.
+  if (!webhookSecret) return true; // Secret not provisioned yet; format + timestamp checked, and caller verifies session via PayMongo API.
   if (!rawBody) return false;
   const payload = `${t}.${Buffer.isBuffer(rawBody) ? rawBody.toString('utf8') : rawBody}`;
   const expected = crypto.createHmac('sha256', webhookSecret).update(payload).digest('hex');
@@ -85,8 +85,13 @@ export const paymongoWebhook = onRequest(
           WEBHOOK_RATE_MAX,
           WEBHOOK_RATE_WINDOW_MS,
         );
-      } catch {
-        res.status(429).send('Too Many Requests');
+      } catch (rateErr) {
+        if (rateErr instanceof HttpsError && rateErr.code === 'resource-exhausted') {
+          res.status(429).send('Too Many Requests');
+          return;
+        }
+        logger.error('PayMongo webhook rate-limit check failed:', rateErr);
+        res.status(500).send('Retry');
         return;
       }
 

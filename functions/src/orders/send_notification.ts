@@ -138,6 +138,8 @@ export function getGoogleMapsNavigationUrl(lat: number, lng: number): string {
   return `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
 }
 
+const MAX_MAP_IMAGE_BYTES = 5 * 1024 * 1024;
+
 /** Safely fetches a static map image buffer with an abort timeout. Returns null on failure. */
 export async function fetchMapImage(url: string, timeoutMs = 6000): Promise<Buffer | null> {
   const controller = new AbortController();
@@ -148,7 +150,21 @@ export async function fetchMapImage(url: string, timeoutMs = 6000): Promise<Buff
       logger.warn(`Static map fetch failed: status ${res.status} (${res.statusText})`);
       return null;
     }
+    const contentType = res.headers?.get?.('content-type')?.toLowerCase() ?? '';
+    if (!contentType.startsWith('image/')) {
+      logger.warn(`Static map fetch rejected unexpected content-type: ${contentType || 'missing'}`);
+      return null;
+    }
+    const contentLength = Number(res.headers?.get?.('content-length') ?? '');
+    if (Number.isFinite(contentLength) && contentLength > MAX_MAP_IMAGE_BYTES) {
+      logger.warn(`Static map fetch rejected oversized content-length: ${contentLength}`);
+      return null;
+    }
     const arrayBuffer = await res.arrayBuffer();
+    if (arrayBuffer.byteLength === 0 || arrayBuffer.byteLength > MAX_MAP_IMAGE_BYTES) {
+      logger.warn(`Static map fetch rejected invalid payload size: ${arrayBuffer.byteLength}`);
+      return null;
+    }
     return Buffer.from(arrayBuffer);
   } catch (err: any) {
     logger.warn('Error fetching static map image', err);
@@ -176,11 +192,18 @@ async function sendDeliveryNotification(
   message: string,
   lat: number,
   lng: number,
+  photoAlreadySent = false,
+  onPhotoSent?: () => Promise<void>,
 ): Promise<void> {
+  if (photoAlreadySent) {
+    await sendToAll(message);
+    return;
+  }
   const replyMarkup = {
     inline_keyboard: [[{ text: '📍 Open in Google Maps 🧭', url: getGoogleMapsNavigationUrl(lat, lng) }]],
   };
   const mapUrl = resolveStaticMapUrl(lat, lng);
+  let sentSplitPhoto = false;
   if (mapUrl) {
     try {
       const imageBuffer = await fetchMapImage(mapUrl);
@@ -191,12 +214,18 @@ async function sendDeliveryNotification(
         }
         const summaryCaption = formatDeliverySummaryCaption(data);
         await sendPhotoToAll(imageBuffer, summaryCaption, { reply_markup: replyMarkup });
-        await sendToAll(message);
-        return;
+        sentSplitPhoto = true;
+        if (onPhotoSent) {
+          await onPhotoSent().catch((e) => logger.warn(`Could not persist photoSent for ${data.orderNumber}`, e));
+        }
       }
     } catch (photoError: any) {
       logger.warn(`Photo delivery failed for ${data.orderNumber}, falling back to text`, photoError);
     }
+  }
+  if (sentSplitPhoto) {
+    await sendToAll(message);
+    return;
   }
   await sendToAll(message, { reply_markup: replyMarkup });
 }
@@ -294,13 +323,14 @@ export async function notifyOrderOnce(
 
   const nowMs = Date.now();
   const expireAt = Timestamp.fromMillis(nowMs + ORDER_NOTIF_TTL_MS);
-  const claimStatus = await db.runTransaction<ClaimStatus>(async (tx) => {
+  const { status: claimStatus, photoSent } = await db.runTransaction<{ status: ClaimStatus; photoSent: boolean }>(async (tx) => {
     const snap = await tx.get(notifRef);
-    const status = evaluateNotificationClaim(snap.exists ? snap.data() : {}, nowMs);
+    const existing = snap.exists ? snap.data() : {};
+    const status = evaluateNotificationClaim(existing, nowMs);
     if (status === 'claimed') {
       tx.set(notifRef, { telegramStatus: 'sending', telegramClaimedAt: nowMs, expireAt }, { merge: true });
     }
-    return status;
+    return { status, photoSent: existing?.photoSent === true };
   });
 
   if (claimStatus === 'in-flight') {
@@ -316,7 +346,16 @@ export async function notifyOrderOnce(
   logger.info(`Sending order notification for ${data.orderNumber} to Telegram`);
   try {
     if (data.orderType === 'Delivery' && data.lat != null && data.lng != null) {
-      await sendDeliveryNotification(data, message, data.lat, data.lng);
+      await sendDeliveryNotification(
+        data,
+        message,
+        data.lat,
+        data.lng,
+        photoSent,
+        async () => {
+          await notifRef.set({ photoSent: true }, { merge: true });
+        },
+      );
     } else {
       await sendToAll(message);
     }

@@ -10,7 +10,7 @@ const { initializeApp, getApps } = require('firebase-admin/app');
 const { getFirestore, Timestamp } = require('firebase-admin/firestore');
 const { hashPasswordAsync } = require('../lib/util/security');
 
-const USERNAME_RE = /^[a-z0-9_-]{1,32}$/i;
+const USERNAME_RE = /^[a-z0-9._-]{2,64}$/;
 const PIN_RE = /^[0-9]{4,8}$/;
 
 function parseArgs(argv) {
@@ -25,9 +25,10 @@ function parseArgs(argv) {
   return out;
 }
 
-async function resetStaffCredentials(db, { username, role, password, pin }) {
-  if (typeof username !== 'string' || !USERNAME_RE.test(username)) {
-    throw new Error('Invalid --username (must match /^[a-z0-9_-]{1,32}$/i)');
+async function resetStaffCredentials(db, { username: rawUsername, role, password, pin }) {
+  const username = typeof rawUsername === 'string' ? rawUsername.trim().toLowerCase() : '';
+  if (!USERNAME_RE.test(username)) {
+    throw new Error('Invalid --username (must match /^[a-z0-9._-]{2,64}$/ after lowercasing)');
   }
   if (role !== undefined && role !== 'admin' && role !== 'staff') {
     throw new Error('Invalid --role (must be "admin" or "staff")');

@@ -21,31 +21,31 @@ import Kiosk from '../../layouts/Kiosk.astro';
 </div>
 </Kiosk>
 
-<script is:inline>
+<script>
 // Old Flutter hash routes (/kiosk/#/menu, /kiosk/?pick=s1#/menu, ...) still
 // arrive from bookmarks and the storefront; send each to its page.
-(function () {
-  var routes = {
-    '#/menu': '/kiosk/menu', '#/cart': '/kiosk/cart', '#/checkout_process': '/kiosk/checkout',
-    '#/kds': '/staff/kds', '#/staff': '/staff/kds', '#/orders': '/staff/kds',
-    '#/dashboard': '/staff/dashboard', '#/analytics': '/staff/analytics', '#/lifetime-analytics': '/staff/lifetime',
-  };
-  var to = routes[location.hash];
-  if (to) location.replace(to + location.search);
-  // Storefront picks (?pick=...) ride along to the menu after the splash.
-  else if (location.search) addEventListener('DOMContentLoaded', function () {
-    document.querySelector('.splash__start').href = '/kiosk/menu' + location.search;
-  });
-})();
-</script>
-
-<script>
-// Staff go from the splash to the admin dashboard, as _onStart does for session.isStaff.
 import { hasStoredStaffUser } from '../../kiosk/staff-hint';
 
-void hasStoredStaffUser().then((staff) => {
-  if (staff && !location.search) document.querySelector<HTMLAnchorElement>('.splash__start')!.href = '/staff/dashboard';
-});
+const routes: Record<string, string> = {
+  '#/menu': '/kiosk/menu', '#/cart': '/kiosk/cart', '#/checkout_process': '/kiosk/checkout',
+  '#/kds': '/staff/kds', '#/staff': '/staff/kds', '#/orders': '/staff/kds',
+  '#/dashboard': '/staff/dashboard', '#/analytics': '/staff/analytics', '#/lifetime-analytics': '/staff/lifetime',
+};
+const to = routes[location.hash];
+if (to) {
+  location.replace(to + location.search);
+} else {
+  const start = document.querySelector<HTMLAnchorElement>('.splash__start');
+  // Storefront picks (?pick=...) ride along to the menu after the splash.
+  if (location.search && start) {
+    start.href = '/kiosk/menu' + location.search;
+  } else {
+    // Staff go from the splash to the admin dashboard, as _onStart does for session.isStaff.
+    void hasStoredStaffUser().then((staff) => {
+      if (staff && !location.search && start) start.href = '/staff/dashboard';
+    });
+  }
+}
 </script>
 
 <style is:global>

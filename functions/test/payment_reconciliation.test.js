@@ -14,6 +14,7 @@ const {
   hasFailedPayment,
   firstPaymentId,
   fetchCheckoutSessionDetailed,
+  formatPaymentConfirmedMessage,
 } = require('../lib/payments/paymongo');
 const { hasMatchingCheckoutSession } = require('../lib/payments/verify_payment');
 const { isOrderVisibleInKds, toIsoTimestamp, clampOrdersLimit, isAllowedStatusTransition } = require('../lib/orders/kds');
@@ -233,7 +234,7 @@ test('verifyPaymongoSignature still enforces header format and timestamp window 
   assert.strictEqual(verifyPaymongoSignature(`t=1700000000,li=${'a'.repeat(64)}`, '{}', undefined, 1700000500), false);
 });
 
-test('shouldNotifyKitchen holds unpaid GCash orders until payment confirms', () => {
+test('shouldNotifyKitchen holds unpaid GCash orders and skips cancelled orders', () => {
   assert.strictEqual(shouldNotifyKitchen(undefined, { paymentMethod: 'Cash', paymentStatus: 'NOT PAID' }), true);
   assert.strictEqual(shouldNotifyKitchen(undefined, { paymentMethod: 'GCash', paymentStatus: 'AWAITING_PAYMENT' }), false);
   assert.strictEqual(
@@ -245,10 +246,32 @@ test('shouldNotifyKitchen holds unpaid GCash orders until payment confirms', () 
   );
   assert.strictEqual(
     shouldNotifyKitchen(
+      { paymentMethod: 'GCash', paymentStatus: 'AWAITING_PAYMENT', status: 'Cancelled' },
+      { paymentMethod: 'GCash', paymentStatus: 'PAID', status: 'Cancelled' },
+    ),
+    false,
+  );
+  assert.strictEqual(
+    shouldNotifyKitchen(
       { paymentMethod: 'GCash', paymentStatus: 'PAID' },
       { paymentMethod: 'GCash', paymentStatus: 'PAID', status: 'Preparing' },
     ),
     false,
+  );
+});
+
+test('validateAndPriceItems rejects downgraded prices on single-price coolers', () => {
+  assert.throws(
+    () => validateAndPriceItems([{ name: 'Leche Flan', variant: '', price: 20, quantity: 1 }]),
+    /Price mismatch/,
+  );
+  assert.strictEqual(
+    validateAndPriceItems([{ name: 'Leche Flan', variant: '', price: 39, quantity: 1 }]).total,
+    39,
+  );
+  assert.strictEqual(
+    validateAndPriceItems([{ name: 'Luna Leche Flan', variant: '', price: 20, quantity: 1 }]).total,
+    20,
   );
 });
 
@@ -378,4 +401,22 @@ test('isOrderVisibleInKds and isCountableOrder require PAID allowlist for GCash'
   assert.strictEqual(isCountableOrder({ status: 'Pending', paymentMethod: 'GCash', paymentStatus: 'NOT PAID' }), false);
   assert.strictEqual(isCountableOrder({ status: 'Pending', paymentMethod: 'gcash', paymentStatus: 'PAID' }), true);
   assert.strictEqual(isCountableOrder({ status: 'Cancelled', paymentMethod: 'Cash', paymentStatus: 'PAID' }), false);
+});
+
+test('formatPaymentConfirmedMessage escapes MarkdownV2 punctuation in cancelled-order refund alerts', () => {
+  const cancelledMsg = formatPaymentConfirmedMessage(
+    { orderId: 'LU-123', customerName: 'Ana', totalAmount: 99, type: 'Delivery', status: 'Cancelled' },
+    'LU-123',
+    '11/21/2026, 5:00:00 PM',
+  );
+  assert.match(cancelledMsg, /PAYMENT RECEIVED FOR CANCELLED ORDER/);
+  assert.match(cancelledMsg, /review for refund\\\./);
+  assert.ok(!/(?<!\\)\./.test(cancelledMsg), 'no unescaped MarkdownV2 period');
+
+  const normalMsg = formatPaymentConfirmedMessage(
+    { orderId: 'LU-124', customerName: 'Ana', totalAmount: 99, type: 'Pickup', status: 'Pending' },
+    'LU-124',
+    '11/21/2026, 5:00:00 PM',
+  );
+  assert.match(normalMsg, /PAYMENT CONFIRMED/);
 });

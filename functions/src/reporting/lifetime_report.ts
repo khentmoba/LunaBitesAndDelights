@@ -11,6 +11,7 @@ import {
 export { STATS_META_DOC };
 
 const FALLBACK_PAGE_SIZE = 1000;
+const MAX_FALLBACK_PAGES = 20;
 
 interface LifeTimeReportParams {
   startDate?: string; // YYYY-MM-DD (optional, default: earliest order)
@@ -54,7 +55,15 @@ export const getLifetimeSalesReport = onCall(async (request) => {
       const dayMap = new Map<string, DayStats>();
       let lastDoc: QueryDocumentSnapshot | null = null;
       let totalScanned = 0;
+      let pages = 0;
       for (;;) {
+        if (pages >= MAX_FALLBACK_PAGES) {
+          throw new HttpsError(
+            'failed-precondition',
+            'Order history exceeds fallback scan limit. Run backfill-derived-views to enable dailyStats.',
+          );
+        }
+        pages += 1;
         const pageQuery: Query = lastDoc
           ? baseQuery.startAfter(lastDoc).limit(FALLBACK_PAGE_SIZE)
           : baseQuery.limit(FALLBACK_PAGE_SIZE);

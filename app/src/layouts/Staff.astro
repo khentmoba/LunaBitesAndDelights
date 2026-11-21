@@ -28,8 +28,12 @@ const { title, ground = 'ground' } = Astro.props;
 </head>
 <body class:list={['staff', { 'staff--blush': ground === 'blush' }]}>
 <slot />
-<script is:inline>
-if ('serviceWorker' in navigator) addEventListener('load', function () { navigator.serviceWorker.register('/staff/sw.js', { scope: '/staff/' }).catch(function () {}); });
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    void navigator.serviceWorker.register('/staff/sw.js', { scope: '/staff/' }).catch(() => {});
+  });
+}
 </script>
 </body>
 </html>

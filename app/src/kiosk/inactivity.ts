@@ -16,7 +16,12 @@ export function resetKiosk(): void {
   location.replace('/kiosk/');
 }
 
-export function watchInactivity(timeoutMs = TIMEOUT_MS): void {
+export interface WatchInactivityOptions {
+  pauseWhenHidden?: boolean;
+}
+
+export function watchInactivity(timeoutMs = TIMEOUT_MS, options: WatchInactivityOptions = {}): void {
+  const { pauseWhenHidden = false } = options;
   const dialog = document.createElement('dialog');
   dialog.className = 'idle';
   dialog.setAttribute('aria-labelledby', 'idle-title');
@@ -32,6 +37,11 @@ export function watchInactivity(timeoutMs = TIMEOUT_MS): void {
   let lastArmed = 0;
   const arm = (force = false) => {
     if (dialog.open) return;
+    if (pauseWhenHidden && document.hidden) {
+      clearTimeout(idle);
+      idle = 0;
+      return;
+    }
     const now = Date.now();
     if (!force && now - lastArmed < 1000) return;
     lastArmed = now;
@@ -39,6 +49,7 @@ export function watchInactivity(timeoutMs = TIMEOUT_MS): void {
     idle = window.setTimeout(warn, timeoutMs);
   };
   const warn = () => {
+    if (pauseWhenHidden && document.hidden) return;
     let left = COUNTDOWN_S;
     count.textContent = String(left);
     dialog.showModal();
@@ -60,6 +71,19 @@ export function watchInactivity(timeoutMs = TIMEOUT_MS): void {
   const onActivity = () => arm(false);
   for (const type of ['pointerdown', 'pointermove', 'keydown', 'wheel'] as const) {
     window.addEventListener(type, onActivity, { passive: true });
+  }
+  if (pauseWhenHidden) {
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) {
+        clearTimeout(idle);
+        idle = 0;
+        clearInterval(tick);
+        tick = 0;
+        if (dialog.open) dialog.close();
+      } else {
+        arm(true);
+      }
+    });
   }
   arm(true);
 }

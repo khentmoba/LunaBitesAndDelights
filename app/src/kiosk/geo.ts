@@ -33,8 +33,23 @@ function combineSignal(signal: AbortSignal | undefined, timeoutMs: number): Abor
   return signal && 'any' in AbortSignal ? AbortSignal.any([signal, timeout]) : signal ?? timeout;
 }
 
+const MAX_GEO_CACHE = 100;
+const reverseCache = new Map<string, { full: string; short: string }>();
+const searchCache = new Map<string, Place[]>();
+
+function cacheSet<V>(map: Map<string, V>, k: string, v: V): void {
+  if (map.size >= MAX_GEO_CACHE) {
+    const first = map.keys().next().value;
+    if (first !== undefined) map.delete(first);
+  }
+  map.set(k, v);
+}
+
 /** Full and short display strings, both empty on failure. */
 export async function reverseGeocode(lat: number, lng: number, signal?: AbortSignal): Promise<{ full: string; short: string }> {
+  const cacheKey = `${lat.toFixed(5)},${lng.toFixed(5)}`;
+  const cached = reverseCache.get(cacheKey);
+  if (cached) return cached;
   try {
     const res = await fetch(`${REVERSE}&lat=${lat}&lon=${lng}`, {
       headers: { 'Accept-Language': 'en' },
@@ -42,7 +57,9 @@ export async function reverseGeocode(lat: number, lng: number, signal?: AbortSig
     });
     if (!res.ok) return { full: '', short: '' };
     const data = (await res.json()) as { display_name?: string; address?: Address };
-    return { full: data.display_name ?? `${lat}, ${lng}`, short: shortAddress(data.address) };
+    const result = { full: (data.display_name ?? `${lat}, ${lng}`).slice(0, 300), short: shortAddress(data.address).slice(0, 300) };
+    if (result.full) cacheSet(reverseCache, cacheKey, result);
+    return result;
   } catch {
     return { full: '', short: '' };
   }
@@ -50,6 +67,9 @@ export async function reverseGeocode(lat: number, lng: number, signal?: AbortSig
 
 /** Raw Nominatim results, [] on failure. */
 export async function searchAddress(query: string, signal?: AbortSignal): Promise<Place[]> {
+  const cacheKey = query.trim().toLowerCase();
+  const cached = searchCache.get(cacheKey);
+  if (cached) return cached;
   try {
     const res = await fetch(`${SEARCH}&q=${encodeURIComponent(query)}`, {
       headers: { 'Accept-Language': 'en' },
@@ -57,7 +77,9 @@ export async function searchAddress(query: string, signal?: AbortSignal): Promis
     });
     if (!res.ok) return [];
     const data: unknown = await res.json();
-    return Array.isArray(data) ? (data as Place[]) : [];
+    const places = Array.isArray(data) ? (data as Place[]) : [];
+    cacheSet(searchCache, cacheKey, places);
+    return places;
   } catch {
     return [];
   }

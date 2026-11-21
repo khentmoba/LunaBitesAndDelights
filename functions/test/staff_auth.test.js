@@ -96,7 +96,7 @@ describe('staff auth: scrypt PIN and password verification', () => {
     };
 
     const res = await resetStaffCredentials(fakeDb, {
-      username: 'admin',
+      username: ' Admin ',
       role: 'admin',
       password: 'NewStrongPassword1',
       pin: '123456',
@@ -111,6 +111,10 @@ describe('staff auth: scrypt PIN and password verification', () => {
     assert.deepEqual(written.opts, { merge: true });
     assert.equal(await verifyPasswordAsync('NewStrongPassword1', written.data.passwordHash), 'ok');
     assert.equal(await verifyPasswordAsync('123456', written.data.pinHash), 'ok');
+    await assert.rejects(
+      resetStaffCredentials(fakeDb, { username: 'a', pin: '1234' }),
+      /Invalid --username/,
+    );
     await assert.rejects(
       resetStaffCredentials(fakeDb, { username: 'admin', pin: '12' }),
       /Invalid PIN/,
