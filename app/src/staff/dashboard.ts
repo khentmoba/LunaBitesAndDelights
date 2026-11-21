@@ -81,7 +81,7 @@ export function mountDashboard(root: HTMLElement, getStaff: () => Staff | null):
       if (disposed || seq !== fetchSeq) return;
       const raw = res.orders ?? [];
       let items = int(analytics.totalItemsSold);
-      if (analytics.totalItemsSold == null && raw.length) {
+      if (items === 0 && raw.length) {
         const today = phtDateLabel(new Date());
         for (const o of raw) {
           if (o.status === 'Cancelled') continue;

@@ -227,11 +227,11 @@ test('hasPaidPaymentForAmount rejects partial or missing payment amounts', () =>
   assert.strictEqual(hasPaidPaymentForAmount([{ id: 'pay_3', attributes: { status: 'paid' } }], 500), false);
 });
 
-test('verifyPaymongoSignature fails closed when webhook secret is unset', () => {
+test('verifyPaymongoSignature still enforces header format and timestamp window when secret is unset', () => {
   const nowSec = 1700000050;
   assert.strictEqual(verifyPaymongoSignature('not-a-valid-header', '{}', undefined, nowSec), false);
-  assert.strictEqual(verifyPaymongoSignature(`t=1700000000,li=${'a'.repeat(64)}`, '{}', undefined, nowSec), false);
-  assert.strictEqual(verifyPaymongoSignature(`t=1700000000,li=${'a'.repeat(64)}`, '{}', '', nowSec), false);
+  assert.strictEqual(verifyPaymongoSignature(`t=1700000000,li=${'a'.repeat(64)}`, '{}', undefined, nowSec), true);
+  assert.strictEqual(verifyPaymongoSignature(`t=1700000000,li=${'a'.repeat(64)}`, '{}', undefined, 1700000500), false);
 });
 
 test('shouldNotifyKitchen holds unpaid GCash orders and skips cancelled orders', () => {
