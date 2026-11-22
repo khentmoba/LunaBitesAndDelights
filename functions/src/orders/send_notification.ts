@@ -586,13 +586,26 @@ export async function reconcileMissedOrderNotifications(
   const maxAttempts = opts.maxAttempts ?? RECONCILE_MAX_ATTEMPTS;
   const limit = opts.limit ?? RECONCILE_BATCH_LIMIT;
 
-  const snap = await db.collection('orders')
-    .where('timestamp', '>=', Timestamp.fromMillis(nowMs - lookbackMs))
-    .orderBy('timestamp', 'desc')
-    .limit(limit)
-    .get();
+  const cutoffMs = nowMs - lookbackMs;
+  const [recentSnap, paidSnap] = await Promise.all([
+    db.collection('orders')
+      .where('timestamp', '>=', Timestamp.fromMillis(cutoffMs))
+      .orderBy('timestamp', 'desc')
+      .limit(limit)
+      .get(),
+    db.collection('orders')
+      .where('paidAt', '>=', new Date(cutoffMs).toISOString())
+      .orderBy('paidAt', 'desc')
+      .limit(limit)
+      .get(),
+  ]);
 
-  const candidates = snap.docs.filter((doc) => {
+  const seenDocs = new Map<string, FirebaseFirestore.QueryDocumentSnapshot>();
+  for (const doc of recentSnap.docs) seenDocs.set(doc.id, doc);
+  for (const doc of paidSnap.docs) seenDocs.set(doc.id, doc);
+  const docs = Array.from(seenDocs.values());
+
+  const candidates = docs.filter((doc) => {
     const data = doc.data();
     if (!isOrderVisibleInKds(data)) return false;
     if (data.status === 'Cancelled' || data.status === 'Completed') return false;
@@ -603,7 +616,7 @@ export async function reconcileMissedOrderNotifications(
   });
 
   if (candidates.length === 0) {
-    return { checked: snap.size, retried: 0, sent: 0, failed: 0 };
+    return { checked: docs.length, retried: 0, sent: 0, failed: 0 };
   }
 
   const notifRefs = candidates.map((doc) =>
@@ -649,7 +662,7 @@ export async function reconcileMissedOrderNotifications(
     }
   }
 
-  return { checked: snap.size, retried, sent, failed };
+  return { checked: docs.length, retried, sent, failed };
 }
 
 export const reconcileOrderNotifications = onSchedule(

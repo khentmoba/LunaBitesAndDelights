@@ -77,6 +77,10 @@ describe('orders: kiosk can only create (validated)', () => {
     await assertFails(addDoc(collection(anon(), 'orders'), order({ paymentStatus: 'PAID' })));
     await assertFails(addDoc(collection(anon(), 'orders'), order({ status: 'Completed' })));
     await assertFails(addDoc(collection(anon(), 'orders'), order({ entryType: 'Staff' })));
+    await assertFails(addDoc(collection(anon(), 'orders'), order({ type: 'Walk-In' })));
+    await assertFails(addDoc(collection(anon(), 'orders'), order({ paymentMethod: 'Bitcoin' })));
+    await assertFails(addDoc(collection(anon(), 'orders'), order({ dateLabel: '../bad' })));
+    await assertFails(addDoc(collection(anon(), 'orders'), order({ totalAmount: 50001 })));
   });
   test('nobody can read/update/delete via client', async () => {
     await seed('orders/o1', order());
@@ -184,6 +188,35 @@ describe('staff_accounts + login_attempts: server only', () => {
     await assertFails(getDoc(doc(user('u1', { role: 'staff' }), 'staff_accounts/boss')));
     await assertFails(setDoc(doc(anon(), 'login_attempts/k'), { fails: 1 }));
     await assertFails(getDoc(doc(user('u1'), 'login_attempts/k')));
+  });
+});
+
+describe('pasugo: hardened cancel and chat message authorization', () => {
+  test('unauthenticated callers cannot cancel pasugo_errands; staff and approved riders can', async () => {
+    await seed('pasugo_errands/e1', {
+      customerName: 'Ana',
+      customerPhone: '09171234567',
+      pinHash: 'abc',
+      message: 'Pick up meds',
+      status: 'available',
+    });
+    await assertFails(updateDoc(doc(anon(), 'pasugo_errands/e1'), { status: 'cancelled' }));
+    await assertFails(updateDoc(doc(user('cust1'), 'pasugo_errands/e1'), { status: 'cancelled' }));
+    await assertSucceeds(updateDoc(doc(user('staff_ana', { role: 'staff' }), 'pasugo_errands/e1'), { status: 'cancelled' }));
+  });
+
+  test('only session rider or staff can post pasugo_sessions messages', async () => {
+    await seed('pasugo_sessions/s1', {
+      errandId: 'e1',
+      riderId: 'rider_1',
+      customerPhone: '09171234567',
+      status: 'active',
+    });
+    const msg = { sender: 'rider', text: 'On the way', timestamp: Timestamp.now(), type: 'text' };
+    await assertFails(addDoc(collection(anon(), 'pasugo_sessions/s1/messages'), msg));
+    await assertFails(addDoc(collection(user('stranger'), 'pasugo_sessions/s1/messages'), msg));
+    await assertSucceeds(addDoc(collection(user('rider_1'), 'pasugo_sessions/s1/messages'), msg));
+    await assertSucceeds(addDoc(collection(user('staff_ana', { role: 'staff' }), 'pasugo_sessions/s1/messages'), msg));
   });
 });
 

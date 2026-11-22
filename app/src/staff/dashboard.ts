@@ -56,6 +56,7 @@ export function orderTile(o: Tile): string {
 
 export function mountDashboard(root: HTMLElement, getStaff: () => Staff | null): () => void {
   let loading = false;
+  let sheetLoading = false;
   let error: string | null = null;
   let stats: { revenue: number; count: number; avg: number; items: number } = { revenue: 0, count: 0, avg: 0, items: 0 };
   let orders: Tile[] = [];
@@ -96,8 +97,14 @@ export function mountDashboard(root: HTMLElement, getStaff: () => Staff | null):
       }
       if (analytics.success === true) {
         stats = { revenue: int(analytics.totalRevenue), count: int(analytics.orderCount), avg: int(analytics.averageOrderValue), items };
+      } else {
+        error = typeof analytics.message === 'string' && analytics.message ? analytics.message : 'Could not load sales analytics.';
       }
-      if (res.success === true) orders = raw.map(tileFrom);
+      if (res.success === true) {
+        orders = raw.map(tileFrom);
+      } else if (error === null) {
+        error = 'Could not load recent orders.';
+      }
     } catch (e) {
       if (disposed || seq !== fetchSeq) return;
       error = staffErrorMessage(e, 'Could not load dashboard data', 'Error connecting to server. Tap RETRY to sync.');
@@ -127,7 +134,7 @@ export function mountDashboard(root: HTMLElement, getStaff: () => Staff | null):
     <button type="button" class="dhead__ib dhead__ib--narrow" data-act="logout" title="Logout" aria-label="Logout">${icon('logout_rounded')}</button>
     <button type="button" class="dhead__logout" data-act="logout">${icon('logout_rounded')}<span>Logout</span></button>
   </div>
-  <p class="dhead__badge">ADMIN DASHBOARD</p>
+  <p class="dhead__badge">${staff?.isAdmin ? 'ADMIN DASHBOARD' : 'STAFF DASHBOARD'}</p>
 </header>
 ${
   error === null
@@ -172,37 +179,43 @@ ${
   }
 
   async function showSheet() {
+    if (sheetLoading) return;
     if (!orders.length) {
       snack('No orders yet today.', { color: 'var(--plate)', seconds: 4 });
       return;
     }
-    let list = allOrders ?? orders;
-    if (allOrders === null && orders.length >= 10) {
-      try {
-        const res = await callFn<{ success?: boolean; orders?: Record<string, unknown>[] }>('getActiveOrders', {
-          includeCompleted: true,
-          limit: 50,
-          summaryOnly: true,
-        });
-        if (disposed) return;
-        if (res.success === true && Array.isArray(res.orders)) {
-          allOrders = res.orders.map(tileFrom);
-          list = allOrders;
+    sheetLoading = true;
+    try {
+      let list = allOrders ?? orders;
+      if (allOrders === null && orders.length >= 10) {
+        try {
+          const res = await callFn<{ success?: boolean; orders?: Record<string, unknown>[] }>('getActiveOrders', {
+            includeCompleted: true,
+            limit: 50,
+            summaryOnly: true,
+          });
+          if (disposed) return;
+          if (res.success === true && Array.isArray(res.orders)) {
+            allOrders = res.orders.map(tileFrom);
+            list = allOrders;
+          }
+        } catch {
+          // Fall back to the already-loaded recent orders if the expanded fetch fails.
         }
-      } catch {
-        // Fall back to the already-loaded recent orders if the expanded fetch fails.
       }
-    }
-    const d = showDialog(
-      `<div class="osheet__panel">
+      const d = showDialog(
+        `<div class="osheet__panel">
   <span class="osheet__handle"></span>
   <div class="osheet__head"><h2 class="osheet__title" id="osheet-title">All orders</h2><span class="osheet__count">${list.length} total</span></div>
   <hr class="kdivider">
   <div class="osheet__list">${list.map(orderTile).join('')}</div>
 </div>`,
-      'osheet',
-    );
-    d.setAttribute('aria-labelledby', 'osheet-title');
+        'osheet',
+      );
+      d.setAttribute('aria-labelledby', 'osheet-title');
+    } finally {
+      sheetLoading = false;
+    }
   }
 
   el.addEventListener('click', (ev) => {

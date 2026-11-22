@@ -33,7 +33,11 @@ service cloud.firestore {
         && (
           isStaff()
           || (
-            (!('status' in request.resource.data) || request.resource.data.status == 'Pending')
+            request.resource.data.totalAmount <= 50000
+            && (!('type' in request.resource.data) || request.resource.data.type in ['Pickup', 'Delivery'])
+            && (!('paymentMethod' in request.resource.data) || request.resource.data.paymentMethod in ['Cash', 'GCash'])
+            && (!('dateLabel' in request.resource.data) || (request.resource.data.dateLabel is string && request.resource.data.dateLabel.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')))
+            && (!('status' in request.resource.data) || request.resource.data.status == 'Pending')
             && (!('paymentStatus' in request.resource.data) || request.resource.data.paymentStatus in ['NOT PAID', 'AWAITING_PAYMENT'])
             && (!('entryType' in request.resource.data) || request.resource.data.entryType == 'Kiosk')
           )
@@ -93,20 +97,19 @@ service cloud.firestore {
         && request.resource.data.message.size() <= 1000
         && request.resource.data.status == 'available';
       // Status machine: only `status` may change, and only along legal edges.
-      // available→cancelled: customer (phone must still match);
+      // available→cancelled: approved rider or staff;
       // available→accepted: approved rider; accepted→completed: rider/staff.
       allow update: if request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])
+        && request.auth != null
         && (
           (resource.data.status == 'available'
             && request.resource.data.status == 'cancelled'
-            && request.resource.data.customerPhone == resource.data.customerPhone)
+            && (request.auth.token.riderStatus == 'approved' || isStaff()))
           || (resource.data.status == 'available'
             && request.resource.data.status == 'accepted'
-            && request.auth != null
             && request.auth.token.riderStatus == 'approved')
           || (resource.data.status == 'accepted'
             && request.resource.data.status == 'completed'
-            && request.auth != null
             && (request.auth.token.riderStatus == 'approved' || isStaff()))
         );
       allow delete: if false;
@@ -162,6 +165,10 @@ service cloud.firestore {
             || isStaff()
           );
         allow create: if request.auth != null
+          && (
+            request.auth.uid == get(/databases/$(database)/documents/pasugo_sessions/$(sessionId)).data.riderId
+            || isStaff()
+          )
           && request.resource.data.keys().hasOnly([
             'sender', 'text', 'timestamp', 'type'
           ])

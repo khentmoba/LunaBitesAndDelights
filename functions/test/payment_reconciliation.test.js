@@ -72,6 +72,7 @@ test('verifyPaymongoSignature validates HMAC-SHA256 and timestamp replay window 
   const nowSec = 1700000050;
   const sig = crypto.createHmac('sha256', secret).update(`${t}.${rawBody}`).digest('hex');
   assert.strictEqual(verifyPaymongoSignature(`t=${t},te=${sig}`, rawBody, secret, nowSec), true);
+  assert.strictEqual(verifyPaymongoSignature(`t=${t},li=${'0'.repeat(64)},te=${sig}`, rawBody, secret, nowSec), true, 'matches valid te when both li and te are present');
   assert.strictEqual(verifyPaymongoSignature(`t=${t},te=${sig}`, rawBody, secret, 1700000400), false, 'stale timestamp rejected');
   assert.strictEqual(verifyPaymongoSignature(`t=${t},te=${sig}`, rawBody, secret, 1699999600), false, 'future timestamp rejected');
   assert.strictEqual(verifyPaymongoSignature(`t=${t},te=${'0'.repeat(64)}`, rawBody, secret, nowSec), false);
