@@ -84,10 +84,29 @@ export const projectOrder = (id: string, d: FirebaseFirestore.DocumentData) => {
   };
 };
 
+/** Lightweight summary projection for dashboard tiles without items[] or customer PII. */
+export const projectOrderSummary = (id: string, d: FirebaseFirestore.DocumentData) => {
+  const rawItems = Array.isArray(d.items) ? d.items : [];
+  return {
+    id,
+    orderNumber: d.orderId || d.orderNumber || id,
+    customerName: d.customerName || '',
+    paymentMethod: String(d.paymentMethod || 'Cash'),
+    paymentStatus: String(d.paymentStatus || 'NOT PAID'),
+    entryType: String(d.entryType || ''),
+    itemsCount: rawItems.reduce((s: number, i: any) => s + itemQty(i), 0),
+    total: Number(d.totalAmount) || 0,
+    type: String(d.type || ''),
+    status: String(d.status || 'Pending'),
+    timestamp: toIsoTimestamp(d.timestamp),
+  };
+};
+
 export const getActiveOrders = onCall(async (request) => {
   requireStaff(request); // #6 + #7
   const db = getFirestore();
   const includeCompleted = request.data?.includeCompleted === true;
+  const summaryOnly = request.data?.summaryOnly === true;
   const maxDocs = clampOrdersLimit(request.data?.limit);
   try {
     // 7-day lookback so yesterday's active and history orders are never cut off
@@ -111,7 +130,7 @@ export const getActiveOrders = onCall(async (request) => {
         if (!isOrderVisibleInKds(data)) continue;
         const status = data.status || 'Pending';
         if (includeCompleted || (status !== 'Completed' && status !== 'Cancelled')) {
-          orders.push(projectOrder(doc.id, data));
+          orders.push(summaryOnly ? projectOrderSummary(doc.id, data) : projectOrder(doc.id, data));
           if (orders.length >= maxDocs) break;
         }
       }

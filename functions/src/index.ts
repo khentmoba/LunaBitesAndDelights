@@ -13,6 +13,7 @@ export { sendOrderNotification } from './orders/send_notification';
 export { placeOrder } from './orders/place_order';
 export { getActiveOrders, updateOrderStatus } from './orders/kds';
 export { onOrderWritten } from './orders/derived';
+export { expireStaleUnpaidOrders } from './orders/expire_unpaid';
 export { getSalesAnalytics } from './reporting/analytics';
 export { getLifetimeSalesReport } from './reporting/lifetime_report';
 export { createCheckoutSession } from './payments/create_checkout';

@@ -43,7 +43,7 @@
         ]
       },
       {
-        "source": "{/staff,/staff/**,/kiosk,/kiosk/**}",
+        "source": "{/staff,/staff/**,/kiosk,/kiosk/**,/payment,/payment/**}",
         "headers": [
           {
             "key": "Content-Security-Policy",

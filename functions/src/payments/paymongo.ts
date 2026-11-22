@@ -2,7 +2,7 @@ import { getFirestore, DocumentReference } from 'firebase-admin/firestore';
 import { HttpsError } from 'firebase-functions/v2/https';
 import { logger } from 'firebase-functions';
 import { paymongoSecret } from '../secrets';
-import { sendToAll, escapeMd } from '../telegram_api';
+import { escapeMd } from '../telegram_api';
 import { ALNUM_DOC_ID } from '../util/security';
 
 export interface VerifiedCheckoutSession {
@@ -176,18 +176,18 @@ export function formatPaymentConfirmedMessage(
 }
 
 /**
- * Atomically transitions an order to PAID once and notifies Telegram only on
- * that first transition, so webhook and client polling cannot double-notify.
+ * Atomically transitions an order to PAID once so webhook and client polling
+ * cannot double-transition. Telegram confirmation and refund-review alerts are
+ * emitted durably by `onOrderWritten` (`retry: true`).
  */
 export async function markOrderPaidOnce(
   orderRef: DocumentReference,
   paymentId: string,
-  fallbackOrderLabel = '',
+  _fallbackOrderLabel = '',
   expectedSessionId?: string,
   paidAmountCentavos?: number,
 ): Promise<{ transitioned: boolean; alreadyPaid: boolean }> {
   const db = getFirestore();
-  let orderData: Record<string, any> | null = null;
   let transitioned = false;
   let alreadyPaid = false;
 
@@ -195,7 +195,6 @@ export async function markOrderPaidOnce(
     const snap = await tx.get(orderRef);
     if (!snap.exists) return;
     const data = snap.data()!;
-    orderData = data;
     if (data.paymentStatus === 'PAID') {
       alreadyPaid = true;
       return;
@@ -224,16 +223,6 @@ export async function markOrderPaidOnce(
     }
     tx.set(orderRef, paidFields, { merge: true });
   });
-
-  if (transitioned && orderData) {
-    const data = orderData as Record<string, any>;
-    const paidAtPht = new Date().toLocaleString('en-PH', { timeZone: 'Asia/Manila' });
-    try {
-      await sendToAll(formatPaymentConfirmedMessage(data, fallbackOrderLabel || orderRef.id, paidAtPht));
-    } catch (notifErr) {
-      logger.error('Failed to send payment confirmation to Telegram:', notifErr);
-    }
-  }
 
   return { transitioned, alreadyPaid };
 }

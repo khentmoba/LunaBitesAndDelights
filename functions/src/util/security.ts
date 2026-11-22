@@ -120,7 +120,11 @@ export async function clearLoginAttempts(key: string): Promise<void> {
 
 /** Extracts a best-effort client IP string from an Express/Cloud Functions request. */
 export function clientIpFromRequest(
-  rawRequest?: { ip?: unknown; headers?: Record<string, unknown> },
+  rawRequest?: {
+    ip?: unknown;
+    headers?: Record<string, unknown>;
+    socket?: { remoteAddress?: unknown };
+  },
 ): string {
   const forwarded = rawRequest?.headers?.['x-forwarded-for'];
   const rawForwarded = Array.isArray(forwarded) ? forwarded[forwarded.length - 1] : forwarded;
@@ -132,6 +136,9 @@ export function clientIpFromRequest(
   }
   if (typeof rawRequest?.ip === 'string' && rawRequest.ip.trim().length > 0) {
     return rawRequest.ip.trim().slice(0, 64);
+  }
+  if (typeof rawRequest?.socket?.remoteAddress === 'string' && rawRequest.socket.remoteAddress.trim().length > 0) {
+    return rawRequest.socket.remoteAddress.trim().slice(0, 64);
   }
   return '';
 }

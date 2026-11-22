@@ -1,6 +1,6 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { logger } from 'firebase-functions';
-import { paymongoSecret, telegramToken, telegramChatIds } from '../secrets';
+import { paymongoSecret } from '../secrets';
 import { ALNUM_DOC_ID, cleanStr, clientIpFromRequest, enforceFixedWindowRateLimit } from '../util/security';
 import {
   paymongoAuthHeader,
@@ -27,7 +27,7 @@ const VERIFY_RATE_MAX = 60;
  * the kiosk shows the order receipt. Prevents client-side bypass of unpaid orders.
  */
 export const verifyCheckoutPayment = onCall(
-  { secrets: [paymongoSecret, telegramToken, telegramChatIds] },
+  { secrets: [paymongoSecret] },
   async (request) => {
     const role = (request.auth?.token as any)?.role;
     const isStaff = !!request.auth?.uid && (role === 'staff' || role === 'admin');

@@ -2,7 +2,7 @@ import { onDocumentWritten } from 'firebase-functions/v2/firestore';
 import { getFirestore, FieldValue, Timestamp } from 'firebase-admin/firestore';
 import { logger } from 'firebase-functions';
 import { projectOrder, isOrderVisibleInKds, toIsoTimestamp } from './kds';
-import { notifyOrderOnce } from './send_notification';
+import { notifyOrderOnce, notifyPaymentConfirmedOnce } from './send_notification';
 import { isPermanentTelegramError } from '../telegram_api';
 import { dayDeltas, incrementPayload } from '../reporting/daily_stats';
 import { telegramToken, telegramChatIds, googleMapsApiKey } from '../secrets';
@@ -11,7 +11,7 @@ export const KDS_COLLECTION = 'kds_orders';
 export const DAILY_STATS_COLLECTION = 'dailyStats';
 const EVENT_GUARD_COLLECTION = 'stats_events';
 const GUARD_TTL_MS = 7 * 24 * 60 * 60 * 1000;
-const KDS_MIRROR_TTL_MS = 30 * 24 * 60 * 60 * 1000;
+const KDS_MIRROR_TTL_MS = 10 * 24 * 60 * 60 * 1000;
 const MAX_TELEGRAM_RETRY_AGE_MS = 10 * 60 * 1000;
 
 /** Kitchen-screen mirror doc: the same trimmed projection the callable returns, plus a queryable time. */
@@ -38,6 +38,22 @@ export function shouldNotifyKitchen(
   );
 }
 
+/**
+ * Returns true when an online GCash order transitions to `paymentStatus: 'PAID'`
+ * (including late payments on already-cancelled orders so refund alerts retry durably).
+ */
+export function shouldNotifyPaymentConfirmed(
+  before: FirebaseFirestore.DocumentData | undefined,
+  after: FirebaseFirestore.DocumentData | undefined,
+): boolean {
+  return Boolean(
+    after &&
+    String(after.paymentMethod || '').toLowerCase() === 'gcash' &&
+    after.paymentStatus === 'PAID' &&
+    before?.paymentStatus !== 'PAID',
+  );
+}
+
 function hasTelegramConfig(): boolean {
   try {
     return telegramToken.value().trim().length > 0 && telegramChatIds.value().trim().length > 0;
@@ -57,6 +73,7 @@ export const onOrderWritten = onDocumentWritten(
   {
     document: 'orders/{orderId}',
     retry: true,
+    timeoutSeconds: 45,
     secrets: [telegramToken, telegramChatIds, googleMapsApiKey],
   },
   async (event) => {
@@ -135,7 +152,25 @@ export const onOrderWritten = onDocumentWritten(
             }))
       : Promise.resolve();
 
-    const results = await Promise.allSettled([mirror, stats, notify]);
+    const notifyPayment = (shouldNotifyPaymentConfirmed(before, after) && hasTelegramConfig())
+      ? (notifyTooOld
+          ? Promise.resolve().then(() => {
+              logger.warn(`Skipping stale Telegram payment retry for ${orderId} (event age > 10m)`);
+            })
+          : notifyPaymentConfirmedOnce(orderId, after!).then((res) => {
+              if (res.inFlight) {
+                throw new Error(`Telegram payment notification for ${orderId} is still in-flight; retrying until settled`);
+              }
+            }).catch((err) => {
+              if (isPermanentTelegramError(err)) {
+                logger.warn(`Dropping permanent Telegram payment error for ${orderId} to avoid retry loop`, err);
+                return;
+              }
+              throw err;
+            }))
+      : Promise.resolve();
+
+    const results = await Promise.allSettled([mirror, stats, notify, notifyPayment]);
     const failed = results.filter((r): r is PromiseRejectedResult => r.status === 'rejected');
     if (failed.length) {
       for (const f of failed) logger.error(`Derived order views failed for ${orderId}`, f.reason);

@@ -43,6 +43,8 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
   let live: KdsOrder[] | null = null;
   let orders: KdsOrder[] = [];
   let isLive = false;
+  let fromCache = false;
+  let isOffline = typeof navigator !== 'undefined' && navigator.onLine === false;
   let connecting = false;
   let loading = false;
   let error: string | null = null;
@@ -199,6 +201,7 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
       const toDate = (ts: unknown) => (ts instanceof fs.Timestamp ? ts.toDate() : null);
       unsub = fs.onSnapshot(
         q,
+        { includeMetadataChanges: true },
         (snap) => {
           if (disposed) return;
           clearTimeout(initialFallbackTimer);
@@ -209,6 +212,7 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
           reconnectTimer = 0;
           connecting = false;
           isLive = true;
+          fromCache = snap.metadata.fromCache;
           polled = [];
           live = snap.docs.map((d) => kdsOrderFromDoc(d.id, d.data(), toDate));
           publish();
@@ -300,6 +304,8 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
   // ---- rendering ----
 
   function feedState() {
+    if (isOffline) return { color: ERROR, short: 'Offline', long: 'Offline (cached)', label: 'Connection offline, showing cached orders' };
+    if (isLive && fromCache) return { color: '#B45309', short: 'Cached', long: 'Reconnecting (cached)', label: 'Reconnecting to live orders, showing cached data' };
     if (isLive) return { color: SUCCESS, short: 'Live', long: 'Live', label: 'Orders update live' };
     if (connecting) return { color: INK_SOFT, short: 'Connecting', long: 'Connecting…', label: 'Connecting to live orders' };
     return { color: '#B45309', short: '10s', long: 'Auto-sync every 10s', label: 'Live updates unavailable, refreshing every 10 seconds' };
@@ -359,16 +365,26 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
   }
 
   function renderBanner() {
-    if (error === null) {
-      banner.innerHTML = '';
-      return;
-    }
-    const auth = isAuthErrorText(error);
-    banner.innerHTML = `
+    if (error !== null) {
+      const auth = isAuthErrorText(error);
+      banner.innerHTML = `
   <div class="kerr" role="alert">${icon('warning_amber_rounded')}<span class="kerr__text">${esc(error)}</span>
     ${auth ? '<button type="button" class="kerr__btn kerr__btn--auth" data-act="signin">SIGN IN</button>' : ''}
     <button type="button" class="kerr__btn" data-act="retry">RETRY</button>
   </div>`;
+      return;
+    }
+    if (isOffline || (isLive && fromCache)) {
+      const msg = isOffline
+        ? 'Connection offline — showing cached orders. New orders will sync when back online.'
+        : 'Reconnecting to live feed — showing cached orders.';
+      banner.innerHTML = `
+  <div class="kerr kerr--warn" role="status">${icon('warning_amber_rounded')}<span class="kerr__text">${esc(msg)}</span>
+    <button type="button" class="kerr__btn" data-act="retry">SYNC</button>
+  </div>`;
+      return;
+    }
+    banner.innerHTML = '';
   }
 
   function card(o: KdsOrder): string {
@@ -783,7 +799,22 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
   const onVisibilityChange = () => {
     if (!disposed && !document.hidden && !isLive && getStaff()) void fetchActive(true);
   };
+  const onOnline = () => {
+    isOffline = false;
+    if (disposed) return;
+    renderBar();
+    renderBanner();
+    if (!isLive && getStaff()) void fetchActive(true);
+  };
+  const onOffline = () => {
+    isOffline = true;
+    if (disposed) return;
+    renderBar();
+    renderBanner();
+  };
   document.addEventListener('visibilitychange', onVisibilityChange);
+  addEventListener('online', onOnline);
+  addEventListener('offline', onOffline);
   const onLayout = () => {
     layout = null;
     renderBoard();
@@ -808,6 +839,8 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
     clearInterval(lookbackTimer);
     clearInterval(clock);
     document.removeEventListener('visibilitychange', onVisibilityChange);
+    removeEventListener('online', onOnline);
+    removeEventListener('offline', onOffline);
     wideMq.removeEventListener('change', onLayout);
     root.removeEventListener('click', onRootClick);
   };
