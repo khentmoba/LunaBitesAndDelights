@@ -133,3 +133,114 @@ test('backfill rebuilds dailyStats and the mirror from orders alone', async () =
   const after = await call('getLifetimeSalesReport', {});
   assert.deepStrictEqual(after, before);
 });
+
+test('notifyOrderOnce resumes partial multi-chat failures and reconcileMissedOrderNotifications catches missed orders', async () => {
+  const { setBot, setTelegramRetryConfig } = require('../../lib/telegram_api');
+  const {
+    notifyOrderOnce,
+    reconcileMissedOrderNotifications,
+    ORDER_NOTIFICATIONS_COLLECTION,
+  } = require('../../lib/orders/send_notification');
+
+  process.env.TELEGRAM_TOKEN = 'emulator-test-token';
+  process.env.TELEGRAM_CHAT_ID = 'owner-chat, gc-chat';
+  setTelegramRetryConfig({ maxAttempts: 1, sleep: async () => {} });
+
+  const sentLog = [];
+  let failGc = true;
+  setBot({
+    sendMessage: async (chatId, text) => {
+      sentLog.push({ chatId, text });
+      if (chatId === 'gc-chat' && failGc) {
+        const err = new Error('ETELEGRAM: 503 Service Unavailable');
+        err.response = { statusCode: 503 };
+        throw err;
+      }
+      return { message_id: sentLog.length };
+    },
+    sendPhoto: async () => ({ message_id: 999 }),
+  });
+
+  try {
+    const partialOrder = order({
+      orderId: 'LU-PARTIAL-1',
+      type: 'Pickup',
+      lat: null,
+      lng: null,
+    });
+    await assert.rejects(() => notifyOrderOnce('partial1', partialOrder));
+    const afterFirst = (await db.collection(ORDER_NOTIFICATIONS_COLLECTION).doc('partial1').get()).data();
+    assert.strictEqual(afterFirst.telegramSent, false);
+    assert.strictEqual(afterFirst.telegramStatus, 'failed');
+    assert.strictEqual(afterFirst.attempts, 1);
+    assert.deepStrictEqual(afterFirst.deliveredChatIds, ['owner-chat']);
+
+    // Retry once GC recovers: only gc-chat receives the message, owner-chat is not duplicated.
+    sentLog.length = 0;
+    failGc = false;
+    const retryRes = await notifyOrderOnce('partial1', partialOrder);
+    assert.strictEqual(retryRes.sent, true);
+    assert.deepStrictEqual(sentLog.map((s) => s.chatId), ['gc-chat']);
+    const afterSecond = (await db.collection(ORDER_NOTIFICATIONS_COLLECTION).doc('partial1').get()).data();
+    assert.strictEqual(afterSecond.telegramSent, true);
+    assert.strictEqual(afterSecond.telegramStatus, 'sent');
+    assert.strictEqual(afterSecond.attempts, 2);
+    assert.deepStrictEqual(afterSecond.deliveredChatIds.sort(), ['gc-chat', 'owner-chat']);
+
+    // Reconciler test: seed missed (>30s), brand-new (<30s), unpaid GCash, cancelled, and completed orders.
+    sentLog.length = 0;
+    const nowMs = Date.now();
+    const twoMinAgo = Timestamp.fromMillis(nowMs - 2 * 60 * 1000);
+    const fiveSecAgo = Timestamp.fromMillis(nowMs - 5 * 1000);
+
+    await db.doc('orders/rec_missed').set(order({ orderId: 'LU-MISSED', type: 'Pickup', timestamp: twoMinAgo }));
+    await db.doc('orders/rec_fresh').set(order({ orderId: 'LU-FRESH', type: 'Pickup', timestamp: fiveSecAgo }));
+    await db.doc('orders/rec_unpaid').set(order({
+      orderId: 'LU-UNPAID-REC', type: 'Pickup', paymentMethod: 'GCash', paymentStatus: 'AWAITING_PAYMENT', timestamp: twoMinAgo,
+    }));
+    await db.doc('orders/rec_cancelled').set(order({
+      orderId: 'LU-CANCEL-REC', type: 'Pickup', status: 'Cancelled', timestamp: twoMinAgo,
+    }));
+    await db.doc('orders/rec_completed').set(order({
+      orderId: 'LU-DONE-REC', type: 'Pickup', status: 'Completed', timestamp: twoMinAgo,
+    }));
+    await db.doc('orders/rec_sent').set(order({ orderId: 'LU-SENT-REC', type: 'Pickup', timestamp: twoMinAgo }));
+    await db.collection(ORDER_NOTIFICATIONS_COLLECTION).doc('rec_sent').set({
+      telegramSent: true,
+      telegramStatus: 'sent',
+    });
+    // Order whose trigger burned 100 retries during an outage must still be reconciled.
+    await db.doc('orders/rec_after_outage').set(order({ orderId: 'LU-OUTAGE-REC', type: 'Pickup', timestamp: twoMinAgo }));
+    await db.collection(ORDER_NOTIFICATIONS_COLLECTION).doc('rec_after_outage').set({
+      telegramSent: false,
+      telegramStatus: 'failed',
+      attempts: 100,
+    });
+
+    const summary = await reconcileMissedOrderNotifications(db, { nowMs });
+    assert.strictEqual(summary.retried, 2);
+    assert.strictEqual(summary.sent, 2);
+    assert.strictEqual(summary.failed, 0);
+    assert.deepStrictEqual(sentLog.map((s) => s.chatId).sort(), ['gc-chat', 'gc-chat', 'owner-chat', 'owner-chat']);
+    assert.ok(sentLog.some((s) => s.text.includes('LU\\-MISSED')));
+    assert.ok(sentLog.some((s) => s.text.includes('LU\\-OUTAGE\\-REC')));
+    assert.strictEqual(
+      (await db.collection(ORDER_NOTIFICATIONS_COLLECTION).doc('rec_missed').get()).get('telegramSent'),
+      true,
+    );
+    const outageNotif = (await db.collection(ORDER_NOTIFICATIONS_COLLECTION).doc('rec_after_outage').get()).data();
+    assert.strictEqual(outageNotif.telegramSent, true);
+    assert.strictEqual(outageNotif.reconcileAttempts, 1);
+    assert.strictEqual(outageNotif.attempts, 101);
+    // Second run is a clean no-op.
+    sentLog.length = 0;
+    const secondRun = await reconcileMissedOrderNotifications(db, { nowMs });
+    assert.strictEqual(secondRun.retried, 0);
+    assert.strictEqual(sentLog.length, 0);
+  } finally {
+    setBot(null);
+    setTelegramRetryConfig(null);
+    delete process.env.TELEGRAM_TOKEN;
+    delete process.env.TELEGRAM_CHAT_ID;
+  }
+});

@@ -9,7 +9,7 @@ export { telegramToken, telegramChatIds, paymongoSecret, googleMapsApiKey } from
 export { dailySalesReport } from './reporting/daily_report';
 export { triggerManualReport } from './reporting/manual_report';
 export { verifyStaff, updateStaffPin } from './auth/verify_staff';
-export { sendOrderNotification } from './orders/send_notification';
+export { sendOrderNotification, reconcileOrderNotifications } from './orders/send_notification';
 export { placeOrder } from './orders/place_order';
 export { getActiveOrders, updateOrderStatus } from './orders/kds';
 export { onOrderWritten } from './orders/derived';
