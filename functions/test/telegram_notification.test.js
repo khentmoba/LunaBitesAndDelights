@@ -518,4 +518,280 @@ describe('Telegram MarkdownV2 escaping and order notifications', () => {
       global.fetch = origFetch;
     }
   });
+
+  test('sendToAll retries transient 5xx/network errors with exponential backoff and succeeds', async () => {
+    const { sendToAll, setBot, setTelegramRetryConfig } = require('../lib/telegram_api');
+    process.env.TELEGRAM_CHAT_ID = '-100123456';
+    const sleeps = [];
+    setTelegramRetryConfig({
+      maxAttempts: 3,
+      baseDelayMs: 500,
+      sleep: async (ms) => { sleeps.push(ms); },
+    });
+    let attempts = 0;
+    setBot({
+      sendMessage: async () => {
+        attempts++;
+        if (attempts < 3) {
+          const err = new Error('ETELEGRAM: 503 Service Unavailable');
+          err.response = { statusCode: 503, body: { description: 'Service Unavailable' } };
+          throw err;
+        }
+        return { message_id: 42 };
+      },
+      sendPhoto: async () => ({ message_id: 43 }),
+    });
+    try {
+      const res = await sendToAll('hello');
+      assert.equal(attempts, 3);
+      assert.deepEqual(sleeps, [500, 1000]);
+      assert.deepEqual(res.deliveredChatIds, ['-100123456']);
+    } finally {
+      setBot(null);
+      setTelegramRetryConfig(null);
+    }
+  });
+
+  test('sendToAll respects 429 retry_after within cap and defers long cooldowns to outer retry', async () => {
+    const { sendToAll, setBot, setTelegramRetryConfig } = require('../lib/telegram_api');
+    process.env.TELEGRAM_CHAT_ID = '-100123456';
+    const sleeps = [];
+    setTelegramRetryConfig({
+      maxAttempts: 3,
+      baseDelayMs: 500,
+      maxRetryAfterMs: 5000,
+      sleep: async (ms) => { sleeps.push(ms); },
+    });
+
+    // Short retry_after (2s) retries in-process and succeeds.
+    let calls = 0;
+    setBot({
+      sendMessage: async () => {
+        calls++;
+        if (calls === 1) {
+          const err = new Error('ETELEGRAM: 429 Too Many Requests');
+          err.response = { statusCode: 429, body: { ok: false, parameters: { retry_after: 2 } } };
+          throw err;
+        }
+        return { message_id: 1 };
+      },
+      sendPhoto: async () => ({ message_id: 1 }),
+    });
+    try {
+      await sendToAll('short-429');
+      assert.equal(calls, 2);
+      assert.deepEqual(sleeps, [2000]);
+
+      // Long retry_after (30s > 5s cap) does not block; rejects as non-permanent.
+      sleeps.length = 0;
+      calls = 0;
+      setBot({
+        sendMessage: async () => {
+          calls++;
+          const err = new Error('ETELEGRAM: 429 Too Many Requests');
+          err.response = { statusCode: 429, body: { ok: false, parameters: { retry_after: 30 } } };
+          throw err;
+        },
+        sendPhoto: async () => ({ message_id: 1 }),
+      });
+      await assert.rejects(
+        () => sendToAll('long-429'),
+        (err) => err.permanent === false && calls === 1 && sleeps.length === 0,
+      );
+    } finally {
+      setBot(null);
+      setTelegramRetryConfig(null);
+    }
+  });
+
+  test('sendToAll automatically retries supergroup migrate_to_chat_id and does not classify it as permanent', async () => {
+    const { sendToAll, setBot, isPermanentTelegramError, getMigratedChatId } = require('../lib/telegram_api');
+    process.env.TELEGRAM_CHAT_ID = '-12345';
+    const migrationErr = new Error('ETELEGRAM: 400 Bad Request: group chat was upgraded to a supergroup chat');
+    migrationErr.response = {
+      statusCode: 400,
+      body: { ok: false, parameters: { migrate_to_chat_id: -100999888 } },
+    };
+    assert.equal(getMigratedChatId(migrationErr), '-100999888');
+    assert.equal(isPermanentTelegramError(migrationErr), false);
+
+    const targeted = [];
+    setBot({
+      sendMessage: async (chatId) => {
+        targeted.push(chatId);
+        if (chatId === '-12345') throw migrationErr;
+        return { message_id: 77 };
+      },
+      sendPhoto: async () => ({ message_id: 78 }),
+    });
+    try {
+      const res = await sendToAll('migrated-order');
+      assert.deepEqual(targeted, ['-12345', '-100999888']);
+      assert.deepEqual(res.deliveredChatIds, ['-12345', '-100999888']);
+
+      // After updating TELEGRAM_CHAT_ID to the migrated ID, resuming with skipChatIds skips it.
+      targeted.length = 0;
+      process.env.TELEGRAM_CHAT_ID = '-100999888, other-chat';
+      const resumed = await sendToAll('migrated-order', { skipChatIds: res.deliveredChatIds });
+      assert.deepEqual(targeted, ['other-chat']);
+      assert.deepEqual(resumed.deliveredChatIds, ['other-chat']);
+    } finally {
+      setBot(null);
+    }
+  });
+
+  test('split-mode delivery photo partial failure still sends full itemized text to all chats', async () => {
+    const { setBot, setTelegramRetryConfig } = require('../lib/telegram_api');
+    const { sendDeliveryNotification } = require('../lib/orders/send_notification');
+    process.env.TELEGRAM_CHAT_ID = 'owner, gc';
+    process.env.GOOGLE_MAPS_API_KEY = 'fake-map-key';
+    setTelegramRetryConfig({ maxAttempts: 1, sleep: async () => {} });
+
+    const origFetch = global.fetch;
+    const photoTargets = [];
+    const textTargets = [];
+    setBot({
+      sendPhoto: async (chatId) => {
+        photoTargets.push(chatId);
+        if (chatId === 'gc') {
+          const err = new Error('ETELEGRAM: 502 Bad Gateway');
+          err.response = { statusCode: 502 };
+          throw err;
+        }
+        return { message_id: 10 };
+      },
+      sendMessage: async (chatId) => {
+        textTargets.push(chatId);
+        return { message_id: 11 };
+      },
+    });
+    global.fetch = async () => ({
+      ok: true,
+      headers: { get: () => 'image/png' },
+      arrayBuffer: async () => new Uint8Array([137, 80, 78, 71]).buffer,
+    });
+    try {
+      const longMessage = 'Itemized list:\n' + 'x'.repeat(1100);
+      const delivered = await sendDeliveryNotification(
+        {
+          orderNumber: 'LU-SPLIT-1',
+          customerName: 'Ana',
+          orderType: 'Delivery',
+          items: [{ name: 'Burger', variant: '', price: 100, quantity: 1 }],
+          total: 100,
+          paymentMethod: 'Cash',
+          timeStr: '2026-11-22 18:00',
+          deliveryAddress: 'Purok 5',
+        },
+        longMessage,
+        9.01,
+        125.52,
+      );
+      assert.deepEqual(photoTargets, ['owner', 'gc']);
+      assert.deepEqual(textTargets, ['owner', 'gc'], 'owner received only summary caption so it must still receive full text');
+      assert.deepEqual(delivered, ['owner', 'gc']);
+    } finally {
+      global.fetch = origFetch;
+      delete process.env.GOOGLE_MAPS_API_KEY;
+      setBot(null);
+      setTelegramRetryConfig(null);
+    }
+  });
+
+  test('partial multi-chat transient failure throws with deliveredChatIds and skipChatIds resumes without duplicates', async () => {
+    const { sendToAll, setBot, setTelegramRetryConfig } = require('../lib/telegram_api');
+    process.env.TELEGRAM_CHAT_ID = 'owner, gc, owner';
+    setTelegramRetryConfig({ maxAttempts: 1, sleep: async () => {} });
+
+    const sentTo = [];
+    let gcFails = true;
+    setBot({
+      sendMessage: async (chatId) => {
+        sentTo.push(chatId);
+        if (chatId === 'gc' && gcFails) {
+          const err = new Error('ETELEGRAM: 502 Bad Gateway');
+          err.response = { statusCode: 502 };
+          throw err;
+        }
+        return { message_id: 1 };
+      },
+      sendPhoto: async () => ({ message_id: 1 }),
+    });
+    try {
+      let caught = null;
+      try {
+        await sendToAll('order-1');
+      } catch (e) {
+        caught = e;
+      }
+      assert.ok(caught, 'partial transient failure must reject so GC is retried');
+      assert.equal(caught.permanent, false);
+      assert.deepEqual(caught.deliveredChatIds, ['owner']);
+      assert.deepEqual(caught.failedChatIds, ['gc']);
+      assert.deepEqual(sentTo, ['owner', 'gc'], 'duplicate chat IDs in env must be deduplicated');
+
+      // Resume with skipChatIds — only GC is retried, owner is not spammed.
+      sentTo.length = 0;
+      gcFails = false;
+      const resumed = await sendToAll('order-1', { skipChatIds: caught.deliveredChatIds });
+      assert.deepEqual(sentTo, ['gc']);
+      assert.deepEqual(resumed.deliveredChatIds, ['gc']);
+    } finally {
+      setBot(null);
+      setTelegramRetryConfig(null);
+    }
+  });
+
+  test('permanent failure on one dead chat does not fail delivery when active GC succeeds', async () => {
+    const { sendToAll, setBot, setTelegramRetryConfig } = require('../lib/telegram_api');
+    process.env.TELEGRAM_CHAT_ID = 'dead-chat, active-gc';
+    setTelegramRetryConfig({ maxAttempts: 2, sleep: async () => {} });
+
+    const attemptsByChat = { 'dead-chat': 0, 'active-gc': 0 };
+    setBot({
+      sendMessage: async (chatId) => {
+        attemptsByChat[chatId]++;
+        if (chatId === 'dead-chat') {
+          const err = new Error('ETELEGRAM: 403 Forbidden: bot was kicked');
+          err.response = { statusCode: 403 };
+          throw err;
+        }
+        return { message_id: 9 };
+      },
+      sendPhoto: async () => ({ message_id: 9 }),
+    });
+    try {
+      const res = await sendToAll('order-2');
+      assert.equal(attemptsByChat['dead-chat'], 1, 'permanent 403 must not retry');
+      assert.equal(attemptsByChat['active-gc'], 1);
+      assert.deepEqual(res.deliveredChatIds, ['active-gc']);
+    } finally {
+      setBot(null);
+      setTelegramRetryConfig(null);
+    }
+  });
+
+  test('getBot trims whitespace/newlines from TELEGRAM_TOKEN and evaluateNotificationClaim recognizes failed_permanent', async () => {
+    const { sendToAll, setBot } = require('../lib/telegram_api');
+    const { evaluateNotificationClaim, canClaimNotification } = require('../lib/orders/send_notification');
+    assert.equal(evaluateNotificationClaim({ telegramStatus: 'failed_permanent' }), 'failed-permanent');
+    assert.equal(canClaimNotification({ telegramStatus: 'failed_permanent' }), false);
+
+    process.env.TELEGRAM_TOKEN = '  trimmed-tok-999\n ';
+    process.env.TELEGRAM_CHAT_ID = '555';
+    setBot(null);
+    const origFetch = global.fetch;
+    const urls = [];
+    try {
+      global.fetch = async (url) => {
+        urls.push(url);
+        return { ok: true, status: 200, json: async () => ({ ok: true, result: { message_id: 1 } }) };
+      };
+      await sendToAll('trimmed');
+      assert.equal(urls[0], 'https://api.telegram.org/bottrimmed-tok-999/sendMessage');
+    } finally {
+      global.fetch = origFetch;
+      setBot(null);
+    }
+  });
 });

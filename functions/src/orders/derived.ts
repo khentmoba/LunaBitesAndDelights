@@ -3,7 +3,7 @@ import { getFirestore, FieldValue, Timestamp } from 'firebase-admin/firestore';
 import { logger } from 'firebase-functions';
 import { projectOrder, isOrderVisibleInKds, toIsoTimestamp } from './kds';
 import { notifyOrderOnce, notifyPaymentConfirmedOnce } from './send_notification';
-import { isPermanentTelegramError } from '../telegram_api';
+import { isPermanentTelegramError, hasTelegramConfig } from '../telegram_api';
 import { dayDeltas, incrementPayload } from '../reporting/daily_stats';
 import { telegramToken, telegramChatIds, googleMapsApiKey } from '../secrets';
 
@@ -53,15 +53,6 @@ export function shouldNotifyPaymentConfirmed(
     before?.paymentStatus !== 'PAID',
   );
 }
-
-function hasTelegramConfig(): boolean {
-  try {
-    return telegramToken.value().trim().length > 0 && telegramChatIds.value().trim().length > 0;
-  } catch {
-    return false;
-  }
-}
-
 /**
  * Keeps derived views and notifications in step with `orders/{id}`:
  *  - `kds_orders/{id}`: staff-readable projection for real-time KDS.
@@ -134,22 +125,26 @@ export const onOrderWritten = onDocumentWritten(
     });
 
     const notifyTooOld = Date.now() - eventTimeMs > MAX_TELEGRAM_RETRY_AGE_MS;
-    const notify = (shouldNotifyKitchen(before, after) && hasTelegramConfig())
-      ? (notifyTooOld
+    const notify = shouldNotifyKitchen(before, after)
+      ? (!hasTelegramConfig()
           ? Promise.resolve().then(() => {
-              logger.warn(`Skipping stale Telegram notification retry for ${orderId} (event age > 10m)`);
+              logger.warn(`Skipping Telegram notification for ${orderId}: TELEGRAM_TOKEN or TELEGRAM_CHAT_ID not configured`);
             })
-          : notifyOrderOnce(orderId, after!).then((res) => {
-              if (res.inFlight) {
-                throw new Error(`Telegram notification for ${orderId} is still in-flight; retrying until settled`);
-              }
-            }).catch((err) => {
-              if (isPermanentTelegramError(err)) {
-                logger.warn(`Dropping permanent Telegram error for ${orderId} to avoid retry loop`, err);
-                return;
-              }
-              throw err;
-            }))
+          : notifyTooOld
+            ? Promise.resolve().then(() => {
+                logger.warn(`Deferring stale Telegram notification retry for ${orderId} (event age > 10m) to scheduled reconciler`);
+              })
+            : notifyOrderOnce(orderId, after!).then((res) => {
+                if (res.inFlight) {
+                  throw new Error(`Telegram notification for ${orderId} is still in-flight; retrying until settled`);
+                }
+              }).catch((err) => {
+                if (isPermanentTelegramError(err)) {
+                  logger.warn(`Dropping permanent Telegram error for ${orderId} to avoid retry loop`, err);
+                  return;
+                }
+                throw err;
+              }))
       : Promise.resolve();
 
     const notifyPayment = (shouldNotifyPaymentConfirmed(before, after) && hasTelegramConfig())
