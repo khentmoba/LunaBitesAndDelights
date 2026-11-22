@@ -95,6 +95,8 @@
 /* ---- Error banner ---- */
 .kerr { display: flex; align-items: center; padding: 10px 16px; background: #FCE4E4; border-bottom: 1px solid var(--error); }
 .kerr > .icon { flex: none; font-size: 18px; color: var(--error); margin-right: 10px; }
+.kerr--warn { background: var(--butter); border-bottom-color: var(--ink); color: var(--ink); }
+.kerr--warn > .icon { color: var(--ink); }
 .kerr__text { flex: 1; font-size: 12px; font-weight: 600; line-height: 1.4; }
 .kerr__btn { flex: none; min-width: 64px; min-height: 32px; padding: 0 12px; border-radius: 20px; font-size: 12px; font-weight: 800; letter-spacing: 1px; line-height: 1.4; }
 .kerr__btn--auth { color: var(--error); }

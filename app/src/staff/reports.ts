@@ -98,14 +98,25 @@ function mountReport(root: HTMLElement, getStaff: () => Staff | null, r: Report)
   };
   root.addEventListener('click', onRootClick);
 
-  addEventListener('resize', fitTitle);
+  let resizeRaf = 0;
+  const onResize = () => {
+    if (resizeRaf) return;
+    resizeRaf = requestAnimationFrame(() => {
+      resizeRaf = 0;
+      if (!disposed) fitTitle();
+    });
+  };
+  addEventListener('resize', onResize);
   render();
   fitTitle();
-  void document.fonts.ready.then(fitTitle);
+  void document.fonts.ready.then(() => {
+    if (!disposed) fitTitle();
+  });
   void load();
   return () => {
     disposed = true;
-    removeEventListener('resize', fitTitle);
+    cancelAnimationFrame(resizeRaf);
+    removeEventListener('resize', onResize);
     root.removeEventListener('click', onRootClick);
   };
 }

@@ -2,7 +2,7 @@ import { onRequest, HttpsError } from 'firebase-functions/v2/https';
 import { getFirestore } from 'firebase-admin/firestore';
 import { logger } from 'firebase-functions';
 import * as crypto from 'crypto';
-import { paymongoSecret, telegramToken, telegramChatIds } from '../secrets';
+import { paymongoSecret } from '../secrets';
 import { clientIpFromRequest, enforceFixedWindowRateLimit } from '../util/security';
 import {
   paymongoAuthHeader,
@@ -71,7 +71,7 @@ export function verifyPaymongoSignature(
 }
 
 export const paymongoWebhook = onRequest(
-  { secrets: [paymongoSecret, telegramToken, telegramChatIds] },
+  { secrets: [paymongoSecret] },
   async (req, res) => {
     if (req.method !== 'POST') {
       res.status(405).send('Method Not Allowed');

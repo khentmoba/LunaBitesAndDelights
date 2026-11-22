@@ -1,0 +1,135 @@
+const test = require('node:test');
+const assert = require('node:assert/strict');
+
+const { shouldNotifyPaymentConfirmed } = require('../lib/orders/derived');
+const { evaluatePaymentNotificationClaim, TELEGRAM_CLAIM_TTL_MS } = require('../lib/orders/send_notification');
+const { canClaimDailyReport } = require('../lib/reporting/daily_report');
+const { isStaleUnpaidOrder, STALE_UNPAID_AGE_MS } = require('../lib/orders/expire_unpaid');
+const { projectOrderSummary } = require('../lib/orders/kds');
+const { clientIpFromRequest } = require('../lib/util/security');
+
+test('shouldNotifyPaymentConfirmed fires once on GCash transition to PAID (including Cancelled)', () => {
+  assert.equal(
+    shouldNotifyPaymentConfirmed(
+      { paymentMethod: 'GCash', paymentStatus: 'AWAITING_PAYMENT', status: 'Pending' },
+      { paymentMethod: 'GCash', paymentStatus: 'PAID', status: 'Pending' },
+    ),
+    true,
+  );
+  assert.equal(
+    shouldNotifyPaymentConfirmed(
+      { paymentMethod: 'GCash', paymentStatus: 'AWAITING_PAYMENT', status: 'Cancelled' },
+      { paymentMethod: 'GCash', paymentStatus: 'PAID', status: 'Cancelled', paidAfterCancel: true },
+    ),
+    true,
+  );
+  assert.equal(
+    shouldNotifyPaymentConfirmed(
+      { paymentMethod: 'GCash', paymentStatus: 'PAID', status: 'Pending' },
+      { paymentMethod: 'GCash', paymentStatus: 'PAID', status: 'Preparing' },
+    ),
+    false,
+  );
+  assert.equal(
+    shouldNotifyPaymentConfirmed(
+      { paymentMethod: 'Cash', paymentStatus: 'NOT PAID', status: 'Pending' },
+      { paymentMethod: 'Cash', paymentStatus: 'PAID', status: 'Pending' },
+    ),
+    false,
+  );
+  assert.equal(
+    shouldNotifyPaymentConfirmed(
+      { paymentMethod: 'GCash', paymentStatus: 'AWAITING_PAYMENT', status: 'Pending' },
+      { paymentMethod: 'GCash', paymentStatus: 'PAYMENT_FAILED', status: 'Pending' },
+    ),
+    false,
+  );
+});
+
+test('evaluatePaymentNotificationClaim deduplicates sent and in-flight alerts', () => {
+  const now = 1_700_000_000_000;
+  assert.equal(evaluatePaymentNotificationClaim(undefined, now), 'missing');
+  assert.equal(evaluatePaymentNotificationClaim({}, now), 'claimed');
+  assert.equal(evaluatePaymentNotificationClaim({ paymentNotifSent: true }, now), 'already-sent');
+  assert.equal(
+    evaluatePaymentNotificationClaim({ paymentNotifStatus: 'sending', paymentNotifClaimedAt: now - 5_000 }, now),
+    'in-flight',
+  );
+  assert.equal(
+    evaluatePaymentNotificationClaim(
+      { paymentNotifStatus: 'sending', paymentNotifClaimedAt: now - TELEGRAM_CLAIM_TTL_MS - 1 },
+      now,
+    ),
+    'claimed',
+  );
+  assert.equal(
+    evaluatePaymentNotificationClaim({ paymentNotifStatus: 'failed', paymentNotifSent: false }, now),
+    'claimed',
+  );
+});
+
+test('canClaimDailyReport blocks duplicate sends and active claims', () => {
+  const now = 1_700_000_000_000;
+  assert.equal(canClaimDailyReport(undefined, now), true);
+  assert.equal(canClaimDailyReport({ status: 'sent' }, now), false);
+  assert.equal(canClaimDailyReport({ status: 'sending', claimedAt: now - 30_000 }, now), false);
+  assert.equal(canClaimDailyReport({ status: 'sending', claimedAt: now - 10 * 60_000 }, now), true);
+  assert.equal(canClaimDailyReport({ status: 'failed' }, now), true);
+});
+
+test('isStaleUnpaidOrder matches only AWAITING_PAYMENT orders at least 24h old', () => {
+  const now = Date.parse('2026-11-22T12:00:00.000Z');
+  const staleIso = new Date(now - STALE_UNPAID_AGE_MS - 1_000).toISOString();
+  const freshIso = new Date(now - STALE_UNPAID_AGE_MS + 60_000).toISOString();
+
+  assert.equal(isStaleUnpaidOrder({ paymentStatus: 'AWAITING_PAYMENT', timestamp: staleIso }, now), true);
+  assert.equal(isStaleUnpaidOrder({ paymentStatus: 'AWAITING_PAYMENT', timestamp: freshIso }, now), false);
+  assert.equal(isStaleUnpaidOrder({ paymentStatus: 'PAID', timestamp: staleIso }, now), false);
+  assert.equal(isStaleUnpaidOrder({ paymentStatus: 'PAYMENT_EXPIRED', timestamp: staleIso }, now), false);
+  assert.equal(isStaleUnpaidOrder({ paymentStatus: 'AWAITING_PAYMENT', timestamp: 'invalid' }, now), false);
+  assert.equal(isStaleUnpaidOrder(undefined, now), false);
+});
+
+test('projectOrderSummary returns slim tile fields without items array or customer PII', () => {
+  const summary = projectOrderSummary('doc1', {
+    orderId: 'LU-261122-120000-ABC',
+    customerName: 'Ana',
+    customerPhone: '09171234567',
+    customerAddress: 'Purok 5',
+    lat: 9.02,
+    lng: 125.51,
+    deliveryFee: 25,
+    paymentMethod: 'GCash',
+    paymentStatus: 'PAID',
+    entryType: 'Kiosk',
+    type: 'Delivery',
+    status: 'Pending',
+    totalAmount: 120,
+    items: [
+      { name: 'Shawarma Wrap', variant: 'Solo', price: 60, quantity: 2 },
+    ],
+    timestamp: '2026-11-22T10:00:00.000Z',
+  });
+
+  assert.equal(summary.id, 'doc1');
+  assert.equal(summary.orderNumber, 'LU-261122-120000-ABC');
+  assert.equal(summary.customerName, 'Ana');
+  assert.equal(summary.itemsCount, 2);
+  assert.equal(summary.total, 120);
+  assert.equal('items' in summary, false);
+  assert.equal('customerPhone' in summary, false);
+  assert.equal('customerAddress' in summary, false);
+  assert.equal('lat' in summary, false);
+  assert.equal('lng' in summary, false);
+});
+
+test('clientIpFromRequest falls back to socket.remoteAddress when headers and ip are missing', () => {
+  assert.equal(
+    clientIpFromRequest({ socket: { remoteAddress: '198.51.100.7' } }),
+    '198.51.100.7',
+  );
+  assert.equal(
+    clientIpFromRequest({ ip: '203.0.113.5', socket: { remoteAddress: '198.51.100.7' } }),
+    '203.0.113.5',
+  );
+});

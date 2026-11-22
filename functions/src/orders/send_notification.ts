@@ -5,6 +5,7 @@ import { telegramToken, telegramChatIds, googleMapsApiKey } from '../secrets';
 import { logger } from 'firebase-functions';
 import { ALNUM_DOC_ID, cleanStr, clientIpFromRequest, enforceFixedWindowRateLimit } from '../util/security';
 import { isOrderVisibleInKds } from './kds';
+import { formatPaymentConfirmedMessage } from '../payments/paymongo';
 
 const NOTIF_RATE_WINDOW_MS = 10 * 60 * 1000;
 const NOTIF_RATE_MAX = 20;
@@ -302,7 +303,76 @@ export function canClaimNotification(current: Record<string, any> | undefined, n
   return evaluateNotificationClaim(current, nowMs) === 'claimed';
 }
 
+/** Evaluates whether a payment confirmation/refund Telegram alert can be claimed. */
+export function evaluatePaymentNotificationClaim(
+  current: Record<string, any> | undefined,
+  nowMs = Date.now(),
+): ClaimStatus {
+  if (!current) return 'missing';
+  if (current.paymentNotifSent === true) return 'already-sent';
+  if (current.paymentNotifStatus === 'sending') {
+    const claimedAt = current.paymentNotifClaimedAt;
+    if (typeof claimedAt === 'number' && Number.isFinite(claimedAt) && nowMs - claimedAt < TELEGRAM_CLAIM_TTL_MS) {
+      return 'in-flight';
+    }
+  }
+  return 'claimed';
+}
+
 export const ORDER_NOTIFICATIONS_COLLECTION = 'order_notifications';
+
+/**
+ * Atomically claims and sends the Telegram payment confirmation (or cancelled-order
+ * refund-review) alert for an order, deduplicated in `order_notifications/{orderDocId}`.
+ */
+export async function notifyPaymentConfirmedOnce(
+  orderDocId: string,
+  orderData: Record<string, any>,
+): Promise<{ sent: boolean; alreadySent: boolean; inFlight?: boolean }> {
+  const db = getFirestore();
+  const notifRef = db.collection(ORDER_NOTIFICATIONS_COLLECTION).doc(orderDocId);
+  const nowMs = Date.now();
+  const expireAt = Timestamp.fromMillis(nowMs + ORDER_NOTIF_TTL_MS);
+
+  const claimStatus = await db.runTransaction<ClaimStatus>(async (tx) => {
+    const snap = await tx.get(notifRef);
+    const existing = snap.exists ? snap.data() : {};
+    const status = evaluatePaymentNotificationClaim(existing, nowMs);
+    if (status === 'claimed') {
+      tx.set(
+        notifRef,
+        { paymentNotifStatus: 'sending', paymentNotifClaimedAt: nowMs, expireAt },
+        { merge: true },
+      );
+    }
+    return status;
+  });
+
+  if (claimStatus === 'in-flight') {
+    return { sent: false, alreadySent: false, inFlight: true };
+  }
+  if (claimStatus !== 'claimed') {
+    return { sent: false, alreadySent: true, inFlight: false };
+  }
+
+  const paidDate = typeof orderData.paidAt === 'string' && !Number.isNaN(Date.parse(orderData.paidAt))
+    ? new Date(orderData.paidAt)
+    : new Date();
+  const paidAtPht = paidDate.toLocaleString('en-PH', { timeZone: 'Asia/Manila' });
+  const message = formatPaymentConfirmedMessage(orderData, orderDocId, paidAtPht);
+
+  try {
+    await sendToAll(message);
+    await notifRef.set({ paymentNotifSent: true, paymentNotifStatus: 'sent' }, { merge: true });
+    return { sent: true, alreadySent: false };
+  } catch (error: any) {
+    await notifRef.set({ paymentNotifSent: false, paymentNotifStatus: 'failed' }, { merge: true }).catch((e) => {
+      logger.warn(`Could not record failed payment notification status for ${orderDocId}`, e);
+    });
+    logger.error(`Error sending Telegram payment notification for ${orderDocId}`, error);
+    throw error;
+  }
+}
 
 /**
  * Atomically claims Telegram notification delivery for an order in a separate

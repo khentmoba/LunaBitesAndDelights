@@ -76,7 +76,11 @@ export function mountDashboard(root: HTMLElement, getStaff: () => Staff | null):
     try {
       const [analytics, res] = await Promise.all([
         callFn<Record<string, unknown>>('getSalesAnalytics'),
-        callFn<{ success?: boolean; orders?: Record<string, unknown>[] }>('getActiveOrders', { includeCompleted: true, limit: 10 }),
+        callFn<{ success?: boolean; orders?: Record<string, unknown>[] }>('getActiveOrders', {
+          includeCompleted: true,
+          limit: 10,
+          summaryOnly: true,
+        }),
       ]);
       if (disposed || seq !== fetchSeq) return;
       const raw = res.orders ?? [];
@@ -178,6 +182,7 @@ ${
         const res = await callFn<{ success?: boolean; orders?: Record<string, unknown>[] }>('getActiveOrders', {
           includeCompleted: true,
           limit: 50,
+          summaryOnly: true,
         });
         if (disposed) return;
         if (res.success === true && Array.isArray(res.orders)) {

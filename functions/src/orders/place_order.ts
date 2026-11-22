@@ -94,7 +94,7 @@ export const placeOrder = onCall(async (request) => {
 
   const { items, total: totalAmount } = validateAndPriceItems(d.items);
 
-  const rawOrderId = typeof d.orderId === 'string' ? d.orderId.trim() : '';
+  const rawOrderId = isStaff && typeof d.orderId === 'string' ? d.orderId.trim() : '';
   const orderId = rawOrderId && ORDER_ID_RE.test(rawOrderId) ? rawOrderId : serverOrderNumber();
 
   const status = 'Pending';
