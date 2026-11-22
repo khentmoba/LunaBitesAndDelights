@@ -4,10 +4,15 @@
 // From functions/:
 //   npm run check:rules-drift                    # compares ../firestore.rules
 //   npm run check:rules-drift -- --rules <file>  # compares another file (replays)
-// Auth: GOOGLE_APPLICATION_CREDENTIALS (CI service account), or
-// FIREBASE_RULES_ACCESS_TOKEN (for example `gcloud auth print-access-token`).
+// Auth resolution order:
+//   1. FIREBASE_RULES_ACCESS_TOKEN
+//   2. Firebase CLI login token in ~/.config/configstore/firebase-tools.json
+//   3. `gcloud auth print-access-token`
+//   4. GOOGLE_APPLICATION_CREDENTIALS (CI service account / ADC)
 const fs = require('node:fs');
+const os = require('node:os');
 const path = require('node:path');
+const { execFileSync } = require('node:child_process');
 const admin = require('firebase-admin');
 
 const PROJECT_ID = process.env.FIREBASE_PROJECT_ID || 'lunaexpress';
@@ -21,6 +26,42 @@ function normalize(text) {
 
 async function accessToken() {
   if (process.env.FIREBASE_RULES_ACCESS_TOKEN) return process.env.FIREBASE_RULES_ACCESS_TOKEN;
+
+  try {
+    const cfgPath = path.join(os.homedir(), '.config', 'configstore', 'firebase-tools.json');
+    if (fs.existsSync(cfgPath)) {
+      const cfg = JSON.parse(fs.readFileSync(cfgPath, 'utf8'));
+      if (cfg.tokens?.refresh_token) {
+        const candidates = [
+          path.resolve(__dirname, '../../node_modules/firebase-tools/lib/auth'),
+          'firebase-tools/lib/auth',
+        ];
+        for (const modPath of candidates) {
+          try {
+            const auth = require(modPath);
+            const res = await auth.getAccessToken(cfg.tokens.refresh_token, cfg.tokens.scopes || []);
+            if (res?.access_token) return res.access_token;
+          } catch {
+            // Try next candidate
+          }
+        }
+      }
+    }
+  } catch {
+    // Fall through to gcloud / ADC
+  }
+
+  try {
+    const cmd = process.platform === 'win32' ? 'gcloud.cmd' : 'gcloud';
+    const tok = execFileSync(cmd, ['auth', 'print-access-token'], {
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    }).trim();
+    if (tok) return tok;
+  } catch {
+    // Fall through to ADC
+  }
+
   return (await admin.credential.applicationDefault().getAccessToken()).access_token;
 }
 
@@ -64,7 +105,11 @@ async function main() {
   process.exitCode = 1;
 }
 
-main().catch((err) => {
-  console.error(`Could not compare rules: ${err.message}`);
-  process.exitCode = 2;
-});
+if (require.main === module) {
+  main().catch((err) => {
+    console.error(`Could not compare rules: ${err.message}`);
+    process.exitCode = 2;
+  });
+}
+
+module.exports = { accessToken, getJson, normalize, PROJECT_ID };

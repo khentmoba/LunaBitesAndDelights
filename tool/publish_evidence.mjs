@@ -1,5 +1,7 @@
 // Publishes proof images to the `evidence` branch (an orphan branch holding only
 // images) and prints a URL to embed for each, so screenshots never land on main.
+// Also writes the markdown lines to `.evidence-urls.md` (gitignored) so URLs
+// survive context handoffs.
 //
 //   node tool/publish_evidence.mjs docs/evidence/<shot>.png [...]
 //   git ls-files docs/evidence | node tool/publish_evidence.mjs -   # paths on stdin
@@ -8,7 +10,7 @@
 // docs/evidence/<name>. Commits through a temporary index, so the working
 // tree, the current branch and the real index are never touched.
 import { execFileSync } from 'node:child_process';
-import { readFileSync, rmSync } from 'node:fs';
+import { appendFileSync, readFileSync, rmSync } from 'node:fs';
 import { basename, dirname, join, relative } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
@@ -63,7 +65,13 @@ function main(args) {
       if (attempt === 3) throw e;
     }
   }
-  for (const e of entries) console.log(`![${basename(e.path)}](${url(e.path)})`);
+  const lines = entries.map((e) => `![${basename(e.path)}](${url(e.path)})`);
+  for (const line of lines) console.log(line);
+  try {
+    appendFileSync(join(root, '.evidence-urls.md'), `${lines.join('\n')}\n`, 'utf8');
+  } catch {
+    // Non-fatal if working tree is read-only.
+  }
   return 0;
 }
 

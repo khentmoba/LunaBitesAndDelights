@@ -3,6 +3,7 @@
   "private": true,
   "scripts": {
     "ci": "node tool/ci-local.mjs",
+    "setup": "node tool/ci-local.mjs --setup-only",
     "test:site": "node --test \"test/site/*.test.mjs\""
   },
   "devDependencies": {

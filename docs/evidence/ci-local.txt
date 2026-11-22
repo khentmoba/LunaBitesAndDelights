@@ -1,28 +1,29 @@
-Local run of .github/workflows/pr-checks.yml at 145096d + working tree, 2026-11-22T11:39:12.801Z, node v24.22.2
+Local run of .github/workflows/pr-checks.yml at 07a5501 + working tree, 2026-11-22T23:56:50.172Z, node v24.22.2
 note: functions runs on node 22 in CI
 note: rules runs on node 22 in CI
 note: site runs on node 22 in CI
 
 ## functions
-PASS  npm ci (functions) exit=0 23s
+SKIP  npm ci (functions) up-to-date
 PASS  TypeScript build (functions) exit=0 2s
-PASS  Lint (promise checks) (functions) exit=0 4s
+PASS  Lint (promise checks) (functions) exit=0 3s
 PASS  Unit tests (functions) exit=0 6s
-PASS  Report outdated npm deps (informational) (functions) exit=0 2s
-PASS  Fail on high/critical runtime vulnerabilities (functions) exit=0 1s
+PASS  Report outdated npm deps (informational) (functions) exit=0 1s
+PASS  Fail on high/critical runtime vulnerabilities (functions) exit=0 3s
 
 ## rules
-PASS  npm ci (functions) exit=0 24s
-PASS  Firestore rules tests (emulator) (functions) exit=0 12s
-PASS  Derived views tests (Functions + Firestore emulators) (functions) exit=0 17s
+SKIP  npm ci (functions) up-to-date
+PASS  Firestore rules tests (emulator) (functions) exit=0 11s
+PASS  Derived views tests (Functions + Firestore emulators) (functions) exit=0 18s
 
 ## site
-PASS  npm ci (.) exit=0 30s
-PASS  npm ci (app) exit=0 29s
-PASS  Astro type check (app) exit=0 5s
-PASS  Lint (promise checks) (app) exit=0 4s
-PASS  Build the storefront (app) exit=0 5s
+SKIP  npm ci (.) up-to-date
+SKIP  npm ci (app) up-to-date
+PASS  Astro type check (app) exit=0 6s
+PASS  Lint (promise checks) (app) exit=0 3s
+PASS  Build the storefront (app) exit=0 3s
 PASS  Fail on high/critical runtime vulnerabilities (app) exit=0 1s
 PASS  Storefront tests (.) exit=0 2s
+PASS  Verify PR proof and attribution (.) exit=0 0s
 
 all steps passed
