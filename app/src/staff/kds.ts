@@ -250,8 +250,7 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
   async function updateStatus(orderId: string, status: string, cancellationReason?: string) {
     if (updating.has(orderId)) return;
     updating.add(orderId);
-    loading = true;
-    renderAll();
+    renderBoard();
     try {
       const data = await callFn<{ success?: boolean; message?: string }>('updateOrderStatus', {
         orderId,
@@ -260,16 +259,13 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
       });
       if (disposed) return;
       if (data.success === true) {
-        if (isLive) loading = false;
-        else await fetchActive(true);
+        if (!isLive) await fetchActive(true);
         staffSnack(`Order updated: ${status}`, SUCCESS);
       } else {
-        loading = false;
         staffSnack(`Error: ${data.message}`, ERROR);
       }
     } catch (e) {
       if (disposed) return;
-      loading = false;
       const err = fnError(e);
       if (err && isAuthCode(err.code)) {
         error = 'Staff session expired. Sign in again to update orders.';
@@ -789,7 +785,7 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
       const textEl = cardEl.querySelector<HTMLElement>('[data-age-text]');
       if (ageEl && textEl) {
         const elapsed = formatElapsed(ts, now);
-        ageEl.style.color = elapsedColor(ts, now);
+        ageEl.style.color = delayed ? INK : elapsedColor(ts, now);
         textEl.textContent = delayed ? `DELAYED (${elapsed})` : elapsed;
       }
     }

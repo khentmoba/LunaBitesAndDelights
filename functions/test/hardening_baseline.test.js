@@ -1,10 +1,12 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
 
 const { shouldNotifyPaymentConfirmed } = require('../lib/orders/derived');
 const { evaluatePaymentNotificationClaim, TELEGRAM_CLAIM_TTL_MS } = require('../lib/orders/send_notification');
 const { canClaimDailyReport } = require('../lib/reporting/daily_report');
-const { isStaleUnpaidOrder, STALE_UNPAID_AGE_MS } = require('../lib/orders/expire_unpaid');
+const { isStaleUnpaidOrder, expireUnpaidUpdate, STALE_UNPAID_AGE_MS } = require('../lib/orders/expire_unpaid');
 const { projectOrderSummary } = require('../lib/orders/kds');
 const { clientIpFromRequest } = require('../lib/util/security');
 
@@ -88,6 +90,30 @@ test('isStaleUnpaidOrder matches only AWAITING_PAYMENT orders at least 24h old',
   assert.equal(isStaleUnpaidOrder({ paymentStatus: 'PAYMENT_EXPIRED', timestamp: staleIso }, now), false);
   assert.equal(isStaleUnpaidOrder({ paymentStatus: 'AWAITING_PAYMENT', timestamp: 'invalid' }, now), false);
   assert.equal(isStaleUnpaidOrder(undefined, now), false);
+
+  assert.deepEqual(expireUnpaidUpdate({ status: 'Pending', paymentStatus: 'AWAITING_PAYMENT' }), {
+    paymentStatus: 'PAYMENT_EXPIRED',
+    status: 'Cancelled',
+    cancellationReason: 'Payment session expired',
+  });
+  assert.deepEqual(
+    expireUnpaidUpdate({ status: 'Cancelled', cancellationReason: 'Item Out of Stock', paymentStatus: 'AWAITING_PAYMENT' }),
+    { paymentStatus: 'PAYMENT_EXPIRED' },
+  );
+  assert.deepEqual(
+    expireUnpaidUpdate({ status: 'Completed', paymentStatus: 'AWAITING_PAYMENT' }),
+    { paymentStatus: 'PAYMENT_EXPIRED' },
+  );
+});
+
+test('firestore.indexes.json declares TTL fieldOverrides for daily_reports_sent', () => {
+  const indexes = JSON.parse(
+    fs.readFileSync(path.resolve(__dirname, '../../firestore.indexes.json'), 'utf8'),
+  );
+  const hasDailyReportsTtl = (indexes.fieldOverrides || []).some(
+    (o) => o.collectionGroup === 'daily_reports_sent' && o.fieldPath === 'expireAt' && o.ttl === true,
+  );
+  assert.equal(hasDailyReportsTtl, true);
 });
 
 test('projectOrderSummary returns slim tile fields without items array or customer PII', () => {

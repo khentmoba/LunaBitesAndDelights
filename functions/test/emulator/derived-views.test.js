@@ -216,14 +216,27 @@ test('notifyOrderOnce resumes partial multi-chat failures and reconcileMissedOrd
       telegramStatus: 'failed',
       attempts: 100,
     });
+    // Delayed GCash order created >2h ago (outside timestamp lookback) but paid 2m ago must be reconciled.
+    await db.doc('orders/rec_delayed_gcash').set(order({
+      orderId: 'LU-DELAYED-GCASH',
+      type: 'Pickup',
+      paymentMethod: 'GCash',
+      paymentStatus: 'PAID',
+      timestamp: Timestamp.fromMillis(nowMs - 5 * 60 * 60 * 1000),
+      paidAt: new Date(nowMs - 2 * 60 * 1000).toISOString(),
+    }));
 
     const summary = await reconcileMissedOrderNotifications(db, { nowMs });
-    assert.strictEqual(summary.retried, 2);
-    assert.strictEqual(summary.sent, 2);
+    assert.strictEqual(summary.retried, 3);
+    assert.strictEqual(summary.sent, 3);
     assert.strictEqual(summary.failed, 0);
-    assert.deepStrictEqual(sentLog.map((s) => s.chatId).sort(), ['gc-chat', 'gc-chat', 'owner-chat', 'owner-chat']);
+    assert.deepStrictEqual(
+      sentLog.map((s) => s.chatId).sort(),
+      ['gc-chat', 'gc-chat', 'gc-chat', 'owner-chat', 'owner-chat', 'owner-chat'],
+    );
     assert.ok(sentLog.some((s) => s.text.includes('LU\\-MISSED')));
     assert.ok(sentLog.some((s) => s.text.includes('LU\\-OUTAGE\\-REC')));
+    assert.ok(sentLog.some((s) => s.text.includes('LU\\-DELAYED\\-GCASH')));
     assert.strictEqual(
       (await db.collection(ORDER_NOTIFICATIONS_COLLECTION).doc('rec_missed').get()).get('telegramSent'),
       true,

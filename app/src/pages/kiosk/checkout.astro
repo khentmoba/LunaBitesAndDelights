@@ -441,7 +441,7 @@ async function submit() {
 
   const receipt: Receipt = {
     orderNumber, customerName: name, customerAddress: address, customerPhone: phone,
-    items: order.items, total, timeStr, isWalkIn: isStaff, orderType: draft.orderType, telegramSent,
+    items: order.items, total, timeStr, isWalkIn: draft.orderType === 'Walk-In', orderType: draft.orderType, telegramSent,
   };
 
   if (draft.paymentMethod === 'GCash' && !isStaff) {

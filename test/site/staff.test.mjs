@@ -118,3 +118,16 @@ test('staff service worker serves immutable assets cache-first and navigations n
   assert.match(sw, /if \(immutable\)\s*\{[\s\S]*matchCache\(req\)/);
   assert.match(sw, /req\.mode === 'navigate'/);
 });
+
+test('kds delayed badge keeps INK contrast on elapsed-time ticks and dashboard handles non-admin badge', () => {
+  const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
+  const kdsSrc = readFileSync(join(root, 'app/src/staff/kds.ts'), 'utf8');
+  assert.match(kdsSrc, /ageEl\.style\.color\s*=\s*delayed\s*\?\s*INK\s*:\s*elapsedColor\(ts,\s*now\)/);
+
+  const dashSrc = readFileSync(join(root, 'app/src/staff/dashboard.ts'), 'utf8');
+  assert.match(dashSrc, /staff\?\.isAdmin\s*\?\s*'ADMIN DASHBOARD'\s*:\s*'STAFF DASHBOARD'/);
+  assert.match(dashSrc, /if\s*\(sheetLoading\)\s*return;/);
+
+  const checkoutSrc = readFileSync(join(root, 'app/src/pages/kiosk/checkout.astro'), 'utf8');
+  assert.match(checkoutSrc, /isWalkIn:\s*draft\.orderType\s*===\s*'Walk-In'/);
+});

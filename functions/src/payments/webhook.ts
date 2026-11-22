@@ -21,6 +21,7 @@ export { resolveOrderDocId };
 const MAX_SIG_AGE_SEC = 300;
 const WEBHOOK_RATE_WINDOW_MS = 60 * 1000;
 const WEBHOOK_RATE_MAX = 120;
+const WEBHOOK_UNVERIFIED_RATE_MAX = 30;
 
 /**
  * Extracts `{ type, sessionId }` from PayMongo's JSON:API webhook envelope
@@ -56,8 +57,8 @@ export function verifyPaymongoSignature(
     }),
   );
   const t = parts.t;
-  const sig = parts.li || parts.te;
-  if (!t || !/^\d{1,12}$/.test(t) || !sig || !/^[0-9a-f]{64}$/i.test(sig)) return false;
+  const sigs = [parts.li, parts.te].filter((s): s is string => typeof s === 'string' && /^[0-9a-f]{64}$/i.test(s));
+  if (!t || !/^\d{1,12}$/.test(t) || sigs.length === 0) return false;
   const ts = Number(t);
   if (!Number.isFinite(ts) || Math.abs(nowSec - ts) > MAX_SIG_AGE_SEC) return false;
   if (!webhookSecret) return true; // Secret not provisioned yet; format + timestamp checked, and caller verifies session via PayMongo API.
@@ -65,9 +66,10 @@ export function verifyPaymongoSignature(
   const payload = `${t}.${Buffer.isBuffer(rawBody) ? rawBody.toString('utf8') : rawBody}`;
   const expected = crypto.createHmac('sha256', webhookSecret).update(payload).digest('hex');
   const expectedBuf = Buffer.from(expected, 'hex');
-  const sigBuf = Buffer.from(sig, 'hex');
-  if (expectedBuf.length !== sigBuf.length) return false;
-  return crypto.timingSafeEqual(expectedBuf, sigBuf);
+  return sigs.some((sig) => {
+    const sigBuf = Buffer.from(sig, 'hex');
+    return expectedBuf.length === sigBuf.length && crypto.timingSafeEqual(expectedBuf, sigBuf);
+  });
 }
 
 export const paymongoWebhook = onRequest(
@@ -78,11 +80,12 @@ export const paymongoWebhook = onRequest(
       return;
     }
     try {
+      const webhookSecret = process.env.PAYMONGO_WEBHOOK_SECRET;
       const clientIp = clientIpFromRequest(req) || 'unknown';
       try {
         await enforceFixedWindowRateLimit(
           `webhook:paymongo:${clientIp}`,
-          WEBHOOK_RATE_MAX,
+          webhookSecret ? WEBHOOK_RATE_MAX : WEBHOOK_UNVERIFIED_RATE_MAX,
           WEBHOOK_RATE_WINDOW_MS,
         );
       } catch (rateErr) {
@@ -95,7 +98,6 @@ export const paymongoWebhook = onRequest(
         return;
       }
 
-      const webhookSecret = process.env.PAYMONGO_WEBHOOK_SECRET;
       if (!webhookSecret) {
         logger.warn('PAYMONGO_WEBHOOK_SECRET is not set; relying on signature format check and PayMongo API session verification');
       }

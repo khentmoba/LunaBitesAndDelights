@@ -5,6 +5,7 @@ import { toIsoTimestamp } from './kds';
 
 export const STALE_UNPAID_AGE_MS = 24 * 60 * 60 * 1000;
 const BATCH_LIMIT = 200;
+const MAX_PAGES = 10;
 
 /**
  * Returns true when an order is still awaiting GCash payment and its timestamp
@@ -21,11 +22,21 @@ export function isStaleUnpaidOrder(
   return nowMs - tsMs >= STALE_UNPAID_AGE_MS;
 }
 
+/** Builds the expiration patch without clobbering existing terminal statuses or cancellation reasons. */
+export function expireUnpaidUpdate(data: Record<string, any>): Record<string, any> {
+  const update: Record<string, any> = { paymentStatus: 'PAYMENT_EXPIRED' };
+  if (data.status !== 'Cancelled' && data.status !== 'Completed') {
+    update.status = 'Cancelled';
+    update.cancellationReason = 'Payment session expired';
+  }
+  return update;
+}
+
 /**
  * Daily sweep that expires abandoned GCash `AWAITING_PAYMENT` orders older than
  * 24 hours so they stop consuming active-order scan pages. Uses a single-field
- * equality query (`paymentStatus == 'AWAITING_PAYMENT'`) to avoid requiring a
- * new composite Firestore index.
+ * equality query (`paymentStatus == 'AWAITING_PAYMENT'`) with cursor pagination
+ * to avoid requiring a composite Firestore index or starving behind newer docs.
  */
 export const expireStaleUnpaidOrders = onSchedule(
   {
@@ -36,28 +47,32 @@ export const expireStaleUnpaidOrders = onSchedule(
   async () => {
     const db = getFirestore();
     const nowMs = Date.now();
-    const snap = await db
-      .collection('orders')
-      .where('paymentStatus', '==', 'AWAITING_PAYMENT')
-      .limit(BATCH_LIMIT)
-      .get();
-
-    if (snap.empty) return;
-
     let expired = 0;
-    for (const doc of snap.docs) {
-      if (!isStaleUnpaidOrder(doc.data(), nowMs)) continue;
-      const updated = await db.runTransaction(async (tx) => {
-        const fresh = await tx.get(doc.ref);
-        if (!fresh.exists || !isStaleUnpaidOrder(fresh.data(), nowMs)) return false;
-        tx.update(doc.ref, {
-          paymentStatus: 'PAYMENT_EXPIRED',
-          status: 'Cancelled',
-          cancellationReason: 'Payment session expired',
+    let lastDoc: FirebaseFirestore.QueryDocumentSnapshot | null = null;
+
+    for (let page = 0; page < MAX_PAGES; page++) {
+      let q = db
+        .collection('orders')
+        .where('paymentStatus', '==', 'AWAITING_PAYMENT')
+        .limit(BATCH_LIMIT);
+      if (lastDoc) q = q.startAfter(lastDoc);
+      const snap = await q.get();
+      if (snap.empty) break;
+
+      for (const doc of snap.docs) {
+        if (!isStaleUnpaidOrder(doc.data(), nowMs)) continue;
+        const updated = await db.runTransaction(async (tx) => {
+          const fresh = await tx.get(doc.ref);
+          const freshData = fresh.exists ? fresh.data() : undefined;
+          if (!freshData || !isStaleUnpaidOrder(freshData, nowMs)) return false;
+          tx.update(doc.ref, expireUnpaidUpdate(freshData));
+          return true;
         });
-        return true;
-      });
-      if (updated) expired++;
+        if (updated) expired++;
+      }
+
+      if (snap.docs.length < BATCH_LIMIT) break;
+      lastDoc = snap.docs[snap.docs.length - 1];
     }
 
     if (expired > 0) {
