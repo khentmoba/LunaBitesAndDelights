@@ -61,8 +61,9 @@ otherwise. Money in, no order marked PAID, no log line: nothing to investigate.
   for at most one request a second. The map fires a reverse lookup per pan stop
   and a search can overlap it, so the kiosk could burst past the limit and get its
   IP throttled — every delivery address then degrades to raw coordinates. Both
-  lookups now reserve a slot at least 1 s apart, and a request that was aborted
-  while waiting never leaves the device.
+  lookups now claim a slot at send time, at least 1 s apart; a lookup the shopper
+  abandoned is told not to send and holds nothing, so adjusting the pin cannot
+  push later addresses further behind.
 - Tests: `test/site/staff.test.mjs` (tick slice has no `renderBoard()`, patches
   both classes and the glyph) and `test/site/kiosk.test.mjs` ("Nominatim lookups
   keep at least a second between requests").
@@ -83,3 +84,9 @@ otherwise. Money in, no order marked PAID, no log line: nothing to investigate.
   still both send, because fix 2 reads the guard before sending and has no
   `sending` lease. Deliberate duplicate sends are legitimate, so a lease needs
   its own decision; the 5-minute per-uid rate limit bounds it meanwhile.
+- `map.astro` keeps the previous `address`/`addressShort` while a new reverse
+  lookup is in flight and gates Confirm on `address.length === 0`, so for one
+  round trip the pin can move without the address following. Pre-existing and
+  unchanged by the spacing fix (which bounds the wait at 1 s rather than
+  removing it); a `pinRequestId` check on the address before enabling Confirm is
+  the follow-up.

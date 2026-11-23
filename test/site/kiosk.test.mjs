@@ -68,15 +68,34 @@ test('the GCash handoff rejects a stale or hand-edited pending order', () => {
 test('Nominatim lookups keep at least a second between requests', async () => {
   const spacing = await import('../../app/src/kiosk/lookup-spacing.ts');
   spacing.resetLookupSpacing();
-  assert.equal(spacing.reserveLookupSlot(1_000), 0, 'first lookup goes straight out');
-  assert.equal(spacing.reserveLookupSlot(1_000), spacing.MIN_LOOKUP_GAP_MS, 'second waits a full gap');
-  assert.equal(spacing.reserveLookupSlot(1_500), 1_500, 'queued bookings stack up');
-  assert.equal(spacing.reserveLookupSlot(9_000), 0, 'idle time restores the slot');
+  assert.equal(spacing.claimLookupSlot(1_000), 0, 'first lookup goes straight out');
+  assert.equal(spacing.claimLookupSlot(1_000), spacing.MIN_LOOKUP_GAP_MS, 'a second one waits a full gap');
+  // Waiting never advances the schedule: only an actual send claims a slot, so
+  // a shopper adjusting the pin cannot push every later lookup further back.
+  for (const now of [1_200, 1_400, 1_600, 1_800]) {
+    assert.equal(spacing.claimLookupSlot(now), 2_000 - now, `waiting at ${now} leaves the slot alone`);
+  }
+  assert.equal(spacing.claimLookupSlot(9_000), 0, 'idle time restores the slot');
   spacing.resetLookupSpacing();
-  assert.equal(spacing.reserveLookupSlot(), 0);
+  assert.equal(spacing.claimLookupSlot(), 0);
+
   const geo = readFileSync(new URL('../../app/src/kiosk/geo.ts', import.meta.url), 'utf8');
   assert.match(geo, /import \{ waitForLookupSlot \} from '\.\/lookup-spacing'/);
-  assert.equal((geo.match(/await waitForLookupSlot\(\);/g) ?? []).length, 2, 'both lookups are spaced');
+  assert.equal((geo.match(/await waitForLookupSlot\(signal\)/g) ?? []).length, 2, 'both lookups are spaced');
+});
+
+test('an abandoned lookup never holds or extends a Nominatim slot', async () => {
+  const spacing = await import('../../app/src/kiosk/lookup-spacing.ts');
+  spacing.resetLookupSpacing();
+  assert.equal(spacing.claimLookupSlot(), 0, 'hold the slot so the next caller has to wait');
+
+  const controller = new AbortController();
+  const waiting = spacing.waitForLookupSlot(controller.signal);
+  controller.abort();
+  assert.equal(await waiting, false, 'the abandoned waiter is told not to send');
+
+  const remaining = spacing.claimLookupSlot();
+  assert.ok(remaining <= spacing.MIN_LOOKUP_GAP_MS, `an abandoned wait leaves the schedule alone (got ${remaining}ms)`);
 });
 
 test('GCash checkout failure offers retry without discarding the pending order', () => {

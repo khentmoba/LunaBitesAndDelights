@@ -69,8 +69,7 @@ export async function reverseGeocode(lat: number, lng: number, signal?: AbortSig
   if (cached) return cached;
   if (signal?.aborted) return { full: '', short: '' };
   try {
-    await waitForLookupSlot();
-    if (signal?.aborted) return { full: '', short: '' };
+    if (!(await waitForLookupSlot(signal))) return { full: '', short: '' };
     const res = await fetch(`${REVERSE}&lat=${lat}&lon=${lng}`, {
       headers: { 'Accept-Language': 'en' },
       signal: combineSignal(signal, 8_000),
@@ -92,8 +91,7 @@ export async function searchAddress(query: string, signal?: AbortSignal): Promis
   if (cached) return cached;
   if (signal?.aborted) return [];
   try {
-    await waitForLookupSlot();
-    if (signal?.aborted) return [];
+    if (!(await waitForLookupSlot(signal))) return [];
     const res = await fetch(`${SEARCH}&q=${encodeURIComponent(query)}`, {
       headers: { 'Accept-Language': 'en' },
       signal: combineSignal(signal, 8_000),
