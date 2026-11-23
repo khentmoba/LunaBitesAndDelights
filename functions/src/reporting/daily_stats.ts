@@ -2,22 +2,30 @@ import { FieldValue, Firestore } from 'firebase-admin/firestore';
 import { itemKey, isCountableOrder, ChannelBucket } from '../util';
 
 export const STATS_META_DOC = 'stats_meta/dailyStats';
-let backfilledCached = false;
+export const BACKFILL_CACHE_TTL_MS = 5 * 60 * 1000;
+let backfilledCachedUntil = 0;
 
-/** Caches `stats_meta/dailyStats.backfilledAt` once true to skip redundant reads on warm instances. */
-export async function isDailyStatsBackfilled(db: Pick<Firestore, 'doc'>): Promise<boolean> {
-  if (backfilledCached) return true;
+/**
+ * Caches `stats_meta/dailyStats.backfilledAt` once true for a bounded TTL
+ * to skip redundant reads on warm instances while still observing resets.
+ */
+export async function isDailyStatsBackfilled(
+  db: Pick<Firestore, 'doc'>,
+  nowMs = Date.now(),
+): Promise<boolean> {
+  if (nowMs < backfilledCachedUntil) return true;
   const snap = await db.doc(STATS_META_DOC).get();
   if (snap.exists && snap.get('backfilledAt')) {
-    backfilledCached = true;
+    backfilledCachedUntil = nowMs + BACKFILL_CACHE_TTL_MS;
     return true;
   }
+  backfilledCachedUntil = 0;
   return false;
 }
 
 /** Resets the in-memory backfill cache (used by tests). */
 export function resetBackfillCache(): void {
-  backfilledCached = false;
+  backfilledCachedUntil = 0;
 }
 
 /**

@@ -9,6 +9,30 @@ const PAYMONGO_API = 'https://api.paymongo.com/v2/checkout_sessions';
 const CHECKOUT_REUSE_MS = 45 * 60 * 1000;
 const CHECKOUT_RATE_WINDOW_MS = 5 * 60 * 1000;
 const CHECKOUT_RATE_MAX = 30;
+const CHECKOUT_SESSION_ID_RE = /^[A-Za-z0-9_-]{4,128}$/;
+const ALLOWED_CHECKOUT_HOSTS = ['paymongo.com', 'gcash.com', 'paymaya.com', 'maya.ph'];
+
+/** Validates a PayMongo checkout session payload before storing or returning it. */
+export function parsePaymongoCheckoutResponse(
+  json: unknown,
+): { sessionId: string; checkoutUrl: string } | null {
+  const data = (json as { data?: any } | null | undefined)?.data;
+  const sessionId = typeof data?.id === 'string' ? data.id.trim() : '';
+  const checkoutUrl = typeof data?.attributes?.checkout_url === 'string'
+    ? data.attributes.checkout_url.trim()
+    : '';
+  if (!CHECKOUT_SESSION_ID_RE.test(sessionId) || !checkoutUrl) return null;
+  try {
+    const u = new URL(checkoutUrl);
+    if (u.protocol !== 'https:') return null;
+    const host = u.hostname.toLowerCase();
+    const hostAllowed = ALLOWED_CHECKOUT_HOSTS.some((h) => host === h || host.endsWith(`.${h}`));
+    if (!hostAllowed) return null;
+  } catch {
+    return null;
+  }
+  return { sessionId, checkoutUrl };
+}
 
 // Server-side price list — single source of truth for payment verification.
 // MUST match app/src/data/menu.ts; test/site/price-parity.test.mjs fails when it
@@ -209,15 +233,25 @@ export const createCheckoutSession = onCall(
         }),
       });
 
-      const json: any = await response.json();
+      let json: any = null;
+      try {
+        json = await response.json();
+      } catch {
+        json = null;
+      }
       if (!response.ok) {
-        logger.error('PayMongo create checkout failed:', json.errors);
+        logger.error(`PayMongo create checkout failed (HTTP ${response.status}):`, json?.errors ?? response.statusText);
         throw new HttpsError('internal', 'Payment provider error'); // #17: don't leak provider detail
       }
 
-      const checkout = json.data;
-      let resolvedSessionId = String(checkout.id);
-      let resolvedCheckoutUrl = String(checkout.attributes.checkout_url);
+      const parsedCheckout = parsePaymongoCheckoutResponse(json);
+      if (!parsedCheckout) {
+        logger.error('PayMongo create checkout returned malformed session payload');
+        throw new HttpsError('internal', 'Payment provider error');
+      }
+
+      let resolvedSessionId = parsedCheckout.sessionId;
+      let resolvedCheckoutUrl = parsedCheckout.checkoutUrl;
       await getFirestore().runTransaction(async (tx) => {
         const snap = await tx.get(orderRef);
         if (!snap.exists) {
@@ -238,7 +272,7 @@ export const createCheckoutSession = onCall(
           : (typeof current.checkoutSessionId === 'string' && current.checkoutSessionId.length > 0
             ? [current.checkoutSessionId]
             : []);
-        const mergedIds = Array.from(new Set([...prevIds, String(checkout.id)])).slice(-5);
+        const mergedIds = Array.from(new Set([...prevIds, parsedCheckout.sessionId])).slice(-5);
         if (
           current.paymentStatus === 'AWAITING_PAYMENT' &&
           typeof current.checkoutUrl === 'string' &&
@@ -255,9 +289,9 @@ export const createCheckoutSession = onCall(
           return;
         }
         tx.set(orderRef, {
-          checkoutSessionId: checkout.id,
+          checkoutSessionId: parsedCheckout.sessionId,
           checkoutSessionIds: mergedIds,
-          checkoutUrl: checkout.attributes.checkout_url,
+          checkoutUrl: parsedCheckout.checkoutUrl,
           checkoutCreatedAt: Date.now(),
           paymentMethod: 'GCash',
           paymentStatus: 'AWAITING_PAYMENT',

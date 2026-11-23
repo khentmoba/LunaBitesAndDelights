@@ -12,6 +12,33 @@ export { STATS_META_DOC };
 
 const FALLBACK_PAGE_SIZE = 1000;
 const MAX_FALLBACK_PAGES = 20;
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+/** Returns true only for real calendar YYYY-MM-DD dates (rejects e.g. 2026-02-31). */
+export function isValidCalendarDate(raw: unknown): raw is string {
+  if (typeof raw !== 'string' || !DATE_RE.test(raw)) return false;
+  const [y, m, d] = raw.split('-').map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d));
+  return dt.getUTCFullYear() === y && dt.getUTCMonth() + 1 === m && dt.getUTCDate() === d;
+}
+
+/** Validates and resolves the optional report date range. */
+export function resolveReportDateRange(
+  params: LifeTimeReportParams,
+  todayLabel = phtDateLabel(),
+): { start: string; end: string; isAllTime: boolean } {
+  if ((params.startDate !== undefined && !isValidCalendarDate(params.startDate)) ||
+      (params.endDate !== undefined && !isValidCalendarDate(params.endDate))) {
+    throw new HttpsError('invalid-argument', 'Dates must be valid YYYY-MM-DD calendar dates');
+  }
+  const effectiveStart = params.startDate || '2020-01-01';
+  const effectiveEnd = params.endDate || todayLabel;
+  if (effectiveStart > effectiveEnd) {
+    throw new HttpsError('invalid-argument', 'startDate must be on or before endDate');
+  }
+  const isAllTime = params.startDate === undefined && params.endDate === undefined;
+  return { start: effectiveStart, end: effectiveEnd, isAllTime };
+}
 
 interface LifeTimeReportParams {
   startDate?: string; // YYYY-MM-DD (optional, default: earliest order)
@@ -23,17 +50,8 @@ export const getLifetimeSalesReport = onCall(async (request) => {
   const db = getFirestore();
   try {
     const params = (request.data || {}) as LifeTimeReportParams;
-    const todayLabel = phtDateLabel();
-    const dateRe = /^\d{4}-\d{2}-\d{2}$/;
-    if ((params.startDate && !dateRe.test(params.startDate)) ||
-        (params.endDate && !dateRe.test(params.endDate))) {
-      throw new HttpsError('invalid-argument', 'Dates must be YYYY-MM-DD');
-    }
-
-    const effectiveStart = params.startDate || '2020-01-01';
-    const effectiveEnd = params.endDate || todayLabel;
-    const isAllTime = params.startDate === undefined && params.endDate === undefined;
-    const dateRange = { start: effectiveStart, end: effectiveEnd, isAllTime };
+    const dateRange = resolveReportDateRange(params, phtDateLabel());
+    const { start: effectiveStart, end: effectiveEnd, isAllTime } = dateRange;
 
     const backfilled = await isDailyStatsBackfilled(db);
     let days: Iterable<DayStats>;

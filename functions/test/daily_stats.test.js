@@ -269,10 +269,15 @@ test('isDailyStatsBackfilled caches true after first observation and does not ca
   assert.strictEqual(reads, 2, 'false must not be permanently cached');
 
   backfilledAt = '2026-11-21T00:00:00.000Z';
-  assert.strictEqual(await isDailyStatsBackfilled(fakeDb), true);
+  assert.strictEqual(await isDailyStatsBackfilled(fakeDb, 10_000), true);
   assert.strictEqual(reads, 3);
-  assert.strictEqual(await isDailyStatsBackfilled(fakeDb), true);
-  assert.strictEqual(reads, 3, 'true must be served from module cache');
+  assert.strictEqual(await isDailyStatsBackfilled(fakeDb, 10_000 + 60_000), true);
+  assert.strictEqual(reads, 3, 'true must be served from module cache within TTL');
+
+  const { BACKFILL_CACHE_TTL_MS } = require('../lib/reporting/daily_stats');
+  backfilledAt = null;
+  assert.strictEqual(await isDailyStatsBackfilled(fakeDb, 10_000 + BACKFILL_CACHE_TTL_MS + 1), false);
+  assert.strictEqual(reads, 4, 'cache must expire after BACKFILL_CACHE_TTL_MS and observe reset');
 
   resetBackfillCache();
 });

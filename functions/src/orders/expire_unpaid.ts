@@ -1,5 +1,5 @@
 import { onSchedule } from 'firebase-functions/v2/scheduler';
-import { getFirestore } from 'firebase-admin/firestore';
+import { getFirestore, Firestore } from 'firebase-admin/firestore';
 import { logger } from 'firebase-functions';
 import { toIsoTimestamp } from './kds';
 
@@ -33,6 +33,52 @@ export function expireUnpaidUpdate(data: Record<string, any>): Record<string, an
 }
 
 /**
+ * Scans up to `MAX_PAGES * BATCH_LIMIT` `AWAITING_PAYMENT` orders and expires
+ * those older than `STALE_UNPAID_AGE_MS`, isolating per-order transaction errors
+ * so a single contended document cannot abort the rest of the sweep.
+ */
+export async function expireStaleUnpaidBatch(
+  db: Firestore = getFirestore(),
+  nowMs = Date.now(),
+): Promise<{ expired: number; failed: number }> {
+  let expired = 0;
+  let failed = 0;
+  let lastDoc: FirebaseFirestore.QueryDocumentSnapshot | null = null;
+
+  for (let page = 0; page < MAX_PAGES; page++) {
+    let q = db
+      .collection('orders')
+      .where('paymentStatus', '==', 'AWAITING_PAYMENT')
+      .limit(BATCH_LIMIT);
+    if (lastDoc) q = q.startAfter(lastDoc);
+    const snap = await q.get();
+    if (snap.empty) break;
+
+    for (const doc of snap.docs) {
+      if (!isStaleUnpaidOrder(doc.data(), nowMs)) continue;
+      try {
+        const updated = await db.runTransaction(async (tx) => {
+          const fresh = await tx.get(doc.ref);
+          const freshData = fresh.exists ? fresh.data() : undefined;
+          if (!freshData || !isStaleUnpaidOrder(freshData, nowMs)) return false;
+          tx.update(doc.ref, expireUnpaidUpdate(freshData));
+          return true;
+        });
+        if (updated) expired++;
+      } catch (err) {
+        failed++;
+        logger.warn(`Failed to expire stale unpaid order ${doc.id}; continuing sweep`, err);
+      }
+    }
+
+    if (snap.docs.length < BATCH_LIMIT) break;
+    lastDoc = snap.docs[snap.docs.length - 1];
+  }
+
+  return { expired, failed };
+}
+
+/**
  * Daily sweep that expires abandoned GCash `AWAITING_PAYMENT` orders older than
  * 24 hours so they stop consuming active-order scan pages. Uses a single-field
  * equality query (`paymentStatus == 'AWAITING_PAYMENT'`) with cursor pagination
@@ -45,38 +91,9 @@ export const expireStaleUnpaidOrders = onSchedule(
     memory: '256MiB',
   },
   async () => {
-    const db = getFirestore();
-    const nowMs = Date.now();
-    let expired = 0;
-    let lastDoc: FirebaseFirestore.QueryDocumentSnapshot | null = null;
-
-    for (let page = 0; page < MAX_PAGES; page++) {
-      let q = db
-        .collection('orders')
-        .where('paymentStatus', '==', 'AWAITING_PAYMENT')
-        .limit(BATCH_LIMIT);
-      if (lastDoc) q = q.startAfter(lastDoc);
-      const snap = await q.get();
-      if (snap.empty) break;
-
-      for (const doc of snap.docs) {
-        if (!isStaleUnpaidOrder(doc.data(), nowMs)) continue;
-        const updated = await db.runTransaction(async (tx) => {
-          const fresh = await tx.get(doc.ref);
-          const freshData = fresh.exists ? fresh.data() : undefined;
-          if (!freshData || !isStaleUnpaidOrder(freshData, nowMs)) return false;
-          tx.update(doc.ref, expireUnpaidUpdate(freshData));
-          return true;
-        });
-        if (updated) expired++;
-      }
-
-      if (snap.docs.length < BATCH_LIMIT) break;
-      lastDoc = snap.docs[snap.docs.length - 1];
-    }
-
-    if (expired > 0) {
-      logger.info(`Expired ${expired} stale AWAITING_PAYMENT order(s)`);
+    const { expired, failed } = await expireStaleUnpaidBatch();
+    if (expired > 0 || failed > 0) {
+      logger.info(`Expired ${expired} stale AWAITING_PAYMENT order(s) (${failed} failed)`);
     }
   },
 );

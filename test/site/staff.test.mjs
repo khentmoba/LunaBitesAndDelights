@@ -130,4 +130,10 @@ test('kds delayed badge keeps INK contrast on elapsed-time ticks and dashboard h
 
   const checkoutSrc = readFileSync(join(root, 'app/src/pages/kiosk/checkout.astro'), 'utf8');
   assert.match(checkoutSrc, /isWalkIn:\s*draft\.orderType\s*===\s*'Walk-In'/);
+
+  // KDS updateStatus must halt listeners and timers on unrecoverable auth errors.
+  assert.match(
+    kdsSrc,
+    /async function updateStatus[\s\S]*?if\s*\(err\s*&&\s*isAuthCode\(err\.code\)\)\s*\{[\s\S]*?haltOnAuthError\(/,
+  );
 });
