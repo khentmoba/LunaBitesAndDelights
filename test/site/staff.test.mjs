@@ -131,9 +131,16 @@ test('kds delayed badge keeps INK contrast on elapsed-time ticks and dashboard h
   const checkoutSrc = readFileSync(join(root, 'app/src/pages/kiosk/checkout.astro'), 'utf8');
   assert.match(checkoutSrc, /isWalkIn:\s*draft\.orderType\s*===\s*'Walk-In'/);
 
-  // KDS updateStatus must halt listeners and timers on unrecoverable auth errors.
-  assert.match(
-    kdsSrc,
-    /async function updateStatus[\s\S]*?if\s*\(err\s*&&\s*isAuthCode\(err\.code\)\)\s*\{[\s\S]*?haltOnAuthError\(/,
-  );
+  // KDS updateStatus clears busy state before haltOnAuthError, tears down background timers/listeners, and uses targeted renderBoard() in finally
+  assert.match(kdsSrc, /function haltOnAuthError\(message: string\)\s*\{\s*stopBackgroundActivity\(\);/);
+  assert.match(kdsSrc, /function stopBackgroundActivity\(\)[\s\S]*clearInterval\(clock\);[\s\S]*detachBackgroundListeners\?\.\(\);/);
+  assert.match(kdsSrc, /if \(err && isAuthCode\(err\.code\)\)[\s\S]*updating\.delete\(orderId\);[\s\S]*haltOnAuthError\(/);
+  assert.match(kdsSrc, /updating\.delete\(orderId\);\s*\n\s*if \(!disposed && !authHalted\) renderBoard\(\);/);
+
+  // Staff login returns cleanup wired by gate.ts
+  const loginSrc = readFileSync(join(root, 'app/src/staff/login.ts'), 'utf8');
+  assert.match(loginSrc, /export function mountLogin\(root: HTMLElement\): \(\) => void/);
+  assert.match(loginSrc, /removeEventListener\('keydown',\s*onKey\)/);
+  const gateSrc = readFileSync(join(root, 'app/src/staff/gate.ts'), 'utf8');
+  assert.match(gateSrc, /else dispose = mountLogin\(root\);/);
 });

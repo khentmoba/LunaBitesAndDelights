@@ -500,3 +500,83 @@ test('runDailySalesReport tracks partial deliveries, skips permanent errors, and
     telegramApi.setTelegramRetryConfig(null);
   }
 });
+
+test('sweepStaleUnpaidOrders isolates per-document transaction failures and expires remaining docs', async () => {
+  const { sweepStaleUnpaidOrders } = require('../lib/orders/expire_unpaid');
+  const nowMs = Date.parse('2026-11-23T00:00:00.000Z');
+  const staleTs = '2026-11-21T00:00:00.000Z';
+  const freshTs = '2026-11-22T20:00:00.000Z';
+
+  const docs = [
+    { id: 'stale1', ref: { id: 'stale1' }, data: () => ({ paymentStatus: 'AWAITING_PAYMENT', status: 'Pending', timestamp: staleTs }) },
+    { id: 'staleFail', ref: { id: 'staleFail' }, data: () => ({ paymentStatus: 'AWAITING_PAYMENT', status: 'Pending', timestamp: staleTs }) },
+    { id: 'fresh1', ref: { id: 'fresh1' }, data: () => ({ paymentStatus: 'AWAITING_PAYMENT', status: 'Pending', timestamp: freshTs }) },
+    { id: 'stale2', ref: { id: 'stale2' }, data: () => ({ paymentStatus: 'AWAITING_PAYMENT', status: 'Pending', timestamp: staleTs }) },
+  ];
+  const updated = [];
+  const fakeDb = {
+    collection: () => ({
+      where: () => ({
+        limit: () => ({
+          get: async () => ({ empty: false, docs }),
+        }),
+      }),
+    }),
+    runTransaction: async (fn) =>
+      fn({
+        get: async (ref) => {
+          if (ref.id === 'staleFail') throw new Error('ABORTED: contention');
+          const found = docs.find((d) => d.id === ref.id);
+          return { exists: Boolean(found), data: () => found?.data() };
+        },
+        update: (ref, patch) => {
+          updated.push({ id: ref.id, patch });
+        },
+      }),
+  };
+
+  const res = await sweepStaleUnpaidOrders(fakeDb, { nowMs, concurrency: 2 });
+  assert.equal(res.expired, 2);
+  assert.equal(res.failed, 1);
+  assert.deepEqual(updated.map((u) => u.id).sort(), ['stale1', 'stale2']);
+});
+
+test('isDailyStatsBackfilled enforces bounded TTL on module-level cache', async () => {
+  const { isDailyStatsBackfilled, resetBackfillCache } = require('../lib/reporting/daily_stats');
+  resetBackfillCache();
+  let reads = 0;
+  let hasBackfilledAt = false;
+  const fakeDb = {
+    doc: () => ({
+      get: async () => {
+        reads++;
+        return { exists: hasBackfilledAt, get: (k) => (k === 'backfilledAt' && hasBackfilledAt ? '2026-11-23' : undefined) };
+      },
+    }),
+  };
+
+  try {
+    const t0 = 1_000_000;
+    assert.equal(await isDailyStatsBackfilled(fakeDb, t0), false);
+    assert.equal(reads, 1);
+    hasBackfilledAt = true;
+    assert.equal(await isDailyStatsBackfilled(fakeDb, t0 + 10_000), true);
+    assert.equal(reads, 2);
+    assert.equal(await isDailyStatsBackfilled(fakeDb, t0 + 60_000), true);
+    assert.equal(reads, 2);
+    assert.equal(await isDailyStatsBackfilled(fakeDb, t0 + 10_000 + 5 * 60 * 1000 + 1), true);
+    assert.equal(reads, 3);
+  } finally {
+    resetBackfillCache();
+  }
+});
+
+test('verify_staff mitigates username timing side-channel and create_checkout maps upstream failures', () => {
+  const verifySrc = fs.readFileSync(path.resolve(__dirname, '../src/auth/verify_staff.ts'), 'utf8');
+  assert.match(verifySrc, /DUMMY_SCRYPT_HASH/);
+  assert.match(verifySrc, /if \(!doc\.exists\)[\s\S]*verifyPasswordAsync\(password,\s*DUMMY_SCRYPT_HASH\)/);
+
+  const checkoutSrc = fs.readFileSync(path.resolve(__dirname, '../src/payments/create_checkout.ts'), 'utf8');
+  assert.match(checkoutSrc, /response\.status === 429 \|\| response\.status >= 500/);
+  assert.match(checkoutSrc, /parsePaymongoCheckoutResponse\(json\)/);
+});

@@ -241,6 +241,9 @@ export const createCheckoutSession = onCall(
       }
       if (!response.ok) {
         logger.error(`PayMongo create checkout failed (HTTP ${response.status}):`, json?.errors ?? response.statusText);
+        if (response.status === 429 || response.status >= 500) {
+          throw new HttpsError('unavailable', 'Payment provider temporarily unavailable');
+        }
         throw new HttpsError('internal', 'Payment provider error'); // #17: don't leak provider detail
       }
 
