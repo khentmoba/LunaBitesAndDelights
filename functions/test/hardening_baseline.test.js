@@ -236,3 +236,267 @@ test('firebase.json wires firestore.rules and firestore.indexes.json and all TTL
     );
   }
 });
+
+test('parsePaymongoCheckoutResponse validates session id and HTTPS PayMongo-family checkout URL', () => {
+  const { parsePaymongoCheckoutResponse } = require('../lib/payments/create_checkout');
+  assert.deepEqual(
+    parsePaymongoCheckoutResponse({
+      data: {
+        id: 'cs_live_123456',
+        attributes: { checkout_url: 'https://checkout.paymongo.com/cs_live_123456' },
+      },
+    }),
+    {
+      sessionId: 'cs_live_123456',
+      checkoutUrl: 'https://checkout.paymongo.com/cs_live_123456',
+    },
+  );
+  assert.equal(parsePaymongoCheckoutResponse(null), null);
+  assert.equal(parsePaymongoCheckoutResponse({ data: { id: '', attributes: { checkout_url: 'https://checkout.paymongo.com/x' } } }), null);
+  assert.equal(parsePaymongoCheckoutResponse({ data: { id: 'cs_1234', attributes: { checkout_url: 'http://checkout.paymongo.com/x' } } }), null);
+  assert.equal(parsePaymongoCheckoutResponse({ data: { id: 'cs_1234', attributes: { checkout_url: 'https://evil.example/phish' } } }), null);
+});
+
+test('isValidCalendarDate and resolveReportDateRange reject invalid dates and inverted ranges', () => {
+  const { isValidCalendarDate, resolveReportDateRange } = require('../lib/reporting/lifetime_report');
+  assert.equal(isValidCalendarDate('2026-02-28'), true);
+  assert.equal(isValidCalendarDate('2026-02-29'), false);
+  assert.equal(isValidCalendarDate('2026-02-31'), false);
+  assert.equal(isValidCalendarDate('2026-99-99'), false);
+  assert.equal(isValidCalendarDate('2024-02-29'), true);
+
+  assert.deepEqual(
+    resolveReportDateRange({ startDate: '2026-01-01', endDate: '2026-01-31' }, '2026-11-23'),
+    { start: '2026-01-01', end: '2026-01-31', isAllTime: false },
+  );
+  assert.throws(
+    () => resolveReportDateRange({ startDate: '2026-02-31' }, '2026-11-23'),
+    (err) => err?.code === 'invalid-argument',
+  );
+  assert.throws(
+    () => resolveReportDateRange({ startDate: '2026-05-10', endDate: '2026-05-01' }, '2026-11-23'),
+    (err) => err?.code === 'invalid-argument',
+  );
+});
+
+test('expireStaleUnpaidBatch isolates per-order transaction contention and expires remaining orders', async () => {
+  const { expireStaleUnpaidBatch, STALE_UNPAID_AGE_MS } = require('../lib/orders/expire_unpaid');
+  const now = Date.parse('2026-11-23T03:00:00.000Z');
+  const staleIso = new Date(now - STALE_UNPAID_AGE_MS - 60_000).toISOString();
+  const docs = new Map([
+    ['ord_fail', { paymentStatus: 'AWAITING_PAYMENT', status: 'Pending', timestamp: staleIso }],
+    ['ord_ok', { paymentStatus: 'AWAITING_PAYMENT', status: 'Pending', timestamp: staleIso }],
+  ]);
+
+  const fakeDb = {
+    collection() {
+      return {
+        where() { return this; },
+        limit() { return this; },
+        startAfter() { return this; },
+        async get() {
+          return {
+            empty: false,
+            docs: [...docs.entries()].map(([id, data]) => ({
+              id,
+              ref: { id },
+              data: () => ({ ...data }),
+            })),
+          };
+        },
+      };
+    },
+    async runTransaction(fn) {
+      let touchedId = null;
+      const tx = {
+        async get(ref) {
+          touchedId = ref.id;
+          if (ref.id === 'ord_fail') throw new Error('ABORTED: transaction contention');
+          const d = docs.get(ref.id);
+          return { exists: !!d, data: () => ({ ...d }) };
+        },
+        update(ref, patch) {
+          docs.set(ref.id, { ...docs.get(ref.id), ...patch });
+        },
+      };
+      const result = await fn(tx);
+      if (touchedId === 'ord_fail') throw new Error('should not reach');
+      return result;
+    },
+  };
+
+  const res = await expireStaleUnpaidBatch(fakeDb, now);
+  assert.deepEqual(res, { expired: 1, failed: 1 });
+  assert.equal(docs.get('ord_ok').paymentStatus, 'PAYMENT_EXPIRED');
+  assert.equal(docs.get('ord_ok').status, 'Cancelled');
+  assert.equal(docs.get('ord_fail').paymentStatus, 'AWAITING_PAYMENT');
+});
+
+test('notifyPaymentConfirmedOnce persists partial deliveries and never flips status to failed after Telegram send', async () => {
+  const {
+    notifyPaymentConfirmedOnce,
+    evaluatePaymentNotificationClaim,
+  } = require('../lib/orders/send_notification');
+  const telegramApi = require('../lib/telegram_api');
+  const { telegramChatIds } = require('../lib/secrets');
+
+  assert.equal(
+    evaluatePaymentNotificationClaim({ paymentNotifStatus: 'failed_permanent' }),
+    'failed-permanent',
+  );
+
+  const origChatIds = telegramChatIds.value;
+  telegramChatIds.value = () => 'chatA,chatB';
+  telegramApi.setTelegramRetryConfig({ maxAttempts: 1, sleep: async () => {} });
+
+  const store = new Map();
+  let failPersist = false;
+  const fakeDb = {
+    collection() {
+      return {
+        doc(id) {
+          return {
+            id,
+            async set(data, opts) {
+              if (failPersist && data.paymentNotifStatus === 'sent') {
+                throw new Error('transient firestore write error');
+              }
+              const prev = opts?.merge ? (store.get(id) || {}) : {};
+              store.set(id, { ...prev, ...data });
+            },
+          };
+        },
+      };
+    },
+    async runTransaction(fn) {
+      const tx = {
+        async get(ref) {
+          const d = store.get(ref.id);
+          return { exists: !!d, data: () => ({ ...d }) };
+        },
+        set(ref, data, opts) {
+          const prev = opts?.merge ? (store.get(ref.id) || {}) : {};
+          store.set(ref.id, { ...prev, ...data });
+        },
+      };
+      return fn(tx);
+    },
+  };
+
+  const sentTo = [];
+  let failChatB = true;
+  telegramApi.setBot({
+    async sendMessage(chatId) {
+      sentTo.push(chatId);
+      if (chatId === 'chatB' && failChatB) {
+        const err = new Error('ETELEGRAM: 500 Internal Server Error');
+        err.response = { statusCode: 500 };
+        throw err;
+      }
+      return { message_id: 1 };
+    },
+    async sendPhoto() { return {}; },
+  });
+
+  try {
+    await assert.rejects(
+      () => notifyPaymentConfirmedOnce('ord1', { orderId: 'LU-1', totalAmount: 100 }, { db: fakeDb, persistBackoffMs: [0] }),
+    );
+    assert.deepEqual(store.get('ord1').paymentDeliveredChatIds, ['chatA']);
+    assert.equal(store.get('ord1').paymentNotifStatus, 'failed');
+
+    // Retry only sends to chatB, and even if Firestore persist fails, status is NOT overwritten to 'failed'.
+    failChatB = false;
+    failPersist = true;
+    sentTo.length = 0;
+    const res = await notifyPaymentConfirmedOnce('ord1', { orderId: 'LU-1', totalAmount: 100 }, { db: fakeDb, persistBackoffMs: [0] });
+    assert.equal(res.sent, true);
+    assert.deepEqual(sentTo, ['chatB'], 'already-delivered chatA must be skipped on retry');
+    assert.equal(store.get('ord1').paymentNotifStatus, 'sending', 'status must not be overwritten to failed after Telegram succeeded');
+  } finally {
+    telegramChatIds.value = origChatIds;
+    telegramApi.setBot(null);
+    telegramApi.setTelegramRetryConfig(null);
+  }
+});
+
+test('runDailySalesReport tracks partial deliveries, skips permanent errors, and avoids duplicate sends on persist failure', async () => {
+  const { runDailySalesReport, canClaimDailyReport } = require('../lib/reporting/daily_report');
+  const telegramApi = require('../lib/telegram_api');
+  const { telegramChatIds } = require('../lib/secrets');
+
+  assert.equal(canClaimDailyReport({ status: 'failed_permanent' }), false);
+
+  const origChatIds = telegramChatIds.value;
+  telegramChatIds.value = () => 'chat1,chat2';
+  telegramApi.setTelegramRetryConfig({ maxAttempts: 1, sleep: async () => {} });
+
+  const store = new Map();
+  let failPersist = false;
+  const fakeDb = {
+    collection() {
+      return {
+        doc(id) {
+          return {
+            id,
+            async set(data, opts) {
+              if (failPersist && data.status === 'sent') {
+                throw new Error('transient firestore write error');
+              }
+              const prev = opts?.merge ? (store.get(id) || {}) : {};
+              store.set(id, { ...prev, ...data });
+            },
+          };
+        },
+      };
+    },
+    async runTransaction(fn) {
+      const tx = {
+        async get(ref) {
+          const d = store.get(ref.id);
+          return { exists: !!d, data: () => ({ ...d }) };
+        },
+        set(ref, data, opts) {
+          const prev = opts?.merge ? (store.get(ref.id) || {}) : {};
+          store.set(ref.id, { ...prev, ...data });
+        },
+      };
+      return fn(tx);
+    },
+  };
+
+  const sentTo = [];
+  let failChat2 = true;
+  telegramApi.setBot({
+    async sendMessage(chatId) {
+      sentTo.push(chatId);
+      if (chatId === 'chat2' && failChat2) {
+        const err = new Error('ETELEGRAM: 503 Unavailable');
+        err.response = { statusCode: 503 };
+        throw err;
+      }
+      return { message_id: 2 };
+    },
+    async sendPhoto() { return {}; },
+  });
+
+  try {
+    await assert.rejects(
+      () => runDailySalesReport('2026-11-23', { db: fakeDb, persistBackoffMs: [0], aggregate: async () => null }),
+    );
+    assert.deepEqual(store.get('2026-11-23').deliveredChatIds, ['chat1']);
+    assert.equal(store.get('2026-11-23').status, 'failed');
+
+    failChat2 = false;
+    failPersist = true;
+    sentTo.length = 0;
+    const res = await runDailySalesReport('2026-11-23', { db: fakeDb, persistBackoffMs: [0], aggregate: async () => null });
+    assert.equal(res.sent, true);
+    assert.deepEqual(sentTo, ['chat2']);
+    assert.equal(store.get('2026-11-23').status, 'sending');
+  } finally {
+    telegramChatIds.value = origChatIds;
+    telegramApi.setBot(null);
+    telegramApi.setTelegramRetryConfig(null);
+  }
+});

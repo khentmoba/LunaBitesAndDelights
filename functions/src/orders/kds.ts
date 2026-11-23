@@ -102,6 +102,20 @@ export const projectOrderSummary = (id: string, d: FirebaseFirestore.DocumentDat
   };
 };
 
+const SUMMARY_ORDER_FIELDS = [
+  'orderId',
+  'orderNumber',
+  'customerName',
+  'paymentMethod',
+  'paymentStatus',
+  'entryType',
+  'items',
+  'totalAmount',
+  'type',
+  'status',
+  'timestamp',
+] as const;
+
 export const getActiveOrders = onCall(async (request) => {
   requireStaff(request); // #6 + #7
   const db = getFirestore();
@@ -121,6 +135,7 @@ export const getActiveOrders = onCall(async (request) => {
         .where('timestamp', '>=', lookbackThreshold)
         .orderBy('timestamp', 'desc')
         .limit(pageSize);
+      if (summaryOnly) q = q.select(...SUMMARY_ORDER_FIELDS);
       if (cursor) q = q.startAfter(cursor);
       const snapshot = await q.get();
       if (snapshot.empty) break;

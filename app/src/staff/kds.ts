@@ -268,9 +268,9 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
       if (disposed) return;
       const err = fnError(e);
       if (err && isAuthCode(err.code)) {
-        error = 'Staff session expired. Sign in again to update orders.';
-        renderBanner();
-        staffSnack(error, ERROR);
+        const msg = 'Staff session expired. Sign in again to update orders.';
+        haltOnAuthError(msg);
+        staffSnack(msg, ERROR);
       } else {
         staffSnack(err?.message || 'Failed to update status. Connection error.', ERROR);
       }

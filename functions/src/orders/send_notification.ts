@@ -328,6 +328,7 @@ export function evaluatePaymentNotificationClaim(
 ): ClaimStatus {
   if (!current) return 'missing';
   if (current.paymentNotifSent === true) return 'already-sent';
+  if (current.paymentNotifStatus === 'failed_permanent') return 'failed-permanent';
   if (current.paymentNotifStatus === 'sending') {
     const claimedAt = current.paymentNotifClaimedAt;
     if (typeof claimedAt === 'number' && Number.isFinite(claimedAt) && nowMs - claimedAt < TELEGRAM_CLAIM_TTL_MS) {
@@ -342,20 +343,29 @@ export const ORDER_NOTIFICATIONS_COLLECTION = 'order_notifications';
 /**
  * Atomically claims and sends the Telegram payment confirmation (or cancelled-order
  * refund-review) alert for an order, deduplicated in `order_notifications/{orderDocId}`.
+ * Tracks `paymentDeliveredChatIds` across retries and separates Telegram delivery from
+ * Firestore completion persistence so transient DB errors never trigger duplicate alerts.
  */
 export async function notifyPaymentConfirmedOnce(
   orderDocId: string,
   orderData: Record<string, any>,
-): Promise<{ sent: boolean; alreadySent: boolean; inFlight?: boolean }> {
-  const db = getFirestore();
+  opts: { db?: Firestore; persistBackoffMs?: number[] } = {},
+): Promise<{ sent: boolean; alreadySent: boolean; inFlight?: boolean; permanentFailure?: boolean }> {
+  const db = opts.db ?? getFirestore();
   const notifRef = db.collection(ORDER_NOTIFICATIONS_COLLECTION).doc(orderDocId);
   const nowMs = Date.now();
   const expireAt = Timestamp.fromMillis(nowMs + ORDER_NOTIF_TTL_MS);
 
-  const claimStatus = await db.runTransaction<ClaimStatus>(async (tx) => {
+  const { status: claimStatus, deliveredChatIds } = await db.runTransaction<{
+    status: ClaimStatus;
+    deliveredChatIds: string[];
+  }>(async (tx) => {
     const snap = await tx.get(notifRef);
     const existing = snap.exists ? snap.data() : {};
     const status = evaluatePaymentNotificationClaim(existing, nowMs);
+    const prevDelivered = Array.isArray(existing?.paymentDeliveredChatIds)
+      ? existing.paymentDeliveredChatIds.filter((id: unknown): id is string => typeof id === 'string' && id.length > 0)
+      : [];
     if (status === 'claimed') {
       tx.set(
         notifRef,
@@ -363,11 +373,14 @@ export async function notifyPaymentConfirmedOnce(
         { merge: true },
       );
     }
-    return status;
+    return { status, deliveredChatIds: prevDelivered };
   });
 
   if (claimStatus === 'in-flight') {
     return { sent: false, alreadySent: false, inFlight: true };
+  }
+  if (claimStatus === 'failed-permanent') {
+    return { sent: false, alreadySent: false, inFlight: false, permanentFailure: true };
   }
   if (claimStatus !== 'claimed') {
     return { sent: false, alreadySent: true, inFlight: false };
@@ -379,17 +392,60 @@ export async function notifyPaymentConfirmedOnce(
   const paidAtPht = paidDate.toLocaleString('en-PH', { timeZone: 'Asia/Manila' });
   const message = formatPaymentConfirmedMessage(orderData, orderDocId, paidAtPht);
 
+  let newlyDelivered: string[];
   try {
-    await sendToAll(message);
-    await notifRef.set({ paymentNotifSent: true, paymentNotifStatus: 'sent' }, { merge: true });
-    return { sent: true, alreadySent: false };
+    const res = await sendToAll(message, { skipChatIds: deliveredChatIds });
+    newlyDelivered = res.deliveredChatIds;
   } catch (error: any) {
-    await notifRef.set({ paymentNotifSent: false, paymentNotifStatus: 'failed' }, { merge: true }).catch((e) => {
+    const partialDelivered = Array.isArray(error?.deliveredChatIds)
+      ? error.deliveredChatIds.filter((id: unknown): id is string => typeof id === 'string' && id.length > 0)
+      : [];
+    const mergedDelivered = Array.from(new Set([...deliveredChatIds, ...partialDelivered]));
+    const permanent = isPermanentTelegramError(error);
+    await notifRef.set(
+      {
+        paymentNotifSent: false,
+        paymentNotifStatus: permanent ? 'failed_permanent' : 'failed',
+        paymentDeliveredChatIds: mergedDelivered,
+        paymentLastError: String(error?.message || 'unknown').slice(0, 500),
+      },
+      { merge: true },
+    ).catch((e) => {
       logger.warn(`Could not record failed payment notification status for ${orderDocId}`, e);
     });
     logger.error(`Error sending Telegram payment notification for ${orderDocId}`, error);
     throw error;
   }
+
+  const allDelivered = Array.from(new Set([...deliveredChatIds, ...newlyDelivered]));
+  const sentPayload = {
+    paymentNotifSent: true,
+    paymentNotifStatus: 'sent',
+    paymentDeliveredChatIds: allDelivered,
+    paymentNotifSentAt: Timestamp.now(),
+    paymentLastError: null,
+  };
+  const persistBackoffMs = opts.persistBackoffMs ?? [0, 250, 500, 1000];
+  let lastPersistErr: unknown = null;
+  for (let attempt = 0; attempt < persistBackoffMs.length; attempt++) {
+    if (persistBackoffMs[attempt] > 0) {
+      await new Promise((resolve) => setTimeout(resolve, persistBackoffMs[attempt]));
+    }
+    try {
+      await notifRef.set(sentPayload, { merge: true });
+      lastPersistErr = null;
+      break;
+    } catch (err) {
+      lastPersistErr = err;
+    }
+  }
+  if (lastPersistErr !== null) {
+    logger.error(
+      `Telegram payment notification sent for ${orderDocId} but failed to persist sent state after ${persistBackoffMs.length} attempts`,
+      { error: lastPersistErr },
+    );
+  }
+  return { sent: true, alreadySent: false };
 }
 
 /**
