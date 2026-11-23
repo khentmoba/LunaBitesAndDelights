@@ -4,6 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const { shouldNotifyPaymentConfirmed } = require('../lib/orders/derived');
+const { Timestamp } = require('firebase-admin/firestore');
 const {
   evaluatePaymentNotificationClaim,
   hasOrderNotificationState,
@@ -672,6 +673,124 @@ test('runDailySalesReport tracks partial deliveries, skips permanent errors, and
     telegramApi.setBot(null);
     telegramApi.setTelegramRetryConfig(null);
   }
+});
+
+test('runManualSalesReport skips chats that already received a failed attempt, then resets', async () => {
+  const { runManualSalesReport, manualReportGuardId } = require('../lib/reporting/manual_report');
+  const telegramApi = require('../lib/telegram_api');
+  const { telegramChatIds } = require('../lib/secrets');
+
+  assert.equal(manualReportGuardId('2026-11-23'), 'manual-2026-11-23');
+
+  const origChatIds = telegramChatIds.value;
+  telegramChatIds.value = () => 'chat1,chat2';
+  telegramApi.setTelegramRetryConfig({ maxAttempts: 1, sleep: async () => {} });
+
+  const store = new Map();
+  const fakeDb = {
+    collection(name) {
+      return {
+        doc(id) {
+          const ref = {
+            id: `${name}/${id}`,
+            async get() {
+              const d = store.get(ref.id);
+              return { exists: Boolean(d), data: () => ({ ...d }) };
+            },
+            async set(data, opts) {
+              const prev = opts?.merge ? (store.get(ref.id) || {}) : {};
+              store.set(ref.id, { ...prev, ...data });
+            },
+          };
+          return ref;
+        },
+      };
+    },
+  };
+
+  const sentTo = [];
+  let failChat2 = true;
+  telegramApi.setBot({
+    async sendMessage(chatId) {
+      sentTo.push(chatId);
+      if (chatId === 'chat2' && failChat2) {
+        const err = new Error('ETELEGRAM: 503 Unavailable');
+        err.response = { statusCode: 503 };
+        throw err;
+      }
+      return { message_id: 1 };
+    },
+    async sendPhoto() { return {}; },
+  });
+
+  const aggregate = async () => ({
+    date: '2026-11-23', totalSales: 500, totalOrders: 3, kioskSales: 400, staffSales: 100, topItems: [],
+  });
+  const guardKey = 'daily_reports_sent/manual-2026-11-23';
+
+  try {
+    await assert.rejects(
+      () => runManualSalesReport('2026-11-23', { db: fakeDb, aggregate }),
+      /Telegram messages failed/,
+    );
+    assert.deepEqual(store.get(guardKey).deliveredChatIds, ['chat1'], 'partial delivery is remembered');
+    assert.equal(store.get(guardKey).status, 'failed');
+    assert.equal(store.get(guardKey).expireAt instanceof Timestamp, true, 'guard doc is TTL-bounded');
+
+    failChat2 = false;
+    sentTo.length = 0;
+    const retry = await runManualSalesReport('2026-11-23', { db: fakeDb, aggregate });
+    assert.equal(retry.sent, true);
+    assert.equal(retry.skippedChats, 1);
+    assert.deepEqual(sentTo, ['chat2'], 'the chat that already got it is not spammed again');
+    assert.deepEqual(store.get(guardKey).deliveredChatIds, []);
+    assert.equal(store.get(guardKey).status, 'sent');
+
+    sentTo.length = 0;
+    const again = await runManualSalesReport('2026-11-23', { db: fakeDb, aggregate });
+    assert.equal(again.sent, true);
+    assert.deepEqual(sentTo, ['chat1', 'chat2'], 'a deliberate second report still reaches everyone');
+
+    const empty = await runManualSalesReport('2026-11-24', { db: fakeDb, aggregate: async () => null });
+    assert.deepEqual(empty, { sent: false, message: 'No orders found for today', skippedChats: 0 });
+  } finally {
+    telegramChatIds.value = origChatIds;
+    telegramApi.setBot(null);
+    telegramApi.setTelegramRetryConfig(null);
+  }
+});
+
+test('a paid session that cannot be attached to an order is reported instead of dropped', () => {
+  const { checkPaidSession } = require('../lib/payments/webhook');
+  const paidFor = (amount) => [{ attributes: { status: 'paid', amount } }];
+
+  // No metadata.order_doc_id and no usable reference_number: nothing links the money to an order.
+  assert.deepEqual(checkPaidSession({}, paidFor(5000)), {
+    ok: false,
+    reason: 'has no order reference; nothing was marked PAID',
+  });
+  // The order resolves, but the paid payment carries no integer amount.
+  assert.deepEqual(checkPaidSession({ metadata: { order_doc_id: 'ord123' } }, [{ attributes: { status: 'paid' } }]), {
+    ok: false,
+    reason: 'for order ord123 reported no integer paid amount; it stays unpaid for review',
+  });
+  assert.equal(checkPaidSession({ metadata: { order_doc_id: 'ord123' } }, []).ok, false);
+  assert.equal(checkPaidSession({ metadata: { order_doc_id: 'ord123' } }, paidFor(26.5)).ok, false);
+
+  assert.deepEqual(checkPaidSession({ metadata: { order_doc_id: 'ord123' } }, paidFor(26300)), {
+    ok: true,
+    docId: 'ord123',
+    paidCentavos: 26300,
+  });
+  // A legacy order number in reference_number is still accepted.
+  assert.deepEqual(checkPaidSession({ reference_number: 'LU-261124-113045-A7K' }, paidFor(5000)), {
+    ok: true,
+    docId: 'LU-261124-113045-A7K',
+    paidCentavos: 5000,
+  });
+
+  const webhookSrc = fs.readFileSync(path.resolve(__dirname, '../src/payments/webhook.ts'), 'utf8');
+  assert.match(webhookSrc, /if \(!paid\.ok\) \{[\s\S]*?logger\.error\(`Paid PayMongo session \$\{sessionId\}[\s\S]*?res\.status\(200\)\.send\('OK'\)/);
 });
 
 test('sweepStaleUnpaidOrders isolates per-document transaction failures and expires remaining docs', async () => {

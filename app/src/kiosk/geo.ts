@@ -1,5 +1,6 @@
 // Location lookups: Nominatim search and
 // reverse lookups, a Google Maps browser key, and a best-effort browser position.
+import { waitForLookupSlot } from './lookup-spacing';
 const SEARCH = 'https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=5';
 const REVERSE = 'https://nominatim.openstreetmap.org/reverse?format=json&zoom=18&addressdetails=1';
 
@@ -66,7 +67,9 @@ export async function reverseGeocode(lat: number, lng: number, signal?: AbortSig
   const cacheKey = `${lat.toFixed(5)},${lng.toFixed(5)}`;
   const cached = reverseCache.get(cacheKey);
   if (cached) return cached;
+  if (signal?.aborted) return { full: '', short: '' };
   try {
+    if (!(await waitForLookupSlot(signal))) return { full: '', short: '' };
     const res = await fetch(`${REVERSE}&lat=${lat}&lon=${lng}`, {
       headers: { 'Accept-Language': 'en' },
       signal: combineSignal(signal, 8_000),
@@ -86,7 +89,9 @@ export async function searchAddress(query: string, signal?: AbortSignal): Promis
   const cacheKey = query.trim().toLowerCase();
   const cached = searchCache.get(cacheKey);
   if (cached) return cached;
+  if (signal?.aborted) return [];
   try {
+    if (!(await waitForLookupSlot(signal))) return [];
     const res = await fetch(`${SEARCH}&q=${encodeURIComponent(query)}`, {
       headers: { 'Accept-Language': 'en' },
       signal: combineSignal(signal, 8_000),

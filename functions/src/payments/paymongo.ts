@@ -243,7 +243,12 @@ export async function markOrderPaidOnce(
 
   return db.runTransaction(async (tx) => {
     const snap = await tx.get(orderRef);
-    if (!snap.exists) return { transitioned: false, alreadyPaid: false };
+    if (!snap.exists) {
+      // A verified payment whose order reference resolves to nothing is the one
+      // rejection this function used to make silently.
+      logger.warn(`Refusing to mark order ${orderRef.id} PAID: order document does not exist`);
+      return { transitioned: false, alreadyPaid: false };
+    }
     const data = snap.data()!;
     if (data.paymentStatus === 'PAID') {
       return { transitioned: false, alreadyPaid: true };

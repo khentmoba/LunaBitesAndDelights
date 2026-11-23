@@ -72,6 +72,25 @@ export function verifyPaymongoSignature(
   });
 }
 
+export type PaidSessionCheck =
+  | { ok: true; docId: string; paidCentavos: number }
+  | { ok: false; reason: string };
+
+/**
+ * What a verified paid session can be applied to. A session with no order
+ * reference, or a paid payment with no integer amount, is money we cannot
+ * attach to an order, so the caller reports it instead of dropping the event.
+ */
+export function checkPaidSession(attrs: any, payments: any[] | null): PaidSessionCheck {
+  const docId = resolveOrderDocId(attrs);
+  if (!docId) return { ok: false, reason: 'has no order reference; nothing was marked PAID' };
+  const paidCentavos = paidPaymentAmountCentavos(payments);
+  if (paidCentavos === null) {
+    return { ok: false, reason: `for order ${docId} reported no integer paid amount; it stays unpaid for review` };
+  }
+  return { ok: true, docId, paidCentavos };
+}
+
 export const paymongoWebhook = onRequest(
   { secrets: [paymongoSecret, paymongoWebhookSecret] },
   async (req, res) => {
@@ -142,21 +161,24 @@ export const paymongoWebhook = onRequest(
         }
         const attrs = session.attributes;
         const refNumber = String(attrs.reference_number || '');
-        const paymentId = firstPaymentId(session.payments);
-        const paidCentavos = paidPaymentAmountCentavos(session.payments);
-        const docId = resolveOrderDocId(attrs);
-        if (docId && paidCentavos !== null) {
-          const orderRef = getFirestore().collection('orders').doc(docId);
-          const { transitioned } = await markOrderPaidOnce(
-            orderRef,
-            paymentId,
-            refNumber,
-            sessionId,
-            paidCentavos,
-          );
-          if (transitioned) {
-            logger.info(`Order ${docId} marked as PAID via verified webhook`);
-          }
+        const paid = checkPaidSession(attrs, session.payments);
+        if (!paid.ok) {
+          // Money arrived but cannot be attached to an order: leave a trace
+          // instead of dropping the event silently.
+          logger.error(`Paid PayMongo session ${sessionId} (ref ${refNumber || 'none'}) ${paid.reason}`);
+          res.status(200).send('OK');
+          return;
+        }
+        const orderRef = getFirestore().collection('orders').doc(paid.docId);
+        const { transitioned } = await markOrderPaidOnce(
+          orderRef,
+          firstPaymentId(session.payments),
+          refNumber,
+          sessionId,
+          paid.paidCentavos,
+        );
+        if (transitioned) {
+          logger.info(`Order ${paid.docId} marked as PAID via verified webhook`);
         }
       }
 

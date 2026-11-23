@@ -71,6 +71,15 @@ export function save(key: string, value: unknown): void {
   }
 }
 
+function validItem(value: unknown): boolean {
+  const i = value as Partial<OrderItem>;
+  return Boolean(value) && typeof value === 'object'
+    && typeof i.name === 'string'
+    && (i.variant == null || typeof i.variant === 'string')
+    && typeof i.price === 'number' && Number.isFinite(i.price)
+    && typeof i.quantity === 'number' && Number.isFinite(i.quantity);
+}
+
 /** sessionStorage is user-writable and survives app updates: reject bad shapes. */
 export function validReceipt(value: unknown): value is Receipt {
   if (!value || typeof value !== 'object') return false;
@@ -85,9 +94,24 @@ export function validReceipt(value: unknown): value is Receipt {
     && typeof r.isWalkIn === 'boolean'
     && typeof r.telegramSent === 'boolean'
     && Array.isArray(r.items)
-    && r.items.every((i) => i && typeof i === 'object'
-      && typeof i.name === 'string'
-      && (i.variant == null || typeof i.variant === 'string')
-      && typeof i.price === 'number' && Number.isFinite(i.price)
-      && typeof i.quantity === 'number' && Number.isFinite(i.quantity));
+    && r.items.every(validItem);
+}
+
+/**
+ * The GCash handoff. A stale or hand-edited value would otherwise leave the
+ * shopper on a page whose every action fails, so the page bounces instead.
+ * The item list gets the same check as the receipt: an empty or malformed one
+ * is rejected by createCheckoutSession anyway, so the shopper would only reach
+ * the same dead end through RETRY.
+ */
+export function validPending(value: unknown): value is PendingPayment {
+  if (!value || typeof value !== 'object') return false;
+  const p = value as Partial<PendingPayment>;
+  return typeof p.orderDocId === 'string' && /^[A-Za-z0-9]{1,64}$/.test(p.orderDocId)
+    && typeof p.orderId === 'string' && p.orderId.length > 0 && p.orderId.length <= 64
+    && typeof p.amount === 'number' && Number.isFinite(p.amount) && p.amount > 0
+    && typeof p.customerName === 'string'
+    && typeof p.customerPhone === 'string'
+    && Array.isArray(p.items) && p.items.length > 0 && p.items.every(validItem)
+    && validReceipt(p.receipt);
 }
