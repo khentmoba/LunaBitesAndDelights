@@ -130,6 +130,19 @@ try {
   }
   step('board after', { screenshot: await shoot('ts-staff-e2e-kds-ready-1440.png') });
 
+  // The same board on the tablet-sized viewport the kitchen actually uses.
+  await s.send('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 2, mobile: true });
+  await sleep(600);
+  await evaluate(`(() => { const t = document.querySelector('[data-tab="2"]'); if (t) t.click(); return true; })()`);
+  await sleep(400);
+  step('board narrow', {
+    screenshot: await shoot('ts-staff-e2e-kds-ready-390.png'),
+    tabbed: await evaluate(`!!document.querySelector('.ktabs') && !document.querySelector('.kcol')`),
+    cards: await evaluate(`[...document.querySelectorAll('.kact')].map((b) => b.dataset.id)`),
+  });
+  await s.send('Emulation.setDeviceMetricsOverride', { width: 1440, height: 900, deviceScaleFactor: 1, mobile: false });
+  await sleep(300);
+
   await s.send('Page.navigate', { url: `http://127.0.0.1:${port}/staff/dashboard` });
   await waitFor(`[...document.querySelectorAll('.stat__value')].some((v) => v.textContent !== '₱0' && v.textContent !== '0')`);
   await sleep(600);

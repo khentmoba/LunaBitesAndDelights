@@ -105,8 +105,8 @@ export const verifyCheckoutPayment = onCall(
     }
 
     if (hasFailedPayment(payments)) {
-      await markOrderPaymentFailed(orderRef, sessionId);
-      return { paid: false, paymentStatus: 'PAYMENT_FAILED' };
+      const { paymentStatus } = await markOrderPaymentFailed(orderRef, sessionId);
+      return { paid: paymentStatus === 'PAID', paymentStatus };
     }
 
     return { paid: false, paymentStatus: String(orderData.paymentStatus || 'AWAITING_PAYMENT') };

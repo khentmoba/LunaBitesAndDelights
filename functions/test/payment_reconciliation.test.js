@@ -17,6 +17,7 @@ const {
   formatPaymentConfirmedMessage,
 } = require('../lib/payments/paymongo');
 const { hasMatchingCheckoutSession } = require('../lib/payments/verify_payment');
+const { isLiveCheckoutSession, shouldMarkPaymentFailed } = require('../lib/payments/paymongo');
 const { isOrderVisibleInKds, toIsoTimestamp, clampOrdersLimit, isAllowedStatusTransition } = require('../lib/orders/kds');
 const { kdsMirrorDoc, shouldNotifyKitchen } = require('../lib/orders/derived');
 const { idempotentOrderDocId, orderPayloadFingerprint } = require('../lib/orders/place_order');
@@ -140,6 +141,53 @@ test('hasMatchingCheckoutSession rejects unbound or mismatched orders', () => {
   assert.strictEqual(hasMatchingCheckoutSession({ checkoutSessionId: '' }, 'cs_paid_1'), false);
   assert.strictEqual(hasMatchingCheckoutSession({ checkoutSessionId: 'cs_other' }, 'cs_paid_1'), false);
   assert.strictEqual(hasMatchingCheckoutSession({ checkoutSessionId: 'cs_paid_1' }, 'cs_paid_1'), true);
+});
+
+// The kiosk can replace a checkout session (expired card dialog, back button,
+// a second GCash attempt). A failure event for the replaced session then
+// arrives after the new one was handed out, and must not fail the live order.
+test('a superseded checkout session cannot fail the live one', () => {
+  const order = {
+    checkoutSessionId: 'cs_live_2',
+    checkoutSessionIds: ['cs_old_1', 'cs_live_2'],
+    paymentStatus: 'AWAITING_PAYMENT',
+  };
+  assert.strictEqual(isLiveCheckoutSession(order, 'cs_live_2'), true);
+  assert.strictEqual(isLiveCheckoutSession(order, 'cs_old_1'), false);
+  assert.strictEqual(shouldMarkPaymentFailed(order, 'cs_live_2'), true);
+  assert.strictEqual(shouldMarkPaymentFailed(order, 'cs_old_1'), false);
+});
+
+// Orders written before checkoutSessionId existed only carry the history, so
+// the newest attempt cannot be told apart from an older one; any bound session
+// still counts, and an unbound one still does not.
+test('legacy orders fall back to the session history', () => {
+  const legacy = { checkoutSessionIds: ['cs_legacy_1'], paymentStatus: 'AWAITING_PAYMENT' };
+  assert.strictEqual(isLiveCheckoutSession(legacy, 'cs_legacy_1'), true);
+  assert.strictEqual(isLiveCheckoutSession(legacy, 'cs_other'), false);
+  assert.strictEqual(isLiveCheckoutSession({}, 'cs_any'), false);
+  assert.strictEqual(isLiveCheckoutSession(undefined, 'cs_any'), false);
+  assert.strictEqual(isLiveCheckoutSession(legacy, ''), false);
+});
+
+// A terminal payment outcome is final: a redelivered or late failure event must
+// not overwrite a paid order, nor re-open one the expiry sweep already closed.
+test('terminal payment statuses are never rewritten as failed', () => {
+  const live = 'cs_live';
+  for (const paymentStatus of ['PAID', 'PAYMENT_EXPIRED']) {
+    const order = { checkoutSessionId: live, paymentStatus };
+    assert.strictEqual(shouldMarkPaymentFailed(order, live), false, paymentStatus);
+  }
+  assert.strictEqual(shouldMarkPaymentFailed({ checkoutSessionId: live, paymentStatus: 'PAYMENT_FAILED' }, live), true);
+});
+
+// Both callers pass the session id they validated from the provider payload, so
+// a future caller that forgets it must fail closed rather than accept any
+// failure event for the order.
+test('a failure event with no session id fails closed', () => {
+  assert.strictEqual(shouldMarkPaymentFailed({ paymentStatus: 'AWAITING_PAYMENT' }, ''), false);
+  assert.strictEqual(shouldMarkPaymentFailed({ paymentStatus: 'PAID' }, ''), false);
+  assert.strictEqual(shouldMarkPaymentFailed(undefined, 'cs_live'), false);
 });
 
 test('projectOrder projects KDS fields and sums item quantities from quantity or qty', () => {

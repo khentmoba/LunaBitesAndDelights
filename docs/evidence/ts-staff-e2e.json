@@ -7,7 +7,7 @@
     },
     {
       "step": "right PIN",
-      "reachedKdsMs": 468,
+      "reachedKdsMs": 624,
       "snack": "Welcome, anna! (STAFF)",
       "authUser": {
         "uid": "staff_anna",
@@ -36,6 +36,14 @@
     {
       "step": "board after",
       "screenshot": "ts-staff-e2e-kds-ready-1440.png"
+    },
+    {
+      "step": "board narrow",
+      "screenshot": "ts-staff-e2e-kds-ready-390.png",
+      "tabbed": true,
+      "cards": [
+        "e2e-staff-1"
+      ]
     },
     {
       "step": "dashboard",
