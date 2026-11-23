@@ -12,8 +12,8 @@ test('ci-local reads every pr-checks job with its working directory', () => {
   for (const step of ['functions: npm run build', 'functions: npm run lint', 'functions: npm test']) assert.ok(jobs.functions.includes(step), step);
   for (const step of ['functions: npm run test:rules', 'functions: npm run test:derived']) assert.ok(jobs.rules.includes(step), step);
   const functionsScripts = JSON.parse(fs.readFileSync(new URL('../../functions/package.json', import.meta.url), 'utf8')).scripts;
-  assert.match(functionsScripts['test:rules'], /npx --no-install firebase-tools/);
-  assert.match(functionsScripts['test:derived'], /npx --no-install firebase-tools/);
+  assert.match(functionsScripts['test:rules'], /npm exec --prefix \.\. --no -- firebase-tools/);
+  assert.match(functionsScripts['test:derived'], /npm exec --prefix \.\. --no -- firebase-tools/);
   for (const step of ['.: npm ci', 'app: npm run check', 'app: npm run lint', 'app: npm run build', '.: npm run test:site']) assert.ok(jobs.site.includes(step), step);
 });
 

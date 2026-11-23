@@ -65,8 +65,8 @@ jobs:
             package-lock.json
             functions/package-lock.json
 
-      # The emulator scripts resolve firebase-tools from the root lockfile and
-      # use npx --no-install so CI cannot fall back to an unpinned download.
+      # The emulator scripts resolve firebase-tools from the root lockfile with
+      # npm exec --prefix .. --no -- firebase-tools so CI cannot download a second CLI.
       - run: npm ci
         working-directory: .
 

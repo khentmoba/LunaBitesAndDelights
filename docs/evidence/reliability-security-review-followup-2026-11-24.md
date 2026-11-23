@@ -13,7 +13,7 @@
 ## Additional guard improvements
 
 - Firestore TTL parity is now derived from TypeScript `expireAt` writes and compared exactly with configured TTL field overrides. A synthetic writer test proves an unconfigured new collection is detected.
-- Emulator scripts use pinned root `firebase-tools` with `npx --no-install`; they cannot download an unpinned CLI in CI.
+- Emulator scripts resolve the pinned root `firebase-tools` with `npm exec --prefix .. --no -- firebase-tools`; this uses the root lockfile and disables fallback downloads.
 - The local CI summary distinguishes passed steps from skipped steps; the PR-context-only proof gate is explicitly skipped locally rather than reported as passed.
 - The PR proof gate requires evidence references for package manifests, workflows, Firebase configuration, indexes, and tooling changes.
 
@@ -36,6 +36,8 @@ The existing GCash error-state screenshot includes the retry action: [hardening 
 - Round 1 confirmed five behavior issues (legacy summary counts, fallback-write allowlist mismatch, payment-only notification claims, PIN attempt concurrency, and KDS auth-halt startup race); all were fixed with regression coverage.
 - Round 2 found a Functions-manifest proof-gate bypass, which was fixed and tested. Its other nit was ignored after verifying the cited older evidence file exists and is tracked.
 - Round 3 re-reviewed the proof-gate fix and returned **SHIP**, with no new findings.
+- The first PR rules run exposed that `npx` could not resolve the root-locked CLI from `functions/`; both emulator scripts now use the root npm prefix. The emulator suites and full local CI passed afterward.
+- Round 4 re-reviewed the CI path fix and returned **SHIP**, with no new findings.
 
 
 The audit also retains production-sensitive work: deny unauthenticated direct order creation and retire public legacy Pasugo/rider rules; enable callable App Check only after reviewing token metrics; replace the bounded KDS fallback scan only with a deployable index/query plan; and introduce a peppered PIN lookup only with Secret Manager provisioning and credential backfill. These require explicit production/deployment approval and operational confirmation. No Firestore rules, production App Check settings, production secrets, or deployed indexes were changed here.
