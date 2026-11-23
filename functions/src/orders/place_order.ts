@@ -85,8 +85,11 @@ export const placeOrder = onCall(async (request) => {
     throw new HttpsError('invalid-argument', 'Delivery address is required');
   }
 
-  const lat = typeof d.lat === 'number' && Number.isFinite(d.lat) && Math.abs(d.lat) <= 90 ? d.lat : null;
-  const lng = typeof d.lng === 'number' && Number.isFinite(d.lng) && Math.abs(d.lng) <= 180 ? d.lng : null;
+  const rawLat = typeof d.lat === 'number' && Number.isFinite(d.lat) && Math.abs(d.lat) <= 90 ? d.lat : null;
+  const rawLng = typeof d.lng === 'number' && Number.isFinite(d.lng) && Math.abs(d.lng) <= 180 ? d.lng : null;
+  const hasValidCoords = rawLat !== null && rawLng !== null;
+  const lat = hasValidCoords ? rawLat : null;
+  const lng = hasValidCoords ? rawLng : null;
   const totalDistance =
     typeof d.totalDistance === 'number' && Number.isFinite(d.totalDistance) && d.totalDistance >= 0 && d.totalDistance <= 500
       ? d.totalDistance

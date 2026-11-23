@@ -247,7 +247,7 @@ export async function hashPasswordAsync(password: string): Promise<string> {
 export function verifyPassword(password: string, stored: string): 'ok' | 'ok-legacy' | 'bad' {
   if (stored.startsWith('scrypt$')) {
     const [, salt, hash] = stored.split('$');
-    if (!salt || !hash || !/^[0-9a-f]+$/i.test(hash)) return 'bad';
+    if (!salt || !hash || hash.length !== 64 || !/^[0-9a-f]{64}$/i.test(hash)) return 'bad';
     const calcBuf = crypto.scryptSync(password, salt, 32);
     const hashBuf = Buffer.from(hash, 'hex');
     if (calcBuf.length !== hashBuf.length) return 'bad';
@@ -263,7 +263,7 @@ export function verifyPassword(password: string, stored: string): 'ok' | 'ok-leg
 export async function verifyPasswordAsync(password: string, stored: string): Promise<'ok' | 'ok-legacy' | 'bad'> {
   if (stored.startsWith('scrypt$')) {
     const [, salt, hash] = stored.split('$');
-    if (!salt || !hash || !/^[0-9a-f]+$/i.test(hash)) return 'bad';
+    if (!salt || !hash || hash.length !== 64 || !/^[0-9a-f]{64}$/i.test(hash)) return 'bad';
     const calcBuf = (await scryptAsync(password, salt, 32)) as Buffer;
     const hashBuf = Buffer.from(hash, 'hex');
     if (calcBuf.length !== hashBuf.length) return 'bad';

@@ -421,3 +421,21 @@ test('formatPaymentConfirmedMessage escapes MarkdownV2 punctuation in cancelled-
   );
   assert.match(normalMsg, /PAYMENT CONFIRMED/);
 });
+
+test('fetchCheckoutSessionDetailed URL-encodes sessionId in request path', async () => {
+  const origFetch = global.fetch;
+  let capturedUrl = '';
+  try {
+    global.fetch = async (url) => {
+      capturedUrl = String(url);
+      return { ok: false, status: 404, json: async () => ({}) };
+    };
+    await fetchCheckoutSessionDetailed('cs_test/../evil', 'auth');
+    assert.strictEqual(
+      capturedUrl,
+      'https://api.paymongo.com/v2/checkout_sessions/cs_test%2F..%2Fevil',
+    );
+  } finally {
+    global.fetch = origFetch;
+  }
+});

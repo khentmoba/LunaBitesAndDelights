@@ -815,7 +815,10 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
     if (disposed) return;
     renderBar();
     renderBanner();
-    if (!isLive && getStaff()) void fetchActive(true);
+    if (!isLive && getStaff()) {
+      void fetchActive(true);
+      if (!connecting) void startLiveListener();
+    }
   };
   const onOffline = () => {
     isOffline = true;

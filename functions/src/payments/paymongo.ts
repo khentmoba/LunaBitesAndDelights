@@ -90,7 +90,7 @@ export async function fetchCheckoutSessionDetailed(
   auth: string,
 ): Promise<CheckoutSessionFetchResult> {
   try {
-    const res = await fetch(`https://api.paymongo.com/v2/checkout_sessions/${sessionId}`, {
+    const res = await fetch(`https://api.paymongo.com/v2/checkout_sessions/${encodeURIComponent(sessionId)}`, {
       headers: { Authorization: `Basic ${auth}` },
       signal: AbortSignal.timeout(10_000),
     });

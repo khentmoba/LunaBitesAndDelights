@@ -120,4 +120,14 @@ describe('staff auth: scrypt PIN and password verification', () => {
       /Invalid PIN/,
     );
   });
+
+  test('rejects malformed or non-64-hex scrypt hashes', async () => {
+    const { verifyPassword } = require('../lib/util/security');
+    const oddHex = `scrypt$abcd$${'a'.repeat(65)}`;
+    const shortHex = `scrypt$abcd$${'a'.repeat(32)}`;
+    assert.equal(verifyPassword('secret', oddHex), 'bad');
+    assert.equal(verifyPassword('secret', shortHex), 'bad');
+    assert.equal(await verifyPasswordAsync('secret', oddHex), 'bad');
+    assert.equal(await verifyPasswordAsync('secret', shortHex), 'bad');
+  });
 });
