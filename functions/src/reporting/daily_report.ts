@@ -135,6 +135,9 @@ export const dailySalesReport = onSchedule({
   timeZone: 'Asia/Manila',
   memory: '256MiB',
   secrets: [telegramToken, telegramChatIds],
+  // A transient aggregation/Telegram failure marks the guard `failed`; the next
+  // attempt reclaims it. Without retries, that day's report is never sent.
+  retryCount: 3,
 }, async () => {
   await runDailySalesReport();
 });

@@ -215,6 +215,11 @@ export async function sendDeliveryNotification(
       if (imageBuffer) {
         if (!isSplitMode) {
           const res = await sendPhotoToAll(imageBuffer, message, { reply_markup: replyMarkup, skipChatIds });
+          // Persist the side effect before returning: if the notification-state
+          // write that follows fails, the reconciler must not re-send the photo.
+          if (onPhotoSent) {
+            await onPhotoSent().catch((e) => logger.warn(`Could not persist photoSent for ${data.orderNumber}`, e));
+          }
           return res.deliveredChatIds;
         }
         const summaryCaption = formatDeliverySummaryCaption(data);
@@ -609,7 +614,11 @@ export async function notifyOrderOnce(
 export const RECONCILE_LOOKBACK_MS = 2 * 60 * 60 * 1000;
 export const RECONCILE_MIN_AGE_MS = 30_000;
 export const RECONCILE_MAX_ATTEMPTS = 60;
-const RECONCILE_BATCH_LIMIT = 50;
+// The scan filters already-sent docs *after* fetching, so this is the number of
+// recent orders visible to a sweep, not the number it will retry. Keep it well
+// above the busiest 2-hour window so unresolved orders are not starved by newer
+// ones being returned first.
+const RECONCILE_BATCH_LIMIT = 200;
 const RECONCILE_CONCURRENCY = 5;
 
 /** Runs work in bounded chunks so one slow send cannot stall the whole sweep. */

@@ -66,20 +66,28 @@ function createNativeBot(token: string): TelegramClient {
 }
 
 let bot: TelegramClient | null = null;
+let botToken = '';
+let botIsCustom = false;
 
 export function getBot(): TelegramClient {
-  if (!bot) {
-    const token = telegramToken.value().trim();
-    if (!token) {
-      throw new Error('TELEGRAM_TOKEN is not configured');
-    }
+  if (bot && botIsCustom) return bot;
+  const token = telegramToken.value().trim();
+  if (!token) {
+    throw new Error('TELEGRAM_TOKEN is not configured');
+  }
+  // Rebuild when the secret rotates: a long-lived instance must not keep using
+  // a client created with a revoked token.
+  if (!bot || botToken !== token) {
     bot = createNativeBot(token);
+    botToken = token;
   }
   return bot;
 }
 
 export function setBot(customBot: TelegramClient | null) {
   bot = customBot;
+  botIsCustom = customBot !== null;
+  botToken = '';
 }
 
 /** Returns true when both TELEGRAM_TOKEN and TELEGRAM_CHAT_ID are configured and non-empty. */
@@ -385,7 +393,9 @@ export async function sendToAll(message: string, options: any = {}): Promise<Tel
       );
     } catch (err: any) {
       if (!isLast) {
-        err.deliveredChatIds = [];
+        // Chats that received earlier chunks still count as delivered; dropping
+        // them here makes the caller re-send those chunks on retry.
+        err.deliveredChatIds = deliveredAcrossAllChunks ? Array.from(deliveredAcrossAllChunks) : [];
       } else if (deliveredAcrossAllChunks && Array.isArray(err.deliveredChatIds)) {
         err.deliveredChatIds = err.deliveredChatIds.filter((id: string) => deliveredAcrossAllChunks!.has(id));
       }

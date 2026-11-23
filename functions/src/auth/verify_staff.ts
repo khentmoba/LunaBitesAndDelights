@@ -20,7 +20,10 @@ const PASSWORD_IP_RATE_MAX = 30;
 const PASSWORD_IP_WINDOW_MS = 15 * 60 * 1000;
 const DUMMY_SCRYPT_HASH =
   'scrypt$00000000000000000000000000000000$0000000000000000000000000000000000000000000000000000000000000000';
-let staffSeeded = false;
+// Bounded TTL: a warm instance must eventually re-check the collection so a
+// partial/failed seed or a cleared staff_accounts collection can be repaired.
+const SEED_CHECK_TTL_MS = 5 * 60 * 1000;
+let staffSeededAt = 0;
 
 export interface PinAccountEntry<T = any> {
   id: string;
@@ -49,9 +52,9 @@ export async function findMatchingPinAccount<T>(
 }
 
 async function ensureStaffSeeded(db: Firestore): Promise<void> {
-  if (staffSeeded) return;
+  if (staffSeededAt && Date.now() - staffSeededAt < SEED_CHECK_TTL_MS) return;
   if (!(await db.collection('staff_accounts').limit(1).get()).empty) {
-    staffSeeded = true;
+    staffSeededAt = Date.now();
     return;
   }
   const mk = () => crypto.randomBytes(9).toString('base64url');
@@ -81,7 +84,7 @@ async function ensureStaffSeeded(db: Firestore): Promise<void> {
   } catch (err: any) {
     if (err?.code !== 6 && err?.code !== 'already-exists') throw err;
   }
-  staffSeeded = true;
+  staffSeededAt = Date.now();
 }
 
 async function createStaffToken(uidName: string, rawRole: unknown) {

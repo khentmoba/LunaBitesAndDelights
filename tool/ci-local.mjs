@@ -54,6 +54,7 @@ export function loadSteps(file = join(root, WORKFLOW)) {
         name: s.name ?? s.run.split('\n')[0],
         run: s.run,
         cwd: s['working-directory'] ?? def.defaults?.run?.['working-directory'] ?? '.',
+        env: s.env ?? {},
       })),
     setup: (def.steps ?? [])
       .filter((s) => s.uses)
@@ -61,14 +62,26 @@ export function loadSteps(file = join(root, WORKFLOW)) {
   }));
 }
 
-function runStep(cmd, cwd) {
+/** Env values that are GitHub expressions cannot be resolved locally. */
+export function unresolvedEnv(env = {}) {
+  return Object.entries(env)
+    .filter(([, v]) => typeof v === 'string' && v.includes('${{'))
+    .map(([k]) => k);
+}
+
+function runStep(cmd, cwd, env = {}) {
   return new Promise((done) => {
     const tail = [];
     const keep = (chunk) => {
       for (const line of chunk.toString().split(/\r?\n/)) if (line.trim()) tail.push(line);
       tail.splice(0, Math.max(0, tail.length - 25));
     };
-    const p = spawn(bash, ['-c', cmd], { cwd: join(root, cwd), env: { ...process.env, CI: '1' } });
+    const stepEnv = { ...process.env, CI: '1' };
+    for (const [k, v] of Object.entries(env)) {
+      if (typeof v === 'string' && v.includes('${{')) continue;
+      stepEnv[k] = String(v);
+    }
+    const p = spawn(bash, ['-c', cmd], { cwd: join(root, cwd), env: stepEnv });
     p.stdout.on('data', (c) => (process.stdout.write(c), keep(c)));
     p.stderr.on('data', (c) => (process.stderr.write(c), keep(c)));
     p.on('close', (code) => done({ code: code ?? 1, tail }));
@@ -123,9 +136,17 @@ async function main() {
         lines.push(`SKIP  ${s.name} (${s.cwd}) ${reason}`);
         continue;
       }
+      const needsContext = unresolvedEnv(s.env);
+      if (needsContext.length) {
+        // Running this step locally with empty env would pass vacuously and give
+        // false assurance that the real PR gate was checked.
+        lines.push(`SKIP  ${s.name} (${s.cwd}) needs PR context: ${needsContext.join(', ')}`);
+        console.log(`\n▶ SKIP ${j.job} › ${s.name}  (needs PR context: ${needsContext.join(', ')})`);
+        continue;
+      }
       console.log(`\n▶ ${j.job} › ${s.name}  (${s.cwd})`);
       const t0 = Date.now();
-      const { code, tail } = await runStep(s.run, s.cwd);
+      const { code, tail } = await runStep(s.run, s.cwd, s.env);
       const secs = ((Date.now() - t0) / 1000).toFixed(0);
       lines.push(`${code === 0 ? 'PASS' : 'FAIL'}  ${s.name} (${s.cwd}) exit=${code} ${secs}s`);
       if (code !== 0) {

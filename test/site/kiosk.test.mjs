@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 
 // cart.ts keeps its lines in sessionStorage and announces changes on window.
 const store = new Map();
@@ -14,6 +15,35 @@ const { resolvePicks, displayPrice } = await import('../../app/src/kiosk/presele
 const { cart } = await import('../../app/src/kiosk/cart.ts');
 const order = await import('../../app/src/kiosk/order.ts');
 const { isPaymentUrl } = await import('../../app/src/kiosk/payment-host.ts');
+const { validReceipt } = await import('../../app/src/kiosk/handoff.ts');
+
+test('receipt handoff rejects corrupt shapes so the page never blanks out', () => {
+  const good = {
+    orderNumber: 'LU-1', customerName: 'Ana', customerAddress: 'Purok 5', customerPhone: '09171234567',
+    timeStr: '2026-11-24 10:00', total: 99, orderType: 'Delivery', isWalkIn: false, telegramSent: true,
+    items: [{ name: 'Shawarma Wrap', variant: 'Solo', price: 99, quantity: 1 }],
+  };
+  assert.equal(validReceipt(good), true);
+  for (const bad of [
+    null, {}, { ...good, items: null }, { ...good, items: [{}] },
+    { ...good, total: '99' }, { ...good, orderType: 'Bogus' },
+    { ...good, items: [{ name: 'x', price: Number.NaN, quantity: 1 }] },
+  ]) {
+    assert.equal(validReceipt(bad), false, JSON.stringify(bad));
+  }
+});
+
+test('geocode keeps a deadline on browsers without AbortSignal.any/timeout', () => {
+  const src = readFileSync(new URL('../../app/src/kiosk/geo.ts', import.meta.url), 'utf8');
+  assert.match(src, /typeof AbortSignal\.timeout === 'function'/);
+  assert.match(src, /setTimeout\(\(\) => controller\.abort\(\), timeoutMs\)/);
+  assert.doesNotMatch(src, /signal \?\? timeout/);
+});
+
+test('GCash cancellation clears the pending handoff, not just the draft flag', () => {
+  const src = readFileSync(new URL('../../app/src/pages/kiosk/gcash.astro', import.meta.url), 'utf8');
+  assert.match(src, /function cancel\(\)[\s\S]*?save\(PENDING, null\)/);
+});
 
 /// These cases were ported from the Flutter kiosk's tests (removed in the
 /// cutover), so the rules customers relied on stay the same.

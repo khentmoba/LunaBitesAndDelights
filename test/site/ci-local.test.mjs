@@ -2,7 +2,7 @@
 // and checkPrProof must enforce UI/backend proof and reject AI attribution.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { isDepsCurrent, loadSteps } from '../../tool/ci-local.mjs';
+import { isDepsCurrent, loadSteps, unresolvedEnv } from '../../tool/ci-local.mjs';
 import { checkPrProof } from '../../tool/check_pr_proof.mjs';
 
 test('ci-local reads every pr-checks job with its working directory', () => {
@@ -13,9 +13,31 @@ test('ci-local reads every pr-checks job with its working directory', () => {
   for (const step of ['.: npm ci', 'app: npm run check', 'app: npm run lint', 'app: npm run build', '.: npm run test:site']) assert.ok(jobs.site.includes(step), step);
 });
 
+test('ci-local keeps step env and flags steps that need PR context', () => {
+  const proof = loadSteps().flatMap((j) => j.steps)
+    .find((s) => s.name === 'Verify PR proof and attribution');
+  assert.ok(proof, 'proof step must be present');
+  assert.equal(typeof proof.env.PR_BODY, 'string');
+  assert.deepEqual(unresolvedEnv(proof.env).sort(), ['BASE_SHA', 'HEAD_SHA', 'PR_BODY']);
+  assert.deepEqual(unresolvedEnv({ FOO: 'bar' }), []);
+});
+
 test('isDepsCurrent detects installed lockfiles and rejects nonexistent directories', () => {
   assert.equal(isDepsCurrent('.'), true);
   assert.equal(isDepsCurrent('nonexistent-dir'), false);
+});
+
+test('checkPrProof requires evidence for config, tooling and workflow changes', () => {
+  for (const file of [
+    'firebase.json',
+    'firestore.indexes.json',
+    'tool/ci-local.mjs',
+    '.github/workflows/pr-checks.yml',
+    'app/astro.config.mjs',
+  ]) {
+    assert.equal(checkPrProof({ body: 'no proof here', files: [file] }).ok, false, file);
+    assert.equal(checkPrProof({ body: 'see docs/evidence/ci-local.txt', files: [file] }).ok, true, file);
+  }
 });
 
 test('checkPrProof validates UI images, backend evidence paths, and forbids AI attribution', () => {
