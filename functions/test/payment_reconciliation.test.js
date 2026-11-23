@@ -537,3 +537,26 @@ test('markOrderPaidOnce and markOrderPaymentFailed stay truthful across Firestor
     firestoreMod.getFirestore = origGetFirestore;
   }
 });
+
+test('a verified payment for a missing order is refused out loud, not silently', async () => {
+  const firestoreMod = require('firebase-admin/firestore');
+  const ff = require('firebase-functions');
+  const origGetFirestore = firestoreMod.getFirestore;
+  const origWarn = ff.logger.warn;
+  const warnings = [];
+  ff.logger.warn = (...args) => warnings.push(args.join(' '));
+  try {
+    firestoreMod.getFirestore = () => ({
+      runTransaction: (fn) => fn({ get: async () => ({ exists: false }), set() {}, update() {} }),
+    });
+
+    const result = await markOrderPaidOnce({ id: 'ord_ghost' }, 'pay_1', '', 'cs_live', 5000);
+
+    assert.deepStrictEqual(result, { transitioned: false, alreadyPaid: false });
+    assert.equal(warnings.length, 1, 'the rejection is reported once');
+    assert.match(warnings[0], /Refusing to mark order ord_ghost PAID: order document does not exist/);
+  } finally {
+    firestoreMod.getFirestore = origGetFirestore;
+    ff.logger.warn = origWarn;
+  }
+});

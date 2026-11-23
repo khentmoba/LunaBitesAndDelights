@@ -50,12 +50,18 @@ otherwise. Money in, no order marked PAID, no log line: nothing to investigate.
   paid centavos, or the reason it cannot be applied. The handler logs that reason
   at `error` with the session id and reference number and still answers 200 (a
   retry cannot fix a session that carries no order reference).
-- Test: `functions/test/hardening_baseline.test.js` — "a paid session that cannot
+- `functions/src/payments/paymongo.ts`: the third silent rejection — a verified
+  payment whose order reference resolves to no document at all — now logs the
+  same `Refusing to mark order <id> PAID: …` warning its session-mismatch and
+  amount-mismatch siblings already used.
+- Tests: `functions/test/hardening_baseline.test.js` — "a paid session that cannot
   be attached to an order is reported instead of dropped". It calls
   `checkPaidSession` directly (no order reference, no integer amount, fractional
   amount, empty payment list, healthy case, legacy reference number) and keeps one
   source assertion for the handler wiring, per `CODING_STANDARDS.md`'s
-  behavior-over-source-text rule.
+  behavior-over-source-text rule. `functions/test/payment_reconciliation.test.js`
+  — "a verified payment for a missing order is refused out loud, not silently"
+  drives `markOrderPaidOnce` with a fake transaction and a captured logger.
 
 ## 4. Two small performance/reliability fixes on the tablet and kiosk
 
