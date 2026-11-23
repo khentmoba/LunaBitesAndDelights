@@ -45,11 +45,17 @@ The webhook only applied a verified `checkout_session.payment.paid` when both an
 order reference and an integer paid amount resolved, and logged nothing
 otherwise. Money in, no order marked PAID, no log line: nothing to investigate.
 
-- `functions/src/payments/webhook.ts`: the two unresolvable cases now log at
-  `error` with the session id and still answer 200 (a retry cannot fix a session
-  that carries no order reference).
-- Test: `functions/test/hardening_baseline.test.js` — "a paid webhook session
-  that cannot be applied to an order is logged, not dropped silently".
+- `functions/src/payments/webhook.ts`: the decision now lives in a pure
+  `checkPaidSession(attrs, payments)` that returns the order document id and the
+  paid centavos, or the reason it cannot be applied. The handler logs that reason
+  at `error` with the session id and reference number and still answers 200 (a
+  retry cannot fix a session that carries no order reference).
+- Test: `functions/test/hardening_baseline.test.js` — "a paid session that cannot
+  be attached to an order is reported instead of dropped". It calls
+  `checkPaidSession` directly (no order reference, no integer amount, fractional
+  amount, empty payment list, healthy case, legacy reference number) and keeps one
+  source assertion for the handler wiring, per `CODING_STANDARDS.md`'s
+  behavior-over-source-text rule.
 
 ## 4. Two small performance/reliability fixes on the tablet and kiosk
 
@@ -64,9 +70,11 @@ otherwise. Money in, no order marked PAID, no log line: nothing to investigate.
   lookups now claim a slot at send time, at least 1 s apart; a lookup the shopper
   abandoned is told not to send and holds nothing, so adjusting the pin cannot
   push later addresses further behind.
-- Tests: `test/site/staff.test.mjs` (tick slice has no `renderBoard()`, patches
-  both classes and the glyph) and `test/site/kiosk.test.mjs` ("Nominatim lookups
-  keep at least a second between requests").
+- Tests: `test/site/staff.test.mjs` (the tick slice has no `renderBoard()`, and
+  patches both `is-delayed` classes and the glyph) and `test/site/kiosk.test.mjs`
+  (the Nominatim helpers are exercised directly; one wiring assertion covers both
+  call sites in `geo.ts`, which cannot be imported under `node --test` because it
+  reads `import.meta.env`).
 
 ## Checked and left alone
 

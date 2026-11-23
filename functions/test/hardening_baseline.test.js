@@ -760,11 +760,37 @@ test('runManualSalesReport skips chats that already received a failed attempt, t
   }
 });
 
-test('a paid webhook session that cannot be applied to an order is logged, not dropped silently', () => {
+test('a paid session that cannot be attached to an order is reported instead of dropped', () => {
+  const { checkPaidSession } = require('../lib/payments/webhook');
+  const paidFor = (amount) => [{ attributes: { status: 'paid', amount } }];
+
+  // No metadata.order_doc_id and no usable reference_number: nothing links the money to an order.
+  assert.deepEqual(checkPaidSession({}, paidFor(5000)), {
+    ok: false,
+    reason: 'has no order reference; nothing was marked PAID',
+  });
+  // The order resolves, but the paid payment carries no integer amount.
+  assert.deepEqual(checkPaidSession({ metadata: { order_doc_id: 'ord123' } }, [{ attributes: { status: 'paid' } }]), {
+    ok: false,
+    reason: 'for order ord123 reported no integer paid amount; it stays unpaid for review',
+  });
+  assert.equal(checkPaidSession({ metadata: { order_doc_id: 'ord123' } }, []).ok, false);
+  assert.equal(checkPaidSession({ metadata: { order_doc_id: 'ord123' } }, paidFor(26.5)).ok, false);
+
+  assert.deepEqual(checkPaidSession({ metadata: { order_doc_id: 'ord123' } }, paidFor(26300)), {
+    ok: true,
+    docId: 'ord123',
+    paidCentavos: 26300,
+  });
+  // A legacy order number in reference_number is still accepted.
+  assert.deepEqual(checkPaidSession({ reference_number: 'LU-261124-113045-A7K' }, paidFor(5000)), {
+    ok: true,
+    docId: 'LU-261124-113045-A7K',
+    paidCentavos: 5000,
+  });
+
   const webhookSrc = fs.readFileSync(path.resolve(__dirname, '../src/payments/webhook.ts'), 'utf8');
-  assert.match(webhookSrc, /if \(!docId\) \{[\s\S]*?logger\.error\(`Paid PayMongo session \$\{sessionId\} \(ref \$\{refNumber \|\| 'none'\}\) has no order reference/);
-  assert.match(webhookSrc, /if \(paidCentavos === null\) \{[\s\S]*?logger\.error\(`Paid PayMongo session \$\{sessionId\} \(ref \$\{refNumber \|\| 'none'\}\) reported no integer paid amount/);
-  assert.doesNotMatch(webhookSrc, /if \(docId && paidCentavos !== null\)/);
+  assert.match(webhookSrc, /if \(!paid\.ok\) \{[\s\S]*?logger\.error\(`Paid PayMongo session \$\{sessionId\}[\s\S]*?res\.status\(200\)\.send\('OK'\)/);
 });
 
 test('sweepStaleUnpaidOrders isolates per-document transaction failures and expires remaining docs', async () => {
