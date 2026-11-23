@@ -141,6 +141,10 @@ test('app-site sets Content-Security-Policy and 30-day font cache headers', () =
   assert.ok(appScriptSrc.includes('https://maps.googleapis.com'), 'the kiosk map loads the Maps JavaScript API');
   const appImgSrc = appCsp.split(';').map((s) => s.trim()).find((d) => d.startsWith('img-src ')) ?? '';
   assert.ok(appImgSrc.includes('https://maps.gstatic.com'), 'map tiles and markers come from gstatic');
+  const appStyleSrc = appCsp.split(';').map((s) => s.trim()).find((d) => d.startsWith('style-src ')) ?? '';
+  assert.ok(appStyleSrc.includes('https://fonts.googleapis.com'), 'the Maps widget loads its own stylesheet from Google Fonts');
+  const appFontSrc = appCsp.split(';').map((s) => s.trim()).find((d) => d.startsWith('font-src ')) ?? '';
+  assert.ok(appFontSrc.includes('https://fonts.gstatic.com'), 'Google Fonts serves the widget fonts from gstatic');
 });
 
 test('built HTML external origins and inline scripts match firebase.json CSP headers', () => {

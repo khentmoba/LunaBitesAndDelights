@@ -1,4 +1,4 @@
-Local run of .github/workflows/pr-checks.yml at 939738f + working tree, 2026-11-23T19:41:12.124Z, node v24.22.2
+Local run of .github/workflows/pr-checks.yml at a8dbe62 + working tree, 2026-11-23T20:02:21.503Z, node v24.22.2
 note: functions runs on node 22 in CI
 note: rules runs on node 22 in CI
 note: site runs on node 22 in CI
@@ -15,7 +15,7 @@ PASS  Fail on high/critical runtime vulnerabilities (functions) exit=0 2s
 SKIP  npm ci (.) up-to-date
 SKIP  npm ci (functions) up-to-date
 PASS  Firestore rules tests (emulator) (functions) exit=0 9s
-PASS  Derived views tests (Functions + Firestore emulators) (functions) exit=0 17s
+PASS  Derived views tests (Functions + Firestore emulators) (functions) exit=0 18s
 
 ## site
 SKIP  npm ci (.) up-to-date
