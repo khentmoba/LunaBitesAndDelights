@@ -65,21 +65,67 @@ export async function requireOrderDoc(orderDocId: string): Promise<{
   return { orderRef, orderData: snap.data()! };
 }
 
+/**
+ * True when `sessionId` is the checkout session the customer is currently on.
+ * Retries (and PayMongo webhook redeliveries) can report a failure for a session
+ * the kiosk has already replaced, so "it is in the history" is not enough.
+ */
+export function isLiveCheckoutSession(
+  orderData: Record<string, any> | undefined,
+  sessionId: string,
+): boolean {
+  if (!sessionId) return false;
+  const current = typeof orderData?.checkoutSessionId === 'string'
+    ? orderData.checkoutSessionId.trim()
+    : '';
+  // A primary id is the session the kiosk last handed to the customer.
+  if (current.length > 0) return current === sessionId;
+  // Legacy orders (and the window before a session is stored) carry no primary
+  // id, so fall back to the bounded session history.
+  return hasMatchingCheckoutSession(orderData, sessionId);
+}
+
+/**
+ * Whether a `payment.failed` event for `sessionId` may mark the order failed.
+ * A superseded session's late failure must not flip a live checkout to
+ * PAYMENT_FAILED, and a payment that already resolved (paid, or expired by the
+ * sweep) keeps its terminal status. An empty session id fails closed.
+ */
+export function shouldMarkPaymentFailed(
+  orderData: Record<string, any> | undefined,
+  sessionId: string,
+): boolean {
+  if (!orderData) return false;
+  const status = String(orderData.paymentStatus || '');
+  if (status === 'PAID' || status === 'PAYMENT_EXPIRED') return false;
+  return isLiveCheckoutSession(orderData, sessionId);
+}
+
 export async function markOrderPaymentFailed(
   orderRef: DocumentReference,
-  expectedSessionId?: string,
-): Promise<{ updated: boolean }> {
+  expectedSessionId: string,
+): Promise<{ updated: boolean; paymentStatus: string }> {
   let updated = false;
+  let observed = '';
   await getFirestore().runTransaction(async (tx) => {
+    // Firestore re-runs this callback on contention; every attempt must answer
+    // for the document it just read, not for an attempt that lost the race.
+    updated = false;
+    observed = '';
     const snap = await tx.get(orderRef);
-    if (!snap.exists) return;
+    if (!snap.exists) {
+      observed = 'missing';
+      return;
+    }
     const data = snap.data()!;
-    if (data.paymentStatus === 'PAID') return;
-    if (expectedSessionId && !hasMatchingCheckoutSession(data, expectedSessionId)) return;
+    observed = String(data.paymentStatus || 'AWAITING_PAYMENT');
+    if (!shouldMarkPaymentFailed(data, expectedSessionId)) return;
     updated = true;
     tx.update(orderRef, { paymentStatus: 'PAYMENT_FAILED' });
   });
-  return { updated };
+  // The caller reports what the order actually holds: a concurrent payment or a
+  // superseded session leaves the status alone, and the kiosk must see that.
+  return { updated, paymentStatus: updated ? 'PAYMENT_FAILED' : observed || 'AWAITING_PAYMENT' };
 }
 
 export type CheckoutSessionFetchResult =

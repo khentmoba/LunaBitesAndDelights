@@ -180,8 +180,15 @@ export const paymongoWebhook = onRequest(
         }
         const docId = resolveOrderDocId(session.attributes);
         if (docId) {
-          await markOrderPaymentFailed(getFirestore().collection('orders').doc(docId), sessionId);
-          logger.info(`Order ${docId} payment failed`);
+          const { updated, paymentStatus } = await markOrderPaymentFailed(
+            getFirestore().collection('orders').doc(docId),
+            sessionId,
+          );
+          if (updated) {
+            logger.info(`Order ${docId} payment failed`);
+          } else {
+            logger.info(`Ignored payment failure for order ${docId}: order is ${paymentStatus}, event session ${sessionId}`);
+          }
         }
       }
 

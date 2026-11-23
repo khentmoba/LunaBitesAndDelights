@@ -65,6 +65,8 @@ test('live orders win over polled ones, newest first', () => {
   const merged = kds.mergeKdsOrders([{ ...orders[0], status: 'Preparing' }], orders);
   assert.deepEqual(merged.map((o) => o.id), ['c', 'b', 'a']);
   assert.equal(merged[2].status, 'Preparing');
+  // With no live snapshot there is nothing to prefer, so polling is the board.
+  assert.deepEqual(kds.mergeKdsOrders([], [{ ...orders[0], status: 'Ready' }]).map((o) => o.status), ['Ready']);
 });
 
 test('mirror docs become callable-shaped orders', () => {
@@ -184,6 +186,28 @@ test('kds skips the board rebuild on metadata-only snapshots and stops after an 
     'only the module-level authHalted may be declared; updateStatus must not shadow it',
   );
   assert.match(kdsSrc, /if \(disposed \|\| authHalted \|\| updating\.has\(orderId\)\) return;/);
+});
+
+test('kds hands the board to polling and keeps header buttons alive when nothing changed', () => {
+  const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
+  const kdsSrc = readFileSync(join(root, 'app/src/staff/kds.ts'), 'utf8');
+
+  // publish() merges the live snapshot over the polled one, so a fallback that
+  // kept `live` would pin every ticket to its status at the moment the listener
+  // died and hide the changes other staff make while polling is in charge.
+  assert.match(kdsSrc, /const all = mergeKdsOrders\(live \?\? \[\], polled\);/);
+  assert.match(
+    kdsSrc,
+    /function fallBackToPolling\(\) \{[\s\S]*?liveSignature = '';[\s\S]*?live = null;[\s\S]*?isLive = false;/,
+    'the fallback must drop the retained live snapshot before polling takes over',
+  );
+
+  // The header and banner are rebuilt from the same markup on every snapshot;
+  // re-creating their buttons steals focus and swallows the tap in flight.
+  assert.match(kdsSrc, /let barHtml: string \| null = null;/);
+  assert.match(kdsSrc, /let bannerHtml: string \| null = null;/);
+  assert.match(kdsSrc, /if \(html === barHtml\) return;\s*barHtml = html;\s*bar\.innerHTML = html;/);
+  assert.match(kdsSrc, /if \(html === bannerHtml\) return;\s*bannerHtml = html;\s*banner\.innerHTML = html;/);
 });
 
 test('kiosk menu sheet and GCash page recover from a second tap and a failed retry', () => {

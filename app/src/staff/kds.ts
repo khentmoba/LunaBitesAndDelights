@@ -68,6 +68,10 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
   let fetchInFlight = false;
   let fetchSeq = 0;
   let liveSignature = '';
+  // Markup last written to the header and banner; an unchanged feed must not
+  // re-create those buttons (it drops focus and eats taps meant for them).
+  let barHtml: string | null = null;
+  let bannerHtml: string | null = null;
   let authHalted = false;
   let disposed = false;
 
@@ -187,6 +191,10 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
     unsub?.();
     unsub = null;
     liveSignature = '';
+    // Drop the retained live snapshot: publish() merges live over polled, so
+    // keeping it would pin every ticket to the status it had when the listener
+    // died and hide changes other staff make while polling is in charge.
+    live = null;
     clearTimeout(initialFallbackTimer);
     initialFallbackTimer = 0;
     connecting = false;
@@ -347,7 +355,7 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
     const admin = staff?.isAdmin ?? false;
     const spin = '<span class="kbar__spin" aria-hidden="true"></span>';
     const sync = `<button type="button" class="kbar__ib kbar__ib--sync" data-act="sync" title="Sync Orders Now" aria-label="Sync Orders Now"${loading ? ' disabled' : ''}>${loading ? spin : icon('sync_rounded')}</button>`;
-    bar.innerHTML = `
+    const html = `
   ${back ? `<button type="button" class="kbar__back" data-act="back" aria-label="Back" title="Back">${icon('arrow_back')}</button>` : ''}
   <div class="kbar__title${back ? '' : ' kbar__title--solo'}">
     <span class="kbar__logo"><img src="/kiosk/images/luna_logo.webp" alt="" width="24" height="28" decoding="async"></span>
@@ -372,6 +380,9 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
     <a class="kbar__pos" href="/kiosk/menu">${icon('point_of_sale_outlined')}<span>POS</span></a>
     <button type="button" class="kbar__ib kbar__ib--more" data-act="menu" title="Staff Menu" aria-label="Staff Menu" aria-haspopup="menu">${icon('more_vert')}</button>
   </div>`;
+    if (html === barHtml) return;
+    barHtml = html;
+    bar.innerHTML = html;
   }
 
   function chip(value: TypeFilter, ico?: IconName) {
@@ -395,26 +406,26 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
   }
 
   function renderBanner() {
+    let html = '';
     if (error !== null) {
       const auth = isAuthErrorText(error);
-      banner.innerHTML = `
+      html = `
   <div class="kerr" role="alert">${icon('warning_amber_rounded')}<span class="kerr__text">${esc(error)}</span>
     ${auth ? '<button type="button" class="kerr__btn kerr__btn--auth" data-act="signin">SIGN IN</button>' : ''}
     <button type="button" class="kerr__btn" data-act="retry">RETRY</button>
   </div>`;
-      return;
-    }
-    if (isOffline || (isLive && fromCache)) {
+    } else if (isOffline || (isLive && fromCache)) {
       const msg = isOffline
         ? 'Connection offline — showing cached orders. New orders will sync when back online.'
         : 'Reconnecting to live feed — showing cached orders.';
-      banner.innerHTML = `
+      html = `
   <div class="kerr kerr--warn" role="status">${icon('warning_amber_rounded')}<span class="kerr__text">${esc(msg)}</span>
     <button type="button" class="kerr__btn" data-act="retry">SYNC</button>
   </div>`;
-      return;
     }
-    banner.innerHTML = '';
+    if (html === bannerHtml) return;
+    bannerHtml = html;
+    banner.innerHTML = html;
   }
 
   function card(o: KdsOrder): string {
