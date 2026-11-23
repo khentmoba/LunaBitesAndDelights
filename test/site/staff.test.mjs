@@ -126,7 +126,8 @@ test('kds delayed badge keeps INK contrast on elapsed-time ticks and dashboard h
 
   const dashSrc = readFileSync(join(root, 'app/src/staff/dashboard.ts'), 'utf8');
   assert.match(dashSrc, /staff\?\.isAdmin\s*\?\s*'ADMIN DASHBOARD'\s*:\s*'STAFF DASHBOARD'/);
-  assert.match(dashSrc, /if\s*\(sheetLoading\)\s*return;/);
+  assert.match(dashSrc, /if\s*\(sheetLoading\s*\|\|\s*!getStaff\(\)\)\s*return;/);
+  assert.match(dashSrc, /if\s*\(disposed\s*\|\|\s*seq\s*!==\s*fetchSeq\s*\|\|\s*!getStaff\(\)\)\s*return;/);
 
   const checkoutSrc = readFileSync(join(root, 'app/src/pages/kiosk/checkout.astro'), 'utf8');
   assert.match(checkoutSrc, /isWalkIn:\s*draft\.orderType\s*===\s*'Walk-In'/);
@@ -136,6 +137,7 @@ test('kds delayed badge keeps INK contrast on elapsed-time ticks and dashboard h
   assert.match(kdsSrc, /function stopBackgroundActivity\(\)[\s\S]*clearInterval\(clock\);[\s\S]*detachBackgroundListeners\?\.\(\);/);
   assert.match(kdsSrc, /if \(err && isAuthCode\(err\.code\)\)[\s\S]*updating\.delete\(orderId\);[\s\S]*haltOnAuthError\(/);
   assert.match(kdsSrc, /updating\.delete\(orderId\);\s*\n\s*if \(!disposed && !authHalted\) renderBoard\(\);/);
+  assert.match(kdsSrc, /const onOnline = \(\) => \{[\s\S]*startLiveListener\(\)/);
 
   // Staff login returns cleanup wired by gate.ts
   const loginSrc = readFileSync(join(root, 'app/src/staff/login.ts'), 'utf8');

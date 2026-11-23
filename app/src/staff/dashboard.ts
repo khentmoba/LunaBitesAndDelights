@@ -179,11 +179,12 @@ ${
   }
 
   async function showSheet() {
-    if (sheetLoading) return;
+    if (sheetLoading || !getStaff()) return;
     if (!orders.length) {
       snack('No orders yet today.', { color: 'var(--plate)', seconds: 4 });
       return;
     }
+    const seq = fetchSeq;
     sheetLoading = true;
     try {
       let list = allOrders ?? orders;
@@ -194,12 +195,13 @@ ${
             limit: 50,
             summaryOnly: true,
           });
-          if (disposed) return;
+          if (disposed || seq !== fetchSeq || !getStaff()) return;
           if (res.success === true && Array.isArray(res.orders)) {
             allOrders = res.orders.map(tileFrom);
             list = allOrders;
           }
         } catch {
+          if (disposed || seq !== fetchSeq || !getStaff()) return;
           // Fall back to the already-loaded recent orders if the expanded fetch fails.
         }
       }

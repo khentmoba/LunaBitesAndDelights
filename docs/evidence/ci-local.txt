@@ -1,4 +1,4 @@
-Local run of .github/workflows/pr-checks.yml at e9b44a7 + working tree, 2026-11-23T13:26:41.797Z, node v24.22.2
+Local run of .github/workflows/pr-checks.yml at 6542ea6 + working tree, 2026-11-23T13:38:43.827Z, node v24.22.2
 note: functions runs on node 22 in CI
 note: rules runs on node 22 in CI
 note: site runs on node 22 in CI
@@ -9,7 +9,7 @@ PASS  TypeScript build (functions) exit=0 2s
 PASS  Lint (promise checks) (functions) exit=0 3s
 PASS  Unit tests (functions) exit=0 6s
 PASS  Report outdated npm deps (informational) (functions) exit=0 1s
-PASS  Fail on high/critical runtime vulnerabilities (functions) exit=0 1s
+PASS  Fail on high/critical runtime vulnerabilities (functions) exit=0 4s
 
 ## rules
 SKIP  npm ci (functions) up-to-date
@@ -21,7 +21,7 @@ SKIP  npm ci (.) up-to-date
 SKIP  npm ci (app) up-to-date
 PASS  Astro type check (app) exit=0 5s
 PASS  Lint (promise checks) (app) exit=0 3s
-PASS  Build the storefront (app) exit=0 2s
+PASS  Build the storefront (app) exit=0 3s
 PASS  Fail on high/critical runtime vulnerabilities (app) exit=0 1s
 PASS  Storefront tests (.) exit=0 2s
 PASS  Verify PR proof and attribution (.) exit=0 0s
