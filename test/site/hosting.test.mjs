@@ -138,6 +138,9 @@ test('app-site sets Content-Security-Policy and 30-day font cache headers', () =
   const appCsp = appHeaders.find((h) => h.key === 'Content-Security-Policy')?.value ?? '';
   const appScriptSrc = appCsp.split(';').map((s) => s.trim()).find((d) => d.startsWith('script-src ')) ?? '';
   assert.ok(appScriptSrc.includes("'self'") && !appScriptSrc.includes("'unsafe-inline'"), '/staff, /kiosk, and /payment CSP must not allow unsafe-inline scripts');
+  assert.ok(appScriptSrc.includes('https://maps.googleapis.com'), 'the kiosk map loads the Maps JavaScript API');
+  const appImgSrc = appCsp.split(';').map((s) => s.trim()).find((d) => d.startsWith('img-src ')) ?? '';
+  assert.ok(appImgSrc.includes('https://maps.gstatic.com'), 'map tiles and markers come from gstatic');
 });
 
 test('built HTML external origins and inline scripts match firebase.json CSP headers', () => {

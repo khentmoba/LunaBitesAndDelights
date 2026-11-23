@@ -15,7 +15,7 @@ Read-only reference for production state that cannot be inspected from a local c
 ## 2. Build-Time Public Keys (`.github/workflows/firebase-hosting-*.yml`)
 
 - `PUBLIC_RECAPTCHA_SITE_KEY` (from GitHub secret `RECAPTCHA_SITE_KEY`) — Initializes Firebase App Check (reCAPTCHA Enterprise) in `app/src/kiosk/firebase.ts`.
-- `PUBLIC_MAPTILER_KEY` (from GitHub secret `MAPTILER_KEY`) — Tile key for `/kiosk/map/`; falls back to a tile-free picker if unset locally.
+- `PUBLIC_GOOGLE_MAPS_KEY` (from GitHub secret `GOOGLE_MAPS_BROWSER_KEY`) — Browser key for the Google Maps JavaScript API on `/kiosk/map/`; falls back to the tile-free picker when unset. It needs HTTP-referrer restrictions for `lunabitesanddelights.web.app/*`, `lunabitesanddelights.firebaseapp.com/*`, and `localhost/*`, and the Maps JavaScript API enabled on a billing account. `MAPTILER_KEY` / `PUBLIC_MAPTILER_KEY` is retired for the kiosk: that key's referrer allowlist only covered `lunaexpress.web.app`, so the canonical site got MapTiler's "Invalid key" watermark tiles until this switch.
 
 ## 3. Firebase App Check Enforcement
 

@@ -23,13 +23,35 @@
 
 ## Visual proof
 
-The rendered map picker was checked at 1280×800 and 390×844. Local builds do not have `PUBLIC_MAPTILER_KEY`, so the screenshots show the intended no-map fallback plus the address-confirmation guard; the interactive map tiles were not available in this environment.
+The kiosk pin picker now draws Google Maps instead of MapTiler tiles. Builds without `PUBLIC_GOOGLE_MAPS_KEY`, or with a key the Maps JavaScript API rejects, drop to the site's own "Map preview is unavailable" notice instead of rendering a map-server watermark.
 
-![Map picker, desktop 1280x800](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/browser-screenshot-localhost-mwtl2y22-eb28a696.png?raw=true)
+![Map picker, mobile 390x844](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/map-google-390.png?raw=true)
 
-![Map picker, mobile 390x844](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/browser-screenshot-localhost-mwtl99ry-74717588.png?raw=true)
+![Map picker, tablet 768x1024](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/map-google-768.png?raw=true)
+
+![Map picker, desktop 1280x800](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/map-google-1280.png?raw=true)
+
+Rejected key: our notice replaces the map error overlay.
+
+![Map picker with a rejected key](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/map-key-rejected-390.png?raw=true)
 
 The existing GCash error-state screenshot includes the retry action: [hardening GCash mobile proof](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/hardening-gcash-390.png?raw=true).
+
+## Map tile outage found during this work
+
+The production `/kiosk/map/` screen was showing MapTiler's "Invalid key" watermark tiles, not a map. The key's HTTP-referrer allowlist only covered `lunaexpress.web.app`:
+
+| Referer | Result |
+| --- | --- |
+| `https://lunaexpress.web.app/` | 200 |
+| `https://lunabitesanddelights.web.app/` | 403 `Key usage restricted` |
+| `https://lunabitesanddelights.firebaseapp.com/` | 403 `Key usage restricted` |
+
+Production before the switch, at 390x844:
+
+![Production map picker showing MapTiler's invalid key watermark](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/map-maptiler-invalid-key-390.png?raw=true)
+
+Google Maps replaces it. Verified end to end against a local build with a browser key: dragging the map re-resolves the address (`Pandanon-Magallanes Road, Poblacion` to `Pandanon-Magallanes Road, Magallanes`) and enables Confirm, and searching moves the map and fills the address. Address search and reverse geocoding still come from Nominatim, so they never depended on the map key.
 
 ## Independent review
 

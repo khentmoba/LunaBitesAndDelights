@@ -1,11 +1,10 @@
 // Location lookups: Nominatim search and
-// reverse lookups, MapTiler tiles, and a best-effort browser position.
+// reverse lookups, a Google Maps browser key, and a best-effort browser position.
 const SEARCH = 'https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=5';
 const REVERSE = 'https://nominatim.openstreetmap.org/reverse?format=json&zoom=18&addressdetails=1';
 
-const key = import.meta.env.PUBLIC_MAPTILER_KEY ?? '';
-/** Empty when no MapTiler key was built in; the map then shows no tiles. */
-export const tileUrl = key ? `https://api.maptiler.com/maps/streets-v2/256/{z}/{x}/{y}.png?key=${key}` : '';
+/** Empty when no Google Maps key was built in; the map then shows no tiles. */
+export const mapsKey = import.meta.env.PUBLIC_GOOGLE_MAPS_KEY ?? '';
 
 type Address = Record<string, string | undefined>;
 
