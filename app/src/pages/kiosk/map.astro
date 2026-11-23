@@ -187,7 +187,7 @@ if (!mapsKey) {
         userInteracted = true;
       });
       map.addListener('idle', () => {
-        if (!map || Date.now() < ignoreIdleUntil || !userInteracted) return;
+        if (!map || loading || Date.now() < ignoreIdleUntil || !userInteracted) return;
         const c = map.getCenter();
         if (!c) return;
         lat = c.lat();
@@ -216,6 +216,7 @@ function render() {
   for (const b of document.querySelectorAll<HTMLButtonElement>('[data-confirm]')) {
     b.disabled = address.length === 0 || loading || needsPin;
   }
+  $<HTMLButtonElement>('[data-locate]').disabled = loading;
   $('[data-loading]').hidden = !loading;
 }
 
@@ -230,11 +231,11 @@ function moveTo(la: number, ln: number) {
   }
 }
 
-async function fetchAddress(la: number, ln: number) {
+async function fetchAddress(la: number, ln: number): Promise<boolean> {
   reverseAbort?.abort();
   const ac = (reverseAbort = new AbortController());
   const a = await reverseGeocode(la, ln, ac.signal);
-  if (ac.signal.aborted) return;
+  if (ac.signal.aborted) return false;
   if (a.full || a.short) {
     address = a.full || a.short;
     addressShort = a.short || a.full;
@@ -246,11 +247,13 @@ async function fetchAddress(la: number, ln: number) {
   resolvedLat = la;
   resolvedLng = ln;
   render();
+  return true;
 }
 
 async function goToMyLocation() {
+  if (loading) return;
   const pos = await currentPosition();
-  if (!pos) return;
+  if (!pos || loading) return;
   lat = pos.lat;
   lng = pos.lng;
   clearTimeout(addressTimer);
@@ -329,6 +332,7 @@ $('[data-clear]').addEventListener('click', () => {
 });
 
 async function confirm() {
+  if (loading) return;
   userInteracted = true;
   clearTimeout(addressTimer);
   loading = true;
@@ -343,7 +347,12 @@ async function confirm() {
     Math.abs(resolvedLat - lat) < 1e-6 &&
     Math.abs(resolvedLng - lng) < 1e-6;
   if (!alreadyResolved) {
-    await fetchAddress(lat, lng);
+    const resolved = await fetchAddress(lat, lng);
+    if (!resolved) {
+      loading = false;
+      render();
+      return;
+    }
   }
   loading = false;
   render();

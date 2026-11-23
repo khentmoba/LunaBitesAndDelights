@@ -15,6 +15,13 @@ self.addEventListener('activate', (event) => {
   );
 });
 
+function isNavigationCacheUrl(url) {
+  const { pathname } = new URL(url);
+  return !pathname.startsWith('/_astro/') &&
+    !pathname.startsWith('/kiosk/fonts/') &&
+    !pathname.startsWith('/kiosk/images/luna_logo');
+}
+
 async function cacheAndPrune(req, res) {
   const cache = await caches.open(CACHE);
   await cache.put(req, res);
@@ -26,7 +33,8 @@ async function cacheAndPrune(req, res) {
     }
   } else if (req.mode === 'navigate') {
     const keys = await cache.keys();
-    const navigationKeys = keys.filter((key) => key.mode === 'navigate');
+    // Cache.keys() returns cloned Requests whose mode is never 'navigate'.
+    const navigationKeys = keys.filter((key) => isNavigationCacheUrl(key.url));
     if (navigationKeys.length > MAX_NAVIGATION_ENTRIES) {
       await Promise.all(navigationKeys.slice(0, navigationKeys.length - MAX_NAVIGATION_ENTRIES).map((key) => cache.delete(key)));
     }

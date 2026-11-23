@@ -794,4 +794,40 @@ describe('Telegram MarkdownV2 escaping and order notifications', () => {
       setBot(null);
     }
   });
+
+  test('reconcileMissedPaymentNotifications skips fresh payments within minAgeMs and reuses supplied paidDocs', async () => {
+    const { reconcileMissedPaymentNotifications } = require('../lib/orders/send_notification');
+    process.env.TELEGRAM_TOKEN = 'test-token';
+    process.env.TELEGRAM_CHAT_ID = '555';
+
+    const nowMs = 1_700_000_000_000;
+    let queriedOrders = false;
+    let getAllCalled = false;
+    const fakeDb = {
+      collection(name) {
+        if (name === 'orders') queriedOrders = true;
+        throw new Error(`Unexpected collection query: ${name}`);
+      },
+      async getAll() {
+        getAllCalled = true;
+        return [];
+      },
+    };
+    const freshPaidDoc = {
+      id: 'ord_fresh_paid',
+      data: () => ({
+        paymentMethod: 'GCash',
+        paymentStatus: 'PAID',
+        paidAt: new Date(nowMs - 5_000).toISOString(),
+      }),
+    };
+
+    const summary = await reconcileMissedPaymentNotifications(fakeDb, {
+      nowMs,
+      paidDocs: [freshPaidDoc],
+    });
+    assert.equal(queriedOrders, false, 'should reuse caller-supplied paidDocs without re-querying orders');
+    assert.equal(getAllCalled, false, 'should not inspect notification docs when all paid orders are within minAgeMs');
+    assert.deepEqual(summary, { checked: 0, retried: 0, sent: 0, failed: 0 });
+  });
 });
