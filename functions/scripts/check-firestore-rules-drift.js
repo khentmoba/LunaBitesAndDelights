@@ -28,8 +28,13 @@ async function accessToken() {
   if (process.env.FIREBASE_RULES_ACCESS_TOKEN) return process.env.FIREBASE_RULES_ACCESS_TOKEN;
 
   try {
-    const cfgPath = path.join(os.homedir(), '.config', 'configstore', 'firebase-tools.json');
-    if (fs.existsSync(cfgPath)) {
+    const cfgCandidates = [
+      process.env.XDG_CONFIG_HOME && path.join(process.env.XDG_CONFIG_HOME, 'configstore', 'firebase-tools.json'),
+      path.join(os.homedir(), '.config', 'configstore', 'firebase-tools.json'),
+      process.env.APPDATA && path.join(process.env.APPDATA, 'configstore', 'firebase-tools.json'),
+    ].filter(Boolean);
+    const cfgPath = cfgCandidates.find((p) => fs.existsSync(p));
+    if (cfgPath) {
       const cfg = JSON.parse(fs.readFileSync(cfgPath, 'utf8'));
       if (cfg.tokens?.refresh_token) {
         const candidates = [

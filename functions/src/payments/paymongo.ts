@@ -240,20 +240,17 @@ export async function markOrderPaidOnce(
   paidAmountCentavos?: number,
 ): Promise<{ transitioned: boolean; alreadyPaid: boolean }> {
   const db = getFirestore();
-  let transitioned = false;
-  let alreadyPaid = false;
 
-  await db.runTransaction(async (tx) => {
+  return db.runTransaction(async (tx) => {
     const snap = await tx.get(orderRef);
-    if (!snap.exists) return;
+    if (!snap.exists) return { transitioned: false, alreadyPaid: false };
     const data = snap.data()!;
     if (data.paymentStatus === 'PAID') {
-      alreadyPaid = true;
-      return;
+      return { transitioned: false, alreadyPaid: true };
     }
     if (expectedSessionId && !hasMatchingCheckoutSession(data, expectedSessionId)) {
       logger.warn(`Refusing to mark order ${orderRef.id} PAID: checkout session mismatch`);
-      return;
+      return { transitioned: false, alreadyPaid: false };
     }
     if (paidAmountCentavos !== undefined) {
       const expectedCentavos = Math.round(Number(data.totalAmount) * 100);
@@ -261,10 +258,9 @@ export async function markOrderPaidOnce(
         logger.warn(
           `Refusing to mark order ${orderRef.id} PAID: amount mismatch (paid=${paidAmountCentavos}, expected=${expectedCentavos})`,
         );
-        return;
+        return { transitioned: false, alreadyPaid: false };
       }
     }
-    transitioned = true;
     const paidFields: Record<string, any> = {
       paymentStatus: 'PAID',
       paymongoPaymentId: String(paymentId).slice(0, 128),
@@ -274,7 +270,6 @@ export async function markOrderPaidOnce(
       paidFields.paidAfterCancel = true;
     }
     tx.set(orderRef, paidFields, { merge: true });
+    return { transitioned: true, alreadyPaid: false };
   });
-
-  return { transitioned, alreadyPaid };
 }

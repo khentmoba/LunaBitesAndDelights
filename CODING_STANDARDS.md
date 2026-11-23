@@ -16,6 +16,9 @@ Review-time rules for changes in `app/`, `functions/`, `firestore.rules`, and `f
 - **Proxy IPs, rate limits & HTTP statuses:**
   - Read the rightmost entry of `x-forwarded-for` (`clientIpFromRequest`), which Google Cloud load balancers append.
   - Only map `HttpsError('resource-exhausted')` to HTTP `429`. Unexpected Firestore or internal errors in webhooks must return `500` so the caller retries.
+- **Firestore transaction retry safety:**
+  - Return the outcome directly from `db.runTransaction(...)` (or reset every outer accumulator at the top of the callback) so a contention retry cannot leak state from a lost attempt.
+  - Derive caller responses and operational logs from the post-transaction result rather than pre-transaction document snapshots.
 - **Module-level caches & operational messages:**
   - Any module-level cache in Cloud Functions must define a bounded TTL or invalidation condition.
   - Error messages and logs must only name scripts or runbooks that exist in `package.json`, `tool/`, or `functions/scripts/`.
@@ -28,9 +31,13 @@ Review-time rules for changes in `app/`, `functions/`, `firestore.rules`, and `f
   - For incremental polling/snapshot updates, re-render only the target subtree (`renderBoard`) rather than calling `renderAll()` and clobbering active inputs, modals, or loading states.
 - **CSP & DOM safety:**
   - `/kiosk/**`, `/staff/**`, and `/payment/**` enforce `script-src 'self'` without `'unsafe-inline'`. Do not add `<script is:inline>`, inline event attributes (`onclick=`, `onload=`), or `javascript:` URLs on those routes.
-  - Every external origin added to an `<iframe>`, `<script>`, `<link>`, `<img src>`, or `fetch()` call must be permitted by the matching `Content-Security-Policy` directive in `firebase.json`.
+  - Every external origin added to an `<iframe>`, `<script>`, `<link>`, `<img src>`, or `fetch()` call must be permitted by the matching `Content-Security-Policy` directive in `firebase.json`. When adding or swapping a third-party browser SDK (e.g., Google Maps, reCAPTCHA), verify its runtime sub-resource origins (stylesheets, fonts, workers) against CSP too, not just static HTML tags.
   - Escape all untrusted strings interpolated into HTML via `esc()` (`app/src/staff/ui.ts`) or assign via `textContent`.
   - Every interactive `/kiosk/` page must wire `watchInactivity()` (`app/src/kiosk/inactivity.ts`).
+
+## Tests (`functions/test/`, `test/site/`)
+
+- **Behavior over source-text regexes:** Regression tests for bug fixes must exercise the compiled/exported function or an extracted pure helper rather than `assert.match()` over `.ts` source text. Reserve source/HTML scanning for static structural invariants (CSP, TTL, manifest parity).
 
 ## Firestore Rules & Indexes (`firestore.rules`, `firestore.indexes.json`)
 

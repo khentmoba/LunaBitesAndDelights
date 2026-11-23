@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { JSDOM } from 'jsdom';
@@ -17,8 +17,14 @@ import { pagePairs, kernPairsFile } from '../../tool/kern_pairs.mjs';
 /// fail if either the script or the markup it depends on drifts.
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
-const storefront = readFileSync(join(root, 'build', 'app', 'index.html'), 'utf8');
-const menuPage = readFileSync(join(root, 'build', 'app', 'menu', 'index.html'), 'utf8');
+const storefrontPath = join(root, 'build', 'app', 'index.html');
+const menuPagePath = join(root, 'build', 'app', 'menu', 'index.html');
+assert.ok(
+  existsSync(storefrontPath) && existsSync(menuPagePath),
+  'build/app/index.html missing — run `npm --prefix app run build` first',
+);
+const storefront = readFileSync(storefrontPath, 'utf8');
+const menuPage = readFileSync(menuPagePath, 'utf8');
 
 const pages = { index: storefront, menu: menuPage };
 
