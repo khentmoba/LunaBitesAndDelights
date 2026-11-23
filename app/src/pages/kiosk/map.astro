@@ -176,7 +176,11 @@ if (!mapsKey) {
         gestureHandling: 'greedy',
         backgroundColor: '#f7f1f3',
       });
-      map.addListener('dragstart', () => {
+      // Any center change the shopper caused counts as interaction, including
+      // arrow keys and a trackpad pan. Programmatic moves stay inside
+      // ignoreIdleUntil so they never unlock Confirm.
+      map.addListener('center_changed', () => {
+        if (Date.now() < ignoreIdleUntil) return;
         userInteracted = true;
       });
       map.addListener('idle', () => {
@@ -240,17 +244,6 @@ async function fetchAddress(la: number, ln: number) {
   resolvedLng = ln;
   render();
 }
-
-mapEl.addEventListener('keydown', (e) => {
-  if (!['ArrowUp', 'ArrowRight', 'ArrowDown', 'ArrowLeft'].includes(e.key)) return;
-  // Only count arrow keys that actually moved the pin. This guard is what
-  // keeps Confirm from saving a center the shopper never touched.
-  const from = center();
-  window.setTimeout(() => {
-    const now = center();
-    if (Math.abs(now.lat - from.lat) > 1e-9 || Math.abs(now.lng - from.lng) > 1e-9) userInteracted = true;
-  }, 300);
-});
 
 async function goToMyLocation() {
   const pos = await currentPosition();

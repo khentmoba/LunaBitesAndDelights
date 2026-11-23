@@ -49,7 +49,7 @@ test('GCash checkout failure offers retry without discarding the pending order',
 test('opening the map preserves typed delivery addresses until the shopper pins a location', () => {
   const src = readFileSync(new URL('../../app/src/pages/kiosk/map.astro', import.meta.url), 'utf8');
   assert.match(src, /if \(draft\?\.pinned \|\| draft\?\.address\?\.trim\(\)\) return;/);
-  assert.match(src, /map\.addListener\('dragstart', \(\) => \{\s*userInteracted = true;/);
+  assert.match(src, /map\.addListener\('center_changed', \(\) => \{\s*if \(Date\.now\(\) < ignoreIdleUntil\) return;/);
   assert.match(src, /if \(!map \|\| Date\.now\(\) < ignoreIdleUntil \|\| !userInteracted\) return;/);
   assert.match(src, /!draft\?\.pinned && !userInteracted/);
 });
