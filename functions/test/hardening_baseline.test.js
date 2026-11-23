@@ -4,14 +4,100 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const { shouldNotifyPaymentConfirmed } = require('../lib/orders/derived');
-const { evaluatePaymentNotificationClaim, TELEGRAM_CLAIM_TTL_MS } = require('../lib/orders/send_notification');
-const { canClaimDailyReport } = require('../lib/reporting/daily_report');
+const {
+  evaluatePaymentNotificationClaim,
+  hasOrderNotificationState,
+  TELEGRAM_CLAIM_TTL_MS,
+} = require('../lib/orders/send_notification');
+const { canClaimDailyReport, scheduledReportDate } = require('../lib/reporting/daily_report');
 const { isStaleUnpaidOrder, expireUnpaidUpdate, STALE_UNPAID_AGE_MS } = require('../lib/orders/expire_unpaid');
-const { projectOrderSummary } = require('../lib/orders/kds');
+const { projectOrderSummary, getLegacyItemCounts } = require('../lib/orders/kds');
 const { clientIpFromRequest } = require('../lib/util/security');
 const {
   scanOrdersForDate, FALLBACK_PAGE_SIZE, MAX_FALLBACK_PAGES,
 } = require('../lib/reporting/daily_stats');
+
+function ttlCollectionsFromSources(sources) {
+  const ts = require('typescript');
+  const collections = new Set();
+
+  for (const { fileName, text } of sources) {
+    const source = ts.createSourceFile(fileName, text, ts.ScriptTarget.Latest, true);
+    const stringConstants = new Map();
+    for (const statement of source.statements) {
+      if (!ts.isVariableStatement(statement)) continue;
+      for (const declaration of statement.declarationList.declarations) {
+        if (ts.isIdentifier(declaration.name) && declaration.initializer && ts.isStringLiteral(declaration.initializer)) {
+          stringConstants.set(declaration.name.text, declaration.initializer.text);
+        }
+      }
+    }
+
+    const findDeclaration = (node, name) => {
+      for (let scope = node.parent; scope; scope = scope.parent) {
+        if (!ts.isBlock(scope) && !ts.isSourceFile(scope)) continue;
+        for (const statement of scope.statements) {
+          if (!ts.isVariableStatement(statement)) continue;
+          for (const declaration of statement.declarationList.declarations) {
+            if (ts.isIdentifier(declaration.name) && declaration.name.text === name) return declaration;
+          }
+        }
+      }
+      return undefined;
+    };
+    const stringValue = (node) => {
+      if (ts.isStringLiteral(node)) return node.text;
+      if (ts.isIdentifier(node)) return stringConstants.get(node.text);
+      return undefined;
+    };
+    const collectionForRef = (node) => {
+      if (ts.isIdentifier(node)) {
+        const declaration = findDeclaration(node, node.text);
+        return declaration?.initializer ? collectionForRef(declaration.initializer) : undefined;
+      }
+      if (!ts.isCallExpression(node) || !ts.isPropertyAccessExpression(node.expression)) return undefined;
+      const method = node.expression.name.text;
+      if (method === 'doc') return collectionForRef(node.expression.expression);
+      if (method === 'collection') return stringValue(node.arguments[0]);
+      return undefined;
+    };
+    const containsExpireAt = (node) => {
+      if (ts.isIdentifier(node)) {
+        const declaration = findDeclaration(node, node.text);
+        return Boolean(declaration?.initializer && containsExpireAt(declaration.initializer));
+      }
+      if (!ts.isObjectLiteralExpression(node)) return false;
+      return node.properties.some((property) => {
+        if (ts.isPropertyAssignment(property) || ts.isShorthandPropertyAssignment(property)) {
+          const name = ts.isIdentifier(property.name) || ts.isStringLiteral(property.name)
+            ? property.name.text
+            : '';
+          return name === 'expireAt';
+        }
+        return ts.isSpreadAssignment(property) && containsExpireAt(property.expression);
+      });
+    };
+
+    const visit = (node) => {
+      const isWrite = ts.isCallExpression(node)
+        && ts.isPropertyAccessExpression(node.expression)
+        && ['set', 'create', 'add'].includes(node.expression.name.text);
+      if (isWrite) {
+        const ref = node.arguments.length > 1 ? node.arguments[0] : node.expression.expression;
+        const data = node.arguments.length > 1 ? node.arguments[1] : node.arguments[0];
+        if (data && containsExpireAt(data)) {
+          const collection = collectionForRef(ref);
+          assert.ok(collection, `Could not resolve expireAt write collection in ${fileName}`);
+          collections.add(collection);
+        }
+      }
+      ts.forEachChild(node, visit);
+    };
+    visit(source);
+  }
+
+  return collections;
+}
 
 function fakeOrdersDb(pageSize) {
   let gets = 0;
@@ -27,6 +113,55 @@ function fakeOrdersDb(pageSize) {
   };
   return { db: { collection: () => query }, gets: () => gets };
 }
+
+test('scheduled daily reports use the scheduled PHT day rather than the late retry day', () => {
+  const scheduleTime = '2026-11-23T14:00:00.000Z'; // 22:00 PHT on Nov 23
+  const lateRetry = '2026-11-23T16:10:00.000Z'; // 00:10 PHT on Nov 24
+  assert.equal(scheduledReportDate(scheduleTime, lateRetry), '2026-11-23');
+  assert.equal(scheduledReportDate(undefined, lateRetry), '2026-11-24');
+  assert.equal(scheduledReportDate(undefined, 'invalid', new Date('2026-11-23T16:10:00.000Z')), '2026-11-24');
+});
+
+test('summary-only KDS queries use persisted counts and retain a legacy item-count path', async () => {
+  const src = fs.readFileSync(path.resolve(__dirname, '../src/orders/kds.ts'), 'utf8');
+  const fields = src.match(/const SUMMARY_ORDER_FIELDS = \[([\s\S]*?)\] as const/);
+  assert.ok(fields);
+  assert.match(fields[1], /'itemsCount'/);
+  assert.doesNotMatch(fields[1], /'items'/);
+  assert.match(src, /db\.getAll\([\s\S]*fieldMask:\s*\['items'\]/);
+
+  const legacyRef = { id: 'legacy-ref' };
+  const db = {
+    getAll: async (...args) => {
+      assert.deepEqual(args.slice(0, -1), [legacyRef]);
+      assert.deepEqual(args.at(-1), { fieldMask: ['items'] });
+      return [{
+        id: 'legacy',
+        exists: true,
+        get: (field) => field === 'items' ? [{ quantity: 2 }, { qty: 1 }] : undefined,
+      }];
+    },
+  };
+  const docs = [
+    { ref: legacyRef, get: (field) => field === 'itemsCount' ? undefined : undefined },
+    { ref: { id: 'new-ref' }, get: (field) => field === 'itemsCount' ? 4 : undefined },
+  ];
+  const counts = await getLegacyItemCounts(db, docs);
+  assert.equal(counts.get('legacy'), 3);
+  assert.equal(counts.has('new'), false);
+  assert.equal(projectOrderSummary('legacy', { itemsCount: undefined }, counts.get('legacy')).itemsCount, 3);
+  assert.equal(projectOrderSummary('old', { items: [{ quantity: 2 }] }).itemsCount, 2);
+
+  const placeOrder = fs.readFileSync(path.resolve(__dirname, '../src/orders/place_order.ts'), 'utf8');
+  assert.match(placeOrder, /itemsCount:\s*items\.reduce/);
+});
+
+test('payment-only notification records do not qualify as order notification claims', () => {
+  assert.equal(hasOrderNotificationState({ paymentNotifSent: true, paymentNotifStatus: 'sent' }), false);
+  assert.equal(hasOrderNotificationState({ telegramSent: false, telegramStatus: 'failed' }), true);
+  const notifSrc = fs.readFileSync(path.resolve(__dirname, '../src/orders/send_notification.ts'), 'utf8');
+  assert.match(notifSrc, /terminal && !hasOrderNotificationState\(notifData\)/);
+});
 
 test('scanOrdersForDate stops at the page cap instead of reading a whole busy day', async () => {
   const { db, gets } = fakeOrdersDb(FALLBACK_PAGE_SIZE);
@@ -202,7 +337,6 @@ test('every process.env read in functions/src is declared via defineSecret or ex
   );
   // Optional/runtime env vars with documented fallbacks (see docs/DEPLOYMENT_STATE.md):
   const allowlistedEnv = new Set([
-    'PAYMONGO_WEBHOOK_SECRET', // Optional until provisioned; webhook.ts falls back to PayMongo API verification
     'MAPTILER_KEY', // Optional static map fallback in send_notification.ts
     'FUNCTIONS_EMULATOR',
     'FIRESTORE_EMULATOR_HOST',
@@ -231,44 +365,49 @@ test('every process.env read in functions/src is declared via defineSecret or ex
   }
   assert.deepEqual(unbound, [], `Unbound process.env secret reads:\n${unbound.join('\n')}`);
 
-  // Also ensure webhook.ts does not fail closed with 503 when PAYMONGO_WEBHOOK_SECRET is unset
+  // HMAC is mandatory, but the PayMongo API verification remains a second
+  // check after the signature passes.
   const webhookSrc = fs.readFileSync(path.join(srcRoot, 'payments', 'webhook.ts'), 'utf8');
   assert.equal(
     webhookSrc.includes('fetchCheckoutSessionDetailed'),
     true,
-    'webhook.ts must preserve PayMongo API verification fallback while PAYMONGO_WEBHOOK_SECRET is unprovisioned',
+    'webhook.ts must preserve PayMongo API verification after HMAC validation',
   );
+  assert.match(webhookSrc, /if \(!webhookSecret\) return false;/);
 });
 
-test('firebase.json wires firestore.rules and firestore.indexes.json and all TTL collections have fieldOverrides', () => {
-  const firebaseJson = JSON.parse(
-    fs.readFileSync(path.resolve(__dirname, '../../firebase.json'), 'utf8'),
-  );
+test('firebase config TTL overrides exactly cover Firestore expireAt writes', () => {
+  const root = path.resolve(__dirname, '../..');
+  const firebaseJson = JSON.parse(fs.readFileSync(path.join(root, 'firebase.json'), 'utf8'));
   assert.equal(firebaseJson.firestore?.rules, 'firestore.rules');
   assert.equal(firebaseJson.firestore?.indexes, 'firestore.indexes.json');
 
-  const indexes = JSON.parse(
-    fs.readFileSync(path.resolve(__dirname, '../../firestore.indexes.json'), 'utf8'),
-  );
+  const indexes = JSON.parse(fs.readFileSync(path.join(root, 'firestore.indexes.json'), 'utf8'));
   const ttlGroups = new Set(
     (indexes.fieldOverrides || [])
-      .filter((o) => o.fieldPath === 'expireAt' && o.ttl === true)
-      .map((o) => o.collectionGroup),
+      .filter((override) => override.fieldPath === 'expireAt' && override.ttl === true)
+      .map((override) => override.collectionGroup),
   );
-  for (const requiredGroup of [
-    'stats_events',
-    'rate_limits',
-    'login_attempts',
-    'kds_orders',
-    'order_notifications',
-    'daily_reports_sent',
-  ]) {
-    assert.equal(
-      ttlGroups.has(requiredGroup),
-      true,
-      `firestore.indexes.json missing expireAt TTL fieldOverride for ${requiredGroup}`,
-    );
+  const srcRoot = path.join(root, 'functions/src');
+  const sourceFiles = [];
+  function walkTs(dir) {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) walkTs(full);
+      else if (entry.name.endsWith('.ts')) sourceFiles.push({ fileName: full, text: fs.readFileSync(full, 'utf8') });
+    }
   }
+  walkTs(srcRoot);
+
+  const ttlWrites = ttlCollectionsFromSources(sourceFiles);
+  assert.deepEqual([...ttlGroups].sort(), [...ttlWrites].sort());
+  assert.deepEqual(
+    [...ttlCollectionsFromSources([{
+      fileName: 'fixture.ts',
+      text: "function save(db) { const ref = db.collection('future_ttl').doc('x'); ref.set({ expireAt: 123 }); }",
+    }])],
+    ['future_ttl'],
+  );
 });
 
 test('parsePaymongoCheckoutResponse validates session id and HTTPS PayMongo-family checkout URL', () => {
@@ -609,13 +748,15 @@ test('verify_staff mitigates username timing side-channel and create_checkout ma
   const verifySrc = fs.readFileSync(path.resolve(__dirname, '../src/auth/verify_staff.ts'), 'utf8');
   assert.match(verifySrc, /DUMMY_SCRYPT_HASH/);
   assert.match(verifySrc, /if \(!doc\.exists\)[\s\S]*verifyPasswordAsync\(password,\s*DUMMY_SCRYPT_HASH\)/);
+  assert.match(verifySrc, /checkAndRecordWindowFailure\(\s*GLOBAL_PIN_FAIL_KEY/);
+  assert.doesNotMatch(verifySrc, /recordWindowFailure\(GLOBAL_PIN_FAIL_KEY/);
 
   const checkoutSrc = fs.readFileSync(path.resolve(__dirname, '../src/payments/create_checkout.ts'), 'utf8');
   assert.match(checkoutSrc, /response\.status === 429 \|\| response\.status >= 500/);
   assert.match(checkoutSrc, /parsePaymongoCheckoutResponse\(json\)/);
 });
 
-test('multi-chunk Telegram failure keeps the chats that received earlier chunks', async () => {
+test('multi-chunk Telegram failure forces a full resend for every chat', async () => {
   const telegramApi = require('../lib/telegram_api');
   const { telegramChatIds } = require('../lib/secrets');
   const origChatIds = telegramChatIds.value;
@@ -635,14 +776,18 @@ test('multi-chunk Telegram failure keeps the chats that received earlier chunks'
     async sendPhoto() { return {}; },
   });
   try {
-    // Three chunks: the first is delivered, the second fails. Its error must
-    // still report chatA so the caller does not re-send chunk one on retry.
+    // Three chunks: the first is delivered, the second fails. No chat has the
+    // complete message, so callers must retry the whole delivery for chatA.
     const err = await telegramApi.sendToAll('a'.repeat(8000)).then(
       () => null,
       (e) => e,
     );
     assert.ok(err, 'the second chunk must fail');
-    assert.deepEqual(err.deliveredChatIds, ['chatA']);
+    assert.deepEqual(err.deliveredChatIds, []);
+
+    const sentBefore = call;
+    await telegramApi.sendToAll('a'.repeat(8000));
+    assert.ok(call - sentBefore >= 3, 'retry must resend all chunks rather than skip partial recipients');
   } finally {
     telegramChatIds.value = origChatIds;
     telegramApi.setBot(null);
@@ -653,19 +798,25 @@ test('multi-chunk Telegram failure keeps the chats that received earlier chunks'
 test('report retries, photo idempotency, cache TTLs and reconciler headroom are guarded', () => {
   const reportSrc = fs.readFileSync(path.resolve(__dirname, '../src/reporting/daily_report.ts'), 'utf8');
   assert.match(reportSrc, /retryCount: 3/);
+  assert.match(reportSrc, /scheduledReportDate\(event\.scheduleTime\)/);
+  assert.match(reportSrc, /function scheduledReportDate\([\s\S]*phtDateLabel\(parsed\)/);
 
   const notifSrc = fs.readFileSync(path.resolve(__dirname, '../src/orders/send_notification.ts'), 'utf8');
   const photoPersists = notifSrc.match(/onPhotoSent\(\)\.catch/g) || [];
   assert.strictEqual(photoPersists.length, 2, 'both split and non-split photo paths must persist photoSent');
   assert.match(notifSrc, /const RECONCILE_BATCH_LIMIT = 200/);
+  assert.match(notifSrc, /terminal && !hasOrderNotificationState\(notifData\)/);
 
   const telegramSrc = fs.readFileSync(path.resolve(__dirname, '../src/telegram_api.ts'), 'utf8');
   assert.match(telegramSrc, /botToken !== token/);
 
-  const staffSrc = fs.readFileSync(path.resolve(__dirname, '../src/auth/verify_staff.ts'), 'utf8');
-  assert.match(staffSrc, /SEED_CHECK_TTL_MS/);
-  assert.match(staffSrc, /staffSeededAt/);
-  assert.doesNotMatch(staffSrc, /staffSeeded\s*=/);
+  const verifySrc = fs.readFileSync(path.resolve(__dirname, '../src/auth/verify_staff.ts'), 'utf8');
+  assert.match(verifySrc, /SEED_CHECK_TTL_MS/);
+  assert.match(verifySrc, /staffSeededAt/);
+  assert.doesNotMatch(verifySrc, /staffSeeded\s*=/);
+  const attemptGate = verifySrc.indexOf('enforceFixedWindowRateLimit(\n    GLOBAL_PIN_ATTEMPT_KEY');
+  const pinMatch = verifySrc.indexOf('findMatchingPinAccount(');
+  assert.ok(attemptGate >= 0 && attemptGate < pinMatch, 'global PIN attempt budget must be reserved before PIN verification');
 });
 
 test('notification reconciler runs serially and keeps structured delivery diagnostics', () => {

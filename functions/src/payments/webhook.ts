@@ -2,7 +2,7 @@ import { onRequest, HttpsError } from 'firebase-functions/v2/https';
 import { getFirestore } from 'firebase-admin/firestore';
 import { logger } from 'firebase-functions';
 import * as crypto from 'crypto';
-import { paymongoSecret } from '../secrets';
+import { paymongoSecret, paymongoWebhookSecret } from '../secrets';
 import { clientIpFromRequest, enforceFixedWindowRateLimit } from '../util/security';
 import {
   paymongoAuthHeader,
@@ -61,7 +61,7 @@ export function verifyPaymongoSignature(
   if (!t || !/^\d{1,12}$/.test(t) || sigs.length === 0) return false;
   const ts = Number(t);
   if (!Number.isFinite(ts) || Math.abs(nowSec - ts) > MAX_SIG_AGE_SEC) return false;
-  if (!webhookSecret) return true; // Secret not provisioned yet; format + timestamp checked, and caller verifies session via PayMongo API.
+  if (!webhookSecret) return false; // HMAC is mandatory; do not accept format-only signatures.
   if (!rawBody) return false;
   const payload = `${t}.${Buffer.isBuffer(rawBody) ? rawBody.toString('utf8') : rawBody}`;
   const expected = crypto.createHmac('sha256', webhookSecret).update(payload).digest('hex');
@@ -73,14 +73,14 @@ export function verifyPaymongoSignature(
 }
 
 export const paymongoWebhook = onRequest(
-  { secrets: [paymongoSecret] },
+  { secrets: [paymongoSecret, paymongoWebhookSecret] },
   async (req, res) => {
     if (req.method !== 'POST') {
       res.status(405).send('Method Not Allowed');
       return;
     }
     try {
-      const webhookSecret = process.env.PAYMONGO_WEBHOOK_SECRET;
+      const webhookSecret = paymongoWebhookSecret.value();
       const clientIp = clientIpFromRequest(req) || 'unknown';
       try {
         await enforceFixedWindowRateLimit(
@@ -98,9 +98,6 @@ export const paymongoWebhook = onRequest(
         return;
       }
 
-      if (!webhookSecret) {
-        logger.warn('PAYMONGO_WEBHOOK_SECRET is not set; relying on signature format check and PayMongo API session verification');
-      }
       if (!verifyPaymongoSignature(
         req.headers['paymongo-signature'],
         (req as any).rawBody,

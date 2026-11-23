@@ -326,6 +326,17 @@ export function canClaimNotification(current: Record<string, any> | undefined, n
   return evaluateNotificationClaim(current, nowMs) === 'claimed';
 }
 
+export function hasOrderNotificationState(current: Record<string, any> | undefined): boolean {
+  if (!current) return false;
+  return typeof current.telegramSent === 'boolean'
+    || typeof current.telegramStatus === 'string'
+    || typeof current.telegramClaimedAt === 'number'
+    || typeof current.attempts === 'number'
+    || typeof current.reconcileAttempts === 'number'
+    || Array.isArray(current.deliveredChatIds)
+    || current.photoSent === true;
+}
+
 /** Evaluates whether a payment confirmation/refund Telegram alert can be claimed. */
 export function evaluatePaymentNotificationClaim(
   current: Record<string, any> | undefined,
@@ -699,7 +710,6 @@ export async function reconcileMissedOrderNotifications(
   const candidates = docs.filter((doc) => {
     const data = doc.data();
     if (!isOrderVisibleInKds(data)) return false;
-    if (data.status === 'Cancelled' || data.status === 'Completed') return false;
     if (data.telegramSent === true) return false;
     const readyMs = orderReadyTimeMs(data);
     if (readyMs > 0 && nowMs - readyMs < minAgeMs) return false;
@@ -719,6 +729,11 @@ export async function reconcileMissedOrderNotifications(
     orderDoc,
     notifData: notifSnaps[i].exists ? notifSnaps[i].data() : undefined,
   })).filter(({ orderDoc, notifData }) => {
+    // A terminal order can still have a claimed-but-unsent notification when
+    // staff completed it immediately. Retry that existing lease, but do not
+    // create a brand-new notification for an order staff already closed out.
+    const terminal = orderDoc.data().status === 'Cancelled' || orderDoc.data().status === 'Completed';
+    if (terminal && !hasOrderNotificationState(notifData)) return false;
     if (notifData?.telegramSent === true) return false;
     if (notifData?.telegramStatus === 'failed_permanent') return false;
     const reconcileAttempts = typeof notifData?.reconcileAttempts === 'number' && Number.isFinite(notifData.reconcileAttempts)

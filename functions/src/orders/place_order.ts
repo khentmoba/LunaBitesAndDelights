@@ -117,6 +117,7 @@ export const placeOrder = onCall(async (request) => {
   const payload = {
     orderId,
     items,
+    itemsCount: items.reduce((sum, item) => sum + item.quantity, 0),
     totalAmount,
     timestamp: FieldValue.serverTimestamp(),
     dateLabel: phtDateLabel(),

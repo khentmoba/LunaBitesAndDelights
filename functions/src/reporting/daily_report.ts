@@ -10,6 +10,16 @@ const DAILY_REPORTS_SENT_COLLECTION = 'daily_reports_sent';
 const DAILY_REPORT_CLAIM_TTL_MS = 5 * 60 * 1000;
 const DAILY_REPORT_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 
+/** Resolves the scheduled PHT day, even when a retry runs after midnight. */
+export function scheduledReportDate(scheduleTime?: string, eventTime?: string, now = new Date()): string {
+  for (const raw of [scheduleTime, eventTime]) {
+    if (!raw) continue;
+    const parsed = new Date(raw);
+    if (Number.isFinite(parsed.getTime())) return phtDateLabel(parsed);
+  }
+  return phtDateLabel(now);
+}
+
 export function canClaimDailyReport(
   current: Record<string, any> | undefined,
   nowMs = Date.now(),
@@ -138,6 +148,8 @@ export const dailySalesReport = onSchedule({
   // A transient aggregation/Telegram failure marks the guard `failed`; the next
   // attempt reclaims it. Without retries, that day's report is never sent.
   retryCount: 3,
-}, async () => {
-  await runDailySalesReport();
+}, async (event) => {
+  // A delayed retry just after midnight must still report the day the
+  // schedule fired for, not the following PHT date.
+  await runDailySalesReport(scheduledReportDate(event.scheduleTime));
 });

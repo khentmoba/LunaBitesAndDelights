@@ -67,6 +67,7 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
   let detachBackgroundListeners: (() => void) | null = null;
   let fetchInFlight = false;
   let fetchSeq = 0;
+  let authHalted = false;
   let disposed = false;
 
   const back = cameFromApp();
@@ -114,7 +115,7 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
   }
 
   async function fetchActive(silent = false) {
-    if (!getStaff()) return;
+    if (authHalted || !getStaff()) return;
     if (silent && fetchInFlight) return;
     const seq = ++fetchSeq;
     fetchInFlight = true;
@@ -170,6 +171,9 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
   }
 
   function haltOnAuthError(message: string) {
+    authHalted = true;
+    fetchSeq++;
+    fetchInFlight = false;
     stopBackgroundActivity();
     connecting = false;
     isLive = false;
@@ -185,7 +189,7 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
     initialFallbackTimer = 0;
     connecting = false;
     isLive = false;
-    if (disposed) return;
+    if (disposed || authHalted) return;
     renderBar();
     if (!polled.length) void fetchActive(true);
     pollTimer ||= window.setInterval(() => {
@@ -197,12 +201,12 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
   }
 
   async function startLiveListener() {
-    if (disposed || connecting) return;
+    if (disposed || authHalted || connecting) return;
     connecting = true;
     renderBar();
     try {
       const [db, fs] = await Promise.all([firebaseDb(), import('firebase/firestore')]);
-      if (disposed) return;
+      if (disposed || authHalted) return;
       unsub?.();
       const q = fs.query(
         fs.collection(db, 'kds_orders'),
@@ -215,7 +219,7 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
         q,
         { includeMetadataChanges: true },
         (snap) => {
-          if (disposed) return;
+          if (disposed || authHalted) return;
           clearTimeout(initialFallbackTimer);
           initialFallbackTimer = 0;
           clearInterval(pollTimer);
@@ -230,6 +234,7 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
           publish();
         },
         (err) => {
+          if (disposed || authHalted) return;
           const code = typeof (err as { code?: unknown })?.code === 'string'
             ? String((err as { code: string }).code).replace(/^firestore\//, '')
             : '';
@@ -254,6 +259,7 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
       if (!disposed && !isLive && !polled.length) void fetchActive();
     }, INITIAL_FALLBACK_MS);
     await startLiveListener();
+    if (disposed || authHalted) return;
     lookbackTimer ||= window.setInterval(() => {
       if (!disposed && isLive && getStaff()) void startLiveListener();
     }, LOOKBACK_REFRESH_MS);
@@ -773,6 +779,21 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
   };
   root.addEventListener('click', onRootClick);
 
+  const onRootKeydown = (event: KeyboardEvent) => {
+    const tabButton = (event.target as HTMLElement).closest<HTMLButtonElement>('[data-tab]');
+    if (!tabButton || layout !== 'tabs') return;
+    let next = Number(tabButton.dataset.tab);
+    if (event.key === 'ArrowRight') next = (next + 1) % COLUMNS.length;
+    else if (event.key === 'ArrowLeft') next = (next - 1 + COLUMNS.length) % COLUMNS.length;
+    else if (event.key === 'Home') next = 0;
+    else if (event.key === 'End') next = COLUMNS.length - 1;
+    else return;
+    event.preventDefault();
+    selectTab(next, true);
+    board.querySelector<HTMLButtonElement>(`[data-tab="${next}"]`)?.focus();
+  };
+  root.addEventListener('keydown', onRootKeydown);
+
   ctl.addEventListener('input', (e) => {
     const t = e.target as HTMLInputElement;
     if (!t.matches('[data-search]')) return;
@@ -853,5 +874,6 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
     disposed = true;
     stopBackgroundActivity();
     root.removeEventListener('click', onRootClick);
+    root.removeEventListener('keydown', onRootKeydown);
   };
 }

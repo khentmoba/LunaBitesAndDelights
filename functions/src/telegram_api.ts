@@ -393,9 +393,10 @@ export async function sendToAll(message: string, options: any = {}): Promise<Tel
       );
     } catch (err: any) {
       if (!isLast) {
-        // Chats that received earlier chunks still count as delivered; dropping
-        // them here makes the caller re-send those chunks on retry.
-        err.deliveredChatIds = deliveredAcrossAllChunks ? Array.from(deliveredAcrossAllChunks) : [];
+        // No chat has received the complete message when a non-final chunk
+        // fails. Reporting partial recipients as delivered makes callers skip
+        // them on retry, so every chat must be eligible for the full resend.
+        err.deliveredChatIds = [];
       } else if (deliveredAcrossAllChunks && Array.isArray(err.deliveredChatIds)) {
         err.deliveredChatIds = err.deliveredChatIds.filter((id: string) => deliveredAcrossAllChunks!.has(id));
       }

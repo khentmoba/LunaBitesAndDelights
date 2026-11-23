@@ -50,6 +50,9 @@ export function isOrderVisibleInKds(d: FirebaseFirestore.DocumentData): boolean 
 }
 
 const itemQty = (i: any): number => Number(i?.quantity) || Number(i?.qty) || 0;
+const countItems = (items: unknown): number => Array.isArray(items)
+  ? items.reduce((sum: number, item: any) => sum + itemQty(item), 0)
+  : 0;
 
 // #17: trimmed projection — only what the KDS screen renders. Never ...data.
 export const projectOrder = (id: string, d: FirebaseFirestore.DocumentData) => {
@@ -85,8 +88,17 @@ export const projectOrder = (id: string, d: FirebaseFirestore.DocumentData) => {
 };
 
 /** Lightweight summary projection for dashboard tiles without items[] or customer PII. */
-export const projectOrderSummary = (id: string, d: FirebaseFirestore.DocumentData) => {
-  const rawItems = Array.isArray(d.items) ? d.items : [];
+export const projectOrderSummary = (
+  id: string,
+  d: FirebaseFirestore.DocumentData,
+  legacyItemsCount?: number,
+) => {
+  const storedItemsCount = Number(d.itemsCount);
+  const fallbackItemsCount = typeof legacyItemsCount === 'number'
+    && Number.isFinite(legacyItemsCount)
+    && legacyItemsCount >= 0
+    ? legacyItemsCount
+    : countItems(d.items);
   return {
     id,
     orderNumber: d.orderId || d.orderNumber || id,
@@ -94,7 +106,9 @@ export const projectOrderSummary = (id: string, d: FirebaseFirestore.DocumentDat
     paymentMethod: String(d.paymentMethod || 'Cash'),
     paymentStatus: String(d.paymentStatus || 'NOT PAID'),
     entryType: String(d.entryType || ''),
-    itemsCount: rawItems.reduce((s: number, i: any) => s + itemQty(i), 0),
+    itemsCount: Number.isFinite(storedItemsCount) && storedItemsCount >= 0
+      ? storedItemsCount
+      : fallbackItemsCount,
     total: Number(d.totalAmount) || 0,
     type: String(d.type || ''),
     status: String(d.status || 'Pending'),
@@ -109,12 +123,33 @@ const SUMMARY_ORDER_FIELDS = [
   'paymentMethod',
   'paymentStatus',
   'entryType',
-  'items',
+  'itemsCount',
   'totalAmount',
   'type',
   'status',
   'timestamp',
 ] as const;
+
+const LEGACY_ITEM_COUNT_BATCH_SIZE = 100;
+
+export async function getLegacyItemCounts(
+  db: FirebaseFirestore.Firestore,
+  docs: FirebaseFirestore.QueryDocumentSnapshot[],
+): Promise<Map<string, number>> {
+  const legacyDocs = docs.filter((doc) => {
+    const count = Number(doc.get('itemsCount'));
+    return !Number.isFinite(count) || count < 0;
+  });
+  const counts = new Map<string, number>();
+  for (let i = 0; i < legacyDocs.length; i += LEGACY_ITEM_COUNT_BATCH_SIZE) {
+    const batch = legacyDocs.slice(i, i + LEGACY_ITEM_COUNT_BATCH_SIZE);
+    const snapshots = await db.getAll(...batch.map((doc) => doc.ref), { fieldMask: ['items'] });
+    for (const snapshot of snapshots) {
+      if (snapshot.exists) counts.set(snapshot.id, countItems(snapshot.get('items')));
+    }
+  }
+  return counts;
+}
 
 export const getActiveOrders = onCall(async (request) => {
   requireStaff(request); // #6 + #7
@@ -140,14 +175,22 @@ export const getActiveOrders = onCall(async (request) => {
       const snapshot = await q.get();
       if (snapshot.empty) break;
 
-      for (const doc of snapshot.docs) {
+      const eligibleDocs = snapshot.docs
+        .filter((doc) => {
+          const data = doc.data();
+          if (!isOrderVisibleInKds(data)) return false;
+          const status = data.status || 'Pending';
+          return includeCompleted || (status !== 'Completed' && status !== 'Cancelled');
+        })
+        .slice(0, maxDocs - orders.length);
+      const legacyItemCounts = summaryOnly
+        ? await getLegacyItemCounts(db, eligibleDocs)
+        : new Map<string, number>();
+      for (const doc of eligibleDocs) {
         const data = doc.data();
-        if (!isOrderVisibleInKds(data)) continue;
-        const status = data.status || 'Pending';
-        if (includeCompleted || (status !== 'Completed' && status !== 'Cancelled')) {
-          orders.push(summaryOnly ? projectOrderSummary(doc.id, data) : projectOrder(doc.id, data));
-          if (orders.length >= maxDocs) break;
-        }
+        orders.push(summaryOnly
+          ? projectOrderSummary(doc.id, data, legacyItemCounts.get(doc.id))
+          : projectOrder(doc.id, data));
       }
 
       if (snapshot.docs.length < pageSize) break;

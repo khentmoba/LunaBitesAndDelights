@@ -40,6 +40,20 @@ test('geocode keeps a deadline on browsers without AbortSignal.any/timeout', () 
   assert.doesNotMatch(src, /signal \?\? timeout/);
 });
 
+test('GCash checkout failure offers retry without discarding the pending order', () => {
+  const src = readFileSync(new URL('../../app/src/pages/kiosk/gcash.astro', import.meta.url), 'utf8');
+  assert.match(src, /data-retry[\s\S]*?RETRY CHECKOUT/);
+  assert.match(src, /\$\('\[data-retry\]'\)\.addEventListener\('click', \(\) => void start\(pending\)\)/);
+});
+
+test('opening the map preserves typed delivery addresses until the shopper pins a location', () => {
+  const src = readFileSync(new URL('../../app/src/pages/kiosk/map.astro', import.meta.url), 'utf8');
+  assert.match(src, /if \(draft\?\.pinned \|\| draft\?\.address\?\.trim\(\)\) return;/);
+  assert.match(src, /map\.on\('dragstart', \(\) => \{\s*userInteracted = true;/);
+  assert.match(src, /if \(moving \|\| !userInteracted\) return;/);
+  assert.match(src, /!draft\?\.pinned && !userInteracted/);
+});
+
 test('GCash cancellation clears the pending handoff, not just the draft flag', () => {
   const src = readFileSync(new URL('../../app/src/pages/kiosk/gcash.astro', import.meta.url), 'utf8');
   assert.match(src, /function cancel\(\)[\s\S]*?save\(PENDING, null\)/);
@@ -131,6 +145,7 @@ test('the saved order and its notification match the Flutter payloads', () => {
   assert.equal(f.items[0].total, 120);
   assert.equal(f.checkoutSessionId, null);
   assert.equal(f.paymongoPaymentId, null);
+  assert.equal('itemsCount' in f, false);
   assert.equal('timestamp' in f, false);
   const n = order.notificationFor(o, '2026-11-16  01:04', 'doc1');
   assert.equal(n.orderDocId, 'doc1');

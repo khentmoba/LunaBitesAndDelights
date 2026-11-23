@@ -10,7 +10,7 @@ Read-only reference for production state that cannot be inspected from a local c
 | `TELEGRAM_CHAT_ID` | Yes (`telegramChatIds`) | Yes (v1, v2) | Comma-separated target chat IDs. |
 | `PAYMONGO_SECRET_KEY` | Yes (`paymongoSecret`) | Yes (v1) | Used by `createCheckoutSession`, `verifyCheckoutPayment`, and `paymongoWebhook`. |
 | `GOOGLE_MAPS_API_KEY` | Yes (`googleMapsApiKey`) | Yes (v1) | Optional static map preview fallback in `send_notification.ts`. |
-| `PAYMONGO_WEBHOOK_SECRET` | **No** (read via `process.env`) | **Yes (v1)** | Provisioned in Secret Manager (v1 created `2026-07-06`), but not yet declared with `defineSecret` in `functions/src/secrets.ts` or bound in `paymongoWebhook`'s `secrets: [...]` array. `paymongoWebhook` (`functions/src/payments/webhook.ts`) MUST keep its PayMongo API-verification fallback (`fetchCheckoutSessionDetailed`) until `PAYMONGO_WEBHOOK_SECRET` is bound via `defineSecret` and verified against live PayMongo webhook delivery. |
+| `PAYMONGO_WEBHOOK_SECRET` | Yes (`paymongoWebhookSecret`) | **Yes (v1)** | Provisioned in Secret Manager (v1 created `2026-07-06`) and bound to `paymongoWebhook`. HMAC verification is mandatory; the PayMongo API verification fallback (`fetchCheckoutSessionDetailed`) remains as a second check on session state and amount. |
 
 ## 2. Build-Time Public Keys (`.github/workflows/firebase-hosting-*.yml`)
 

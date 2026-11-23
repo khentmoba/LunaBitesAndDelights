@@ -229,6 +229,39 @@ export async function recordWindowFailure(key: string, windowMs: number): Promis
   });
 }
 
+/**
+ * Atomically checks the fixed-window failure budget and records one failure.
+ * Separate check + increment reads let concurrent failures all pass the
+ * threshold check before any of them writes, so use this on global budgets.
+ */
+export async function checkAndRecordWindowFailure(
+  key: string,
+  maxFailures: number,
+  windowMs: number,
+  message = 'Too many attempts. Please try again later.',
+): Promise<void> {
+  const db = getFirestore();
+  const ref = db.collection('rate_limits').doc(hashToken(key));
+  const now = Date.now();
+  const ttlMs = Math.max(windowMs * 2, MIN_RATE_LIMIT_TTL_MS);
+  await db.runTransaction(async (tx) => {
+    const snap = await tx.get(ref);
+    const d = snap.exists ? snap.data()! : null;
+    const windowStart = typeof d?.windowStart === 'number' ? d.windowStart : 0;
+    const count = typeof d?.count === 'number' ? d.count : 0;
+    if (d && now - windowStart < windowMs && count >= maxFailures) {
+      throw new HttpsError('resource-exhausted', message);
+    }
+    const inWindow = Boolean(d && now - windowStart < windowMs);
+    tx.set(ref, {
+      count: inWindow ? count + 1 : 1,
+      windowStart: inWindow ? windowStart : now,
+      updatedAt: FieldValue.serverTimestamp(),
+      expireAt: Timestamp.fromMillis((inWindow ? windowStart : now) + ttlMs),
+    }, { merge: true });
+  });
+}
+
 // ─── Password hashing: scrypt with per-user salt (#10) ───
 
 export function hashPassword(password: string): string {

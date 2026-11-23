@@ -61,7 +61,14 @@ jobs:
         with:
           node-version: '22'
           cache: 'npm'
-          cache-dependency-path: functions/package-lock.json
+          cache-dependency-path: |
+            package-lock.json
+            functions/package-lock.json
+
+      # The emulator scripts resolve firebase-tools from the root lockfile and
+      # use npx --no-install so CI cannot fall back to an unpinned download.
+      - run: npm ci
+        working-directory: .
 
       - run: npm ci
 

@@ -16,7 +16,7 @@ export function checkPrProof({ body = '', files = [] } = {}) {
   // Config, tooling and workflow files can weaken security headers, TTL parity
   // or the proof gate itself, so they require backend-grade evidence too.
   const isBackend = files.some((file) =>
-    /^(functions\/src\/|lib\/services\/|firestore\.rules$|storage\.rules$|firebase\.json$|firestore\.indexes\.json$|tool\/|app\/astro\.config\.mjs$|app\/package\.json$|\.github\/workflows\/)/.test(file),
+    /^(functions\/src\/|functions\/package(?:-lock)?\.json$|lib\/services\/|firestore\.rules$|storage\.rules$|firebase\.json$|firestore\.indexes\.json$|tool\/|app\/astro\.config\.mjs$|app\/package(?:-lock)?\.json$|package(?:-lock)?\.json$|\.github\/workflows\/)/.test(file),
   );
   const hasImage = /!\[[^\]]*\]\([^)]+\)/.test(body);
   const hasEvidence = /docs\/evidence\//.test(body);
