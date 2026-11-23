@@ -60,6 +60,8 @@ Google Maps replaces it. Verified end to end against a local build with a browse
 - Round 3 re-reviewed the proof-gate fix and returned **SHIP**, with no new findings.
 - The first PR rules run exposed that `npx` could not resolve the root-locked CLI from `functions/`; both emulator scripts now use the root npm prefix. The emulator suites and full local CI passed afterward.
 - Round 4 re-reviewed the CI path fix and returned **SHIP**, with no new findings.
+- Round 5 found that disabling Google's keyboard shortcuts left an arrow-key listener able to enable Confirm on an untouched pin. Round 6 found the arrow-key timer could flip the flag after `idle` had already skipped the address lookup. Both are fixed: interaction is recorded in `center_changed` and programmatic moves stay inside an ignore window, so the pin has to actually move.
+- Round 7 returned **SHIP** on that handler. Its hardening nit is applied: the ignore window is armed once at map creation so a first-paint center change cannot unlock Confirm. Its second nit (a drag entirely inside the ignore window on the page-load path) is declined: it cannot save wrong data because Confirm stays disabled, and the next move heals it.
 
 
 The audit also retains production-sensitive work: deny unauthenticated direct order creation and retire public legacy Pasugo/rider rules; enable callable App Check only after reviewing token metrics; replace the bounded KDS fallback scan only with a deployable index/query plan; and introduce a peppered PIN lookup only with Secret Manager provisioning and credential backfill. These require explicit production/deployment approval and operational confirmation. No Firestore rules, production App Check settings, production secrets, or deployed indexes were changed here.
