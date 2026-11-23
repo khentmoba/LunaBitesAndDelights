@@ -70,3 +70,24 @@ export function save(key: string, value: unknown): void {
     // Storage blocked: the next page falls back to its empty state.
   }
 }
+
+/** sessionStorage is user-writable and survives app updates: reject bad shapes. */
+export function validReceipt(value: unknown): value is Receipt {
+  if (!value || typeof value !== 'object') return false;
+  const r = value as Partial<Receipt>;
+  return typeof r.orderNumber === 'string'
+    && typeof r.customerName === 'string'
+    && typeof r.customerAddress === 'string'
+    && typeof r.customerPhone === 'string'
+    && typeof r.timeStr === 'string'
+    && typeof r.total === 'number' && Number.isFinite(r.total)
+    && (r.orderType === 'Pickup' || r.orderType === 'Delivery' || r.orderType === 'Walk-In')
+    && typeof r.isWalkIn === 'boolean'
+    && typeof r.telegramSent === 'boolean'
+    && Array.isArray(r.items)
+    && r.items.every((i) => i && typeof i === 'object'
+      && typeof i.name === 'string'
+      && (i.variant == null || typeof i.variant === 'string')
+      && typeof i.price === 'number' && Number.isFinite(i.price)
+      && typeof i.quantity === 'number' && Number.isFinite(i.quantity));
+}

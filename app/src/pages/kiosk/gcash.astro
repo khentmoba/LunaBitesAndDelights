@@ -96,7 +96,19 @@ let verifying = false;
 /** Navigator.pop(context, false): back to checkout, which says the payment did not go through. */
 function cancel() {
   const draft = load<CheckoutDraft>(DRAFT);
-  if (draft) save(DRAFT, { ...draft, gcashCancelled: true });
+  if (draft) {
+    save(DRAFT, {
+      ...draft,
+      gcashCancelled: true,
+      pendingDocId: null,
+      pendingNumber: null,
+      pendingCart: undefined,
+      idempotencyKey: undefined,
+    });
+  }
+  // A direct visit to /kiosk/gcash reads PENDING, so backing out must clear it
+  // too — otherwise the abandoned order can be re-opened for payment.
+  save(PENDING, null);
   popTo('/kiosk/checkout');
 }
 

@@ -29,8 +29,25 @@ export function shortAddress(address: Address | undefined): string {
 }
 
 function combineSignal(signal: AbortSignal | undefined, timeoutMs: number): AbortSignal {
-  const timeout = AbortSignal.timeout(timeoutMs);
-  return signal && 'any' in AbortSignal ? AbortSignal.any([signal, timeout]) : signal ?? timeout;
+  if (typeof AbortSignal.timeout === 'function') {
+    const timeout = AbortSignal.timeout(timeoutMs);
+    if (!signal) return timeout;
+    if (typeof AbortSignal.any === 'function') return AbortSignal.any([signal, timeout]);
+  }
+  // Older browsers: keep both the caller's abort and our deadline. Dropping
+  // either one leaves a geocode request hanging (or failing on every call).
+  const controller = new AbortController();
+  const onAbort = () => controller.abort();
+  if (signal) {
+    if (signal.aborted) controller.abort();
+    else signal.addEventListener('abort', onAbort, { once: true });
+  }
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  controller.signal.addEventListener('abort', () => {
+    clearTimeout(timer);
+    signal?.removeEventListener('abort', onAbort);
+  }, { once: true });
+  return controller.signal;
 }
 
 const MAX_GEO_CACHE = 100;

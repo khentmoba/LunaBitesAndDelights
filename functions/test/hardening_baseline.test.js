@@ -615,6 +615,59 @@ test('verify_staff mitigates username timing side-channel and create_checkout ma
   assert.match(checkoutSrc, /parsePaymongoCheckoutResponse\(json\)/);
 });
 
+test('multi-chunk Telegram failure keeps the chats that received earlier chunks', async () => {
+  const telegramApi = require('../lib/telegram_api');
+  const { telegramChatIds } = require('../lib/secrets');
+  const origChatIds = telegramChatIds.value;
+  telegramChatIds.value = () => 'chatA';
+  telegramApi.setTelegramRetryConfig({ maxAttempts: 1, sleep: async () => {} });
+  let call = 0;
+  telegramApi.setBot({
+    async sendMessage() {
+      call++;
+      if (call === 2) {
+        const err = new Error('ETELEGRAM: 500 transient');
+        err.response = { statusCode: 500 };
+        throw err;
+      }
+      return { message_id: call };
+    },
+    async sendPhoto() { return {}; },
+  });
+  try {
+    // Three chunks: the first is delivered, the second fails. Its error must
+    // still report chatA so the caller does not re-send chunk one on retry.
+    const err = await telegramApi.sendToAll('a'.repeat(8000)).then(
+      () => null,
+      (e) => e,
+    );
+    assert.ok(err, 'the second chunk must fail');
+    assert.deepEqual(err.deliveredChatIds, ['chatA']);
+  } finally {
+    telegramChatIds.value = origChatIds;
+    telegramApi.setBot(null);
+    telegramApi.setTelegramRetryConfig(null);
+  }
+});
+
+test('report retries, photo idempotency, cache TTLs and reconciler headroom are guarded', () => {
+  const reportSrc = fs.readFileSync(path.resolve(__dirname, '../src/reporting/daily_report.ts'), 'utf8');
+  assert.match(reportSrc, /retryCount: 3/);
+
+  const notifSrc = fs.readFileSync(path.resolve(__dirname, '../src/orders/send_notification.ts'), 'utf8');
+  const photoPersists = notifSrc.match(/onPhotoSent\(\)\.catch/g) || [];
+  assert.strictEqual(photoPersists.length, 2, 'both split and non-split photo paths must persist photoSent');
+  assert.match(notifSrc, /const RECONCILE_BATCH_LIMIT = 200/);
+
+  const telegramSrc = fs.readFileSync(path.resolve(__dirname, '../src/telegram_api.ts'), 'utf8');
+  assert.match(telegramSrc, /botToken !== token/);
+
+  const staffSrc = fs.readFileSync(path.resolve(__dirname, '../src/auth/verify_staff.ts'), 'utf8');
+  assert.match(staffSrc, /SEED_CHECK_TTL_MS/);
+  assert.match(staffSrc, /staffSeededAt/);
+  assert.doesNotMatch(staffSrc, /staffSeeded\s*=/);
+});
+
 test('notification reconciler runs serially and keeps structured delivery diagnostics', () => {
   const src = fs.readFileSync(path.resolve(__dirname, '../src/orders/send_notification.ts'), 'utf8');
   assert.match(src, /timeoutSeconds: 540/);

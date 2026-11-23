@@ -111,13 +111,15 @@ body { overflow: hidden; }
 import { peso } from '../../kiosk/cart';
 import { $, esc } from '../../kiosk/dom';
 import { fitLabels } from '../../kiosk/fit';
-import { RECEIPT, load, save, type Receipt } from '../../kiosk/handoff';
+import { RECEIPT, load, save, validReceipt } from '../../kiosk/handoff';
 import { glyph } from '../../kiosk/icons';
 import { watchInactivity } from '../../kiosk/inactivity';
 import { snack } from '../../kiosk/snackbar';
 
-const r = load<Receipt>(RECEIPT);
+const loaded: unknown = load(RECEIPT);
+const r = validReceipt(loaded) ? loaded : null;
 if (!r) {
+  save(RECEIPT, null);
   location.replace('/kiosk/menu');
 } else {
   watchInactivity();
