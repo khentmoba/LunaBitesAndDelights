@@ -6,6 +6,7 @@ import { toIsoTimestamp } from './kds';
 export const STALE_UNPAID_AGE_MS = 24 * 60 * 60 * 1000;
 const BATCH_LIMIT = 200;
 const MAX_PAGES = 10;
+const EXPIRE_CONCURRENCY = 10;
 
 /**
  * Returns true when an order is still awaiting GCash payment and its timestamp
@@ -32,6 +33,58 @@ export function expireUnpaidUpdate(data: Record<string, any>): Record<string, an
   return update;
 }
 
+async function sweepExpiredOrders(
+  db: Firestore,
+  nowMs: number,
+  batchLimit: number,
+  maxPages: number,
+  concurrency: number,
+): Promise<{ expired: number; failed: number }> {
+  let expired = 0;
+  let failed = 0;
+  let lastDoc: FirebaseFirestore.QueryDocumentSnapshot | null = null;
+
+  for (let page = 0; page < maxPages; page++) {
+    let q = db
+      .collection('orders')
+      .where('paymentStatus', '==', 'AWAITING_PAYMENT')
+      .limit(batchLimit);
+    if (lastDoc) q = q.startAfter(lastDoc);
+    const snap = await q.get();
+    if (snap.empty) break;
+
+    const staleDocs = snap.docs.filter((doc) => isStaleUnpaidOrder(doc.data(), nowMs));
+    for (let i = 0; i < staleDocs.length; i += concurrency) {
+      const chunk = staleDocs.slice(i, i + concurrency);
+      const results = await Promise.allSettled(
+        chunk.map((doc) =>
+          db.runTransaction(async (tx) => {
+            const fresh = await tx.get(doc.ref);
+            const freshData = fresh.exists ? fresh.data() : undefined;
+            if (!freshData || !isStaleUnpaidOrder(freshData, nowMs)) return false;
+            tx.update(doc.ref, expireUnpaidUpdate(freshData));
+            return true;
+          }),
+        ),
+      );
+      for (let j = 0; j < results.length; j++) {
+        const result = results[j];
+        if (result.status === 'fulfilled') {
+          if (result.value) expired++;
+        } else {
+          failed++;
+          logger.warn(`Failed to expire stale unpaid order ${chunk[j].id}; continuing sweep`, result.reason);
+        }
+      }
+    }
+
+    if (snap.docs.length < batchLimit) break;
+    lastDoc = snap.docs[snap.docs.length - 1];
+  }
+
+  return { expired, failed };
+}
+
 /**
  * Scans up to `MAX_PAGES * BATCH_LIMIT` `AWAITING_PAYMENT` orders and expires
  * those older than `STALE_UNPAID_AGE_MS`, isolating per-order transaction errors
@@ -41,41 +94,21 @@ export async function expireStaleUnpaidBatch(
   db: Firestore = getFirestore(),
   nowMs = Date.now(),
 ): Promise<{ expired: number; failed: number }> {
-  let expired = 0;
-  let failed = 0;
-  let lastDoc: FirebaseFirestore.QueryDocumentSnapshot | null = null;
+  return sweepExpiredOrders(db, nowMs, BATCH_LIMIT, MAX_PAGES, EXPIRE_CONCURRENCY);
+}
 
-  for (let page = 0; page < MAX_PAGES; page++) {
-    let q = db
-      .collection('orders')
-      .where('paymentStatus', '==', 'AWAITING_PAYMENT')
-      .limit(BATCH_LIMIT);
-    if (lastDoc) q = q.startAfter(lastDoc);
-    const snap = await q.get();
-    if (snap.empty) break;
-
-    for (const doc of snap.docs) {
-      if (!isStaleUnpaidOrder(doc.data(), nowMs)) continue;
-      try {
-        const updated = await db.runTransaction(async (tx) => {
-          const fresh = await tx.get(doc.ref);
-          const freshData = fresh.exists ? fresh.data() : undefined;
-          if (!freshData || !isStaleUnpaidOrder(freshData, nowMs)) return false;
-          tx.update(doc.ref, expireUnpaidUpdate(freshData));
-          return true;
-        });
-        if (updated) expired++;
-      } catch (err) {
-        failed++;
-        logger.warn(`Failed to expire stale unpaid order ${doc.id}; continuing sweep`, err);
-      }
-    }
-
-    if (snap.docs.length < BATCH_LIMIT) break;
-    lastDoc = snap.docs[snap.docs.length - 1];
-  }
-
-  return { expired, failed };
+/** Configurable form used by focused sweep tests. */
+export async function sweepStaleUnpaidOrders(
+  db: Firestore = getFirestore(),
+  opts: { nowMs?: number; batchLimit?: number; maxPages?: number; concurrency?: number } = {},
+): Promise<{ expired: number; failed: number }> {
+  return sweepExpiredOrders(
+    db,
+    opts.nowMs ?? Date.now(),
+    opts.batchLimit ?? BATCH_LIMIT,
+    opts.maxPages ?? MAX_PAGES,
+    Math.max(1, opts.concurrency ?? EXPIRE_CONCURRENCY),
+  );
 }
 
 /**

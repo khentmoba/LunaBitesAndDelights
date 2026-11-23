@@ -18,6 +18,8 @@ const GLOBAL_PIN_FAIL_MAX = 20;
 const GLOBAL_PIN_WINDOW_MS = 15 * 60 * 1000;
 const PASSWORD_IP_RATE_MAX = 30;
 const PASSWORD_IP_WINDOW_MS = 15 * 60 * 1000;
+const DUMMY_SCRYPT_HASH =
+  'scrypt$00000000000000000000000000000000$0000000000000000000000000000000000000000000000000000000000000000';
 let staffSeeded = false;
 
 export interface PinAccountEntry<T = any> {
@@ -169,6 +171,8 @@ async function verifyPasswordLogin(
   const staffRef = db.collection('staff_accounts').doc(username);
   const doc = await staffRef.get();
   if (!doc.exists) {
+    // Run scrypt even for unknown usernames to prevent timing-based username enumeration.
+    await verifyPasswordAsync(password, DUMMY_SCRYPT_HASH);
     logger.info('Staff login failed: unknown user');
     return fail();
   }

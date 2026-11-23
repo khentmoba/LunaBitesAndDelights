@@ -23,6 +23,6 @@ export function gate(root: HTMLElement, mount: Mount): void {
     shown = want;
     document.body.classList.toggle('is-gated', !staff);
     if (staff) dispose = mount(root, currentStaff);
-    else mountLogin(root);
+    else dispose = mountLogin(root);
   });
 }

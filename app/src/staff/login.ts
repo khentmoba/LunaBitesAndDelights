@@ -17,8 +17,8 @@ interface VerifyResult {
   message?: string;
 }
 
-/** Renders the gate into `root`; the session listener swaps it out after sign-in. */
-export function mountLogin(root: HTMLElement): void {
+/** Renders the gate into `root`; returns a cleanup function for listeners/timers. */
+export function mountLogin(root: HTMLElement): () => void {
   let mode: Mode = 'pin';
   let pin = '';
   let user = '';
@@ -207,4 +207,8 @@ export function mountLogin(root: HTMLElement): void {
   root.ownerDocument.addEventListener('keydown', onKey);
 
   render();
+  return () => {
+    release();
+    root.ownerDocument.removeEventListener('keydown', onKey);
+  };
 }

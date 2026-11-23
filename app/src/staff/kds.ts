@@ -63,6 +63,8 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
   let initialFallbackTimer = 0;
   let lookbackTimer = 0;
   let searchTimer = 0;
+  let clock = 0;
+  let detachBackgroundListeners: (() => void) | null = null;
   let fetchInFlight = false;
   let fetchSeq = 0;
   let disposed = false;
@@ -148,17 +150,27 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
     }
   }
 
-  function haltOnAuthError(message: string) {
+  function stopBackgroundActivity() {
     unsub?.();
     unsub = null;
     clearTimeout(initialFallbackTimer);
     initialFallbackTimer = 0;
+    clearTimeout(searchTimer);
+    searchTimer = 0;
     clearInterval(pollTimer);
     pollTimer = 0;
     clearInterval(reconnectTimer);
     reconnectTimer = 0;
     clearInterval(lookbackTimer);
     lookbackTimer = 0;
+    clearInterval(clock);
+    clock = 0;
+    detachBackgroundListeners?.();
+    detachBackgroundListeners = null;
+  }
+
+  function haltOnAuthError(message: string) {
+    stopBackgroundActivity();
     connecting = false;
     isLive = false;
     loading = false;
@@ -251,6 +263,7 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
     if (updating.has(orderId)) return;
     updating.add(orderId);
     renderBoard();
+    let authHalted = false;
     try {
       const data = await callFn<{ success?: boolean; message?: string }>('updateOrderStatus', {
         orderId,
@@ -268,6 +281,8 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
       if (disposed) return;
       const err = fnError(e);
       if (err && isAuthCode(err.code)) {
+        authHalted = true;
+        updating.delete(orderId);
         const msg = 'Staff session expired. Sign in again to update orders.';
         haltOnAuthError(msg);
         staffSnack(msg, ERROR);
@@ -276,7 +291,7 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
       }
     } finally {
       updating.delete(orderId);
-      if (!disposed) renderAll();
+      if (!disposed && !authHalted) renderBoard();
     }
   }
 
@@ -816,7 +831,13 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
     renderBoard();
   };
   wideMq.addEventListener('change', onLayout);
-  const clock = window.setInterval(() => {
+  detachBackgroundListeners = () => {
+    document.removeEventListener('visibilitychange', onVisibilityChange);
+    removeEventListener('online', onOnline);
+    removeEventListener('offline', onOffline);
+    wideMq.removeEventListener('change', onLayout);
+  };
+  clock = window.setInterval(() => {
     now = Date.now();
     refreshElapsedTimes();
   }, 30_000);
@@ -827,17 +848,7 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
 
   return () => {
     disposed = true;
-    unsub?.();
-    clearTimeout(initialFallbackTimer);
-    clearTimeout(searchTimer);
-    clearInterval(pollTimer);
-    clearInterval(reconnectTimer);
-    clearInterval(lookbackTimer);
-    clearInterval(clock);
-    document.removeEventListener('visibilitychange', onVisibilityChange);
-    removeEventListener('online', onOnline);
-    removeEventListener('offline', onOffline);
-    wideMq.removeEventListener('change', onLayout);
+    stopBackgroundActivity();
     root.removeEventListener('click', onRootClick);
   };
 }
