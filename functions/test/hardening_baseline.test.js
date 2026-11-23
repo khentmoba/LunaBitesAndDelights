@@ -159,3 +159,80 @@ test('clientIpFromRequest falls back to socket.remoteAddress when headers and ip
     '203.0.113.5',
   );
 });
+
+test('every process.env read in functions/src is declared via defineSecret or explicitly allowlisted', () => {
+  const srcRoot = path.resolve(__dirname, '../src');
+  const secretsSrc = fs.readFileSync(path.join(srcRoot, 'secrets.ts'), 'utf8');
+  const declaredSecrets = new Set(
+    [...secretsSrc.matchAll(/defineSecret\(['"]([A-Z0-9_]+)['"]\)/g)].map((m) => m[1]),
+  );
+  // Optional/runtime env vars with documented fallbacks (see docs/DEPLOYMENT_STATE.md):
+  const allowlistedEnv = new Set([
+    'PAYMONGO_WEBHOOK_SECRET', // Optional until provisioned; webhook.ts falls back to PayMongo API verification
+    'MAPTILER_KEY', // Optional static map fallback in send_notification.ts
+    'FUNCTIONS_EMULATOR',
+    'FIRESTORE_EMULATOR_HOST',
+    'GCLOUD_PROJECT',
+    'NODE_ENV',
+  ]);
+
+  function walkTs(dir, out = []) {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) walkTs(full, out);
+      else if (entry.name.endsWith('.ts')) out.push(full);
+    }
+    return out;
+  }
+
+  const unbound = [];
+  for (const file of walkTs(srcRoot)) {
+    const text = fs.readFileSync(file, 'utf8');
+    for (const m of text.matchAll(/\bprocess\.env\.([A-Z0-9_]+)\b/g)) {
+      const envName = m[1];
+      if (!declaredSecrets.has(envName) && !allowlistedEnv.has(envName)) {
+        unbound.push(`${path.relative(srcRoot, file)} -> process.env.${envName}`);
+      }
+    }
+  }
+  assert.deepEqual(unbound, [], `Unbound process.env secret reads:\n${unbound.join('\n')}`);
+
+  // Also ensure webhook.ts does not fail closed with 503 when PAYMONGO_WEBHOOK_SECRET is unset
+  const webhookSrc = fs.readFileSync(path.join(srcRoot, 'payments', 'webhook.ts'), 'utf8');
+  assert.equal(
+    webhookSrc.includes('fetchCheckoutSessionDetailed'),
+    true,
+    'webhook.ts must preserve PayMongo API verification fallback while PAYMONGO_WEBHOOK_SECRET is unprovisioned',
+  );
+});
+
+test('firebase.json wires firestore.rules and firestore.indexes.json and all TTL collections have fieldOverrides', () => {
+  const firebaseJson = JSON.parse(
+    fs.readFileSync(path.resolve(__dirname, '../../firebase.json'), 'utf8'),
+  );
+  assert.equal(firebaseJson.firestore?.rules, 'firestore.rules');
+  assert.equal(firebaseJson.firestore?.indexes, 'firestore.indexes.json');
+
+  const indexes = JSON.parse(
+    fs.readFileSync(path.resolve(__dirname, '../../firestore.indexes.json'), 'utf8'),
+  );
+  const ttlGroups = new Set(
+    (indexes.fieldOverrides || [])
+      .filter((o) => o.fieldPath === 'expireAt' && o.ttl === true)
+      .map((o) => o.collectionGroup),
+  );
+  for (const requiredGroup of [
+    'stats_events',
+    'rate_limits',
+    'login_attempts',
+    'kds_orders',
+    'order_notifications',
+    'daily_reports_sent',
+  ]) {
+    assert.equal(
+      ttlGroups.has(requiredGroup),
+      true,
+      `firestore.indexes.json missing expireAt TTL fieldOverride for ${requiredGroup}`,
+    );
+  }
+});

@@ -30,6 +30,7 @@ Thumbs.db
 # Local screenshot scratch dirs
 .live/
 .preview/
+.evidence-urls.md
 
 # Desktop agent app state
 .reasonix/

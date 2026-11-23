@@ -1,30 +1,23 @@
 # LUNA Bites & Delights
 
-Luna Bites & Delights is a food business application that enables customers to order, pay, and choose between delivery or pickup.
+Luna Bites & Delights is a food and drink ordering web application for delivery and pickup in Magallanes, Agusan del Norte.
 
 - **Storefront:** https://lunabitesanddelights.web.app
-- **Ordering app:** https://lunabitesanddelights.web.app/kiosk/menu
+- **Ordering app:** https://lunabitesanddelights.web.app/kiosk/menu/
+- **Staff console:** https://lunabitesanddelights.web.app/staff/
 - **Legacy domain:** `lunaexpress.web.app` permanently redirects (301) to the canonical domain above.
 
-## Project Vision
+## Documentation
 
-Our goal is to provide a seamless, mobile-optimized experience for food ordering while ensuring robust data security and payment processing.
-
-## Governance
-
-This project is governed by the [Project Constitution](.specify/memory/constitution.md). All contributors and developers must adhere to the core principles defined therein:
-1. **User-Centric Ordering**
-2. **Payment-First Fulfillment**
-3. **Fulfillment Flexibility**
-4. **Data Integrity & Security**
-5. **Spec Kit Compliance**
-
-## Development Workflow
-
-We use the Spec Kit (Specify -> Plan -> Implement) methodology for all feature development. Ensure you have the `.agent` skills available for automated workflow management.
+- [PRODUCT.md](PRODUCT.md) — Product scope, menu & pricing rules, and brand commitments.
+- [DESIGN.md](DESIGN.md) — Design system ("Pink Order Pad" palette, typography, components).
+- [CODING_STANDARDS.md](CODING_STANDARDS.md) — Backend, frontend, CSP, and Firestore rules invariants.
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — Codebase directory map and coupled file invariants.
+- [docs/DEPLOYMENT_STATE.md](docs/DEPLOYMENT_STATE.md) — Production secrets, App Check, and rules-drift state.
+- [SECURITY.md](SECURITY.md) — Security controls checklist.
 
 ## Getting Started
 
-1. **Environment Setup**: Install Node 22, then `npm ci` in `app/` and `functions/`. `npm run dev --prefix app` serves the storefront, kiosk and staff pages.
-2. **Firebase Configuration**: Link the project to your Firebase instance using `firebase init`.
-3. **Explore Specs**: View planned features in the `specs/` directory.
+1. **Install dependencies:** Run `npm run setup` (installs Node 22 dependencies across root, `app/`, and `functions/`).
+2. **Local development:** Run `npm --prefix app run dev` to serve the storefront, kiosk, and staff pages.
+3. **Full verification gate:** Run `npm run ci` to execute all typechecks, linters, unit tests, Firebase emulator tests (`rules` + `derived`), and storefront checks from `.github/workflows/pr-checks.yml`.
