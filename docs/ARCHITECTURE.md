@@ -22,7 +22,7 @@ Single-deploy Astro 7 + TypeScript frontend (`app/`) and Firebase Cloud Function
 - `functions/src/reporting/` — `analytics.ts`, `lifetime_report.ts`, `daily_report.ts`, `manual_report.ts`, `daily_stats.ts`.
 - `functions/scripts/` — Operational scripts (`check-firestore-rules-drift.js`, `check-prod-config.js`, `backfill-derived-views.js`, `reset-staff-credentials.js`).
 - `test/site/` — Storefront, kiosk, staff, price-parity, hosting/CSP, file-reference, and local-CI tests (`npm run test:site`).
-- `functions/test/` — Backend unit tests (`test/*.test.js`) and Firebase emulator tests (`test/emulator/firestore-rules.test.js`, `test/emulator/derived-views.test.js`).
+- `functions/test/` — Backend unit tests (`functions/test/*.test.js`) and Firebase emulator tests (`functions/test/emulator/firestore-rules.test.js`, `functions/test/emulator/derived-views.test.js`).
 - `tool/` — `ci-local.mjs` (`npm run ci`), `publish_evidence.mjs`, `png_diff.mjs`, `check_pr_proof.mjs`, `with-java21.mjs`, `perf_probe.mjs`, and `tool/parity/`.
 
 ## Coupled Invariants
