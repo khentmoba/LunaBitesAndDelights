@@ -51,7 +51,7 @@ Production before the switch, at 390x844:
 
 ![Production map picker showing MapTiler's invalid key watermark](https://github.com/khentmoba/LunaBitesAndDelights/blob/evidence/docs/evidence/map-maptiler-invalid-key-390.png?raw=true)
 
-Google Maps replaces it. Verified end to end against a local build with a browser key: dragging the map re-resolves the address (`Pandanon-Magallanes Road, Poblacion` to `Pandanon-Magallanes Road, Magallanes`) and enables Confirm, and searching moves the map and fills the address. Address search and reverse geocoding still come from Nominatim, so they never depended on the map key.
+Google Maps replaces it. Verified end to end against a local build with a browser key: dragging the map re-resolves the address (`Pandanon-Magallanes Road, Poblacion` to `Pandanon-Magallanes Road, Magallanes`) and enables Confirm, and searching moves the map and fills the address. Arrow keys only count as interaction once the pin actually moves, so a keystroke alone cannot enable Confirm on an untouched center. Address search and reverse geocoding still come from Nominatim, so they never depended on the map key.
 
 ## Independent review
 

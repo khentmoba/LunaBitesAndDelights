@@ -173,7 +173,6 @@ if (!mapsKey) {
         zoom: 17,
         disableDefaultUI: true,
         clickableIcons: false,
-        keyboardShortcuts: false,
         gestureHandling: 'greedy',
         backgroundColor: '#f7f1f3',
       });
@@ -243,7 +242,14 @@ async function fetchAddress(la: number, ln: number) {
 }
 
 mapEl.addEventListener('keydown', (e) => {
-  if (['ArrowUp', 'ArrowRight', 'ArrowDown', 'ArrowLeft'].includes(e.key)) userInteracted = true;
+  if (!['ArrowUp', 'ArrowRight', 'ArrowDown', 'ArrowLeft'].includes(e.key)) return;
+  // Only count arrow keys that actually moved the pin. This guard is what
+  // keeps Confirm from saving a center the shopper never touched.
+  const from = center();
+  window.setTimeout(() => {
+    const now = center();
+    if (Math.abs(now.lat - from.lat) > 1e-9 || Math.abs(now.lng - from.lng) > 1e-9) userInteracted = true;
+  }, 300);
 });
 
 async function goToMyLocation() {
