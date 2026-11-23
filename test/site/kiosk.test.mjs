@@ -56,6 +56,8 @@ test('the GCash handoff rejects a stale or hand-edited pending order', () => {
     null, {}, { ...good, orderDocId: '' }, { ...good, orderDocId: 'not a doc id' },
     { ...good, orderDocId: 42 }, { ...good, amount: '99' }, { ...good, amount: 0 },
     { ...good, items: null }, { ...good, receipt: null }, { ...good, orderId: '' },
+    { ...good, items: [] }, { ...good, items: [{ name: 'x' }] },
+    { ...good, items: [{ name: 'Shawarma Wrap', price: '99', quantity: 1 }] },
   ]) {
     assert.equal(validPending(bad), false, JSON.stringify(bad));
   }

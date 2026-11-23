@@ -74,3 +74,12 @@ otherwise. Money in, no order marked PAID, no log line: nothing to investigate.
 - App Check enforcement is intentionally off behind a prod flag.
 - `getActiveOrders`' seven-day scan and the missing composite index (REL-01 /
   PERF-01) need a deployed index, so they stay documented, not fixed.
+- `CheckoutDraft` (`app/src/kiosk/checkout.astro`, `app/src/kiosk/map.astro`) is
+  still read with an unchecked cast, so a hand-edited `lat`/`lng`/`pendingDocId`
+  survives the merge over `fresh()`. Same class as fix 1 but pre-existing and
+  wider (three call sites plus the map's coordinate use); deferred rather than
+  half-done here. A `validDraft` mirroring `validPending` is the follow-up.
+- Two concurrent `triggerManualReport` calls from different staff devices can
+  still both send, because fix 2 reads the guard before sending and has no
+  `sending` lease. Deliberate duplicate sends are legitimate, so a lease needs
+  its own decision; the 5-minute per-uid rate limit bounds it meanwhile.

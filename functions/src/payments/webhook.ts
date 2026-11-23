@@ -146,13 +146,13 @@ export const paymongoWebhook = onRequest(
         if (!docId) {
           // Money arrived but nothing links it to an order: leave a trace instead
           // of dropping the event silently.
-          logger.error(`Paid PayMongo session ${sessionId} has no order reference; nothing was marked PAID`);
+          logger.error(`Paid PayMongo session ${sessionId} (ref ${refNumber || 'none'}) has no order reference; nothing was marked PAID`);
           res.status(200).send('OK');
           return;
         }
         const paidCentavos = paidPaymentAmountCentavos(session.payments);
         if (paidCentavos === null) {
-          logger.error(`Paid PayMongo session ${sessionId} reported no integer paid amount; order ${docId} stays unpaid for review`);
+          logger.error(`Paid PayMongo session ${sessionId} (ref ${refNumber || 'none'}) reported no integer paid amount; order ${docId} stays unpaid for review`);
           res.status(200).send('OK');
           return;
         }

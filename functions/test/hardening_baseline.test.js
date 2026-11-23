@@ -762,8 +762,8 @@ test('runManualSalesReport skips chats that already received a failed attempt, t
 
 test('a paid webhook session that cannot be applied to an order is logged, not dropped silently', () => {
   const webhookSrc = fs.readFileSync(path.resolve(__dirname, '../src/payments/webhook.ts'), 'utf8');
-  assert.match(webhookSrc, /if \(!docId\) \{[\s\S]*?logger\.error\(`Paid PayMongo session \$\{sessionId\} has no order reference/);
-  assert.match(webhookSrc, /if \(paidCentavos === null\) \{[\s\S]*?logger\.error\(`Paid PayMongo session \$\{sessionId\} reported no integer paid amount/);
+  assert.match(webhookSrc, /if \(!docId\) \{[\s\S]*?logger\.error\(`Paid PayMongo session \$\{sessionId\} \(ref \$\{refNumber \|\| 'none'\}\) has no order reference/);
+  assert.match(webhookSrc, /if \(paidCentavos === null\) \{[\s\S]*?logger\.error\(`Paid PayMongo session \$\{sessionId\} \(ref \$\{refNumber \|\| 'none'\}\) reported no integer paid amount/);
   assert.doesNotMatch(webhookSrc, /if \(docId && paidCentavos !== null\)/);
 });
 

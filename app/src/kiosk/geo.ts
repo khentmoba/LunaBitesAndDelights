@@ -67,6 +67,7 @@ export async function reverseGeocode(lat: number, lng: number, signal?: AbortSig
   const cacheKey = `${lat.toFixed(5)},${lng.toFixed(5)}`;
   const cached = reverseCache.get(cacheKey);
   if (cached) return cached;
+  if (signal?.aborted) return { full: '', short: '' };
   try {
     await waitForLookupSlot();
     if (signal?.aborted) return { full: '', short: '' };
@@ -89,6 +90,7 @@ export async function searchAddress(query: string, signal?: AbortSignal): Promis
   const cacheKey = query.trim().toLowerCase();
   const cached = searchCache.get(cacheKey);
   if (cached) return cached;
+  if (signal?.aborted) return [];
   try {
     await waitForLookupSlot();
     if (signal?.aborted) return [];
