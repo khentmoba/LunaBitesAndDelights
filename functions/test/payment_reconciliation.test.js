@@ -560,3 +560,65 @@ test('a verified payment for a missing order is refused out loud, not silently',
     ff.logger.warn = origWarn;
   }
 });
+
+test('persistCheckoutSession returns the winning attempt session after a transaction contention retry', async () => {
+  const { persistCheckoutSession } = require('../lib/payments/create_checkout');
+  const nowMs = 1_700_000_000_000;
+  const snapshots = [
+    {
+      exists: true,
+      data: () => ({
+        paymentMethod: 'GCash',
+        status: 'Pending',
+        paymentStatus: 'AWAITING_PAYMENT',
+        checkoutSessionId: 'cs_old',
+        checkoutUrl: 'https://checkout.paymongo.com/cs_old',
+        checkoutCreatedAt: nowMs - 10_000,
+      }),
+    },
+    {
+      exists: true,
+      data: () => ({
+        paymentMethod: 'GCash',
+        status: 'Pending',
+        paymentStatus: 'PAYMENT_FAILED',
+        checkoutSessionId: 'cs_old',
+        checkoutUrl: 'https://checkout.paymongo.com/cs_old',
+        checkoutCreatedAt: nowMs - 10_000,
+      }),
+    },
+  ];
+
+  let attempt = 0;
+  let lastWritten = null;
+  const fakeDb = {
+    async runTransaction(fn) {
+      let lastResult;
+      while (attempt < snapshots.length) {
+        const snap = snapshots[attempt++];
+        lastResult = await fn({
+          get: async () => snap,
+          set(_ref, payload) {
+            lastWritten = payload;
+          },
+        });
+      }
+      return lastResult;
+    },
+  };
+
+  const result = await persistCheckoutSession(
+    fakeDb,
+    { id: 'ord_retry' },
+    { sessionId: 'cs_new', checkoutUrl: 'https://checkout.paymongo.com/cs_new' },
+    150,
+    nowMs,
+  );
+
+  assert.deepStrictEqual(result, {
+    sessionId: 'cs_new',
+    checkoutUrl: 'https://checkout.paymongo.com/cs_new',
+  });
+  assert.strictEqual(lastWritten.checkoutSessionId, 'cs_new');
+  assert.strictEqual(lastWritten.checkoutUrl, 'https://checkout.paymongo.com/cs_new');
+});

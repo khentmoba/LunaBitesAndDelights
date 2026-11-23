@@ -108,8 +108,9 @@ test('opening the map preserves typed delivery addresses until the shopper pins 
   const src = readFileSync(new URL('../../app/src/pages/kiosk/map.astro', import.meta.url), 'utf8');
   assert.match(src, /if \(draft\?\.pinned \|\| draft\?\.address\?\.trim\(\)\) return;/);
   assert.match(src, /map\.addListener\('center_changed', \(\) => \{\s*if \(Date\.now\(\) < ignoreIdleUntil\) return;/);
-  assert.match(src, /if \(!map \|\| Date\.now\(\) < ignoreIdleUntil \|\| !userInteracted\) return;/);
+  assert.match(src, /if \(!map \|\| loading \|\| Date\.now\(\) < ignoreIdleUntil \|\| !userInteracted\) return;/);
   assert.match(src, /!draft\?\.pinned && !userInteracted/);
+  assert.match(src, /const resolved = await fetchAddress\(lat, lng\);\s*if \(!resolved\)/);
 });
 
 test('a rejected Google Maps key shows our notice instead of the map error overlay', () => {

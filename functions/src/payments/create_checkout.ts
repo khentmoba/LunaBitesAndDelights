@@ -138,6 +138,80 @@ export function validateAndPriceItems(rawItems: unknown): { items: PricedItem[];
   return { items, total };
 }
 
+/**
+ * Persists a newly created PayMongo checkout session inside a transaction,
+ * returning the authoritative `{ sessionId, checkoutUrl }` directly from the
+ * transaction so a contention retry cannot leak state from a lost attempt.
+ */
+export async function persistCheckoutSession(
+  db: Pick<FirebaseFirestore.Firestore, 'runTransaction'>,
+  orderRef: FirebaseFirestore.DocumentReference,
+  parsedCheckout: { sessionId: string; checkoutUrl: string },
+  itemsTotal: number,
+  nowMs = Date.now(),
+): Promise<{ sessionId: string; checkoutUrl: string }> {
+  return db.runTransaction(async (tx) => {
+    const snap = await tx.get(orderRef);
+    if (!snap.exists) {
+      throw new HttpsError('not-found', 'Order not found');
+    }
+    const current = snap.data()!;
+    if (String(current.paymentMethod || '').toLowerCase() !== 'gcash') {
+      throw new HttpsError('failed-precondition', 'Checkout session is only available for GCash orders');
+    }
+    if (current.status === 'Cancelled') {
+      throw new HttpsError('failed-precondition', 'Order is cancelled');
+    }
+    if (current.paymentStatus === 'PAID') {
+      throw new HttpsError('failed-precondition', 'Order is already paid');
+    }
+    const prevIds: string[] = Array.isArray(current.checkoutSessionIds)
+      ? current.checkoutSessionIds.filter((s: unknown): s is string => typeof s === 'string' && s.length > 0)
+      : (typeof current.checkoutSessionId === 'string' && current.checkoutSessionId.length > 0
+        ? [current.checkoutSessionId]
+        : []);
+    const mergedIds = Array.from(new Set([...prevIds, parsedCheckout.sessionId])).slice(-5);
+    if (
+      current.paymentStatus === 'AWAITING_PAYMENT' &&
+      typeof current.checkoutUrl === 'string' &&
+      current.checkoutUrl.length > 0 &&
+      typeof current.checkoutSessionId === 'string' &&
+      current.checkoutSessionId.length > 0 &&
+      typeof current.checkoutCreatedAt === 'number' &&
+      nowMs - current.checkoutCreatedAt < CHECKOUT_REUSE_MS
+    ) {
+      // Concurrent call won first: keep its URL as primary, but also record this session id so payment still reconciles.
+      tx.set(orderRef, {
+        checkoutSessionIds: mergedIds,
+        ...(current.initialCheckoutSessionId
+          ? {}
+          : { initialCheckoutSessionId: current.checkoutSessionId }),
+      }, { merge: true });
+      return {
+        sessionId: current.checkoutSessionId,
+        checkoutUrl: current.checkoutUrl,
+      };
+    }
+    tx.set(orderRef, {
+      checkoutSessionId: parsedCheckout.sessionId,
+      checkoutSessionIds: mergedIds,
+      ...(current.initialCheckoutSessionId
+        ? {}
+        : { initialCheckoutSessionId: current.checkoutSessionId || parsedCheckout.sessionId }),
+      checkoutUrl: parsedCheckout.checkoutUrl,
+      checkoutCreatedAt: nowMs,
+      paymentMethod: 'GCash',
+      paymentStatus: 'AWAITING_PAYMENT',
+      totalAmount: itemsTotal,
+      verifiedTotal: itemsTotal,
+    }, { merge: true });
+    return {
+      sessionId: parsedCheckout.sessionId,
+      checkoutUrl: parsedCheckout.checkoutUrl,
+    };
+  });
+}
+
 export const createCheckoutSession = onCall(
   { secrets: [paymongoSecret] }, // #1
   async (request) => {
@@ -253,63 +327,8 @@ export const createCheckoutSession = onCall(
         throw new HttpsError('internal', 'Payment provider error');
       }
 
-      let resolvedSessionId = parsedCheckout.sessionId;
-      let resolvedCheckoutUrl = parsedCheckout.checkoutUrl;
-      await getFirestore().runTransaction(async (tx) => {
-        const snap = await tx.get(orderRef);
-        if (!snap.exists) {
-          throw new HttpsError('not-found', 'Order not found');
-        }
-        const current = snap.data()!;
-        if (String(current.paymentMethod || '').toLowerCase() !== 'gcash') {
-          throw new HttpsError('failed-precondition', 'Checkout session is only available for GCash orders');
-        }
-        if (current.status === 'Cancelled') {
-          throw new HttpsError('failed-precondition', 'Order is cancelled');
-        }
-        if (current.paymentStatus === 'PAID') {
-          throw new HttpsError('failed-precondition', 'Order is already paid');
-        }
-        const prevIds: string[] = Array.isArray(current.checkoutSessionIds)
-          ? current.checkoutSessionIds.filter((s: unknown): s is string => typeof s === 'string' && s.length > 0)
-          : (typeof current.checkoutSessionId === 'string' && current.checkoutSessionId.length > 0
-            ? [current.checkoutSessionId]
-            : []);
-        const mergedIds = Array.from(new Set([...prevIds, parsedCheckout.sessionId])).slice(-5);
-        if (
-          current.paymentStatus === 'AWAITING_PAYMENT' &&
-          typeof current.checkoutUrl === 'string' &&
-          current.checkoutUrl.length > 0 &&
-          typeof current.checkoutSessionId === 'string' &&
-          current.checkoutSessionId.length > 0 &&
-          typeof current.checkoutCreatedAt === 'number' &&
-          Date.now() - current.checkoutCreatedAt < CHECKOUT_REUSE_MS
-        ) {
-          // Concurrent call won first: keep its URL as primary, but also record this session id so payment still reconciles.
-          resolvedSessionId = current.checkoutSessionId;
-          resolvedCheckoutUrl = current.checkoutUrl;
-          tx.set(orderRef, {
-            checkoutSessionIds: mergedIds,
-            ...(current.initialCheckoutSessionId
-              ? {}
-              : { initialCheckoutSessionId: current.checkoutSessionId }),
-          }, { merge: true });
-          return;
-        }
-        tx.set(orderRef, {
-          checkoutSessionId: parsedCheckout.sessionId,
-          checkoutSessionIds: mergedIds,
-          ...(current.initialCheckoutSessionId
-            ? {}
-            : { initialCheckoutSessionId: current.checkoutSessionId || parsedCheckout.sessionId }),
-          checkoutUrl: parsedCheckout.checkoutUrl,
-          checkoutCreatedAt: Date.now(),
-          paymentMethod: 'GCash',
-          paymentStatus: 'AWAITING_PAYMENT',
-          totalAmount: itemsTotal,
-          verifiedTotal: itemsTotal,
-        }, { merge: true });
-      });
+      const { sessionId: resolvedSessionId, checkoutUrl: resolvedCheckoutUrl } =
+        await persistCheckoutSession(getFirestore(), orderRef, parsedCheckout, itemsTotal);
 
       logger.info(`Checkout session resolved for order ${orderId}: ${resolvedSessionId}`);
       // #17: only what the client needs to redirect.

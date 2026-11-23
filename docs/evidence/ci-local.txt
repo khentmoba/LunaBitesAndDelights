@@ -1,4 +1,4 @@
-Local run of .github/workflows/pr-checks.yml at 12f5e16 + working tree, 2026-11-23T22:32:24.130Z, node v24.22.2
+Local run of .github/workflows/pr-checks.yml at ca833d9 + working tree, 2026-11-23T23:22:32.438Z, node v24.22.2
 note: functions runs on node 22 in CI
 note: rules runs on node 22 in CI
 note: site runs on node 22 in CI
@@ -21,8 +21,8 @@ PASS  Derived views tests (Functions + Firestore emulators) (functions) exit=0 1
 SKIP  npm ci (.) up-to-date
 SKIP  npm ci (app) up-to-date
 PASS  Astro type check (app) exit=0 5s
-PASS  Lint (promise checks) (app) exit=0 4s
-PASS  Build the storefront (app) exit=0 3s
+PASS  Lint (promise checks) (app) exit=0 3s
+PASS  Build the storefront (app) exit=0 2s
 PASS  Fail on high/critical runtime vulnerabilities (app) exit=0 1s
 PASS  Storefront tests (.) exit=0 2s
 SKIP  Verify PR proof and attribution (.) needs PR context: PR_BODY, BASE_SHA, HEAD_SHA

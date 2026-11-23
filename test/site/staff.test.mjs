@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import vm from 'node:vm';
 
 const kds = await import('../../app/src/staff/kds-data.ts');
 const report = await import('../../app/src/staff/report-data.ts');
@@ -122,7 +123,7 @@ test('staff login reads password-manager autofill values without input events', 
   dom.window.close();
 });
 
-test('staff service worker serves immutable assets cache-first and navigations network-first', () => {
+test('staff service worker serves immutable assets cache-first and prunes navigation cache entries', async () => {
   const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
   const sw = readFileSync(join(root, 'app/public/staff/sw.js'), 'utf8');
   assert.match(sw, /const immutable\s*=.*\/_astro\//);
@@ -130,8 +131,77 @@ test('staff service worker serves immutable assets cache-first and navigations n
   assert.match(sw, /caches\.open\(CACHE\)\.then\(\(c\) => c\.match\(req\)\)/);
   assert.match(sw, /if \(immutable\)\s*\{[\s\S]*matchCache\(req\)/);
   assert.match(sw, /const MAX_NAVIGATION_ENTRIES = 8/);
-  assert.match(sw, /key\.mode === 'navigate'/);
-  assert.match(sw, /navigationKeys\.length > MAX_NAVIGATION_ENTRIES/);
+
+  // Execute sw.js with a Cache API mock whose keys() return mode: 'cors'
+  // (matching the real browser Cache API, where stored Requests never have mode === 'navigate').
+  const store = new Map();
+  const cache = {
+    async put(req, res) {
+      store.set(req.url, res);
+    },
+    async match(req) {
+      return store.get(req.url);
+    },
+    async keys() {
+      return [...store.keys()].map((url) => ({ url, mode: 'cors' }));
+    },
+    async delete(req) {
+      return store.delete(req.url);
+    },
+  };
+  let fetchHandler = null;
+  const ctx = vm.createContext({
+    URL,
+    Response,
+    location: { origin: 'https://lunabitesanddelights.web.app' },
+    self: {
+      addEventListener(type, fn) {
+        if (type === 'fetch') fetchHandler = fn;
+      },
+      skipWaiting() {},
+      clients: { claim() {} },
+    },
+    caches: {
+      async open() { return cache; },
+      async keys() { return ['luna-staff-v3']; },
+      async delete() { return true; },
+    },
+    async fetch() {
+      return { ok: true, clone() { return { ok: true }; } };
+    },
+  });
+  vm.runInContext(sw, ctx);
+  assert.ok(fetchHandler, 'sw.js should register a fetch listener');
+
+  // Seed non-navigation assets that must never be evicted by navigation pruning.
+  store.set('https://lunabitesanddelights.web.app/_astro/app.js', { ok: true });
+  store.set('https://lunabitesanddelights.web.app/kiosk/fonts/inter.woff2', { ok: true });
+  store.set('https://lunabitesanddelights.web.app/kiosk/images/luna_logo.webp', { ok: true });
+
+  for (let i = 0; i < 10; i++) {
+    const waits = [];
+    let responsePromise = null;
+    fetchHandler({
+      request: {
+        method: 'GET',
+        mode: 'navigate',
+        url: `https://lunabitesanddelights.web.app/staff/page-${i}`,
+      },
+      respondWith(p) { responsePromise = p; },
+      waitUntil(p) { waits.push(p); },
+    });
+    await responsePromise;
+    await Promise.all(waits);
+  }
+
+  const cachedUrls = [...store.keys()];
+  const navUrls = cachedUrls.filter((u) => u.includes('/staff/page-'));
+  assert.equal(navUrls.length, 8, 'navigation cache should be pruned to MAX_NAVIGATION_ENTRIES');
+  assert.equal(navUrls[0], 'https://lunabitesanddelights.web.app/staff/page-2');
+  assert.equal(navUrls[7], 'https://lunabitesanddelights.web.app/staff/page-9');
+  assert.ok(store.has('https://lunabitesanddelights.web.app/_astro/app.js'));
+  assert.ok(store.has('https://lunabitesanddelights.web.app/kiosk/fonts/inter.woff2'));
+  assert.ok(store.has('https://lunabitesanddelights.web.app/kiosk/images/luna_logo.webp'));
 });
 
 test('kds delayed badge keeps INK contrast on elapsed-time ticks and dashboard handles non-admin badge', () => {

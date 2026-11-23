@@ -674,6 +674,7 @@ export async function reconcileMissedOrderNotifications(
     maxAttempts?: number;
     limit?: number;
     concurrency?: number;
+    paidDocs?: FirebaseFirestore.QueryDocumentSnapshot[];
   } = {},
 ): Promise<{ checked: number; retried: number; sent: number; failed: number }> {
   if (!hasTelegramConfig()) {
@@ -689,22 +690,25 @@ export async function reconcileMissedOrderNotifications(
   const concurrency = Math.max(1, opts.concurrency ?? RECONCILE_CONCURRENCY);
 
   const cutoffMs = nowMs - lookbackMs;
-  const [recentSnap, paidSnap] = await Promise.all([
+  const [recentSnap, paidDocs] = await Promise.all([
     db.collection('orders')
       .where('timestamp', '>=', Timestamp.fromMillis(cutoffMs))
       .orderBy('timestamp', 'desc')
       .limit(limit)
       .get(),
-    db.collection('orders')
-      .where('paidAt', '>=', new Date(cutoffMs).toISOString())
-      .orderBy('paidAt', 'desc')
-      .limit(limit)
-      .get(),
+    opts.paidDocs
+      ? Promise.resolve(opts.paidDocs)
+      : db.collection('orders')
+          .where('paidAt', '>=', new Date(cutoffMs).toISOString())
+          .orderBy('paidAt', 'desc')
+          .limit(limit)
+          .get()
+          .then((snap) => snap.docs),
   ]);
 
   const seenDocs = new Map<string, FirebaseFirestore.QueryDocumentSnapshot>();
   for (const doc of recentSnap.docs) seenDocs.set(doc.id, doc);
-  for (const doc of paidSnap.docs) seenDocs.set(doc.id, doc);
+  for (const doc of paidDocs) seenDocs.set(doc.id, doc);
   const docs = Array.from(seenDocs.values());
 
   const candidates = docs.filter((doc) => {
@@ -786,9 +790,11 @@ export async function reconcileMissedPaymentNotifications(
   opts: {
     nowMs?: number;
     lookbackMs?: number;
+    minAgeMs?: number;
     maxAttempts?: number;
     limit?: number;
     concurrency?: number;
+    paidDocs?: FirebaseFirestore.QueryDocumentSnapshot[];
   } = {},
 ): Promise<{ checked: number; retried: number; sent: number; failed: number }> {
   if (!hasTelegramConfig()) {
@@ -798,20 +804,26 @@ export async function reconcileMissedPaymentNotifications(
 
   const nowMs = opts.nowMs ?? Date.now();
   const lookbackMs = opts.lookbackMs ?? RECONCILE_LOOKBACK_MS;
+  const minAgeMs = opts.minAgeMs ?? RECONCILE_MIN_AGE_MS;
   const maxAttempts = opts.maxAttempts ?? RECONCILE_MAX_ATTEMPTS;
   const limit = opts.limit ?? RECONCILE_BATCH_LIMIT;
   const concurrency = Math.max(1, opts.concurrency ?? RECONCILE_CONCURRENCY);
   const cutoff = new Date(nowMs - lookbackMs).toISOString();
 
-  const paidSnap = await db.collection('orders')
+  const paidDocs = opts.paidDocs ?? (await db.collection('orders')
     .where('paidAt', '>=', cutoff)
     .orderBy('paidAt', 'desc')
     .limit(limit)
-    .get();
+    .get()).docs;
 
-  const docs = paidSnap.docs.filter((doc) => {
+  const docs = paidDocs.filter((doc) => {
     const data = doc.data();
-    return String(data.paymentMethod || '').toLowerCase() === 'gcash' && data.paymentStatus === 'PAID';
+    if (String(data.paymentMethod || '').toLowerCase() !== 'gcash' || data.paymentStatus !== 'PAID') {
+      return false;
+    }
+    const paidAtMs = typeof data.paidAt === 'string' ? Date.parse(data.paidAt) : NaN;
+    if (Number.isFinite(paidAtMs) && nowMs - paidAtMs < minAgeMs) return false;
+    return true;
   });
   if (docs.length === 0) {
     return { checked: 0, retried: 0, sent: 0, failed: 0 };
@@ -877,9 +889,20 @@ export const reconcileOrderNotifications = onSchedule(
     secrets: [telegramToken, telegramChatIds, googleMapsApiKey],
   },
   async () => {
+    if (!hasTelegramConfig()) {
+      logger.warn('reconcileOrderNotifications: Telegram config missing; skipping reconciliation');
+      return;
+    }
+    const db = getFirestore();
+    const nowMs = Date.now();
+    const paidSnap = await db.collection('orders')
+      .where('paidAt', '>=', new Date(nowMs - RECONCILE_LOOKBACK_MS).toISOString())
+      .orderBy('paidAt', 'desc')
+      .limit(RECONCILE_BATCH_LIMIT)
+      .get();
     const [orders, payments] = await Promise.all([
-      reconcileMissedOrderNotifications(),
-      reconcileMissedPaymentNotifications(),
+      reconcileMissedOrderNotifications(db, { nowMs, paidDocs: paidSnap.docs }),
+      reconcileMissedPaymentNotifications(db, { nowMs, paidDocs: paidSnap.docs }),
     ]);
     if (orders.retried > 0) logger.info('Order notification reconciliation completed', orders);
     if (payments.retried > 0) logger.info('Payment notification reconciliation completed', payments);
