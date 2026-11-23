@@ -8,4 +8,5 @@ import { defineSecret } from 'firebase-functions/params';
 export const telegramToken = defineSecret('TELEGRAM_TOKEN');
 export const telegramChatIds = defineSecret('TELEGRAM_CHAT_ID');
 export const paymongoSecret = defineSecret('PAYMONGO_SECRET_KEY');
+export const paymongoWebhookSecret = defineSecret('PAYMONGO_WEBHOOK_SECRET');
 export const googleMapsApiKey = defineSecret('GOOGLE_MAPS_API_KEY');

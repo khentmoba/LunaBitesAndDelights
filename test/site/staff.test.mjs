@@ -8,6 +8,8 @@ const kds = await import('../../app/src/staff/kds-data.ts');
 const report = await import('../../app/src/staff/report-data.ts');
 const { staffUsernameFor } = await import('../../app/src/kiosk/staff-hint.ts');
 const { esc, icon, num, int } = await import('../../app/src/staff/ui.ts');
+const { JSDOM } = await import('jsdom');
+const { readPasswordCredentials } = await import('../../app/src/staff/login-credentials.ts');
 
 /// These cases were ported from the Flutter staff screens (removed in the
 /// cutover), so the kitchen and report rules stay the same.
@@ -109,6 +111,15 @@ test('ui helpers format icons and finite numbers cleanly', () => {
   assert.equal(int(199.9), 199);
 });
 
+test('staff login reads password-manager autofill values without input events', () => {
+  const dom = new JSDOM('<form><input name="user"><input name="pass"></form>');
+  const form = dom.window.document.querySelector('form');
+  form.elements.namedItem('user').value = 'ana';
+  form.elements.namedItem('pass').value = 'secret';
+  assert.deepEqual(readPasswordCredentials(form), { username: 'ana', password: 'secret' });
+  dom.window.close();
+});
+
 test('staff service worker serves immutable assets cache-first and navigations network-first', () => {
   const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
   const sw = readFileSync(join(root, 'app/public/staff/sw.js'), 'utf8');
@@ -116,7 +127,9 @@ test('staff service worker serves immutable assets cache-first and navigations n
   assert.match(sw, /const fontAsset\s*=.*\/kiosk\/fonts\//);
   assert.match(sw, /caches\.open\(CACHE\)\.then\(\(c\) => c\.match\(req\)\)/);
   assert.match(sw, /if \(immutable\)\s*\{[\s\S]*matchCache\(req\)/);
-  assert.match(sw, /req\.mode === 'navigate'/);
+  assert.match(sw, /const MAX_NAVIGATION_ENTRIES = 8/);
+  assert.match(sw, /key\.mode === 'navigate'/);
+  assert.match(sw, /navigationKeys\.length > MAX_NAVIGATION_ENTRIES/);
 });
 
 test('kds delayed badge keeps INK contrast on elapsed-time ticks and dashboard handles non-admin badge', () => {
@@ -133,16 +146,22 @@ test('kds delayed badge keeps INK contrast on elapsed-time ticks and dashboard h
   assert.match(checkoutSrc, /isWalkIn:\s*draft\.orderType\s*===\s*'Walk-In'/);
 
   // KDS updateStatus clears busy state before haltOnAuthError, tears down background timers/listeners, and uses targeted renderBoard() in finally
-  assert.match(kdsSrc, /function haltOnAuthError\(message: string\)\s*\{\s*stopBackgroundActivity\(\);/);
+  assert.match(kdsSrc, /function haltOnAuthError\(message: string\)\s*\{\s*authHalted = true;[\s\S]*stopBackgroundActivity\(\);/);
   assert.match(kdsSrc, /function stopBackgroundActivity\(\)[\s\S]*clearInterval\(clock\);[\s\S]*detachBackgroundListeners\?\.\(\);/);
   assert.match(kdsSrc, /if \(err && isAuthCode\(err\.code\)\)[\s\S]*updating\.delete\(orderId\);[\s\S]*haltOnAuthError\(/);
   assert.match(kdsSrc, /updating\.delete\(orderId\);\s*\n\s*if \(!disposed && !authHalted\) renderBoard\(\);/);
   assert.match(kdsSrc, /const onOnline = \(\) => \{[\s\S]*startLiveListener\(\)/);
+  assert.match(kdsSrc, /await Promise\.all\(\[firebaseDb\(\), import\('firebase\/firestore'\)\]\);[\s\S]*if \(disposed \|\| authHalted\) return;[\s\S]*unsub\?\.\(\);/);
+  assert.match(kdsSrc, /await startLiveListener\(\);\s*if \(disposed \|\| authHalted\) return;\s*lookbackTimer/);
 
   // Staff login returns cleanup wired by gate.ts
   const loginSrc = readFileSync(join(root, 'app/src/staff/login.ts'), 'utf8');
   assert.match(loginSrc, /export function mountLogin\(root: HTMLElement\): \(\) => void/);
+  assert.match(loginSrc, /readPasswordCredentials\(e\.target as HTMLFormElement\)/);
   assert.match(loginSrc, /removeEventListener\('keydown',\s*onKey\)/);
   const gateSrc = readFileSync(join(root, 'app/src/staff/gate.ts'), 'utf8');
+  assert.match(kdsSrc, /board\.querySelector<HTMLButtonElement>\([^\n]*data-tab=\"\$\{next\}\"[^\n]*\)\?\.focus\(\)/);
+  assert.match(kdsSrc, /event\.key === 'ArrowRight'[\s\S]*event\.key === 'ArrowLeft'[\s\S]*event\.key === 'Home'[\s\S]*event\.key === 'End'/);
+  assert.match(kdsSrc, /if \(authHalted \|\| !getStaff\(\)\) return;/);
   assert.match(gateSrc, /else dispose = mountLogin\(root\);/);
 });

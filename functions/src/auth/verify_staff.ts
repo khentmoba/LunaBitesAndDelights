@@ -5,7 +5,7 @@ import { logger } from 'firebase-functions';
 import * as crypto from 'crypto';
 import {
   cleanStr, checkRateLimit, recordLoginFailure, clearLoginAttempts,
-  checkWindowBudget, recordWindowFailure, clientIpFromRequest, enforceFixedWindowRateLimit,
+  checkWindowBudget, checkAndRecordWindowFailure, clientIpFromRequest, enforceFixedWindowRateLimit,
   hashPasswordAsync, verifyPasswordAsync, requireStaff,
 } from '../util/security';
 
@@ -15,6 +15,8 @@ const PIN_RE = /^[0-9]{4,8}$/;
 const PIN_VERIFY_CONCURRENCY = 2;
 const GLOBAL_PIN_FAIL_KEY = 'staff:pin_login:global';
 const GLOBAL_PIN_FAIL_MAX = 20;
+const GLOBAL_PIN_ATTEMPT_KEY = 'staff:pin_login:global_attempts';
+const GLOBAL_PIN_ATTEMPT_MAX = GLOBAL_PIN_FAIL_MAX;
 const GLOBAL_PIN_WINDOW_MS = 15 * 60 * 1000;
 const PASSWORD_IP_RATE_MAX = 30;
 const PASSWORD_IP_WINDOW_MS = 15 * 60 * 1000;
@@ -106,6 +108,12 @@ async function verifyPinLogin(db: Firestore, request: CallableRequest, pin: stri
     GLOBAL_PIN_WINDOW_MS,
     'Too many failed PIN attempts. Please sign in with username and password.',
   );
+  await enforceFixedWindowRateLimit(
+    GLOBAL_PIN_ATTEMPT_KEY,
+    GLOBAL_PIN_ATTEMPT_MAX,
+    GLOBAL_PIN_WINDOW_MS,
+    'Too many PIN login attempts. Please try again later.',
+  );
 
   const staffAccounts = await db.collection('staff_accounts')
     .select('pinHash', 'username', 'role')
@@ -121,10 +129,15 @@ async function verifyPinLogin(db: Firestore, request: CallableRequest, pin: stri
 
   if (!match) {
     logger.info('Staff PIN login failed: bad PIN');
-    await Promise.all([
-      recordLoginFailure(pinRateKey),
-      recordWindowFailure(GLOBAL_PIN_FAIL_KEY, GLOBAL_PIN_WINDOW_MS),
-    ]);
+    await recordLoginFailure(pinRateKey);
+    // The global budget is shared across instances; check and increment in
+    // one transaction so concurrent failures cannot all slip past the cap.
+    await checkAndRecordWindowFailure(
+      GLOBAL_PIN_FAIL_KEY,
+      GLOBAL_PIN_FAIL_MAX,
+      GLOBAL_PIN_WINDOW_MS,
+      'Too many failed PIN attempts. Please sign in with username and password.',
+    );
     return { success: false, message: GENERIC_PIN_FAIL };
   }
 

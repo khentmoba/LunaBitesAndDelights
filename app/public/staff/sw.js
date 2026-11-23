@@ -4,6 +4,7 @@
 // the next load; immutable hashed bundles and fonts are served cache-first.
 const CACHE = 'luna-staff-v3';
 const MAX_ASTRO_ENTRIES = 40;
+const MAX_NAVIGATION_ENTRIES = 8;
 
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', (event) => {
@@ -22,6 +23,12 @@ async function cacheAndPrune(req, res) {
     const astroKeys = keys.filter((k) => new URL(k.url).pathname.startsWith('/_astro/'));
     if (astroKeys.length > MAX_ASTRO_ENTRIES) {
       await Promise.all(astroKeys.slice(0, astroKeys.length - MAX_ASTRO_ENTRIES).map((k) => cache.delete(k)));
+    }
+  } else if (req.mode === 'navigate') {
+    const keys = await cache.keys();
+    const navigationKeys = keys.filter((key) => key.mode === 'navigate');
+    if (navigationKeys.length > MAX_NAVIGATION_ENTRIES) {
+      await Promise.all(navigationKeys.slice(0, navigationKeys.length - MAX_NAVIGATION_ENTRIES).map((key) => cache.delete(key)));
     }
   }
 }

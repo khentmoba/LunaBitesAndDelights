@@ -10,12 +10,12 @@ Read-only reference for production state that cannot be inspected from a local c
 | `TELEGRAM_CHAT_ID` | Yes (`telegramChatIds`) | Yes (v1, v2) | Comma-separated target chat IDs. |
 | `PAYMONGO_SECRET_KEY` | Yes (`paymongoSecret`) | Yes (v1) | Used by `createCheckoutSession`, `verifyCheckoutPayment`, and `paymongoWebhook`. |
 | `GOOGLE_MAPS_API_KEY` | Yes (`googleMapsApiKey`) | Yes (v1) | Optional static map preview fallback in `send_notification.ts`. |
-| `PAYMONGO_WEBHOOK_SECRET` | **No** (read via `process.env`) | **Yes (v1)** | Provisioned in Secret Manager (v1 created `2026-07-06`), but not yet declared with `defineSecret` in `functions/src/secrets.ts` or bound in `paymongoWebhook`'s `secrets: [...]` array. `paymongoWebhook` (`functions/src/payments/webhook.ts`) MUST keep its PayMongo API-verification fallback (`fetchCheckoutSessionDetailed`) until `PAYMONGO_WEBHOOK_SECRET` is bound via `defineSecret` and verified against live PayMongo webhook delivery. |
+| `PAYMONGO_WEBHOOK_SECRET` | Yes (`paymongoWebhookSecret`) | **Yes (v1)** | Provisioned in Secret Manager (v1 created `2026-07-06`) and bound to `paymongoWebhook`. HMAC verification is mandatory; the PayMongo API verification fallback (`fetchCheckoutSessionDetailed`) remains as a second check on session state and amount. |
 
 ## 2. Build-Time Public Keys (`.github/workflows/firebase-hosting-*.yml`)
 
 - `PUBLIC_RECAPTCHA_SITE_KEY` (from GitHub secret `RECAPTCHA_SITE_KEY`) — Initializes Firebase App Check (reCAPTCHA Enterprise) in `app/src/kiosk/firebase.ts`.
-- `PUBLIC_MAPTILER_KEY` (from GitHub secret `MAPTILER_KEY`) — Tile key for `/kiosk/map/`; falls back to a tile-free picker if unset locally.
+- `PUBLIC_GOOGLE_MAPS_KEY` (from GitHub secret `GOOGLE_MAPS_BROWSER_KEY`) — Browser key for the Google Maps JavaScript API on `/kiosk/map/`; falls back to the tile-free picker when unset. It needs HTTP-referrer restrictions for `lunabitesanddelights.web.app/*`, `lunabitesanddelights.firebaseapp.com/*`, and `localhost/*`, and the Maps JavaScript API enabled on a billing account. `MAPTILER_KEY` / `PUBLIC_MAPTILER_KEY` is retired for the kiosk: that key's referrer allowlist only covered `lunaexpress.web.app`, so the canonical site got MapTiler's "Invalid key" watermark tiles until this switch.
 
 ## 3. Firebase App Check Enforcement
 

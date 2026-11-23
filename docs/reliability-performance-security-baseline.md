@@ -1,7 +1,7 @@
 # Reliability, Performance & Security Baseline
 
-**Baseline Commit:** `d060c11` (post PR #73 & PR #74 hardening)  
-**Captured:** 2026-11-22  
+**Baseline Commit:** `d060c11` (post PR #73 & PR #74 hardening)
+**Captured:** 2026-11-24
 **Scope:** Astro frontend (`app/`), Firebase Cloud Functions v2 (`functions/`), Firestore & Storage rules (`firestore.rules`, `storage.rules`, `firestore.indexes.json`), Firebase Hosting config (`firebase.json`), and CI (`.github/workflows/pr-checks.yml`).
 
 This document establishes a verifiable baseline of controls already in place and a prioritized backlog of remaining **Security**, **Reliability**, and **Performance** improvements for future iterations.
@@ -10,14 +10,15 @@ This document establishes a verifiable baseline of controls already in place and
 
 ## 1. Current Hardened Baseline (Already Implemented)
 
-The following controls are active in the codebase as of `d060c11` (see also `docs/evidence/security-reliability-performance-hardening.md` and `docs/evidence/security-reliability-performance-review-loop.md`):
+The following controls reflect the codebase reviewed on 2026-11-24 (see also `docs/evidence/perf-reliability-security-2026-11-24.md`, `docs/evidence/security-reliability-performance-hardening.md`, and `docs/evidence/security-reliability-performance-review-loop.md`):
 
 - **Server-side pricing & order creation:** `placeOrder` (`functions/src/orders/place_order.ts`) re-prices all line items against `MENU_PRICES` / `VARIANT_PRICES`, assigns `totalAmount`, `dateLabel`, `timestamp`, `status`, `paymentStatus`, and `entryType` server-side, and deduplicates retries via `idempotencyKey` + payload SHA-256 fingerprint.
-- **Payment reconciliation:** `createCheckoutSession` (`functions/src/payments/create_checkout.ts`) reuses active sessions (45m window) and validates against the persisted order doc. `verifyCheckoutPayment` (`functions/src/payments/verify_payment.ts`) and `paymongoWebhook` (`functions/src/payments/webhook.ts`) verify session ownership and exact centavo amounts directly against PayMongo, transitioning `paymentStatus` atomically via `markOrderPaidOnce`. Late GCash payments on cancelled orders trigger a refund-review Telegram alert instead of a kitchen prep ticket.
+- **Payment reconciliation:** `createCheckoutSession` (`functions/src/payments/create_checkout.ts`) reuses active sessions (45m window) and validates against the persisted order doc. `verifyCheckoutPayment` (`functions/src/payments/verify_payment.ts`) and `paymongoWebhook` (`functions/src/payments/webhook.ts`) verify session ownership and exact centavo amounts directly against PayMongo; the webhook additionally requires the provisioned HMAC secret and rejects missing/invalid signatures before API reconciliation.
 - **Staff authentication & rate limiting:** `verifyStaff` and `updateStaffPin` (`functions/src/auth/verify_staff.ts`) use per-user salted `scrypt` (`512MiB`, concurrency `10`), atomic seeding (`batch.create`), IP-scoped fixed-window rate limits, and per-account/IP lockouts backed by TTL-enabled `login_attempts` and `rate_limits` collections.
 - **Derived views & notification deduplication:** `onOrderWritten` (`functions/src/orders/derived.ts`, `retry: true`) maintains `kds_orders` (with `sourceEventMs` out-of-order guard and TTL), `dailyStats` (with `stats_events` idempotency guard), and Telegram notifications (deduplicated via `order_notifications/{orderDocId}` with `photoSent` persistence and 10m stale-retry cutoff).
 - **Storage & Hosting headers:** `storage.rules` is default-deny. `firebase.json` enforces HSTS, `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy`, `Permissions-Policy`, `COOP`, immutable caching for `/_astro/**`, and strict CSP without `'unsafe-inline'` in `script-src` for `/staff/**` and `/kiosk/**`.
-- **Frontend performance & KDS resilience:** Lazy Firebase SDK imports (`app/src/kiosk/firebase.ts`), `firestore/lite` on checkout, bounded Nominatim caching + 800ms debounce (`app/src/kiosk/geo.ts`), rAF-throttled layout fitting (`fit.ts`, `dashboard.ts`), hidden-tab KDS polling pause, auth-error timer teardown, and scoped SWR caching in `app/public/staff/sw.js`.
+- **Frontend performance & KDS resilience:** Lazy Firebase SDK imports (`app/src/kiosk/firebase.ts`), `firestore/lite` on checkout, bounded Nominatim caching + 800ms debounce (`app/src/kiosk/geo.ts`), rAF-throttled layout fitting (`fit.ts`, `dashboard.ts`), hidden-tab KDS polling pause, auth-error timer teardown, keyboard-accessible KDS tabs, and navigation-cache bounds in `app/public/staff/sw.js`.
+- **Dashboard payloads:** Staff dashboard summary calls select persisted `itemsCount` rather than transferring complete `items[]` and order coordinates, phone numbers, or addresses.
 - **CI regression gates:** `.github/workflows/pr-checks.yml` enforces TypeScript builds, ESLint promise checks, unit tests, Firestore rules emulator tests, derived-views emulator tests, Astro checks/tests, and `npm audit --omit=dev --audit-level=high`.
 
 ---
@@ -28,7 +29,7 @@ The following controls are active in the codebase as of `d060c11` (see also `doc
 |---|---|---|---|---|---|
 | **SEC-01** | Critical | Pending (prod-gated) | Prod-gated | `firestore.rules` | Direct unauthenticated client `create` on `orders/{orderId}` bypasses `placeOrder` |
 | **SEC-02** | High | Pending (prod-gated) | Prod-gated | `firestore.rules` | Legacy `pasugo_errands` / `pasugo_sessions` / `riders` rules expose public PII & allow unauthenticated writes |
-| **SEC-03** | High | Pending (prod-gated) | Prod-gated | `functions/src/payments/webhook.ts` | `PAYMONGO_WEBHOOK_SECRET` not bound via `defineSecret`; signature verification fails open when unset |
+| **SEC-03** | High | Resolved (secret provisioned; HMAC required) | Code-only | `functions/src/payments/webhook.ts` | `PAYMONGO_WEBHOOK_SECRET` is bound via `defineSecret`; webhook signature verification fails closed when missing or invalid |
 | **SEC-04** | High | Pending (prod-gated) | Prod-gated | Public `onCall` functions | `enforceAppCheck: true` not enabled on public callables |
 | **SEC-05** | Medium | Resolved (scoped) | Code-only | `firebase.json` | Strict `script-src` without `'unsafe-inline'` extended to `/payment/**` (alongside `/kiosk/**` and `/staff/**`); static `/` and `/menu/` intentionally retain inline JS for 1-RTT 2G/3G first paint |
 | **SEC-06** | Medium | Resolved | Code-only | `functions/src/orders/place_order.ts` | Non-staff `placeOrder` calls ignore client `orderId` and always generate `serverOrderNumber()` |
@@ -47,10 +48,9 @@ The following controls are active in the codebase as of `d060c11` (see also `doc
 - **Risk:** `pasugo_errands` allows `allow list: if true` (exposing customer names, phone numbers, and locations) and unauthenticated `create` / `update` (the `available -> cancelled` check `request.resource.data.customerPhone == resource.data.customerPhone` is trivially satisfied by any unauthenticated caller omitting `customerPhone` from a partial update). `pasugo_sessions/{sessionId}/messages` allows any authenticated user to write messages into any active session without verifying session membership.
 - **Remediation:** Confirm zero production usage (matching `storage.rules` which already removed rider document access) and remove these rule blocks so they fall through to default deny.
 
-#### SEC-03 — Provision `PAYMONGO_WEBHOOK_SECRET` and fail closed
-- **Where:** `functions/src/payments/webhook.ts:55, 92-95`, `functions/src/secrets.ts`
-- **Risk:** `PAYMONGO_WEBHOOK_SECRET` is read from `process.env` rather than `defineSecret`. When unset, `verifyPaymongoSignature` only validates header format and timestamp freshness, relying on PayMongo API lookup. An attacker can force outbound PayMongo API calls up to the per-IP limit (120/min).
-- **Remediation:** Provision `PAYMONGO_WEBHOOK_SECRET` in Secret Manager, bind it in `secrets.ts` and `paymongoWebhook`, and return `503` (or `401`) if the secret is missing so HMAC verification is mandatory.
+#### SEC-03 — Require PayMongo webhook HMAC verification
+- **Status:** Resolved. `PAYMONGO_WEBHOOK_SECRET` is provisioned in production (v1), bound through `defineSecret`, and mandatory on `paymongoWebhook`; invalid or absent signatures fail closed before API reconciliation.
+- **Proof:** `functions/test/hardening_baseline.test.js` verifies HMAC/timestamp validation and fail-closed behavior; see `docs/evidence/perf-reliability-security-2026-11-24.md`.
 
 #### SEC-04 — Enforce Firebase App Check on public callables
 - **Where:** `functions/src/orders/place_order.ts`, `functions/src/payments/create_checkout.ts`, `functions/src/payments/verify_payment.ts`, `functions/src/orders/send_notification.ts`, `functions/src/auth/verify_staff.ts`
@@ -86,7 +86,7 @@ The following controls are active in the codebase as of `d060c11` (see also `doc
 | **REL-01** | High | Pending (prod-gated) | Prod-gated | `firestore.indexes.json`, `functions/src/orders/kds.ts` | `getActiveOrders` scans at most 600 recent orders and filters in memory; active orders can be missed during high volume |
 | **REL-02** | High | Resolved | Code-only | `functions/src/payments/paymongo.ts`, `derived.ts` | Payment confirmation & `paidAfterCancel` Telegram alerts moved into `onOrderWritten` (`retry: true`) with atomic deduplication |
 | **REL-03** | Medium | Resolved | Code-only | `app/src/staff/kds.ts`, `kds.css` | KDS tracks `snap.metadata.fromCache` and `online`/`offline` events and displays an offline/cached warning banner |
-| **REL-04** | Medium | Resolved (idempotency) | Code-only | `functions/src/reporting/daily_report.ts` | Added `daily_reports_sent/{dateLabel}` atomic idempotency guard with 30-day TTL (22:00 PHT cutoff unchanged pending ops confirmation) |
+| **REL-04** | Medium | Resolved (idempotency & scheduled date) | Code-only | `functions/src/reporting/daily_report.ts` | Atomic daily-send guard uses the scheduler's scheduled PHT date on retries; 22:00 PHT cutoff remains pending ops confirmation |
 | **REL-05** | Medium | Resolved | Code-only | `functions/src/reporting/manual_report.ts` | Added per-staff fixed-window rate limit (2/5m) and `HttpsError('internal', ...)` on unexpected failures |
 | **REL-06** | Medium | Resolved | Code-only | `functions/src/orders/expire_unpaid.ts` | Added daily `expireStaleUnpaidOrders` sweep marking >24h `AWAITING_PAYMENT` orders as `PAYMENT_EXPIRED` + `Cancelled` |
 | **REL-07** | Low | Resolved | Code-only | `app/src/pages/kiosk/gcash.astro` | Added debounced `visibilitychange` auto-verify when returning to the kiosk tab |
@@ -109,10 +109,10 @@ The following controls are active in the codebase as of `d060c11` (see also `doc
 - **Failure Mode:** Firestore's `onSnapshot` does not invoke its error callback on transient Wi-Fi drops; it serves cached data silently while the UI continues displaying a green live status.
 - **Remediation:** Inspect `snap.metadata.fromCache` (with `includeMetadataChanges: true`) and listen to `window` `online`/`offline` events to show a clear "OFFLINE / CACHED" banner in the KDS header immediately when connectivity drops.
 
-#### REL-04 — Guard `dailySalesReport` against duplicate scheduler retries & clarify cutoff
+#### REL-04 — Guard daily reports against duplicate retries and keep the scheduled date
 - **Where:** `functions/src/reporting/daily_report.ts`
-- **Failure Mode:** If Cloud Scheduler retries after a partial delivery, duplicate daily summary messages can be sent to Telegram. Additionally, orders placed between 22:00 and 23:59 PHT are missed by the 22:00 daily message.
-- **Remediation:** Record a `daily_reports_sent/{dateLabel}` idempotency marker (with TTL) before/after sending, and confirm with operations whether 22:00 PHT matches closing time or if a midnight/end-of-day cutoff is preferred.
+- **Resolution:** `daily_reports_sent/{dateLabel}` provides an atomic idempotency guard; scheduled invocations derive the PHT date from `event.scheduleTime`, so a retry after midnight remains attached to the day the schedule fired. The existing 22:00 PHT cutoff remains unchanged pending operations confirmation.
+- **Delivery guarantee:** Telegram has no idempotency key. If Telegram delivery succeeds while all Firestore writes remain unavailable, the sent marker cannot be persisted and a later retry after the lease TTL may duplicate a message; this is an unavoidable at-least-once trade-off, not a claim of exactly-once delivery.
 
 #### REL-05 — Rate-limit `triggerManualReport` and standardize errors
 - **Where:** `functions/src/reporting/manual_report.ts`
@@ -142,7 +142,7 @@ The following controls are active in the codebase as of `d060c11` (see also `doc
 |---|---|---|---|---|---|
 | **PERF-01** | High | Pending (prod-gated) | Prod-gated | `functions/src/orders/kds.ts`, `firestore.indexes.json` | Indexed active-order query to eliminate scanning up to 600 docs per fallback poll |
 | **PERF-02** | High | Deferred | Code-only | `functions/src/index.ts` | Split codebases / lazy-load handlers when dependencies grow (currently only `firebase-admin` + `firebase-functions`) |
-| **PERF-03** | Medium | Resolved | Code-only | `app/src/staff/dashboard.ts`, `functions/src/orders/kds.ts` | Dashboard requests `summaryOnly: true` via `projectOrderSummary`, omitting `items[]` and customer PII |
+| **PERF-03** | Medium | Resolved | Code-only | `app/src/staff/dashboard.ts`, `functions/src/orders/kds.ts`, `functions/src/orders/place_order.ts` | Dashboard summary query selects persisted `itemsCount`, excluding full item arrays, coordinates, and phone/address fields |
 | **PERF-04** | Medium | Pending (prod-gated) | Prod-gated | `functions/src/auth/verify_staff.ts` | Peppered `pinLookupHash` requires new `PIN_PEPPER_SECRET` in Secret Manager + backfill |
 | **PERF-05** | Medium | Deferred | Code-only | `functions/src/reporting/lifetime_report.ts` | All-time report reads every `dailyStats` doc; add yearly rollups once `dailyStats` exceeds ~500 docs |
 | **PERF-06** | Low | Resolved | Code-only | `app/src/staff/reports.ts` | `fitTitle` resize listener now throttled with `requestAnimationFrame` + `cancelAnimationFrame` on dispose |
@@ -162,9 +162,8 @@ The following controls are active in the codebase as of `d060c11` (see also `doc
 - **Improvement:** Defer heavy module imports inside handler bodies (or split codebases/entrypoints) so each function only loads its own dependency tree on cold start.
 
 #### PERF-03 — Slim down dashboard recent-orders payload
-- **Where:** `app/src/staff/dashboard.ts:68-73`, `functions/src/orders/kds.ts`
-- **Bottleneck:** Dashboard invokes `getActiveOrders({ includeCompleted: true, limit: 10 })`, which scans `pageSize = 50` full order docs and transfers complete item arrays and coordinates even though `orderTile` only renders order number, type, customer name, timestamp, and total.
-- **Improvement:** Add a lightweight summary projection or query `kds_orders` with `.select(...)` / `limit(10)` for dashboard tiles.
+- **Where:** `app/src/staff/dashboard.ts`, `functions/src/orders/kds.ts`, `functions/src/orders/place_order.ts`, `app/src/kiosk/order.ts`
+- **Resolution:** Dashboard still requests `summaryOnly`, and the callable now selects `itemsCount` instead of `items`. The server and client order payloads persist this aggregate quantity on new orders; the summary response omits full item arrays and customer phone/address/GPS fields. The ordinary KDS response retains full line items.
 
 #### PERF-04 — Make staff PIN lookup `O(1)` while preserving `scrypt` verification
 - **Where:** `functions/src/auth/verify_staff.ts:27-44, 102-115`
@@ -206,10 +205,9 @@ The following controls are active in the codebase as of `d060c11` (see also `doc
 8. **SEC-05:** Bundle remaining inline scripts on storefront/payment pages and remove `'unsafe-inline'` from global `script-src`.
 
 ### Phase 2 — Production-Gated Security & Index Rollouts (Requires Explicit Deployment Approval)
-1. **SEC-03:** Provision `PAYMONGO_WEBHOOK_SECRET` in Secret Manager, bind via `defineSecret`, and fail closed on missing/invalid signatures.
-2. **SEC-01 & SEC-02:** Remove legacy direct-write fallback in `app/src/kiosk/order.ts`, lock down `orders/{orderId}` (`allow read, write: if false`), and remove unused `pasugo_*` / `riders` blocks from `firestore.rules`.
-3. **REL-01 & PERF-01:** Deploy composite Firestore indexes in `firestore.indexes.json` and switch `getActiveOrders` to indexed active-order queries.
-4. **SEC-04:** Enable `enforceAppCheck: true` on public callables after verifying App Check token coverage in Firebase Console.
+1. **SEC-01 & SEC-02:** Remove legacy direct-write fallback in `app/src/kiosk/order.ts`, lock down `orders/{orderId}` (`allow read, write: if false`), and remove unused `pasugo_*` / `riders` blocks from `firestore.rules`.
+2. **REL-01 & PERF-01:** Deploy composite Firestore indexes in `firestore.indexes.json` and switch `getActiveOrders` to indexed active-order queries.
+3. **SEC-04:** Enable `enforceAppCheck: true` on public callables after verifying App Check token coverage in Firebase Console.
 
 ### Phase 3 — Scale & Operational Maturity
 1. **PERF-02:** Split/lazy-load Cloud Function imports to cut cold-start times.

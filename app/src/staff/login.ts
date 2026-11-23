@@ -4,6 +4,7 @@
 import { callFn } from '../kiosk/firebase.ts';
 import { glyph } from '../kiosk/icons.ts';
 import { snack } from '../kiosk/snackbar.ts';
+import { readPasswordCredentials } from './login-credentials.ts';
 import { fnError, signInWithToken } from './session.ts';
 import { esc, icon } from './ui.ts';
 
@@ -184,6 +185,9 @@ export function mountLogin(root: HTMLElement): () => void {
   body.addEventListener('submit', (e) => {
     e.preventDefault();
     if (loading) return;
+    const credentials = readPasswordCredentials(e.target as HTMLFormElement);
+    user = credentials.username;
+    pass = credentials.password;
     const name = user.trim();
     if (!name || !pass) {
       error = 'Please enter both username and password.';

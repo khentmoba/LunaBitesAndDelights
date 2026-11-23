@@ -6,7 +6,7 @@ How each item is enforced, and the manual steps that can't live in code.
 
 | # | Item | Where |
 |---|------|-------|
-| 1 | Hide API keys | Server: `functions/src/index.ts` — `TELEGRAM_*`, `PAYMONGO_SECRET_KEY`, and `GOOGLE_MAPS_API_KEY` are Secret Manager secrets, never client-visible. Client: MapTiler + reCAPTCHA keys arrive as `PUBLIC_MAPTILER_KEY` / `PUBLIC_RECAPTCHA_SITE_KEY` build inputs from GitHub secrets, so no key literal lives in the repo. Deploy: `firebase functions:secrets:set <NAME>` for each. |
+| 1 | Hide API keys | Server: `functions/src/index.ts` — `TELEGRAM_*`, `PAYMONGO_SECRET_KEY`, and `GOOGLE_MAPS_API_KEY` are Secret Manager secrets, never client-visible. Client: Google Maps + reCAPTCHA keys arrive as `PUBLIC_GOOGLE_MAPS_KEY` / `PUBLIC_RECAPTCHA_SITE_KEY` build inputs from GitHub secrets, so no key literal lives in the repo. Deploy: `firebase functions:secrets:set <NAME>` for each. |
 | 3 | Public DB key | Firebase web `apiKey` in `app/src/kiosk/firebase.ts` is public by design; access is enforced by rules + App Check, not by hiding it. Restrict it anyway (below). |
 | 4,7 | Row-level security / record access | `firestore.rules` — default deny, per-collection rules; order reads/updates only through staff callables. |
 | 5 | Encrypt sensitive data | At rest: Google-managed encryption (Firestore/Auth/Storage). In transit: TLS everywhere. PII stripped from logs; `login_attempts` keys are hashed. |
@@ -27,13 +27,13 @@ How each item is enforced, and the manual steps that can't live in code.
 
 1. **Secrets**: `firebase functions:secrets:set TELEGRAM_TOKEN|TELEGRAM_CHAT_ID|PAYMONGO_SECRET_KEY|GOOGLE_MAPS_API_KEY`, then deploy functions.
 2. **Restrict the web API key** (#3): Google Cloud Console → APIs & Services → Credentials → Browser key → HTTP referrers: `lunabitesanddelights.web.app/*`, `lunaexpress.web.app/*`, `lunabitesanddelights.firebaseapp.com/*`, `lunaexpress.firebaseapp.com/*`.
-3. **MapTiler key** (#1): GitHub secret `MAPTILER_KEY`, injected by both hosting workflows. The build prints a tile-free picker when it is missing, so a missing secret fails soft rather than loudly - check the deploy or the map screen after changing it. Restrict the key to HTTP referrers `lunabitesanddelights.web.app/*` + `lunaexpress.web.app/*` + `lunabitesanddelights.firebaseapp.com/*` + `lunaexpress.firebaseapp.com/*` in the MapTiler dashboard; a browser key cannot be hidden, only fenced.
+3. **Google Maps browser key** (#1): GitHub secret `GOOGLE_MAPS_BROWSER_KEY`, injected by both hosting workflows as `PUBLIC_GOOGLE_MAPS_KEY`. Enable the Maps JavaScript API on the billing account and restrict the key to HTTP referrers `lunabitesanddelights.web.app/*` + `lunabitesanddelights.firebaseapp.com/*` + `localhost/*`; a browser key cannot be hidden, only fenced. The build prints a tile-free picker when the secret is missing or the key is rejected, so check the map screen after changing it. Keep it separate from `GOOGLE_MAPS_API_KEY`, which is the server-side Static Maps key for Telegram alerts and must stay unrestricted by referrer.
 4. **App Check** (#12): DONE 2026-09-28 — Enterprise SCORE key created (domains: web.app, firebaseapp.com, localhost) and registered via API. Enforcement intentionally OFF (correct sequencing: ship App-Check-ready clients first, enforce later). When ready: Console → App Check → APIs → enforce Firestore + Functions.
 5. **Rotate**: seeded staff passwords (see function logs), plus any PayMongo/Telegram secret that ever appeared in chat or shell history.
 
 ## #2 Purge git secrets
 
-A MapTiler key was hardcoded in the Flutter app's `lib/services/geocoding.dart` until 2026-10. It is a browser key: rotating it in the MapTiler dashboard is the fix, and a history rewrite buys nothing once it is revoked. The Firebase web `apiKey` in `app/src/kiosk/firebase.ts` is public by design and stays.
+A MapTiler key was hardcoded in the Flutter app's `lib/services/geocoding.dart` until 2026-10. It is a browser key: rotating it in the MapTiler dashboard is the fix, and a history rewrite buys nothing once it is revoked. The kiosk map no longer uses MapTiler at all; only the server-side Telegram static-map fallback still references it. The Firebase web `apiKey` in `app/src/kiosk/firebase.ts` is public by design and stays.
 If a real secret ever lands in git:
 
 ```bash

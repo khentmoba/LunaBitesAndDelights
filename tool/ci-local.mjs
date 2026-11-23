@@ -34,6 +34,13 @@ export function isDepsCurrent(dir) {
   }
 }
 
+export function ciSummary({ failed, skipped, total }) {
+  const executed = total - skipped;
+  if (failed) return `${failed} step(s) failed`;
+  if (skipped) return `all ${executed} executed step(s) passed; ${skipped} skipped`;
+  return 'all steps passed';
+}
+
 function ensureRootDeps() {
   if (existsSync(join(root, 'node_modules', 'yaml'))) return;
   console.log('▶ Bootstrapping root node_modules (npm ci)...');
@@ -127,6 +134,7 @@ async function main() {
   }
 
   let failed = 0;
+  let skipped = 0;
   for (const j of jobs) {
     lines.push('', `## ${j.job}`);
     for (const s of j.steps) {
@@ -134,6 +142,7 @@ async function main() {
       if (isNpmCi && (noInstall || (!forceInstall && isDepsCurrent(s.cwd)))) {
         const reason = noInstall ? '--no-install' : 'up-to-date';
         lines.push(`SKIP  ${s.name} (${s.cwd}) ${reason}`);
+        skipped++;
         continue;
       }
       const needsContext = unresolvedEnv(s.env);
@@ -142,6 +151,7 @@ async function main() {
         // false assurance that the real PR gate was checked.
         lines.push(`SKIP  ${s.name} (${s.cwd}) needs PR context: ${needsContext.join(', ')}`);
         console.log(`\n▶ SKIP ${j.job} › ${s.name}  (needs PR context: ${needsContext.join(', ')})`);
+        skipped++;
         continue;
       }
       console.log(`\n▶ ${j.job} › ${s.name}  (${s.cwd})`);
@@ -155,7 +165,8 @@ async function main() {
       }
     }
   }
-  lines.push('', failed ? `${failed} step(s) failed` : 'all steps passed');
+  const total = jobs.reduce((n, j) => n + j.steps.length, 0);
+  lines.push('', ciSummary({ failed, skipped, total }));
   if (writeEvidence) {
     const out = join(root, 'docs/evidence/ci-local.txt');
     writeFileSync(out, `${lines.join('\n')}\n`);
