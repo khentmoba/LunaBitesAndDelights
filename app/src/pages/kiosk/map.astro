@@ -168,6 +168,9 @@ if (!mapsKey) {
   (window as unknown as { gm_authFailure?: () => void }).gm_authFailure = degrade;
   void loadMaps(mapsKey)
     .then((maps) => {
+      // Ignore the first paint's own center changes: only a shopper move should
+      // unlock Confirm.
+      ignoreIdleUntil = Date.now() + 800;
       map = new maps.Map(mapEl, {
         center: { lat, lng },
         zoom: 17,
