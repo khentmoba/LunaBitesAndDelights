@@ -165,3 +165,38 @@ test('kds delayed badge keeps INK contrast on elapsed-time ticks and dashboard h
   assert.match(kdsSrc, /if \(authHalted \|\| !getStaff\(\)\) return;/);
   assert.match(gateSrc, /else dispose = mountLogin\(root\);/);
 });
+
+test('kds skips the board rebuild on metadata-only snapshots and stops after an auth halt', () => {
+  const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
+  const kdsSrc = readFileSync(join(root, 'app/src/staff/kds.ts'), 'utf8');
+
+  // includeMetadataChanges fires on cache/server flips; rebuilding every card for
+  // those steals scroll position, so only the feed indicator is redrawn.
+  assert.match(kdsSrc, /const unchanged = isLive && nextSignature === liveSignature && polled\.length === 0;/);
+  assert.match(kdsSrc, /if \(unchanged\) \{\s*renderBar\(\);\s*renderBanner\(\);\s*return;\s*\}/);
+  assert.match(kdsSrc, /let liveSignature = '';/);
+  assert.match(kdsSrc, /liveSignature = '';/);
+
+  // updateStatus must read the module-level auth flag, not a shadowing local.
+  assert.strictEqual(
+    kdsSrc.match(/authHalted = false;/g)?.length,
+    1,
+    'only the module-level authHalted may be declared; updateStatus must not shadow it',
+  );
+  assert.match(kdsSrc, /if \(disposed \|\| authHalted \|\| updating\.has\(orderId\)\) return;/);
+});
+
+test('kiosk menu sheet and GCash page recover from a second tap and a failed retry', () => {
+  const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
+
+  const menuSrc = readFileSync(join(root, 'app/src/pages/kiosk/menu.astro'), 'utf8');
+  // showModal() on an already-open dialog throws InvalidStateError.
+  assert.match(menuSrc, /if \(sheet\.open\) return Promise\.resolve\(\);/);
+  assert.match(menuSrc, /sheet\.showModal\(\);/);
+
+  const gcashSrc = readFileSync(join(root, 'app/src/pages/kiosk/gcash.astro'), 'utf8');
+  // A retry must drop the previous session before asking for a new one…
+  assert.match(gcashSrc, /checkoutUrl = null;\s*sessionId = null;\s*setVerifyError\(null\);/);
+  // …and clear the stale "session is not ready" complaint once it arrives.
+  assert.match(gcashSrc, /if \(sessionId\) setVerifyError\(null\);/);
+});

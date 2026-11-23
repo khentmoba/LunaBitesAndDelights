@@ -16,7 +16,11 @@ const PIN_VERIFY_CONCURRENCY = 2;
 const GLOBAL_PIN_FAIL_KEY = 'staff:pin_login:global';
 const GLOBAL_PIN_FAIL_MAX = 20;
 const GLOBAL_PIN_ATTEMPT_KEY = 'staff:pin_login:global_attempts';
-const GLOBAL_PIN_ATTEMPT_MAX = GLOBAL_PIN_FAIL_MAX;
+// The failure budget above is the brute-force guard. This ceiling only bounds
+// total volume (scrypt CPU per attempt), so it must sit far above real use:
+// counting *successful* sign-ins against the same 20-attempt budget locked the
+// whole team out of PIN sign-in partway through a busy shift.
+const GLOBAL_PIN_ATTEMPT_MAX = 120;
 const GLOBAL_PIN_WINDOW_MS = 15 * 60 * 1000;
 const PASSWORD_IP_RATE_MAX = 30;
 const PASSWORD_IP_WINDOW_MS = 15 * 60 * 1000;

@@ -11,7 +11,7 @@ export const KDS_COLLECTION = 'kds_orders';
 export const DAILY_STATS_COLLECTION = 'dailyStats';
 const EVENT_GUARD_COLLECTION = 'stats_events';
 const GUARD_TTL_MS = 7 * 24 * 60 * 60 * 1000;
-const KDS_MIRROR_TTL_MS = 10 * 24 * 60 * 60 * 1000;
+export const KDS_MIRROR_TTL_MS = 10 * 24 * 60 * 60 * 1000;
 const MAX_TELEGRAM_RETRY_AGE_MS = 10 * 60 * 1000;
 
 /** Kitchen-screen mirror doc: the same trimmed projection the callable returns, plus a queryable time. */
