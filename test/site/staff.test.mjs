@@ -138,6 +138,16 @@ test('kds delayed badge keeps INK contrast on elapsed-time ticks and dashboard h
   const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
   const kdsSrc = readFileSync(join(root, 'app/src/staff/kds.ts'), 'utf8');
   assert.match(kdsSrc, /ageEl\.style\.color\s*=\s*delayed\s*\?\s*INK\s*:\s*elapsedColor\(ts,\s*now\)/);
+  // The 30 s tick patches the card in place; rebuilding every column on each
+  // delayed-flag flip stalls a cheap tablet for no visible gain.
+  const tick = kdsSrc.slice(
+    kdsSrc.indexOf('function refreshElapsedTimes'),
+    kdsSrc.indexOf('const onVisibilityChange'),
+  );
+  assert.doesNotMatch(tick, /renderBoard\(\)/);
+  assert.match(tick, /cardEl\.classList\.toggle\('is-delayed', delayed\)/);
+  assert.match(tick, /ageEl\.classList\.toggle\('is-delayed', delayed\)/);
+  assert.match(tick, /glyphEl\.textContent = glyph\(delayed \? 'warning_amber_rounded' : 'access_time_rounded'\)/);
 
   const dashSrc = readFileSync(join(root, 'app/src/staff/dashboard.ts'), 'utf8');
   assert.match(dashSrc, /staff\?\.isAdmin\s*\?\s*'ADMIN DASHBOARD'\s*:\s*'STAFF DASHBOARD'/);

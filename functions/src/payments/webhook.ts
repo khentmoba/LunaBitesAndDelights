@@ -142,21 +142,30 @@ export const paymongoWebhook = onRequest(
         }
         const attrs = session.attributes;
         const refNumber = String(attrs.reference_number || '');
-        const paymentId = firstPaymentId(session.payments);
-        const paidCentavos = paidPaymentAmountCentavos(session.payments);
         const docId = resolveOrderDocId(attrs);
-        if (docId && paidCentavos !== null) {
-          const orderRef = getFirestore().collection('orders').doc(docId);
-          const { transitioned } = await markOrderPaidOnce(
-            orderRef,
-            paymentId,
-            refNumber,
-            sessionId,
-            paidCentavos,
-          );
-          if (transitioned) {
-            logger.info(`Order ${docId} marked as PAID via verified webhook`);
-          }
+        if (!docId) {
+          // Money arrived but nothing links it to an order: leave a trace instead
+          // of dropping the event silently.
+          logger.error(`Paid PayMongo session ${sessionId} has no order reference; nothing was marked PAID`);
+          res.status(200).send('OK');
+          return;
+        }
+        const paidCentavos = paidPaymentAmountCentavos(session.payments);
+        if (paidCentavos === null) {
+          logger.error(`Paid PayMongo session ${sessionId} reported no integer paid amount; order ${docId} stays unpaid for review`);
+          res.status(200).send('OK');
+          return;
+        }
+        const orderRef = getFirestore().collection('orders').doc(docId);
+        const { transitioned } = await markOrderPaidOnce(
+          orderRef,
+          firstPaymentId(session.payments),
+          refNumber,
+          sessionId,
+          paidCentavos,
+        );
+        if (transitioned) {
+          logger.info(`Order ${docId} marked as PAID via verified webhook`);
         }
       }
 

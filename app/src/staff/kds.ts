@@ -2,7 +2,7 @@
 // from the kds_orders mirror in real time, with one getActiveOrders call on
 // open; if the listener fails the board polls every 10 s instead.
 import { callFn, firebaseDb } from '../kiosk/firebase.ts';
-import type { IconName } from '../kiosk/icons.ts';
+import { glyph, type IconName } from '../kiosk/icons.ts';
 import { playOrderChime, setSound, soundEnabled } from './chime.ts';
 import {
   KDS_LIMIT,
@@ -830,26 +830,25 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
   });
 
   function refreshElapsedTimes() {
-    let delayChanged = false;
     for (const cardEl of board.querySelectorAll<HTMLElement>('[data-card-id]')) {
       const id = cardEl.dataset.cardId;
       const o = id ? byId(id) : undefined;
       if (!o) continue;
       const ts = o.timestamp ?? '';
       const delayed = isDelayed(o, now);
-      if (cardEl.classList.contains('is-delayed') !== delayed) {
-        delayChanged = true;
-        break;
-      }
+      // Patch the one card whose age changed instead of re-serialising every
+      // column: on a tablet this tick runs every 30 s for the whole shift.
+      cardEl.classList.toggle('is-delayed', delayed);
       const ageEl = cardEl.querySelector<HTMLElement>('[data-age]');
       const textEl = cardEl.querySelector<HTMLElement>('[data-age-text]');
-      if (ageEl && textEl) {
-        const elapsed = formatElapsed(ts, now);
-        ageEl.style.color = delayed ? INK : elapsedColor(ts, now);
-        textEl.textContent = delayed ? `DELAYED (${elapsed})` : elapsed;
-      }
+      if (!ageEl || !textEl) continue;
+      const elapsed = formatElapsed(ts, now);
+      ageEl.style.color = delayed ? INK : elapsedColor(ts, now);
+      ageEl.classList.toggle('is-delayed', delayed);
+      const glyphEl = ageEl.querySelector<HTMLElement>('.icon');
+      if (glyphEl) glyphEl.textContent = glyph(delayed ? 'warning_amber_rounded' : 'access_time_rounded');
+      textEl.textContent = delayed ? `DELAYED (${elapsed})` : elapsed;
     }
-    if (delayChanged) renderBoard();
   }
 
   const onVisibilityChange = () => {

@@ -84,7 +84,7 @@ body { overflow: hidden; }
 import { cart } from '../../kiosk/cart';
 import { $ } from '../../kiosk/dom';
 import { callFn } from '../../kiosk/firebase';
-import { DRAFT, PENDING, RECEIPT, load, save, type CheckoutDraft, type PendingPayment } from '../../kiosk/handoff';
+import { DRAFT, PENDING, RECEIPT, load, save, validPending, type CheckoutDraft, type PendingPayment } from '../../kiosk/handoff';
 import { glyph } from '../../kiosk/icons';
 import { popTo, watchInactivity } from '../../kiosk/inactivity';
 import { isPaymentUrl } from '../../kiosk/payment-host';
@@ -204,7 +204,10 @@ async function verify(p: PendingPayment) {
   }
 }
 
-if (!pending) {
+if (!validPending(pending)) {
+  // No usable handoff: clearing it stops a stale entry from re-opening a
+  // finished order, and checkout has the cart the shopper actually built.
+  save(PENDING, null);
   location.replace('/kiosk/checkout');
 } else {
   $('[data-summary]').textContent = `Order #${pending.orderId} · ₱${pending.amount}\nTap OPEN PAYMENT PAGE, authorize in PayMongo, then return here.`;

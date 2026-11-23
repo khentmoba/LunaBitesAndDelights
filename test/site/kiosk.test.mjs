@@ -15,7 +15,7 @@ const { resolvePicks, displayPrice } = await import('../../app/src/kiosk/presele
 const { cart } = await import('../../app/src/kiosk/cart.ts');
 const order = await import('../../app/src/kiosk/order.ts');
 const { isPaymentUrl } = await import('../../app/src/kiosk/payment-host.ts');
-const { validReceipt } = await import('../../app/src/kiosk/handoff.ts');
+const { validReceipt, validPending } = await import('../../app/src/kiosk/handoff.ts');
 
 test('receipt handoff rejects corrupt shapes so the page never blanks out', () => {
   const good = {
@@ -38,6 +38,43 @@ test('geocode keeps a deadline on browsers without AbortSignal.any/timeout', () 
   assert.match(src, /typeof AbortSignal\.timeout === 'function'/);
   assert.match(src, /setTimeout\(\(\) => controller\.abort\(\), timeoutMs\)/);
   assert.doesNotMatch(src, /signal \?\? timeout/);
+});
+
+test('the GCash handoff rejects a stale or hand-edited pending order', () => {
+  const receipt = {
+    orderNumber: 'LU-1', customerName: 'Ana', customerAddress: 'Purok 5', customerPhone: '09171234567',
+    timeStr: '2026-11-24 10:00', total: 99, orderType: 'Pickup', isWalkIn: false, telegramSent: true,
+    items: [{ name: 'Shawarma Wrap', variant: 'Solo', price: 99, quantity: 1 }],
+  };
+  const good = {
+    orderDocId: 'aB3dE9fG', orderId: 'LU-261124-100000-A7K', amount: 99,
+    items: [{ name: 'Shawarma Wrap', price: 99, quantity: 1 }],
+    customerName: 'Ana', customerPhone: '09171234567', receipt,
+  };
+  assert.equal(validPending(good), true);
+  for (const bad of [
+    null, {}, { ...good, orderDocId: '' }, { ...good, orderDocId: 'not a doc id' },
+    { ...good, orderDocId: 42 }, { ...good, amount: '99' }, { ...good, amount: 0 },
+    { ...good, items: null }, { ...good, receipt: null }, { ...good, orderId: '' },
+  ]) {
+    assert.equal(validPending(bad), false, JSON.stringify(bad));
+  }
+  const page = readFileSync(new URL('../../app/src/pages/kiosk/gcash.astro', import.meta.url), 'utf8');
+  assert.match(page, /if \(!validPending\(pending\)\) \{[\s\S]*?save\(PENDING, null\);[\s\S]*?location\.replace\('\/kiosk\/checkout'\);/);
+});
+
+test('Nominatim lookups keep at least a second between requests', async () => {
+  const spacing = await import('../../app/src/kiosk/lookup-spacing.ts');
+  spacing.resetLookupSpacing();
+  assert.equal(spacing.reserveLookupSlot(1_000), 0, 'first lookup goes straight out');
+  assert.equal(spacing.reserveLookupSlot(1_000), spacing.MIN_LOOKUP_GAP_MS, 'second waits a full gap');
+  assert.equal(spacing.reserveLookupSlot(1_500), 1_500, 'queued bookings stack up');
+  assert.equal(spacing.reserveLookupSlot(9_000), 0, 'idle time restores the slot');
+  spacing.resetLookupSpacing();
+  assert.equal(spacing.reserveLookupSlot(), 0);
+  const geo = readFileSync(new URL('../../app/src/kiosk/geo.ts', import.meta.url), 'utf8');
+  assert.match(geo, /import \{ waitForLookupSlot \} from '\.\/lookup-spacing'/);
+  assert.equal((geo.match(/await waitForLookupSlot\(\);/g) ?? []).length, 2, 'both lookups are spaced');
 });
 
 test('GCash checkout failure offers retry without discarding the pending order', () => {

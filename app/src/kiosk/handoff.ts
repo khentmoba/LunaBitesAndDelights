@@ -91,3 +91,19 @@ export function validReceipt(value: unknown): value is Receipt {
       && typeof i.price === 'number' && Number.isFinite(i.price)
       && typeof i.quantity === 'number' && Number.isFinite(i.quantity));
 }
+
+/**
+ * The GCash handoff. A stale or hand-edited value would otherwise leave the
+ * shopper on a page whose every action fails, so the page bounces instead.
+ */
+export function validPending(value: unknown): value is PendingPayment {
+  if (!value || typeof value !== 'object') return false;
+  const p = value as Partial<PendingPayment>;
+  return typeof p.orderDocId === 'string' && /^[A-Za-z0-9]{1,64}$/.test(p.orderDocId)
+    && typeof p.orderId === 'string' && p.orderId.length > 0 && p.orderId.length <= 64
+    && typeof p.amount === 'number' && Number.isFinite(p.amount) && p.amount > 0
+    && typeof p.customerName === 'string'
+    && typeof p.customerPhone === 'string'
+    && Array.isArray(p.items) && p.items.every((i) => i && typeof i === 'object')
+    && validReceipt(p.receipt);
+}
