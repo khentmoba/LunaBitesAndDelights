@@ -1,7 +1,7 @@
 import { getFirestore } from 'firebase-admin/firestore';
 import { itemKey, isCountableOrder } from '../util';
 import { escapeMd } from '../telegram_api';
-import { dayFromDoc, isDailyStatsBackfilled } from './daily_stats';
+import { dayFromDoc, isDailyStatsBackfilled, scanOrdersForDate } from './daily_stats';
 
 export interface DailySales {
   date: string;
@@ -37,11 +37,9 @@ export async function aggregateDailySales(dateLabel: string): Promise<DailySales
     };
   }
 
-  const snapshot = await db.collection('orders')
-    .where('dateLabel', '==', dateLabel)
-    .get();
+  const snapshot = await scanOrdersForDate(db, dateLabel);
 
-  if (snapshot.empty) return null;
+  if (snapshot.length === 0) return null;
 
   let totalSales = 0;
   let kioskSales = 0;
@@ -49,9 +47,9 @@ export async function aggregateDailySales(dateLabel: string): Promise<DailySales
   let totalOrders = 0;
   const itemCounts: { [key: string]: number } = {};
 
-  snapshot.forEach(doc => {
+  for (const doc of snapshot) {
     const data = doc.data();
-    if (!isCountableOrder(data)) return;
+    if (!isCountableOrder(data)) continue;
     totalOrders += 1;
     const amount = data.totalAmount || 0;
     totalSales += amount;
@@ -63,7 +61,7 @@ export async function aggregateDailySales(dateLabel: string): Promise<DailySales
       const key = itemKey(item.name, item.variant);
       itemCounts[key] = (itemCounts[key] || 0) + (Number(item.quantity || item.qty) || 1);
     }
-  });
+  }
 
   if (totalOrders === 0) return null;
 

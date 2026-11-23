@@ -303,6 +303,19 @@ test('hasMatchingCheckoutSession reconciles both primary and historical checkout
   assert.strictEqual(hasMatchingCheckoutSession(order, 'cs_other'), false);
 });
 
+test('hasMatchingCheckoutSession never evicts the original session a customer may pay on', () => {
+  // After enough retries the bounded recent-session list rotates the first
+  // session out; paying that original URL must still mark the order PAID.
+  const rotated = {
+    checkoutSessionId: 'cs_sixth',
+    checkoutSessionIds: ['cs_second', 'cs_third', 'cs_fourth', 'cs_fifth', 'cs_sixth'],
+    initialCheckoutSessionId: 'cs_first',
+  };
+  assert.strictEqual(hasMatchingCheckoutSession(rotated, 'cs_first'), true);
+  assert.strictEqual(hasMatchingCheckoutSession(rotated, 'cs_sixth'), true);
+  assert.strictEqual(hasMatchingCheckoutSession(rotated, 'cs_foreign'), false);
+});
+
 test('fetchCheckoutSessionDetailed distinguishes 404 from transient 5xx errors', async () => {
   const origFetch = global.fetch;
   try {

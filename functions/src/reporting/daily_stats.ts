@@ -1,9 +1,39 @@
-import { FieldValue, Firestore } from 'firebase-admin/firestore';
+import { FieldValue, Firestore, Query, QueryDocumentSnapshot, QuerySnapshot } from 'firebase-admin/firestore';
+import { HttpsError } from 'firebase-functions/v2/https';
 import { itemKey, isCountableOrder, ChannelBucket } from '../util';
 
 export const STATS_META_DOC = 'stats_meta/dailyStats';
 export const BACKFILL_CACHE_TTL_MS = 5 * 60 * 1000;
+export const FALLBACK_PAGE_SIZE = 1000;
+export const MAX_FALLBACK_PAGES = 20;
 let backfilledCachedUntil = 0;
+
+/**
+ * Bounded cursor-paginated scan of one day's orders, used only by the legacy
+ * fallback while dailyStats is not backfilled. Caps both memory and Firestore
+ * reads so a busy day (or a repeated staff analytics call) cannot grow without limit.
+ */
+export async function scanOrdersForDate(
+  db: Firestore,
+  dateLabel: string,
+): Promise<QueryDocumentSnapshot[]> {
+  const base: Query = db.collection('orders').where('dateLabel', '==', dateLabel);
+  const docs: QueryDocumentSnapshot[] = [];
+  let lastDoc: QueryDocumentSnapshot | null = null;
+  for (let page = 0; page < MAX_FALLBACK_PAGES; page++) {
+    const pageQuery: Query = lastDoc
+      ? base.startAfter(lastDoc).limit(FALLBACK_PAGE_SIZE)
+      : base.limit(FALLBACK_PAGE_SIZE);
+    const snap: QuerySnapshot = await pageQuery.get();
+    docs.push(...snap.docs);
+    if (snap.size < FALLBACK_PAGE_SIZE) return docs;
+    lastDoc = snap.docs[snap.docs.length - 1];
+  }
+  throw new HttpsError(
+    'failed-precondition',
+    'Order history exceeds fallback scan limit. Run backfill-derived-views to enable dailyStats.',
+  );
+}
 
 /**
  * Caches `stats_meta/dailyStats.backfilledAt` once true for a bounded TTL

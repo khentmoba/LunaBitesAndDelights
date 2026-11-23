@@ -321,7 +321,7 @@ function restore() {
   if (draft.gcashCancelled) {
     delete draft.gcashCancelled;
     persist();
-    snack('GCash payment was cancelled or failed. Your order is saved — tap to retry payment.', { color: ERROR, seconds: 5 });
+    snack('GCash is not available yet. No order was saved — please place a Cash order.', { color: ERROR, seconds: 6 });
   }
 }
 
@@ -406,6 +406,7 @@ async function submit() {
   };
 
   let errorCode: string | undefined;
+  let serverItems: import('../../kiosk/order').OrderItem[] | undefined;
   if (docId === null || draft.paymentMethod !== 'GCash' || isStaff) {
     const key = cartKey();
     if (!draft.idempotencyKey || draft.pendingCart !== key) {
@@ -419,6 +420,7 @@ async function submit() {
     errorCode = result.errorCode;
     if (result.orderId) orderNumber = result.orderId;
     if (typeof result.totalAmount === 'number') total = result.totalAmount;
+    serverItems = result.items;
   }
 
   loading = false;
@@ -439,9 +441,12 @@ async function submit() {
     return;
   }
 
+  // The callable re-prices every line against the server menu; use those prices
+  // so the receipt's line items always add up to the server-authoritative total.
+  const receiptItems = serverItems?.length ? serverItems : order.items;
   const receipt: Receipt = {
     orderNumber, customerName: name, customerAddress: address, customerPhone: phone,
-    items: order.items, total, timeStr, isWalkIn: draft.orderType === 'Walk-In', orderType: draft.orderType, telegramSent,
+    items: receiptItems, total, timeStr, isWalkIn: draft.orderType === 'Walk-In', orderType: draft.orderType, telegramSent,
   };
 
   if (draft.paymentMethod === 'GCash' && !isStaff) {
@@ -450,7 +455,7 @@ async function submit() {
     draft.pendingCart = cartKey();
     persist();
     const pending: PendingPayment = {
-      orderDocId: docId, orderId: orderNumber, amount: total, items: order.items,
+      orderDocId: docId, orderId: orderNumber, amount: total, items: receiptItems,
       customerName: name, customerPhone: phone, receipt,
     };
     save(PENDING, pending);

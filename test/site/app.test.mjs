@@ -453,6 +453,15 @@ test('notice pages render expected headings, links, and inline styles', () => {
   }
 });
 
+test('the receipt uses the server-priced line items returned by placeOrder', () => {
+  const orderSrc = readFileSync(join(root, 'app', 'src', 'kiosk', 'order.ts'), 'utf8');
+  const checkoutSrc = readFileSync(join(root, 'app', 'src', 'pages', 'kiosk', 'checkout.astro'), 'utf8');
+  assert.match(orderSrc, /items\?: OrderItem\[\]/, 'placeOrder exposes the server-priced items');
+  assert.match(orderSrc, /items: res\.items/, 'the callable response supplies those items');
+  assert.match(checkoutSrc, /serverItems = result\.items/, 'checkout keeps them for the receipt');
+  assert.match(checkoutSrc, /items: receiptItems/, 'the receipt renders them, not the client cart');
+});
+
 test('checkout disables GCash as coming soon and keeps Cash active', () => {
   const html = readFileSync(join(root, 'build', 'app', 'kiosk', 'checkout', 'index.html'), 'utf8');
   const doc = new JSDOM(html).window.document;

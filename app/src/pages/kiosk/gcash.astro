@@ -140,7 +140,8 @@ async function start(p: PendingPayment) {
     checkoutUrl = data.checkoutUrl;
     sessionId = data.checkoutSessionId == null ? null : String(data.checkoutSessionId);
     show('ready');
-    openPayment();
+    // Browsers block window.open() after an async gap (no user activation), so
+    // the visible OPEN PAYMENT PAGE button is the only reliable way to open it.
   } catch (e) {
     $('[data-error-text]').textContent = e instanceof Error ? e.message : String(e);
     show('error');
@@ -178,7 +179,7 @@ async function verify(p: PendingPayment) {
 if (!pending) {
   location.replace('/kiosk/checkout');
 } else {
-  $('[data-summary]').textContent = `Order #${pending.orderId} · ₱${pending.amount}\nFinish authorizing your payment in the PayMongo tab, then return here.`;
+  $('[data-summary]').textContent = `Order #${pending.orderId} · ₱${pending.amount}\nTap OPEN PAYMENT PAGE, authorize in PayMongo, then return here.`;
   document.querySelectorAll('[data-cancel]').forEach((b) => b.addEventListener('click', cancel));
   $('[data-open]').addEventListener('click', openPayment);
   $('[data-paid]').addEventListener('click', () => void verify(pending));

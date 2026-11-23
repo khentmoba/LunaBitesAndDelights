@@ -288,12 +288,20 @@ export const createCheckoutSession = onCall(
           // Concurrent call won first: keep its URL as primary, but also record this session id so payment still reconciles.
           resolvedSessionId = current.checkoutSessionId;
           resolvedCheckoutUrl = current.checkoutUrl;
-          tx.set(orderRef, { checkoutSessionIds: mergedIds }, { merge: true });
+          tx.set(orderRef, {
+            checkoutSessionIds: mergedIds,
+            ...(current.initialCheckoutSessionId
+              ? {}
+              : { initialCheckoutSessionId: current.checkoutSessionId }),
+          }, { merge: true });
           return;
         }
         tx.set(orderRef, {
           checkoutSessionId: parsedCheckout.sessionId,
           checkoutSessionIds: mergedIds,
+          ...(current.initialCheckoutSessionId
+            ? {}
+            : { initialCheckoutSessionId: current.checkoutSessionId || parsedCheckout.sessionId }),
           checkoutUrl: parsedCheckout.checkoutUrl,
           checkoutCreatedAt: Date.now(),
           paymentMethod: 'GCash',

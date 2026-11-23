@@ -186,7 +186,7 @@ export async function placeOrder(
   order: Order,
   timeStr: string,
   idempotencyKey?: string,
-): Promise<{ docId: string | null; telegramSent: boolean; orderId?: string; totalAmount?: number; errorCode?: string }> {
+): Promise<{ docId: string | null; telegramSent: boolean; orderId?: string; totalAmount?: number; items?: OrderItem[]; errorCode?: string }> {
   const { firebaseDbLite, callFn } = await import('./firebase');
   try {
     const res = await callFn<{
@@ -194,6 +194,7 @@ export async function placeOrder(
       docId?: string;
       orderId?: string;
       totalAmount?: number;
+      items?: OrderItem[];
     }>('placeOrder', {
       orderId: order.orderId,
       items: order.items,
@@ -215,6 +216,7 @@ export async function placeOrder(
         totalAmount: typeof res.totalAmount === 'number' && Number.isFinite(res.totalAmount)
           ? res.totalAmount
           : order.totalAmount,
+        ...(Array.isArray(res.items) && res.items.length > 0 ? { items: res.items } : {}),
       };
     }
     return { docId: null, telegramSent: false };
@@ -240,7 +242,7 @@ export async function placeOrder(
   }
   try {
     const data = await callFn<{ success?: boolean }>('sendOrderNotification', notificationFor(order, timeStr, docId));
-    return { docId, telegramSent: data.success === true };
+    return { docId, telegramSent: data.success === true, items: order.items };
   } catch (e) {
     console.error(`Telegram notification error for order ${order.orderId}`, e);
     return { docId, telegramSent: false };

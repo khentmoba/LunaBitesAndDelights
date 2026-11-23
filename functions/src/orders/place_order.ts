@@ -146,7 +146,7 @@ export const placeOrder = onCall(async (request) => {
       items,
     });
     const ref = db.collection('orders').doc(idempotentOrderDocId(rawIdempotencyKey));
-    let existingOrder: { orderId: string; totalAmount: number } | null = null;
+    let existingOrder: { orderId: string; totalAmount: number; items?: typeof items } | null = null;
     await db.runTransaction(async (tx) => {
       const snap = await tx.get(ref);
       if (snap.exists) {
@@ -157,23 +157,24 @@ export const placeOrder = onCall(async (request) => {
         existingOrder = {
           orderId: String(existing.orderId || orderId),
           totalAmount: Number(existing.totalAmount ?? totalAmount),
+          items: Array.isArray(existing.items) ? existing.items : items,
         };
         return;
       }
       tx.set(ref, { ...payload, idempotencyHash });
     });
     if (existingOrder) {
-      const hit = existingOrder as { orderId: string; totalAmount: number };
+      const hit = existingOrder as { orderId: string; totalAmount: number; items: typeof items };
       logger.info(`Order ${hit.orderId} (${ref.id}) deduplicated via idempotencyKey`);
-      return { success: true, docId: ref.id, orderId: hit.orderId, totalAmount: hit.totalAmount };
+      return { success: true, docId: ref.id, orderId: hit.orderId, totalAmount: hit.totalAmount, items: hit.items };
     }
     logger.info(`Order ${orderId} (${ref.id}) placed via callable [${entryType}/${type}/${paymentMethod}]`);
-    return { success: true, docId: ref.id, orderId, totalAmount };
+    return { success: true, docId: ref.id, orderId, totalAmount, items };
   }
 
   const ref = db.collection('orders').doc();
   await ref.set(payload);
 
   logger.info(`Order ${orderId} (${ref.id}) placed via callable [${entryType}/${type}/${paymentMethod}]`);
-  return { success: true, docId: ref.id, orderId, totalAmount };
+  return { success: true, docId: ref.id, orderId, totalAmount, items };
 });
