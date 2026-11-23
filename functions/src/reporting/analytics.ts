@@ -3,7 +3,7 @@ import { getFirestore } from 'firebase-admin/firestore';
 import { logger } from 'firebase-functions';
 import { phtDateLabel, emptyChannel, addToChannel, isCountableOrder, itemKey } from '../util';
 import { requireStaff } from '../util/security';
-import { dayFromDoc, emptyDay, isDailyStatsBackfilled, salesAnalyticsFromDay } from './daily_stats';
+import { dayFromDoc, emptyDay, isDailyStatsBackfilled, salesAnalyticsFromDay, scanOrdersForDate } from './daily_stats';
 
 export const getSalesAnalytics = onCall(async (request) => {
   requireStaff(request);
@@ -21,9 +21,7 @@ export const getSalesAnalytics = onCall(async (request) => {
       return salesAnalyticsFromDay(dateLabel, day);
     }
 
-    const snapshot = await db.collection('orders')
-      .where('dateLabel', '==', dateLabel)
-      .get();
+    const snapshot = await scanOrdersForDate(db, dateLabel);
 
     let totalRevenue = 0;
     let totalItemsSold = 0;
@@ -31,7 +29,7 @@ export const getSalesAnalytics = onCall(async (request) => {
     const channel = emptyChannel();
     const itemCounts: { [key: string]: number } = {};
 
-    for (const doc of snapshot.docs) {
+    for (const doc of snapshot) {
       const data = doc.data();
       if (!isCountableOrder(data)) continue;
       orderCount += 1;
@@ -68,6 +66,7 @@ export const getSalesAnalytics = onCall(async (request) => {
       topItems
     };
   } catch (error: any) {
+    if (error instanceof HttpsError) throw error;
     logger.error('Error getting sales analytics:', error);
     throw new HttpsError('internal', 'Failed to retrieve sales analytics');
   }

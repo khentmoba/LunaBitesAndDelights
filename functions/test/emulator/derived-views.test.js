@@ -257,3 +257,67 @@ test('notifyOrderOnce resumes partial multi-chat failures and reconcileMissedOrd
     delete process.env.TELEGRAM_CHAT_ID;
   }
 });
+
+test('reconcileMissedPaymentNotifications reclaims a payment alert that was sent but never persisted', async () => {
+  const { setBot, setTelegramRetryConfig } = require('../../lib/telegram_api');
+  const {
+    reconcileMissedPaymentNotifications,
+    ORDER_NOTIFICATIONS_COLLECTION,
+  } = require('../../lib/orders/send_notification');
+
+  process.env.TELEGRAM_TOKEN = 'emulator-test-token';
+  process.env.TELEGRAM_CHAT_ID = 'owner-chat';
+  setTelegramRetryConfig({ maxAttempts: 1, sleep: async () => {} });
+  const sentLog = [];
+  setBot({
+    sendMessage: async (chatId, text) => {
+      sentLog.push({ chatId, text });
+      return { message_id: sentLog.length };
+    },
+    sendPhoto: async () => ({ message_id: 999 }),
+  });
+
+  try {
+    const nowMs = Date.now();
+    // An earlier test left a paid GCash order in the emulator; mark its payment
+    // alert handled so this case stays isolated to the doc seeded below.
+    await db.collection(ORDER_NOTIFICATIONS_COLLECTION).doc('rec_delayed_gcash').set({
+      paymentNotifSent: true,
+      paymentNotifStatus: 'sent',
+    }, { merge: true });
+    await db.doc('orders/rec_payment').set(order({
+      orderId: 'LU-PAY-REC',
+      paymentMethod: 'GCash',
+      paymentStatus: 'PAID',
+      paidAt: new Date(nowMs - 2 * 60 * 1000).toISOString(),
+      timestamp: Timestamp.fromMillis(nowMs - 5 * 60 * 60 * 1000),
+    }));
+    // Telegram delivery fired but every sent-state write failed; the lease has
+    // since expired, so only a scheduled pass can still reclaim this alert.
+    await db.collection(ORDER_NOTIFICATIONS_COLLECTION).doc('rec_payment').set({
+      telegramSent: true,
+      telegramStatus: 'sent',
+      paymentNotifStatus: 'sending',
+      paymentNotifClaimedAt: nowMs - 10 * 60 * 1000,
+      paymentNotifSent: false,
+    });
+
+    const summary = await reconcileMissedPaymentNotifications(db, { nowMs });
+    assert.strictEqual(summary.retried, 1);
+    assert.strictEqual(summary.sent, 1);
+    assert.ok(sentLog.some((s) => s.text.includes('LU\\-PAY\\-REC')));
+    const notif = (await db.collection(ORDER_NOTIFICATIONS_COLLECTION).doc('rec_payment').get()).data();
+    assert.strictEqual(notif.paymentNotifSent, true);
+    assert.strictEqual(notif.paymentReconcileAttempts, 1);
+
+    sentLog.length = 0;
+    const second = await reconcileMissedPaymentNotifications(db, { nowMs });
+    assert.strictEqual(second.retried, 0);
+    assert.strictEqual(sentLog.length, 0);
+  } finally {
+    setBot(null);
+    setTelegramRetryConfig(null);
+    delete process.env.TELEGRAM_TOKEN;
+    delete process.env.TELEGRAM_CHAT_ID;
+  }
+});

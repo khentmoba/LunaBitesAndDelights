@@ -9,6 +9,40 @@ const { canClaimDailyReport } = require('../lib/reporting/daily_report');
 const { isStaleUnpaidOrder, expireUnpaidUpdate, STALE_UNPAID_AGE_MS } = require('../lib/orders/expire_unpaid');
 const { projectOrderSummary } = require('../lib/orders/kds');
 const { clientIpFromRequest } = require('../lib/util/security');
+const {
+  scanOrdersForDate, FALLBACK_PAGE_SIZE, MAX_FALLBACK_PAGES,
+} = require('../lib/reporting/daily_stats');
+
+function fakeOrdersDb(pageSize) {
+  let gets = 0;
+  const rows = Array.from({ length: pageSize }, (_, i) => ({ id: `o${i}`, data: () => ({}) }));
+  const query = {
+    where: () => query,
+    limit: () => query,
+    startAfter: () => query,
+    get: async () => {
+      gets++;
+      return { size: rows.length, docs: rows, empty: rows.length === 0 };
+    },
+  };
+  return { db: { collection: () => query }, gets: () => gets };
+}
+
+test('scanOrdersForDate stops at the page cap instead of reading a whole busy day', async () => {
+  const { db, gets } = fakeOrdersDb(FALLBACK_PAGE_SIZE);
+  await assert.rejects(
+    () => scanOrdersForDate(db, '2026-11-23'),
+    (err) => err && err.code === 'failed-precondition',
+  );
+  assert.strictEqual(gets(), MAX_FALLBACK_PAGES);
+});
+
+test('scanOrdersForDate returns one short page and stops', async () => {
+  const { db, gets } = fakeOrdersDb(3);
+  const docs = await scanOrdersForDate(db, '2026-11-23');
+  assert.strictEqual(docs.length, 3);
+  assert.strictEqual(gets(), 1);
+});
 
 test('shouldNotifyPaymentConfirmed fires once on GCash transition to PAID (including Cancelled)', () => {
   assert.equal(
@@ -579,4 +613,17 @@ test('verify_staff mitigates username timing side-channel and create_checkout ma
   const checkoutSrc = fs.readFileSync(path.resolve(__dirname, '../src/payments/create_checkout.ts'), 'utf8');
   assert.match(checkoutSrc, /response\.status === 429 \|\| response\.status >= 500/);
   assert.match(checkoutSrc, /parsePaymongoCheckoutResponse\(json\)/);
+});
+
+test('notification reconciler runs serially and keeps structured delivery diagnostics', () => {
+  const src = fs.readFileSync(path.resolve(__dirname, '../src/orders/send_notification.ts'), 'utf8');
+  assert.match(src, /timeoutSeconds: 540/);
+  assert.match(src, /maxInstances: 1/);
+  assert.match(src, /priorReconcileAttempts/);
+});
+
+test('every checkout session write backfills the original session id for legacy orders', () => {
+  const checkoutSrc = fs.readFileSync(path.resolve(__dirname, '../src/payments/create_checkout.ts'), 'utf8');
+  const backfills = checkoutSrc.match(/initialCheckoutSessionId: current\.checkoutSessionId/g) || [];
+  assert.strictEqual(backfills.length, 2, 'both the reuse and fresh-session branches preserve the prior primary session');
 });

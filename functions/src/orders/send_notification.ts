@@ -349,7 +349,7 @@ export const ORDER_NOTIFICATIONS_COLLECTION = 'order_notifications';
 export async function notifyPaymentConfirmedOnce(
   orderDocId: string,
   orderData: Record<string, any>,
-  opts: { db?: Firestore; persistBackoffMs?: number[] } = {},
+  opts: { db?: Firestore; persistBackoffMs?: number[]; source?: 'trigger' | 'reconciler' } = {},
 ): Promise<{ sent: boolean; alreadySent: boolean; inFlight?: boolean; permanentFailure?: boolean }> {
   const db = opts.db ?? getFirestore();
   const notifRef = db.collection(ORDER_NOTIFICATIONS_COLLECTION).doc(orderDocId);
@@ -367,11 +367,19 @@ export async function notifyPaymentConfirmedOnce(
       ? existing.paymentDeliveredChatIds.filter((id: unknown): id is string => typeof id === 'string' && id.length > 0)
       : [];
     if (status === 'claimed') {
-      tx.set(
-        notifRef,
-        { paymentNotifStatus: 'sending', paymentNotifClaimedAt: nowMs, expireAt },
-        { merge: true },
-      );
+      const claimWrite: Record<string, unknown> = {
+        paymentNotifStatus: 'sending',
+        paymentNotifClaimedAt: nowMs,
+        expireAt,
+      };
+      if (opts.source === 'reconciler') {
+        const prevReconcileAttempts = typeof existing?.paymentReconcileAttempts === 'number' &&
+          Number.isFinite(existing.paymentReconcileAttempts)
+          ? existing.paymentReconcileAttempts
+          : 0;
+        claimWrite.paymentReconcileAttempts = prevReconcileAttempts + 1;
+      }
+      tx.set(notifRef, claimWrite, { merge: true });
     }
     return { status, deliveredChatIds: prevDelivered };
   });
@@ -602,6 +610,22 @@ export const RECONCILE_LOOKBACK_MS = 2 * 60 * 60 * 1000;
 export const RECONCILE_MIN_AGE_MS = 30_000;
 export const RECONCILE_MAX_ATTEMPTS = 60;
 const RECONCILE_BATCH_LIMIT = 50;
+const RECONCILE_CONCURRENCY = 5;
+
+/** Runs work in bounded chunks so one slow send cannot stall the whole sweep. */
+async function runBounded<T, R>(
+  items: T[],
+  concurrency: number,
+  work: (item: T) => Promise<R>,
+): Promise<R[]> {
+  const results: R[] = [];
+  for (let i = 0; i < items.length; i += concurrency) {
+    const chunk = items.slice(i, i + concurrency);
+    // Each worker catches its own errors, so no send can reject the whole batch.
+    results.push(...await Promise.all(chunk.map(work)));
+  }
+  return results;
+}
 
 function orderReadyTimeMs(data: Record<string, any>): number {
   const tsMs = typeof data.timestamp?.toMillis === 'function'
@@ -629,6 +653,7 @@ export async function reconcileMissedOrderNotifications(
     minAgeMs?: number;
     maxAttempts?: number;
     limit?: number;
+    concurrency?: number;
   } = {},
 ): Promise<{ checked: number; retried: number; sent: number; failed: number }> {
   if (!hasTelegramConfig()) {
@@ -641,6 +666,7 @@ export async function reconcileMissedOrderNotifications(
   const minAgeMs = opts.minAgeMs ?? RECONCILE_MIN_AGE_MS;
   const maxAttempts = opts.maxAttempts ?? RECONCILE_MAX_ATTEMPTS;
   const limit = opts.limit ?? RECONCILE_BATCH_LIMIT;
+  const concurrency = Math.max(1, opts.concurrency ?? RECONCILE_CONCURRENCY);
 
   const cutoffMs = nowMs - lookbackMs;
   const [recentSnap, paidSnap] = await Promise.all([
@@ -680,45 +706,140 @@ export async function reconcileMissedOrderNotifications(
   );
   const notifSnaps = await db.getAll(...notifRefs);
 
-  let retried = 0;
-  let sent = 0;
-  let failed = 0;
-
-  for (let i = 0; i < candidates.length; i++) {
-    const orderDoc = candidates[i];
-    const orderData = orderDoc.data();
-    const notifData = notifSnaps[i].exists ? notifSnaps[i].data() : undefined;
-
-    if (notifData?.telegramSent === true) continue;
-    if (notifData?.telegramStatus === 'failed_permanent') continue;
+  const jobs = candidates.map((orderDoc, i) => ({
+    orderDoc,
+    notifData: notifSnaps[i].exists ? notifSnaps[i].data() : undefined,
+  })).filter(({ orderDoc, notifData }) => {
+    if (notifData?.telegramSent === true) return false;
+    if (notifData?.telegramStatus === 'failed_permanent') return false;
     const reconcileAttempts = typeof notifData?.reconcileAttempts === 'number' && Number.isFinite(notifData.reconcileAttempts)
       ? notifData.reconcileAttempts
       : 0;
     if (reconcileAttempts >= maxAttempts) {
       logger.warn(`Skipping Telegram reconciliation for ${orderDoc.id}: reached max reconcile attempts (${reconcileAttempts})`);
-      continue;
+      return false;
     }
-    if (notifData && evaluateNotificationClaim(notifData, nowMs) === 'in-flight') {
-      continue;
-    }
+    return !(notifData && evaluateNotificationClaim(notifData, nowMs) === 'in-flight');
+  });
 
-    retried++;
+  const outcomes = await runBounded(jobs, concurrency, async ({ orderDoc }) => {
+    const orderData = orderDoc.data();
     try {
       const res = await notifyOrderOnce(orderDoc.id, orderData, '', { source: 'reconciler' });
-      if (res.sent) {
-        sent++;
-        logger.warn(`Reconciled missed Telegram notification for order ${orderData.orderId || orderDoc.id}`, {
-          orderDocId: orderDoc.id,
-          priorReconcileAttempts: reconcileAttempts,
-        });
-      }
+      return { orderDocId: orderDoc.id, orderData, sent: res.sent, error: null as unknown };
     } catch (err) {
+      return { orderDocId: orderDoc.id, orderData, sent: false, error: err };
+    }
+  });
+
+  let sent = 0;
+  let failed = 0;
+  for (const outcome of outcomes) {
+    const { orderDocId, orderData, sent: wasSent, error } = outcome;
+    if (error) {
       failed++;
-      logger.error(`Reconciliation retry failed for order ${orderData.orderId || orderDoc.id}`, err);
+      logger.error(`Reconciliation retry failed for order ${orderData.orderId || orderDocId}`, error);
+    } else if (wasSent) {
+      sent++;
+      logger.warn(`Reconciled missed Telegram notification for order ${orderData.orderId || orderDocId}`, {
+        orderDocId,
+      });
     }
   }
 
-  return { checked: docs.length, retried, sent, failed };
+  return { checked: docs.length, retried: jobs.length, sent, failed };
+}
+
+/**
+ * Payment confirmations (and cancelled-order refund reviews) are triggered by a
+ * one-time PAID transition. If Telegram delivery succeeds but the sent-state
+ * write fails — or the event ages past the retry window — nothing re-drives it.
+ * This pass reclaims those orders from the same `paidAt` scan the order scan
+ * already uses, with its own attempt counter so it cannot starve new orders.
+ */
+export async function reconcileMissedPaymentNotifications(
+  db: Firestore = getFirestore(),
+  opts: {
+    nowMs?: number;
+    lookbackMs?: number;
+    maxAttempts?: number;
+    limit?: number;
+    concurrency?: number;
+  } = {},
+): Promise<{ checked: number; retried: number; sent: number; failed: number }> {
+  if (!hasTelegramConfig()) {
+    logger.warn('reconcileMissedPaymentNotifications: Telegram config missing; skipping');
+    return { checked: 0, retried: 0, sent: 0, failed: 0 };
+  }
+
+  const nowMs = opts.nowMs ?? Date.now();
+  const lookbackMs = opts.lookbackMs ?? RECONCILE_LOOKBACK_MS;
+  const maxAttempts = opts.maxAttempts ?? RECONCILE_MAX_ATTEMPTS;
+  const limit = opts.limit ?? RECONCILE_BATCH_LIMIT;
+  const concurrency = Math.max(1, opts.concurrency ?? RECONCILE_CONCURRENCY);
+  const cutoff = new Date(nowMs - lookbackMs).toISOString();
+
+  const paidSnap = await db.collection('orders')
+    .where('paidAt', '>=', cutoff)
+    .orderBy('paidAt', 'desc')
+    .limit(limit)
+    .get();
+
+  const docs = paidSnap.docs.filter((doc) => {
+    const data = doc.data();
+    return String(data.paymentMethod || '').toLowerCase() === 'gcash' && data.paymentStatus === 'PAID';
+  });
+  if (docs.length === 0) {
+    return { checked: 0, retried: 0, sent: 0, failed: 0 };
+  }
+
+  const notifSnaps = await db.getAll(...docs.map((doc) =>
+    db.collection(ORDER_NOTIFICATIONS_COLLECTION).doc(doc.id),
+  ));
+  const jobs = docs.map((orderDoc, i) => {
+    const notifData = notifSnaps[i].exists ? notifSnaps[i].data() : undefined;
+    const attempts = typeof notifData?.paymentReconcileAttempts === 'number' &&
+      Number.isFinite(notifData.paymentReconcileAttempts)
+      ? notifData.paymentReconcileAttempts
+      : 0;
+    return { orderDoc, notifData, priorAttempts: attempts };
+  }).filter(({ orderDoc, notifData, priorAttempts }) => {
+    const status = evaluatePaymentNotificationClaim(notifData, nowMs);
+    if (status !== 'claimed' && status !== 'missing') return false;
+    if (priorAttempts >= maxAttempts) {
+      logger.warn(`Skipping payment reconciliation for ${orderDoc.id}: reached max attempts (${priorAttempts})`);
+      return false;
+    }
+    return true;
+  });
+
+  const outcomes = await runBounded(jobs, concurrency, async ({ orderDoc, priorAttempts }) => {
+    const orderData = orderDoc.data();
+    try {
+      const res = await notifyPaymentConfirmedOnce(orderDoc.id, orderData, { db, source: 'reconciler' });
+      return { orderDocId: orderDoc.id, orderData, priorAttempts, sent: res.sent, error: null as unknown };
+    } catch (err) {
+      return { orderDocId: orderDoc.id, orderData, priorAttempts, sent: false, error: err };
+    }
+  });
+
+  let sent = 0;
+  let failed = 0;
+  for (const outcome of outcomes) {
+    const { orderDocId, orderData, priorAttempts, sent: wasSent, error } = outcome;
+    if (error) {
+      failed++;
+      logger.error(`Payment reconciliation failed for order ${orderData.orderId || orderDocId}`, error);
+    } else if (wasSent) {
+      sent++;
+      logger.warn(`Reconciled missed payment notification for order ${orderData.orderId || orderDocId}`, {
+        orderDocId,
+        priorReconcileAttempts: priorAttempts,
+      });
+    }
+  }
+
+  return { checked: docs.length, retried: jobs.length, sent, failed };
 }
 
 export const reconcileOrderNotifications = onSchedule(
@@ -726,13 +847,18 @@ export const reconcileOrderNotifications = onSchedule(
     schedule: 'every 2 minutes',
     timeZone: 'Asia/Manila',
     memory: '256MiB',
+    timeoutSeconds: 540,
+    // A long sweep must not overlap the next 2-minute run while a claim is live.
+    maxInstances: 1,
     secrets: [telegramToken, telegramChatIds, googleMapsApiKey],
   },
   async () => {
-    const summary = await reconcileMissedOrderNotifications();
-    if (summary.retried > 0) {
-      logger.info('Order notification reconciliation completed', summary);
-    }
+    const [orders, payments] = await Promise.all([
+      reconcileMissedOrderNotifications(),
+      reconcileMissedPaymentNotifications(),
+    ]);
+    if (orders.retried > 0) logger.info('Order notification reconciliation completed', orders);
+    if (payments.retried > 0) logger.info('Payment notification reconciliation completed', payments);
   },
 );
 

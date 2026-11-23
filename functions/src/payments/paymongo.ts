@@ -32,6 +32,12 @@ export function hasMatchingCheckoutSession(
     ? orderData.checkoutSessionId.trim()
     : '';
   if (bound.length > 0 && bound === sessionId) return true;
+  // The first session is the one the customer is most likely to pay on. Keep it
+  // valid even after the bounded recent-session list has rotated past it.
+  const initial = typeof orderData?.initialCheckoutSessionId === 'string'
+    ? orderData.initialCheckoutSessionId.trim()
+    : '';
+  if (initial.length > 0 && initial === sessionId) return true;
   const list = orderData?.checkoutSessionIds;
   return Array.isArray(list) && list.some((id) => typeof id === 'string' && id.trim() === sessionId);
 }

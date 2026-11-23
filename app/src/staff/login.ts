@@ -131,6 +131,8 @@ export function mountLogin(root: HTMLElement): () => void {
     } finally {
       loading = false;
       if (mode === 'pin') pin = '';
+      // Never re-insert a rejected password into the DOM (the eye toggle could reveal it).
+      if (error) pass = '';
       if (body.isConnected) render();
     }
   }
