@@ -13,10 +13,9 @@ const { initializeApp, getApps } = require('firebase-admin/app');
 const { getFirestore, Timestamp, FieldPath } = require('firebase-admin/firestore');
 const { contributionOf, emptyDay, applyToDay } = require('../lib/reporting/daily_stats');
 const { isOrderVisibleInKds } = require('../lib/orders/kds');
-const { kdsMirrorDoc } = require('../lib/orders/derived');
+const { kdsMirrorDoc, KDS_MIRROR_TTL_MS } = require('../lib/orders/derived');
 
 const KDS_LOOKBACK_MS = 7 * 24 * 60 * 60 * 1000;
-const KDS_MIRROR_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 const ORDERS_PAGE_SIZE = 1000;
 
 async function backfill(db, { apply = false, log = console.log } = {}) {

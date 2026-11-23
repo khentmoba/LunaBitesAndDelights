@@ -67,6 +67,7 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
   let detachBackgroundListeners: (() => void) | null = null;
   let fetchInFlight = false;
   let fetchSeq = 0;
+  let liveSignature = '';
   let authHalted = false;
   let disposed = false;
 
@@ -185,6 +186,7 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
   function fallBackToPolling() {
     unsub?.();
     unsub = null;
+    liveSignature = '';
     clearTimeout(initialFallbackTimer);
     initialFallbackTimer = 0;
     connecting = false;
@@ -229,8 +231,21 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
           connecting = false;
           isLive = true;
           fromCache = snap.metadata.fromCache;
+          const nextLive = snap.docs.map((d) => kdsOrderFromDoc(d.id, d.data(), toDate));
+          const nextSignature = JSON.stringify(nextLive);
+          // includeMetadataChanges makes the listener fire for cache/server
+          // flips that leave the documents untouched. Rebuilding every card for
+          // those steals scroll position and burns the tablet's CPU, so only the
+          // feed indicator is redrawn.
+          const unchanged = isLive && nextSignature === liveSignature && polled.length === 0;
+          if (unchanged) {
+            renderBar();
+            renderBanner();
+            return;
+          }
+          liveSignature = nextSignature;
           polled = [];
-          live = snap.docs.map((d) => kdsOrderFromDoc(d.id, d.data(), toDate));
+          live = nextLive;
           publish();
         },
         (err) => {
@@ -266,10 +281,9 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
   }
 
   async function updateStatus(orderId: string, status: string, cancellationReason?: string) {
-    if (updating.has(orderId)) return;
+    if (disposed || authHalted || updating.has(orderId)) return;
     updating.add(orderId);
     renderBoard();
-    let authHalted = false;
     try {
       const data = await callFn<{ success?: boolean; message?: string }>('updateOrderStatus', {
         orderId,
@@ -287,7 +301,6 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
       if (disposed) return;
       const err = fnError(e);
       if (err && isAuthCode(err.code)) {
-        authHalted = true;
         updating.delete(orderId);
         const msg = 'Staff session expired. Sign in again to update orders.';
         haltOnAuthError(msg);

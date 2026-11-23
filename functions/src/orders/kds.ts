@@ -13,6 +13,14 @@ const ALLOWED_STATUS_TRANSITIONS: Record<string, ReadonlySet<string>> = {
 };
 const EPOCH_ISO = '1970-01-01T00:00:00.000Z';
 const MAX_ORDERS_LIMIT = 200;
+/**
+ * Hard ceiling on documents one `getActiveOrders` call may scan. The query
+ * filters closed and unpaid orders in memory (the composite index that would
+ * let Firestore do it is production-gated), so this ceiling has to sit well
+ * above a busy week's order count or older still-active orders silently drop
+ * off the kitchen board.
+ */
+export const MAX_SCAN_DOCS = 2000;
 
 /** Validates whether an order can transition from `currentStatus` to `nextStatus`. */
 export function isAllowedStatusTransition(currentStatus: string, nextStatus: string): boolean {
@@ -161,11 +169,18 @@ export const getActiveOrders = onCall(async (request) => {
     // 7-day lookback so yesterday's active and history orders are never cut off
     const lookbackThreshold = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
     const pageSize = Math.min(Math.max(maxDocs * 2, 50), MAX_ORDERS_LIMIT);
-    const maxPages = 3;
     const orders = [];
     let cursor: FirebaseFirestore.QueryDocumentSnapshot | null = null;
+    let scanned = 0;
+    let truncated = false;
 
-    for (let page = 0; page < maxPages && orders.length < maxDocs; page++) {
+    while (orders.length < maxDocs) {
+      // Every iteration either stops or advances the cursor by a whole page, so
+      // this budget is the only termination guard the scan needs.
+      if (scanned >= MAX_SCAN_DOCS) {
+        truncated = true;
+        break;
+      }
       let q = db.collection('orders')
         .where('timestamp', '>=', lookbackThreshold)
         .orderBy('timestamp', 'desc')
@@ -174,6 +189,7 @@ export const getActiveOrders = onCall(async (request) => {
       if (cursor) q = q.startAfter(cursor);
       const snapshot = await q.get();
       if (snapshot.empty) break;
+      scanned += snapshot.docs.length;
 
       const eligibleDocs = snapshot.docs
         .filter((doc) => {
@@ -196,7 +212,13 @@ export const getActiveOrders = onCall(async (request) => {
       if (snapshot.docs.length < pageSize) break;
       cursor = snapshot.docs[snapshot.docs.length - 1];
     }
-    return { success: true, orders };
+    if (truncated) {
+      logger.warn(
+        `getActiveOrders stopped after scanning ${scanned} orders without filling ${maxDocs} slots; some active orders are not on the board`,
+        { scanned, returned: orders.length, summaryOnly, includeCompleted },
+      );
+    }
+    return { success: true, orders, scanned, truncated };
   } catch (error: any) {
     logger.error('Error fetching active orders:', error);
     throw new HttpsError('internal', 'Failed to fetch active orders');

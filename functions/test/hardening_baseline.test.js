@@ -831,3 +831,44 @@ test('every checkout session write backfills the original session id for legacy 
   const backfills = checkoutSrc.match(/initialCheckoutSessionId: current\.checkoutSessionId/g) || [];
   assert.strictEqual(backfills.length, 2, 'both the reuse and fresh-session branches preserve the prior primary session');
 });
+
+test('kiosk board scan budget, staff PIN budget and mirror TTL stay inside their limits', () => {
+  const kdsSrc = fs.readFileSync(path.resolve(__dirname, '../src/orders/kds.ts'), 'utf8');
+  assert.match(kdsSrc, /export const MAX_SCAN_DOCS = 2000/);
+  assert.match(kdsSrc, /if \(scanned >= MAX_SCAN_DOCS\) \{\s*truncated = true;\s*break;/);
+  assert.match(kdsSrc, /scanned \+= snapshot\.docs\.length;/);
+  assert.match(kdsSrc, /return \{ success: true, orders, scanned, truncated \};/);
+  assert.match(kdsSrc, /getActiveOrders stopped after scanning/);
+  // The old fixed 3-page cap is what silently dropped active orders.
+  assert.doesNotMatch(kdsSrc, /const maxPages = 3/);
+
+  const verifySrc = fs.readFileSync(path.resolve(__dirname, '../src/auth/verify_staff.ts'), 'utf8');
+  const attemptMax = Number((verifySrc.match(/const GLOBAL_PIN_ATTEMPT_MAX = (\d+);/) || [])[1]);
+  const failMax = Number((verifySrc.match(/const GLOBAL_PIN_FAIL_MAX = (\d+);/) || [])[1]);
+  assert.ok(Number.isInteger(attemptMax) && Number.isInteger(failMax), 'both PIN budgets must be numeric literals');
+  assert.ok(
+    attemptMax >= failMax * 4,
+    'the global PIN attempt ceiling must leave headroom for successful sign-ins, or a busy shift locks the team out',
+  );
+
+  const derivedSrc = fs.readFileSync(path.resolve(__dirname, '../src/orders/derived.ts'), 'utf8');
+  assert.match(derivedSrc, /export const KDS_MIRROR_TTL_MS = 10 \* 24 \* 60 \* 60 \* 1000/);
+  const backfillSrc = fs.readFileSync(path.resolve(__dirname, '../scripts/backfill-derived-views.js'), 'utf8');
+  assert.match(backfillSrc, /const \{ kdsMirrorDoc, KDS_MIRROR_TTL_MS \} = require\('\.\.\/lib\/orders\/derived'\);/);
+  assert.doesNotMatch(
+    backfillSrc,
+    /const KDS_MIRROR_TTL_MS =/,
+    'the backfill script must reuse the trigger TTL so a rerun cannot restore a longer PII retention',
+  );
+});
+
+test('clientIpFromRequest reports a missing client IP instead of silently sharing one bucket', () => {
+  const { clientIpFromRequest: fresh, resetMissingClientIpWarning } = require('../lib/util/security');
+  const src = fs.readFileSync(path.resolve(__dirname, '../src/util/security.ts'), 'utf8');
+  assert.match(src, /function warnMissingClientIp\(\): void/);
+  assert.match(src, /warnMissingClientIp\(\);\n  return '';/);
+  resetMissingClientIpWarning();
+  assert.equal(fresh({}), '');
+  assert.equal(fresh({ headers: { 'x-forwarded-for': '203.0.113.9' } }), '203.0.113.9');
+  resetMissingClientIpWarning();
+});

@@ -346,6 +346,9 @@ function toast(text: string, ms = 4000) {
 const sheet = $<HTMLDialogElement>('[data-sheet]');
 
 function openSheet(item: MenuItem): Promise<void> {
+  // A second tap while a sheet is already up would throw InvalidStateError from
+  // showModal() and leave an unhandled rejection behind. Keep the first sheet.
+  if (sheet.open) return Promise.resolve();
   const variants = item.variants ?? [];
   const multi = item.allowMultiSelect ?? false;
   const maxSelect = item.maxSelect ?? 1;

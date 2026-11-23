@@ -34,7 +34,9 @@ The following controls reflect the codebase reviewed on 2026-11-24 (see also `do
 | **SEC-05** | Medium | Resolved (scoped) | Code-only | `firebase.json` | Strict `script-src` without `'unsafe-inline'` extended to `/payment/**` (alongside `/kiosk/**` and `/staff/**`); static `/` and `/menu/` intentionally retain inline JS for 1-RTT 2G/3G first paint |
 | **SEC-06** | Medium | Resolved | Code-only | `functions/src/orders/place_order.ts` | Non-staff `placeOrder` calls ignore client `orderId` and always generate `serverOrderNumber()` |
 | **SEC-07** | Low | Resolved | Code-only | `functions/src/orders/derived.ts` | `KDS_MIRROR_TTL_MS` reduced from 30 days to 10 days |
-| **SEC-08** | Low | Resolved | Code-only | `functions/src/util/security.ts` | `clientIpFromRequest` falls back to `socket.remoteAddress` before `'unknown'` |
+| **SEC-08** | Low | Resolved | Code-only | `functions/src/util/security.ts` | `clientIpFromRequest` falls back to `socket.remoteAddress`, and logs once per 10 minutes when no client IP is derivable |
+| **SEC-09** | Medium | Resolved | Code-only | `functions/scripts/backfill-derived-views.js` | Backfill wrote a 30-day `kds_orders` `expireAt` while the trigger writes 10 days, reintroducing the PII retention `SEC-07` removed |
+| **SEC-10** | Medium | Resolved | Code-only | `functions/src/auth/verify_staff.ts` | The global PIN *attempt* budget reused the 20-failure cap, so ordinary successful sign-ins could lock the whole team out of PIN login |
 
 ### Details
 
@@ -73,9 +75,20 @@ The following controls reflect the codebase reviewed on 2026-11-24 (see also `do
 - **Remediation:** Reduce `KDS_MIRROR_TTL_MS` to 8–10 days (just above the 7-day KDS lookback).
 
 #### SEC-08 — Harden fallback behavior when client IP is unavailable
-- **Where:** `functions/src/util/security.ts:130`, `place_order.ts:57`, `verify_staff.ts:138`, `webhook.ts:76`
-- **Risk:** Falling back to `'unknown'` merges all requests lacking proxy headers into one shared rate-limit bucket, which could cause self-DoS in misconfigured proxy environments.
-- **Remediation:** Log a structured warning when `clientIpFromRequest` returns empty in production so proxy misconfigurations are caught early; keep `'unknown'` bounded rather than bypassing limits.
+- **Status:** Resolved. `clientIpFromRequest` now logs a structured warning (at most once per 10 minutes) when `x-forwarded-for`, `rawRequest.ip` and `socket.remoteAddress` are all empty, so a proxy misconfiguration that funnels every request into one shared rate-limit bucket shows up in Cloud Logging instead of silently throttling the shop.
+- **Proof:** `functions/test/hardening_baseline.test.js` asserts the warning call site and that the documented fallbacks still return the same values.
+
+#### SEC-09 — Keep the backfill mirror TTL aligned with the trigger
+- **Where:** `functions/scripts/backfill-derived-views.js`, `functions/src/orders/derived.ts`
+- **Risk:** `SEC-07` shortened the `kds_orders` PII retention to 10 days in the trigger, but the backfill script kept its own `KDS_MIRROR_TTL_MS = 30 days` literal. Any rerun would have written a 30-day `expireAt` back onto every mirrored order, undoing the retention fix for the whole 7-day window.
+- **Resolution:** `KDS_MIRROR_TTL_MS` is exported from `derived.ts` and the script imports it, so the two cannot drift again.
+- **Proof:** `functions/test/hardening_baseline.test.js` asserts the export, the import, and the absence of a local literal.
+
+#### SEC-10 — Give the global PIN attempt ceiling headroom over the failure budget
+- **Where:** `functions/src/auth/verify_staff.ts`
+- **Risk:** `GLOBAL_PIN_ATTEMPT_MAX = GLOBAL_PIN_FAIL_MAX = 20` counted *every* PIN sign-in, so a shift-change rush of 20 successful logins in 15 minutes returned `Too many PIN login attempts` for the rest of the window. The failure budget (`checkAndRecordWindowFailure`) is the brute-force guard; the attempt counter only bounds scrypt volume.
+- **Resolution:** The attempt ceiling is now `120` per 15 minutes (6× the failure budget) — unreachable by hand, still bounded for a flood.
+- **Proof:** `functions/test/hardening_baseline.test.js` asserts the ceiling keeps at least 4× headroom over the failure budget and that the budget is still reserved before PIN verification.
 
 ---
 
@@ -83,7 +96,7 @@ The following controls reflect the codebase reviewed on 2026-11-24 (see also `do
 
 | ID | Priority | Status | Type | Area | Summary |
 |---|---|---|---|---|---|
-| **REL-01** | High | Pending (prod-gated) | Prod-gated | `firestore.indexes.json`, `functions/src/orders/kds.ts` | `getActiveOrders` scans at most 600 recent orders and filters in memory; active orders can be missed during high volume |
+| **REL-01** | High | Partially resolved (index prod-gated) | Mixed | `firestore.indexes.json`, `functions/src/orders/kds.ts` | `getActiveOrders` filters in memory; the fixed 600-document scan cap silently dropped active orders. The cap is now a 2 000-document budget that logs when it truncates; the composite index remains production-gated |
 | **REL-02** | High | Resolved | Code-only | `functions/src/payments/paymongo.ts`, `derived.ts` | Payment confirmation & `paidAfterCancel` Telegram alerts moved into `onOrderWritten` (`retry: true`) with atomic deduplication |
 | **REL-03** | Medium | Resolved | Code-only | `app/src/staff/kds.ts`, `kds.css` | KDS tracks `snap.metadata.fromCache` and `online`/`offline` events and displays an offline/cached warning banner |
 | **REL-04** | Medium | Resolved (idempotency & scheduled date) | Code-only | `functions/src/reporting/daily_report.ts` | Atomic daily-send guard uses the scheduler's scheduled PHT date on retries; 22:00 PHT cutoff remains pending ops confirmation |
@@ -91,13 +104,17 @@ The following controls reflect the codebase reviewed on 2026-11-24 (see also `do
 | **REL-06** | Medium | Resolved | Code-only | `functions/src/orders/expire_unpaid.ts` | Added daily `expireStaleUnpaidOrders` sweep marking >24h `AWAITING_PAYMENT` orders as `PAYMENT_EXPIRED` + `Cancelled` |
 | **REL-07** | Low | Resolved | Code-only | `app/src/pages/kiosk/gcash.astro` | Added debounced `visibilitychange` auto-verify when returning to the kiosk tab |
 | **REL-08** | Low | Resolved | Code-only | `functions/src/orders/derived.ts` | Set explicit `timeoutSeconds: 45` on `onOrderWritten` (below `TELEGRAM_CLAIM_TTL_MS = 60s`) |
+| **REL-09** | Medium | Resolved | Code-only | `app/src/staff/kds.ts` | KDS `updateStatus` shadowed the module `authHalted` flag, and metadata-only Firestore snapshots rebuilt the whole board |
+| **REL-10** | Medium | Resolved | Code-only | `app/src/pages/kiosk/menu.astro`, `app/src/pages/kiosk/gcash.astro` | A second card tap threw `InvalidStateError` from `showModal()`, and a failed GCash retry kept the previous dead checkout session |
 
 ### Details
 
 #### REL-01 — Add composite Firestore indexes for active KDS queries
-- **Where:** `firestore.indexes.json`, `functions/src/orders/kds.ts:95-115`
-- **Failure Mode:** `getActiveOrders` queries `orders` by `timestamp >= lookbackThreshold` (`maxPages = 3`, `pageSize <= 200`, max 600 docs) and filters `status` and `isOrderVisibleInKds` in memory. In a busy week (>600 total orders including completed/cancelled/abandoned GCash), older active orders are silently dropped from the fallback feed.
-- **Remediation:** Add composite indexes (e.g., `orders (status ASC, timestamp DESC)` or query `kds_orders` directly with `(status ASC, ts DESC)`), eliminating in-memory over-scanning and ensuring active orders are never truncated.
+- **Where:** `firestore.indexes.json`, `functions/src/orders/kds.ts`
+- **Failure Mode:** `getActiveOrders` queries `orders` by `timestamp >= lookbackThreshold` and filters `status` and `isOrderVisibleInKds` in memory. The old `maxPages = 3` × `pageSize <= 200` ceiling capped a sweep at 600 documents, so on a busy week (completed, cancelled, and abandoned GCash orders all consume the window) an older still-active order fell off the board with no signal at all.
+- **Code-only mitigation (done):** The page count is replaced by a `MAX_SCAN_DOCS = 2000` document budget with an explicit `truncated` flag and a `getActiveOrders stopped after scanning …` warning, so the ceiling is 3.3× higher and a real overflow is observable instead of silent. The response now also reports `scanned`.
+- **Cost trade-off:** the deeper scan only costs more when the board cannot fill, because the loop still stops as soon as `maxDocs` visible orders are collected. In the worst case (a quiet board over a busy week) one call reads at most 2 000 documents across ≤11 single-field-index queries instead of 600 across 3 — and it now returns the complete board rather than a silent subset.
+- **Remaining work (prod-gated):** Add composite indexes (`orders (status ASC, timestamp DESC)` or query `kds_orders` with `(status ASC, ts DESC)`) so Firestore does the filtering and the scan budget stops mattering.
 
 #### REL-02 — Make payment confirmation & `paidAfterCancel` Telegram alerts durable
 - **Where:** `functions/src/payments/paymongo.ts:212-222`, `functions/src/orders/derived.ts`
@@ -134,13 +151,29 @@ The following controls reflect the codebase reviewed on 2026-11-24 (see also `do
 - **Failure Mode:** `TELEGRAM_CLAIM_TTL_MS` is 60s, matching the default Cloud Functions v2 timeout (60s). If a function hangs near 60s, a retry can reclaim the lock while the first invocation is still finishing.
 - **Remediation:** Set explicit `timeoutSeconds: 45` on `onOrderWritten` (well below `TELEGRAM_CLAIM_TTL_MS = 60_000`) so a timed-out invocation cannot overlap with a reclaimed retry.
 
+#### REL-09 — Keep the KDS auth halt authoritative and skip no-op board rebuilds
+- **Where:** `app/src/staff/kds.ts`
+- **Failure Modes:**
+  1. `updateStatus` declared a local `let authHalted = false`, shadowing the module flag. After `haltOnAuthError()` the `finally` block read the shadow and re-rendered the board, and a status tap after an auth halt still fired a callable that was guaranteed to fail.
+  2. `onSnapshot` runs with `includeMetadataChanges: true`, so a cache/server flip fired `publish()` → `renderAll()` and rebuilt the HTML for every card even though no document changed, resetting scroll and burning the kitchen tablet's CPU.
+- **Resolution:** The shadow is gone and `updateStatus` returns early once `authHalted` is set; the snapshot handler compares the mapped order list against the previous signature and, when nothing changed, only repaints the feed indicator and banner.
+- **Proof:** `test/site/staff.test.mjs` asserts the early return, that exactly one `authHalted = false` declaration exists, and the unchanged-snapshot short circuit.
+
+#### REL-10 — Make the kiosk item sheet and GCash retry recoverable
+- **Where:** `app/src/pages/kiosk/menu.astro`, `app/src/pages/kiosk/gcash.astro`
+- **Failure Modes:**
+  1. `openSheet()` called `sheet.showModal()` with no guard. A second card tap while a sheet was open threw `InvalidStateError`, which surfaced as an unhandled rejection while the dialog had already been re-filled for the other item.
+  2. `start()` reused the module-level `checkoutUrl`/`sessionId` and never cleared the "Checkout session is not ready yet" message. After a failed `createCheckoutSession`, a retry could leave the dead session id in place, and a retry that succeeded left the stale error on screen so "I HAVE PAID" looked broken.
+- **Resolution:** `openSheet` returns early while a sheet is open (keeping the first one and its `close` promise intact); `start()` resets `checkoutUrl`/`sessionId`/the verify error before calling the provider and clears the error again once a session arrives.
+- **Proof:** `test/site/staff.test.mjs` asserts the sheet guard and both GCash resets.
+
 ---
 
 ## 4. Performance Improvements Backlog
 
 | ID | Priority | Status | Type | Area | Summary |
 |---|---|---|---|---|---|
-| **PERF-01** | High | Pending (prod-gated) | Prod-gated | `functions/src/orders/kds.ts`, `firestore.indexes.json` | Indexed active-order query to eliminate scanning up to 600 docs per fallback poll |
+| **PERF-01** | High | Partially resolved (index prod-gated) | Mixed | `functions/src/orders/kds.ts`, `firestore.indexes.json` | Indexed active-order query still pending; the scan ceiling is now a logged 2 000-document budget instead of a silent 600-document cap |
 | **PERF-02** | High | Deferred | Code-only | `functions/src/index.ts` | Split codebases / lazy-load handlers when dependencies grow (currently only `firebase-admin` + `firebase-functions`) |
 | **PERF-03** | Medium | Resolved | Code-only | `app/src/staff/dashboard.ts`, `functions/src/orders/kds.ts`, `functions/src/orders/place_order.ts` | Dashboard summary query selects persisted `itemsCount`, excluding full item arrays, coordinates, and phone/address fields |
 | **PERF-04** | Medium | Pending (prod-gated) | Prod-gated | `functions/src/auth/verify_staff.ts` | Peppered `pinLookupHash` requires new `PIN_PEPPER_SECRET` in Secret Manager + backfill |

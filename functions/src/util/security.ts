@@ -1,5 +1,6 @@
 import { HttpsError, CallableRequest } from 'firebase-functions/v2/https';
 import { getFirestore, FieldValue, Timestamp } from 'firebase-admin/firestore';
+import { logger } from 'firebase-functions';
 import * as crypto from 'crypto';
 import { promisify } from 'util';
 
@@ -10,6 +11,27 @@ const MAX_ATTEMPTS = 5;
 const LOCKOUT_MS = 15 * 60 * 1000;
 const LOGIN_ATTEMPT_TTL_MS = 24 * 60 * 60 * 1000;
 const MIN_RATE_LIMIT_TTL_MS = 60 * 60 * 1000;
+const MISSING_CLIENT_IP_WARN_MS = 10 * 60 * 1000;
+let missingClientIpWarnedAt = 0;
+
+/** Clears the missing-IP warning throttle (tests only). */
+export function resetMissingClientIpWarning(): void {
+  missingClientIpWarnedAt = 0;
+}
+
+/**
+ * Every request that arrives without a derivable client IP shares one rate-limit
+ * bucket, so a misconfigured proxy silently throttles the whole shop. Warn once
+ * per window instead of failing silently.
+ */
+function warnMissingClientIp(): void {
+  const now = Date.now();
+  if (now - missingClientIpWarnedAt < MISSING_CLIENT_IP_WARN_MS) return;
+  missingClientIpWarnedAt = now;
+  logger.warn(
+    'clientIpFromRequest found no client IP (x-forwarded-for, ip and socket all empty); all such callers share one rate-limit bucket. Check the proxy header configuration.',
+  );
+}
 
 /**
  * Requires a signed-in staff/admin user (Firebase Auth custom claims set by
@@ -140,6 +162,7 @@ export function clientIpFromRequest(
   if (typeof rawRequest?.socket?.remoteAddress === 'string' && rawRequest.socket.remoteAddress.trim().length > 0) {
     return rawRequest.socket.remoteAddress.trim().slice(0, 64);
   }
+  warnMissingClientIp();
   return '';
 }
 

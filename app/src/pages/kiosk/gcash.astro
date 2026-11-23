@@ -144,6 +144,10 @@ const openPayment = () => {
 async function start(p: PendingPayment) {
   if (starting) return;
   starting = true;
+  // A retry must not keep pointing at the previous (possibly dead) session.
+  checkoutUrl = null;
+  sessionId = null;
+  setVerifyError(null);
   show('loading');
   $<HTMLButtonElement>('[data-retry]').disabled = true;
   try {
@@ -158,6 +162,8 @@ async function start(p: PendingPayment) {
     if (!isPaymentUrl(data.checkoutUrl)) throw new Error('The payment link is not a PayMongo page.');
     checkoutUrl = data.checkoutUrl;
     sessionId = data.checkoutSessionId == null ? null : String(data.checkoutSessionId);
+    // Clear a "session is not ready" complaint raised while this call was in flight.
+    if (sessionId) setVerifyError(null);
     show('ready');
     // Browsers block window.open() after an async gap (no user activation), so
     // the visible OPEN PAYMENT PAGE button is the only reliable way to open it.
