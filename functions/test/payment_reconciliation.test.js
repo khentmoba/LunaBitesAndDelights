@@ -15,6 +15,8 @@ const {
   firstPaymentId,
   fetchCheckoutSessionDetailed,
   formatPaymentConfirmedMessage,
+  markOrderPaidOnce,
+  markOrderPaymentFailed,
 } = require('../lib/payments/paymongo');
 const { hasMatchingCheckoutSession } = require('../lib/payments/verify_payment');
 const { isLiveCheckoutSession, shouldMarkPaymentFailed } = require('../lib/payments/paymongo');
@@ -498,5 +500,40 @@ test('fetchCheckoutSessionDetailed URL-encodes sessionId in request path', async
     );
   } finally {
     global.fetch = origFetch;
+  }
+});
+
+test('markOrderPaidOnce and markOrderPaymentFailed stay truthful across Firestore transaction contention retries', async () => {
+  const firestoreMod = require('firebase-admin/firestore');
+  const origGetFirestore = firestoreMod.getFirestore;
+  try {
+    const snapshots = [
+      { exists: true, data: () => ({ paymentStatus: 'AWAITING_PAYMENT', checkoutSessionId: 'cs_live', totalAmount: 100 }) },
+      { exists: true, data: () => ({ paymentStatus: 'PAID', checkoutSessionId: 'cs_live', totalAmount: 100 }) },
+    ];
+    let attempt = 0;
+    firestoreMod.getFirestore = () => ({
+      async runTransaction(fn) {
+        let lastResult;
+        while (attempt < snapshots.length) {
+          const snap = snapshots[attempt++];
+          lastResult = await fn({
+            get: async () => snap,
+            set() {},
+            update() {},
+          });
+        }
+        return lastResult;
+      },
+    });
+
+    const paidResult = await markOrderPaidOnce({ id: 'ord_1' }, 'pay_1', '', 'cs_live', 10000);
+    assert.deepStrictEqual(paidResult, { transitioned: false, alreadyPaid: true });
+
+    attempt = 0;
+    const failedResult = await markOrderPaymentFailed({ id: 'ord_1' }, 'cs_live');
+    assert.deepStrictEqual(failedResult, { updated: false, paymentStatus: 'PAID' });
+  } finally {
+    firestoreMod.getFirestore = origGetFirestore;
   }
 });
