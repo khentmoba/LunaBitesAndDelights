@@ -122,7 +122,7 @@ The following controls reflect the codebase reviewed on 2026-11-24 (see also `do
 | **REL-09** | Medium | Resolved | Code-only | `app/src/staff/kds.ts` | KDS `updateStatus` shadowed the module `authHalted` flag, and metadata-only Firestore snapshots rebuilt the whole board |
 | **REL-10** | Medium | Resolved | Code-only | `app/src/pages/kiosk/menu.astro`, `app/src/pages/kiosk/gcash.astro` | A second card tap threw `InvalidStateError` from `showModal()`, and a failed GCash retry kept the previous dead checkout session |
 | **REL-11** | Medium | Resolved | Code-only | `functions/src/orders/send_notification.ts` | The notification reconciler re-announced orders staff had already cancelled when an earlier Telegram attempt had left a failed claim behind |
-| **REL-12** | Medium | Resolved | Code-only | `app/src/staff/kds.ts` | Every live feed update rebuilt the filter bar, replacing the search input and dropping focus/cursor mid-typing on the kitchen tablet |
+| **REL-12** | Low | Verified already correct (guard added) | Code-only | `app/src/staff/kds.ts` | The filter bar was already synced in place rather than rebuilt; a jsdom guard now locks that invariant |
 | **REL-13** | Medium | Resolved | Code-only | `app/src/staff/kds.ts`, `functions/src/orders/kds.ts` | A truncated `getActiveOrders` scan was only logged; the board showed a partial board as complete |
 | **REL-14** | Low | Resolved | Code-only | `functions/src/orders/kds.ts` | `updateOrderStatus` logged and reported a status update even when the transaction wrote nothing (duplicate tap / concurrent tablet) |
 | **REL-15** | Low | Resolved | Code-only | `app/src/pages/kiosk/map.astro` | "Use my location" did nothing when geolocation was denied, so the pin flow looked broken |
@@ -193,11 +193,11 @@ The following controls reflect the codebase reviewed on 2026-11-24 (see also `do
 - **Resolution:** `reconcileMissedOrderNotifications` now drops `status === 'Cancelled'` orders while building its candidate list, before any `order_notifications` read, so a failed claim left by an outage can no longer resurrect a cancelled order's alert. The jobs filter keeps its own terminal guard as defence in depth.
 - **Proof:** `functions/test/emulator/derived-views.test.js` seeds a cancelled order that carries a failed claim and asserts the sweep neither retries it nor flips its claim; run against the pre-fix code the same assertion failed with `retried 4 !== 3`.
 
-#### REL-12 — Keep the KDS search box alive across live updates
-- **Where:** `app/src/staff/kds.ts`
-- **Failure Mode:** `renderAll()` called `renderControls()`, which rewrote `ctl.innerHTML` on every published feed update (any new order, any status change by another tablet). The search `<input>` and every filter chip were re-created each time, so a staffer who was filtering the board lost focus and cursor position mid-word. `renderBar()`/`renderBanner()` were already diffed for exactly this reason; the control bar was missed.
-- **Resolution:** The control bar is built once at mount and `renderAll()` now calls `syncControls()`, which updates `aria-pressed`, the history glyph (via `textContent`, not `outerHTML`) and the clear button in place.
-- **Proof:** `test/site/staff.test.mjs` mounts the KDS in jsdom, types into the search box, triggers a feed refresh, and asserts the same input node survives with its value and focus intact.
+#### REL-12 — Lock the KDS control-bar invariant with a test
+- **Where:** `app/src/staff/kds.ts`, `test/site/staff.test.mjs`
+- **Status:** Verified already correct. Base `d828c7c` runs `renderBar(); syncControls(); renderBanner(); renderBoard();` in `renderAll()`, and `renderControls()` only runs once at mount, so a feed update never re-created the search input. An earlier draft of this pass wrongly claimed it did; review round 1 caught the bad claim.
+- **Change:** a jsdom guard now types into the search box, triggers a feed refresh and asserts the same input node keeps its value and focus, and `syncControls()` updates the history glyph with `textContent` instead of re-parsing an `outerHTML` icon element.
+- **Proof:** `test/site/staff.test.mjs` → `a live feed update never re-creates the KDS search box (invariant guard)`.
 
 #### REL-13 — Surface a truncated kitchen board
 - **Where:** `functions/src/orders/kds.ts`, `app/src/staff/kds.ts`
@@ -212,10 +212,10 @@ The following controls reflect the codebase reviewed on 2026-11-24 (see also `do
 - **Proof:** `functions/test/kds_status.test.js` covers a real transition, a duplicate no-op, a repeated cancel with/without a reason, an illegal transition and a missing order; `test/site/staff.test.mjs` asserts the duplicate-tap snackbar copy.
 
 #### REL-15 — Explain a denied location on the delivery map
-- **Where:** `app/src/pages/kiosk/map.astro`
-- **Failure Mode:** `goToMyLocation()` returned silently when `currentPosition()` resolved `null` (permission denied, no GPS, or a 12 s timeout), so the shopper tapped a button that appeared dead and could not tell whether the pin had moved.
-- **Resolution:** The button now shows the kiosk snackbar `Location unavailable. Drag the map to set your pin.` and leaves the tile-free picker usable.
-- **Proof:** `test/site/kiosk.test.mjs` asserts the null-position branch announces that recovery copy and imports the shared snackbar.
+- **Where:** `app/src/pages/kiosk/map.astro`, `app/src/kiosk/geo.ts`, `app/src/kiosk/snackbar.ts`, `app/src/kiosk/tokens.css`
+- **Failure Mode:** `goToMyLocation()` returned silently when `currentPosition()` resolved `null` (permission denied, no GPS, or a 12 s timeout), so the shopper tapped a button that appeared dead and could not tell whether the pin had moved. The shared `.snack` also sat at `z-index: 100`, under this page's own overlays (`500–700`).
+- **Resolution:** The copy lives in `LOCATION_UNAVAILABLE_MESSAGE` (`app/src/kiosk/geo.ts`) and the button shows it in the snackbar, which now paints at `z-index: 800` and accepts a bottom offset. The map measures its own bottom card so the message sits above it instead of covering CONFIRM LOCATION.
+- **Proof:** `test/site/kiosk.test.mjs` asserts the shared message value, the null-position branch that announces it, and the measured bottom offset; the emulator capture shows CONFIRM LOCATION still visible under the message.
 
 ---
 

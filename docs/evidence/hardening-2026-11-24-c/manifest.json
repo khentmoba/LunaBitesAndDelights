@@ -1,6 +1,6 @@
 {
   "target": "ts",
-  "capturedAt": "2026-11-24T13:20:58.705Z",
+  "capturedAt": "2026-11-24T13:34:21.844Z",
   "viewports": [
     [
       320,
@@ -105,6 +105,34 @@
       "name": "staff-kds",
       "width": 1440,
       "file": "staff-kds-1440.png",
+      "path": "/staff/kds?staff=1",
+      "ready": true
+    },
+    {
+      "name": "staff-kds-partial",
+      "width": 320,
+      "file": "staff-kds-partial-320.png",
+      "path": "/staff/kds?staff=1",
+      "ready": true
+    },
+    {
+      "name": "staff-kds-partial",
+      "width": 390,
+      "file": "staff-kds-partial-390.png",
+      "path": "/staff/kds?staff=1",
+      "ready": true
+    },
+    {
+      "name": "staff-kds-partial",
+      "width": 768,
+      "file": "staff-kds-partial-768.png",
+      "path": "/staff/kds?staff=1",
+      "ready": true
+    },
+    {
+      "name": "staff-kds-partial",
+      "width": 1440,
+      "file": "staff-kds-partial-1440.png",
       "path": "/staff/kds?staff=1",
       "ready": true
     }
