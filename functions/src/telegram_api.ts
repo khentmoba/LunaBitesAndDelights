@@ -13,11 +13,30 @@ export interface TelegramClient {
 
 const TELEGRAM_TIMEOUT_MS = 10_000;
 
+/** Redacts a secret token from transport error text so logs and Firestore never persist credentials. */
+export function redactSecret(text: string, secret: string): string {
+  if (!secret) return text;
+  return text.split(secret).join('[REDACTED]');
+}
+
 async function telegramRequest(token: string, method: string, init: RequestInit): Promise<unknown> {
-  const res = await fetch(`https://api.telegram.org/bot${token}/${method}`, {
-    ...init,
-    signal: AbortSignal.timeout(TELEGRAM_TIMEOUT_MS),
-  });
+  let res: Response;
+  try {
+    res = await fetch(`https://api.telegram.org/bot${token}/${method}`, {
+      ...init,
+      signal: AbortSignal.timeout(TELEGRAM_TIMEOUT_MS),
+    });
+  } catch (err: any) {
+    const rawMsg = typeof err?.message === 'string' && err.message
+      ? err.message
+      : String(err || 'Telegram request failed');
+    const causeMsg = typeof err?.cause?.message === 'string' && err.cause.message
+      ? ` (${err.cause.message})`
+      : '';
+    const sanitized = new Error(redactSecret(`Telegram ${method} transport error: ${rawMsg}${causeMsg}`, token));
+    if (typeof err?.name === 'string' && err.name) sanitized.name = err.name;
+    throw sanitized;
+  }
   let body: any = null;
   try {
     body = await res.json();

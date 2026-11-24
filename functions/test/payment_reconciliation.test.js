@@ -22,7 +22,12 @@ const { hasMatchingCheckoutSession } = require('../lib/payments/verify_payment')
 const { isLiveCheckoutSession, shouldMarkPaymentFailed } = require('../lib/payments/paymongo');
 const { isOrderVisibleInKds, toIsoTimestamp, clampOrdersLimit, isAllowedStatusTransition } = require('../lib/orders/kds');
 const { kdsMirrorDoc, shouldNotifyKitchen } = require('../lib/orders/derived');
-const { idempotentOrderDocId, orderPayloadFingerprint } = require('../lib/orders/place_order');
+const {
+  idempotentOrderDocId,
+  orderPayloadFingerprint,
+  legacyOrderPayloadFingerprint,
+  matchesIdempotencyHash,
+} = require('../lib/orders/place_order');
 const { clientIpFromRequest } = require('../lib/util/security');
 const { isCountableOrder } = require('../lib/util');
 const { safeDateLabel } = require('../lib/reporting/daily_stats');
@@ -447,6 +452,20 @@ test('orderPayloadFingerprint is deterministic and detects payload tampering', (
   assert.notStrictEqual(
     orderPayloadFingerprint({ ...base, type: 'Delivery', lat: 9.02, lng: 125.51 }),
     orderPayloadFingerprint({ ...base, type: 'Delivery', lat: 9.03, lng: 125.52 }),
+  );
+  assert.notStrictEqual(
+    orderPayloadFingerprint({ ...base, entryType: 'Kiosk' }),
+    orderPayloadFingerprint({ ...base, entryType: 'Staff' }),
+  );
+  const currentKiosk = orderPayloadFingerprint({ ...base, entryType: 'Kiosk' });
+  const legacy = legacyOrderPayloadFingerprint(base);
+  assert.strictEqual(
+    matchesIdempotencyHash({ idempotencyHash: legacy, entryType: 'Kiosk' }, currentKiosk, legacy, 'Kiosk'),
+    true,
+  );
+  assert.strictEqual(
+    matchesIdempotencyHash({ idempotencyHash: legacy, entryType: 'Kiosk' }, currentKiosk, legacy, 'Staff'),
+    false,
   );
 });
 

@@ -524,3 +524,14 @@ test('parseCheckoutSessionResponse rejects missing or blank session ids and non-
     /not a PayMongo page/i,
   );
 });
+
+test('checkout form name and phone maxlength match placeOrder server caps', async () => {
+  const { JSDOM } = await import('jsdom');
+  const html = readFileSync(new URL('../../build/app/kiosk/checkout/index.html', import.meta.url), 'utf8');
+  const dom = new JSDOM(html);
+  const name = dom.window.document.querySelector('input[name="name"]');
+  const phone = dom.window.document.querySelector('input[name="phone"]');
+  assert.equal(name?.getAttribute('maxlength'), '100');
+  assert.equal(phone?.getAttribute('maxlength'), '32');
+  dom.window.close();
+});

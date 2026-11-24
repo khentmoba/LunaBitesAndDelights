@@ -39,6 +39,12 @@ const listeners = new Set<Listener>();
 let current: Staff | null | undefined;
 let bound = false;
 let authSeq = 0;
+let deferredRetryCleanup: (() => void) | null = null;
+
+function clearDeferredRetry() {
+  deferredRetryCleanup?.();
+  deferredRetryCleanup = null;
+}
 
 function emit(next: Staff | null) {
   if (current === next || (current && next && current.username === next.username && current.role === next.role)) return;
@@ -50,10 +56,9 @@ async function bind() {
   if (bound) return;
   bound = true;
   const [auth, { onAuthStateChanged }] = await Promise.all([firebaseAuth(), import('firebase/auth')]);
-  onAuthStateChanged(auth, (user) => {
-    const seq = ++authSeq;
-    const username = user ? staffUsernameFor(user.uid) : null;
-    if (!user || !username) {
+  const verifyUser = (user: import('firebase/auth').User, seq: number) => {
+    const username = staffUsernameFor(user.uid);
+    if (!username) {
       emit(null);
       return;
     }
@@ -73,10 +78,32 @@ async function bind() {
         if (action === 'keep') return;
         if (action === 'defer') {
           emit(null);
+          if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
+            clearDeferredRetry();
+            const onOnline = () => {
+              clearDeferredRetry();
+              if (seq !== authSeq) return;
+              const liveUser = auth.currentUser;
+              if (liveUser && liveUser.uid === user.uid) {
+                verifyUser(liveUser, seq);
+              }
+            };
+            window.addEventListener('online', onOnline, { once: true });
+            deferredRetryCleanup = () => window.removeEventListener('online', onOnline);
+          }
           return;
         }
         void logout();
       });
+  };
+  onAuthStateChanged(auth, (user) => {
+    clearDeferredRetry();
+    const seq = ++authSeq;
+    if (!user) {
+      emit(null);
+      return;
+    }
+    verifyUser(user, seq);
   });
 }
 
@@ -96,6 +123,7 @@ export const currentStaff = (): Staff | null => current ?? null;
 
 /** Ends the Firebase staff session too (custom token from verifyStaff). */
 export async function logout(): Promise<void> {
+  clearDeferredRetry();
   authSeq++;
   emit(null);
   try {
