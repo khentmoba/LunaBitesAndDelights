@@ -1278,6 +1278,251 @@ test('live KDS updates immediately on new server snapshot, chimes, updates tab t
     await new Promise((r) => setTimeout(r, 40));
     assert.equal(fetchCalls, prevFetches + 1, 'online event catches up via getActiveOrders while cached');
     assert.equal(listenerStarts, prevListeners + 1, 'online event restarts stuck cached listener');
+
+    // Once back on a healthy server snapshot, a quick tab switch (< 30s) must NOT
+    // tear down and restart the live listener, and an offline tab switch must NOT poll.
+    snapCb({ docs: [docSnap(feedOrder)], metadata: { fromCache: false } });
+    const liveListeners = listenerStarts;
+    const liveFetches = fetchCalls;
+    Object.defineProperty(dom.window.document, 'hidden', { value: true, configurable: true });
+    dom.window.document.dispatchEvent(new dom.window.Event('visibilitychange'));
+    Object.defineProperty(dom.window.document, 'hidden', { value: false, configurable: true });
+    dom.window.document.dispatchEvent(new dom.window.Event('visibilitychange'));
+    await new Promise((r) => setTimeout(r, 20));
+    assert.equal(listenerStarts, liveListeners, 'quick tab switch does not restart healthy live listener');
+    assert.equal(fetchCalls, liveFetches, 'quick tab switch does not trigger fallback poll');
+
+    dom.window.dispatchEvent(new dom.window.Event('offline'));
+    Object.defineProperty(dom.window.document, 'hidden', { value: true, configurable: true });
+    dom.window.document.dispatchEvent(new dom.window.Event('visibilitychange'));
+    Object.defineProperty(dom.window.document, 'hidden', { value: false, configurable: true });
+    dom.window.document.dispatchEvent(new dom.window.Event('visibilitychange'));
+    await new Promise((r) => setTimeout(r, 20));
+    assert.equal(listenerStarts, liveListeners, 'offline visibility change does not restart listener');
+    assert.equal(fetchCalls, liveFetches, 'offline visibility change does not fire doomed poll');
+  } finally {
+    cleanup();
+  }
+});
+
+test('shouldReconnectOnVisible skips offline/quick switches and reconnects on sleep-wake or degraded state', async () => {
+  const { shouldReconnectOnVisible, KDS_HIDDEN_RECONNECT_MS } = await import('../../app/src/staff/kds-data.ts');
+  assert.equal(shouldReconnectOnVisible({ isOffline: true, isLive: false, fromCache: true, connecting: false, hiddenMs: 60_000 }), false);
+  assert.equal(shouldReconnectOnVisible({ isOffline: false, isLive: false, fromCache: false, connecting: true, hiddenMs: 60_000 }), false);
+  assert.equal(shouldReconnectOnVisible({ isOffline: false, isLive: true, fromCache: false, connecting: false, hiddenMs: 5_000 }), false);
+  assert.equal(shouldReconnectOnVisible({ isOffline: false, isLive: true, fromCache: false, connecting: false, hiddenMs: KDS_HIDDEN_RECONNECT_MS }), true);
+  assert.equal(shouldReconnectOnVisible({ isOffline: false, isLive: true, fromCache: true, connecting: false, hiddenMs: 0 }), true);
+  assert.equal(shouldReconnectOnVisible({ isOffline: false, isLive: false, fromCache: false, connecting: false, hiddenMs: 0 }), true);
+});
+
+test('dashboard renders loaded orders when analytics fails transiently', async () => {
+  const dom = new JSDOM('<!doctype html><html><body><div id="root"></div></body></html>', {
+    url: 'https://lunabitesanddelights.web.app/staff/dashboard',
+  });
+  const { registerHooks } = await import('node:module');
+  const prevWindow = globalThis.window;
+  const prevDocument = globalThis.document;
+  const prevAdd = globalThis.addEventListener;
+  const prevRemove = globalThis.removeEventListener;
+  const prevRaf = globalThis.requestAnimationFrame;
+  const prevCancelRaf = globalThis.cancelAnimationFrame;
+  const prevGetComputedStyle = globalThis.getComputedStyle;
+
+  globalThis.window = dom.window;
+  globalThis.document = dom.window.document;
+  globalThis.addEventListener = dom.window.addEventListener.bind(dom.window);
+  globalThis.removeEventListener = dom.window.removeEventListener.bind(dom.window);
+  globalThis.requestAnimationFrame = (cb) => setTimeout(cb, 0);
+  globalThis.cancelAnimationFrame = (id) => clearTimeout(id);
+  globalThis.getComputedStyle = dom.window.getComputedStyle.bind(dom.window);
+
+  globalThis.__dashPartialStubs = {
+    callFn: async (name) => {
+      if (name === 'getSalesAnalytics') throw new Error('network timeout');
+      if (name === 'getActiveOrders') {
+        return {
+          success: true,
+          orders: [{
+            id: 'ord_partial1',
+            orderNumber: 'LU-PARTIAL1',
+            customerName: 'Bea',
+            type: 'Pickup',
+            total: 120,
+            timestamp: new Date().toISOString(),
+            status: 'Pending',
+          }],
+        };
+      }
+      return { success: true };
+    },
+  };
+
+  const hooks = registerHooks({
+    resolve(specifier, context, nextResolve) {
+      if (specifier === '../kiosk/firebase.ts') return { url: 'stub://dash-partial-firebase', shortCircuit: true };
+      if (specifier === './session.ts') return { url: 'stub://dash-partial-session', shortCircuit: true };
+      return nextResolve(specifier, context);
+    },
+    load(url, context, nextLoad) {
+      if (url === 'stub://dash-partial-firebase') {
+        return { format: 'module', source: 'export const callFn = (...args) => globalThis.__dashPartialStubs.callFn(...args);', shortCircuit: true };
+      }
+      if (url === 'stub://dash-partial-session') {
+        return {
+          format: 'module',
+          source: `export const fnError = () => null;
+export const isAuthCode = () => false;
+export const isAuthErrorText = () => false;
+export const logout = async () => {};
+export const staffErrorMessage = (_e, _p, offline) => offline;`,
+          shortCircuit: true,
+        };
+      }
+      return nextLoad(url, context);
+    },
+  });
+
+  try {
+    const { mountDashboard } = await import(`../../app/src/staff/dashboard.ts?partial=${Date.now()}`);
+    const root = dom.window.document.getElementById('root');
+    const dispose = mountDashboard(root, () => ({ username: 'admin', role: 'admin', isAdmin: true }));
+    try {
+      await new Promise((r) => setTimeout(r, 30));
+      assert.match(root.textContent, /LU-PARTIAL1/, 'recent orders still render when analytics fails');
+      assert.match(root.textContent, /Error connecting to server/, 'error banner still surfaces the failed analytics call');
+    } finally {
+      dispose();
+    }
+  } finally {
+    hooks.deregister();
+    delete globalThis.__dashPartialStubs;
+    globalThis.window = prevWindow;
+    globalThis.document = prevDocument;
+    globalThis.addEventListener = prevAdd;
+    globalThis.removeEventListener = prevRemove;
+    globalThis.requestAnimationFrame = prevRaf;
+    globalThis.cancelAnimationFrame = prevCancelRaf;
+    globalThis.getComputedStyle = prevGetComputedStyle;
+    dom.window.close();
+  }
+});
+
+test('watchStaff recovers a deferred offline session automatically when online fires', async () => {
+  const dom = new JSDOM('<!doctype html><html><body></body></html>', {
+    url: 'https://lunabitesanddelights.web.app/staff/kds',
+  });
+  const { registerHooks } = await import('node:module');
+  const prevWindow = globalThis.window;
+  globalThis.window = dom.window;
+
+  let attempts = 0;
+  let authCb = null;
+  const fakeUser = {
+    uid: 'staff_admin',
+    async getIdTokenResult() {
+      attempts++;
+      if (attempts === 1) throw { code: 'auth/network-request-failed' };
+      return { claims: { role: 'admin' } };
+    },
+  };
+  const fakeAuth = { currentUser: fakeUser };
+  globalThis.__sessionOnlineStubs = {
+    auth: fakeAuth,
+    onAuthStateChanged(_auth, cb) {
+      authCb = cb;
+      cb(fakeUser);
+      return () => {};
+    },
+    signOut: async () => {},
+  };
+
+  const hooks = registerHooks({
+    resolve(specifier, context, nextResolve) {
+      if (specifier === '../kiosk/firebase.ts') return { url: 'stub://session-online-firebase', shortCircuit: true };
+      if (specifier === 'firebase/auth') return { url: 'stub://session-online-auth', shortCircuit: true };
+      return nextResolve(specifier, context);
+    },
+    load(url, context, nextLoad) {
+      if (url === 'stub://session-online-firebase') {
+        return { format: 'module', source: 'export const firebaseAuth = async () => globalThis.__sessionOnlineStubs.auth;', shortCircuit: true };
+      }
+      if (url === 'stub://session-online-auth') {
+        return {
+          format: 'module',
+          source: `export const onAuthStateChanged = (...args) => globalThis.__sessionOnlineStubs.onAuthStateChanged(...args);
+export const signOut = (...args) => globalThis.__sessionOnlineStubs.signOut(...args);
+export const signInWithCustomToken = async () => {};`,
+          shortCircuit: true,
+        };
+      }
+      return nextLoad(url, context);
+    },
+  });
+
+  try {
+    const { watchStaff } = await import(`../../app/src/staff/session.ts?online=${Date.now()}`);
+    const seen = [];
+    const unsub = watchStaff((s) => seen.push(s));
+    try {
+      await new Promise((r) => setTimeout(r, 30));
+      assert.equal(attempts, 1);
+      assert.equal(seen[seen.length - 1], null, 'deferred offline token check keeps user gated without signing out');
+      dom.window.dispatchEvent(new dom.window.Event('online'));
+      await new Promise((r) => setTimeout(r, 30));
+      assert.equal(attempts, 2, 'online event retries getIdTokenResult');
+      assert.deepEqual(seen[seen.length - 1], { username: 'admin', role: 'admin', isAdmin: true });
+      assert.ok(authCb);
+    } finally {
+      unsub();
+    }
+  } finally {
+    hooks.deregister();
+    delete globalThis.__sessionOnlineStubs;
+    globalThis.window = prevWindow;
+    dom.window.close();
+  }
+});
+
+test('KDS offline during initial stalled connect clears connecting so online restarts live listener', async () => {
+  let listenerStarts = 0;
+  let snapCb = null;
+  class FakeTimestamp {
+    constructor(ms) { this.ms = ms; }
+    static fromMillis(ms) { return new FakeTimestamp(ms); }
+    toDate() { return new Date(this.ms); }
+  }
+  const stub = {
+    callFn: async () => ({ success: true, orders: [feedOrder], scanned: 1, truncated: false }),
+    firestore: {
+      Timestamp: FakeTimestamp,
+      collection: () => ({}),
+      where: () => ({}),
+      orderBy: () => ({}),
+      limit: () => ({}),
+      query: () => ({}),
+      onSnapshot: (_q, _opts, onNext) => {
+        listenerStarts++;
+        snapCb = onNext;
+        return () => {};
+      },
+    },
+  };
+  const { dom, root, cleanup } = await mountKdsForTest(stub);
+  try {
+    await new Promise((r) => setTimeout(r, 40));
+    assert.equal(listenerStarts, 1, 'initial live listener started and has not called back');
+    assert.match(root.querySelector('.kbar__feed')?.textContent ?? '', /Connecting/);
+
+    dom.window.dispatchEvent(new dom.window.Event('offline'));
+    dom.window.dispatchEvent(new dom.window.Event('online'));
+    await new Promise((r) => setTimeout(r, 40));
+    assert.equal(listenerStarts, 2, 'online must restart live listener instead of staying stuck in connecting');
+
+    snapCb({
+      metadata: { fromCache: false },
+      docs: [{ id: feedOrder.id, data: () => ({ ...feedOrder, ts: new FakeTimestamp(Date.parse(feedOrder.timestamp)) }) }],
+    });
+    assert.match(root.querySelector('.kbar__feed')?.textContent ?? '', /Live/);
   } finally {
     cleanup();
   }

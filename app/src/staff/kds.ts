@@ -19,6 +19,7 @@ import {
   mergeKdsOrders,
   numText,
   qtyOf,
+  shouldReconnectOnVisible,
   shouldSkipUnchangedLiveSnapshot,
   type KdsOrder,
   type TypeFilter,
@@ -78,6 +79,7 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
   let fetchInFlight = false;
   let fetchSeq = 0;
   let liveSignature = '';
+  let hiddenAt = document.hidden ? Date.now() : 0;
   // Markup last written to the header and banner; an unchanged feed must not
   // re-create those buttons (it drops focus and eats taps meant for them).
   let barHtml: string | null = null;
@@ -203,10 +205,10 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
 
   function ensureFallbackTimers() {
     pollTimer ||= window.setInterval(() => {
-      if (!document.hidden && getStaff()) void fetchActive(true);
+      if (!document.hidden && !isOffline && getStaff()) void fetchActive(true);
     }, POLL_MS);
     reconnectTimer ||= window.setInterval(() => {
-      if (!disposed && (!isLive || fromCache) && !connecting && getStaff()) void startLiveListener();
+      if (!disposed && !isOffline && (!isLive || fromCache) && !connecting && getStaff()) void startLiveListener();
     }, RECONNECT_MS);
   }
 
@@ -983,13 +985,21 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
   }
 
   const onVisibilityChange = () => {
-    if (disposed || document.hidden) return;
+    if (disposed) return;
+    if (document.hidden) {
+      hiddenAt = Date.now();
+      return;
+    }
+    const hiddenMs = hiddenAt > 0 ? Math.max(0, Date.now() - hiddenAt) : 0;
+    hiddenAt = 0;
     now = Date.now();
     refreshElapsedTimes();
     acquireWakeLock();
-    if (getStaff()) {
+    if (!isOffline && getStaff()) {
       if (!isLive || fromCache) void fetchActive(true);
-      if (!connecting) void startLiveListener();
+      if (shouldReconnectOnVisible({ isOffline, isLive, fromCache, connecting, hiddenMs })) {
+        void startLiveListener();
+      }
     }
   };
   const onOnline = () => {
@@ -1004,6 +1014,9 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
   };
   const onOffline = () => {
     isOffline = true;
+    connecting = false;
+    clearTimeout(initialFallbackTimer);
+    initialFallbackTimer = 0;
     clearTimeout(cacheFallbackTimer);
     cacheFallbackTimer = 0;
     if (disposed) return;

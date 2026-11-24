@@ -32,8 +32,8 @@ export function idempotentOrderDocId(key: string): string {
   return `ord${crypto.createHash('sha256').update(key).digest('hex').slice(0, 28)}`;
 }
 
-/** Canonical SHA-256 fingerprint of an order payload to prevent cross-user idempotency collisions. */
-export function orderPayloadFingerprint(input: {
+/** Legacy SHA-256 fingerprint (pre-entryType) for seamless dedupe across deploy boundaries. */
+export function legacyOrderPayloadFingerprint(input: {
   type: string;
   paymentMethod: string;
   customerName: string;
@@ -44,6 +44,43 @@ export function orderPayloadFingerprint(input: {
   items: Array<{ name: string; variant: string; price: number; quantity: number }>;
 }): string {
   const canonical = JSON.stringify({
+    type: input.type,
+    paymentMethod: input.paymentMethod,
+    customerName: input.customerName,
+    customerPhone: input.customerPhone,
+    customerAddress: input.customerAddress,
+    lat: input.lat ?? null,
+    lng: input.lng ?? null,
+    items: input.items.map((i) => [i.name, i.variant, i.price, i.quantity]),
+  });
+  return crypto.createHash('sha256').update(canonical).digest('hex');
+}
+
+/** Matches either the current fingerprint or a pre-deploy legacy hash with identical entryType. */
+export function matchesIdempotencyHash(
+  existing: { idempotencyHash?: unknown; entryType?: unknown },
+  currentHash: string,
+  legacyHash: string,
+  entryType: string,
+): boolean {
+  if (existing.idempotencyHash === currentHash) return true;
+  return existing.entryType === entryType && existing.idempotencyHash === legacyHash;
+}
+
+/** Canonical SHA-256 fingerprint of an order payload to prevent cross-user idempotency collisions. */
+export function orderPayloadFingerprint(input: {
+  entryType?: string;
+  type: string;
+  paymentMethod: string;
+  customerName: string;
+  customerPhone: string;
+  customerAddress: string;
+  lat?: number | null;
+  lng?: number | null;
+  items: Array<{ name: string; variant: string; price: number; quantity: number }>;
+}): string {
+  const canonical = JSON.stringify({
+    entryType: input.entryType ?? 'Kiosk',
     type: input.type,
     paymentMethod: input.paymentMethod,
     customerName: input.customerName,
@@ -155,7 +192,8 @@ export const placeOrder = onCall(async (request) => {
   const visibleInKds = isOrderVisibleInKds(payload);
 
   if (rawIdempotencyKey) {
-    const idempotencyHash = orderPayloadFingerprint({
+    const fingerprintInput = {
+      entryType,
       type,
       paymentMethod,
       customerName,
@@ -164,14 +202,16 @@ export const placeOrder = onCall(async (request) => {
       lat: payload.lat,
       lng: payload.lng,
       items,
-    });
+    };
+    const idempotencyHash = orderPayloadFingerprint(fingerprintInput);
+    const legacyHash = legacyOrderPayloadFingerprint(fingerprintInput);
     const ref = db.collection('orders').doc(idempotentOrderDocId(rawIdempotencyKey));
     const mirrorRef = db.collection(KDS_COLLECTION).doc(ref.id);
     const outcome = await db.runTransaction(async (tx) => {
       const snap = await tx.get(ref);
       if (snap.exists) {
         const existing = snap.data()!;
-        if (existing.idempotencyHash !== idempotencyHash) {
+        if (!matchesIdempotencyHash(existing, idempotencyHash, legacyHash, entryType)) {
           throw new HttpsError('already-exists', 'Order request conflicts with an existing order');
         }
         return {

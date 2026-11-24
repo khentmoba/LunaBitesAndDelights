@@ -29,6 +29,25 @@ export interface KdsOrder {
 
 export const KDS_LOOKBACK_MS = 7 * 24 * 60 * 60 * 1000;
 export const KDS_LIMIT = 200;
+/** Minimum time a tab must be hidden before forcing a healthy live KDS listener to reconnect. */
+export const KDS_HIDDEN_RECONNECT_MS = 30_000;
+
+/**
+ * Decides whether returning to a visible KDS tab should restart the live
+ * Firestore listener. Skips network work while offline or already connecting,
+ * reconnects immediately when degraded/cached, and only cycles a healthy live
+ * stream after the tab was hidden long enough for a tablet sleep to stall it.
+ */
+export function shouldReconnectOnVisible(state: {
+  isOffline: boolean;
+  isLive: boolean;
+  fromCache: boolean;
+  connecting: boolean;
+  hiddenMs: number;
+}): boolean {
+  if (state.isOffline || state.connecting) return false;
+  return !state.isLive || state.fromCache || state.hiddenMs >= KDS_HIDDEN_RECONNECT_MS;
+}
 
 /** Mirror doc → callable-shaped order (`timestamp` as an ISO string). */
 export function kdsOrderFromDoc(id: string, data: Record<string, unknown>, tsToDate: (ts: unknown) => Date | null): KdsOrder {

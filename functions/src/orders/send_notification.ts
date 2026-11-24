@@ -143,6 +143,11 @@ export function getGoogleMapsNavigationUrl(lat: number, lng: number): string {
 
 const MAX_MAP_IMAGE_BYTES = 5 * 1024 * 1024;
 
+/** Strips sensitive query parameters (e.g. API keys) from error strings before logging. */
+export function redactUrlSecrets(text: string): string {
+  return text.replace(/([?&](?:key|api_key|token|access_token)=)[^&\s]+/gi, '$1[REDACTED]');
+}
+
 /** Safely fetches a static map image buffer with an abort timeout. Returns null on failure. */
 export async function fetchMapImage(url: string, timeoutMs = 6000): Promise<Buffer | null> {
   const controller = new AbortController();
@@ -170,7 +175,8 @@ export async function fetchMapImage(url: string, timeoutMs = 6000): Promise<Buff
     }
     return Buffer.from(arrayBuffer);
   } catch (err: any) {
-    logger.warn('Error fetching static map image', err);
+    const rawMsg = typeof err?.message === 'string' && err.message ? err.message : String(err || 'unknown');
+    logger.warn(`Error fetching static map image: ${redactUrlSecrets(rawMsg)}`);
     return null;
   } finally {
     clearTimeout(timer);

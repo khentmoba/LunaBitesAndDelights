@@ -925,4 +925,64 @@ describe('Telegram MarkdownV2 escaping and order notifications', () => {
     assert.equal(data.items[1].price, 0);
     assert.equal(data.items[1].quantity, 1);
   });
+
+  test('telegramRequest redacts TELEGRAM_TOKEN from transport errors', async () => {
+    const { getBot, setBot, redactSecret } = require('../lib/telegram_api');
+    const origToken = process.env.TELEGRAM_TOKEN;
+    const origFetch = global.fetch;
+    const secret = '123456:SECRET_BOT_TOKEN_XYZ';
+    process.env.TELEGRAM_TOKEN = secret;
+    setBot(null);
+    global.fetch = async (url) => {
+      const err = new TypeError(`fetch failed for ${url}`);
+      err.cause = new Error(`connect ECONNREFUSED ${url}`);
+      throw err;
+    };
+    try {
+      assert.equal(redactSecret(`url=https://api.telegram.org/bot${secret}/sendMessage`, secret), 'url=https://api.telegram.org/bot[REDACTED]/sendMessage');
+      await assert.rejects(
+        () => getBot().sendMessage('-100123456', 'hello'),
+        (err) => {
+          assert.ok(err instanceof Error);
+          assert.ok(!err.message.includes(secret), 'bot token must not appear in thrown error message');
+          assert.match(err.message, /\[REDACTED\]/);
+          return true;
+        },
+      );
+    } finally {
+      global.fetch = origFetch;
+      setBot(null);
+      if (origToken === undefined) delete process.env.TELEGRAM_TOKEN;
+      else process.env.TELEGRAM_TOKEN = origToken;
+    }
+  });
+
+  test('fetchMapImage redacts API key query params when logging transport errors', async () => {
+    const { fetchMapImage, redactUrlSecrets } = require('../lib/orders/send_notification');
+    const { logger } = require('firebase-functions');
+    const origFetch = global.fetch;
+    const origWarn = logger.warn;
+    const warnings = [];
+    const secretKey = 'AIzaSyFakeSecretMapKey999';
+    logger.warn = (...args) => { warnings.push(args.map(String).join(' ')); };
+    global.fetch = async (url) => {
+      throw new Error(`network failure for ${url}`);
+    };
+    try {
+      assert.equal(
+        redactUrlSecrets(`https://maps.googleapis.com/maps/api/staticmap?center=9,125&key=${secretKey}&size=600x400`),
+        'https://maps.googleapis.com/maps/api/staticmap?center=9,125&key=[REDACTED]&size=600x400',
+      );
+      const res = await fetchMapImage(`https://maps.googleapis.com/maps/api/staticmap?center=9,125&key=${secretKey}`);
+      assert.equal(res, null);
+      assert.ok(warnings.length > 0, 'warning should be logged on fetch failure');
+      for (const w of warnings) {
+        assert.ok(!w.includes(secretKey), 'API key must not appear in warning logs');
+        assert.match(w, /key=\[REDACTED\]/);
+      }
+    } finally {
+      global.fetch = origFetch;
+      logger.warn = origWarn;
+    }
+  });
 });
