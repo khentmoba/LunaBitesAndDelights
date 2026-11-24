@@ -360,7 +360,7 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
     const feed = feedState();
     const admin = staff?.isAdmin ?? false;
     const spin = '<span class="kbar__spin" aria-hidden="true"></span>';
-    const sync = `<button type="button" class="kbar__ib kbar__ib--sync" data-act="sync" title="Sync Orders Now" aria-label="Sync Orders Now"${loading ? ' disabled' : ''}>${loading ? spin : icon('sync_rounded')}</button>`;
+    const sync = `<button type="button" class="kbar__ib kbar__ib--sync" data-act="sync" title="Sync Orders Now" aria-label="Sync Orders Now"${loading || authHalted ? ' disabled' : ''}>${loading ? spin : icon('sync_rounded')}</button>`;
     const html = `
   ${back ? `<button type="button" class="kbar__back" data-act="back" aria-label="Back" title="Back">${icon('arrow_back')}</button>` : ''}
   <div class="kbar__title${back ? '' : ' kbar__title--solo'}">
@@ -414,11 +414,11 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
   function renderBanner() {
     let html = '';
     if (error !== null) {
-      const auth = isAuthErrorText(error);
+      const auth = authHalted || isAuthErrorText(error);
       html = `
   <div class="kerr" role="alert">${icon('warning_amber_rounded')}<span class="kerr__text">${esc(error)}</span>
     ${auth ? '<button type="button" class="kerr__btn kerr__btn--auth" data-act="signin">SIGN IN</button>' : ''}
-    <button type="button" class="kerr__btn" data-act="retry">RETRY</button>
+    ${authHalted ? '' : '<button type="button" class="kerr__btn" data-act="retry">RETRY</button>'}
   </div>`;
     } else if (isOffline || (isLive && fromCache)) {
       const msg = isOffline
@@ -453,6 +453,7 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
     const elapsed = formatElapsed(ts, now);
     const color = delayed ? INK : elapsedColor(ts, now);
     const busy = updating.has(id);
+    const locked = busy || authHalted;
     const lat = typeof o.lat === 'number' ? o.lat : null;
     const lng = typeof o.lng === 'number' ? o.lng : null;
 
@@ -472,7 +473,7 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
     const next = status === 'Pending' ? ['START PREPARING', 'Preparing', 'plate', 'outdoor_grill_outlined'] : status === 'Preparing' ? ['MARK AS READY', 'Ready', 'green', 'done_all_rounded'] : status === 'Ready' ? ['COMPLETE & DISPATCH', 'Completed', 'paper', 'task_alt_rounded'] : null;
     if (next) {
       const [label, to, tone, ico] = next as [string, string, string, IconName];
-      action = `<button type="button" class="kact kact--${tone}" data-status="${to}" data-id="${esc(id)}"${busy ? ' disabled' : ''}>${icon(busy ? 'hourglass_top_rounded' : ico)}<span>${busy ? 'UPDATING...' : esc(label)}</span></button>`;
+      action = `<button type="button" class="kact kact--${tone}" data-status="${to}" data-id="${esc(id)}"${locked ? ' disabled' : ''}>${icon(busy ? 'hourglass_top_rounded' : ico)}<span>${busy ? 'UPDATING...' : esc(label)}</span></button>`;
     } else {
       action = `<p class="kact-done">ORDER ${esc(status)}</p>`;
     }
@@ -506,7 +507,7 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
   <div class="kcard__items">${items}</div>
   <div class="kcard__total">
     <span><span class="kcard__tlabel">${delivery ? 'FOOD TOTAL: ' : 'TOTAL: '}</span><span class="kcard__tval">₱${esc(total)}</span></span>
-    ${status === 'Pending' ? `<button type="button" class="kcard__cancel" data-cancel="${esc(id)}"${busy ? ' disabled' : ''}>Cancel</button>` : ''}
+    ${status === 'Pending' ? `<button type="button" class="kcard__cancel" data-cancel="${esc(id)}"${locked ? ' disabled' : ''}>Cancel</button>` : ''}
   </div>
   ${action}
 </article>`;

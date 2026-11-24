@@ -114,7 +114,7 @@ body { overflow: hidden; }
 <script>
 import { $, esc } from '../../kiosk/dom';
 import { DRAFT, load, save, type CheckoutDraft } from '../../kiosk/handoff';
-import { currentPosition, mapsKey, reverseGeocode, searchAddress, shortAddress, type Place } from '../../kiosk/geo';
+import { currentPosition, disposePendingLookups, mapsKey, reverseGeocode, searchAddress, shortAddress, type Place } from '../../kiosk/geo';
 import { glyph } from '../../kiosk/icons';
 import { popTo, watchInactivity } from '../../kiosk/inactivity';
 import { STORE, deliveryDistance } from '../../kiosk/order';
@@ -409,6 +409,15 @@ async function confirm() {
 document.querySelectorAll('[data-confirm]').forEach((b) => b.addEventListener('click', () => void confirm()));
 $('[data-locate]').addEventListener('click', () => void goToMyLocation());
 $('[data-back]').addEventListener('click', () => popTo('/kiosk/checkout'));
+window.addEventListener('pagehide', () => {
+  const pending = { searchTimer, addressTimer, searchAbort, reverseAbort };
+  disposePendingLookups(pending);
+  searchTimer = pending.searchTimer;
+  addressTimer = pending.addressTimer;
+  searchAbort = pending.searchAbort;
+  reverseAbort = pending.reverseAbort;
+  setSearching(false);
+});
 
 render();
 watchInactivity();

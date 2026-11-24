@@ -145,3 +145,29 @@ export function currentPosition(): Promise<{ lat: number; lng: number } | null> 
     );
   });
 }
+
+export interface PendingLookupState {
+  searchTimer: number;
+  addressTimer: number;
+  searchAbort: AbortController | null;
+  reverseAbort: AbortController | null;
+}
+
+/** Cancels pending map geocode timers and aborts in-flight lookup requests. */
+export function disposePendingLookups(
+  state: PendingLookupState,
+  clearFn: (id: number) => void = clearTimeout,
+): void {
+  if (state.searchTimer) {
+    clearFn(state.searchTimer);
+    state.searchTimer = 0;
+  }
+  if (state.addressTimer) {
+    clearFn(state.addressTimer);
+    state.addressTimer = 0;
+  }
+  state.searchAbort?.abort();
+  state.searchAbort = null;
+  state.reverseAbort?.abort();
+  state.reverseAbort = null;
+}

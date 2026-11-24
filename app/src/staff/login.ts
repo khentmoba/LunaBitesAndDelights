@@ -64,8 +64,8 @@ export function mountLogin(root: HTMLElement): () => void {
       <span class="login__input">${icon('person_outline_rounded')}<input name="user" autocomplete="username" autocapitalize="none" enterkeyhint="next" placeholder="Enter username" value="${esc(user)}"></span>
     </label>
     <label class="login__field"><span class="login__label">PASSWORD</span>
-      <span class="login__input">${icon('lock_outline_rounded')}<input name="pass" type="${obscure ? 'password' : 'text'}" autocomplete="current-password" enterkeyhint="go" placeholder="••••••••" value="${esc(pass)}">
-        <button type="button" class="login__eye" data-eye aria-label="${obscure ? 'Show password' : 'Hide password'}">${icon(obscure ? 'visibility_off_rounded' : 'visibility_rounded')}</button></span>
+      <span class="login__input">${icon('lock_outline_rounded')}<input name="pass" type="${obscure ? 'password' : 'text'}" autocomplete="current-password" enterkeyhint="go" placeholder="••••••••" value="${loading ? '' : esc(pass)}">
+        <button type="button" class="login__eye" data-eye aria-label="${obscure ? 'Show password' : 'Hide password'}"${loading ? ' disabled' : ''}>${icon(obscure ? 'visibility_off_rounded' : 'visibility_rounded')}</button></span>
     </label>
     <div class="login__buttons">
       <button type="button" class="login__btn" data-cancel${loading ? ' disabled' : ''}>CANCEL</button>
@@ -136,8 +136,8 @@ export function mountLogin(root: HTMLElement): () => void {
     } finally {
       loading = false;
       if (mode === 'pin') pin = '';
-      // Never re-insert a rejected password into the DOM (the eye toggle could reveal it).
-      if (error) pass = '';
+      // Never re-insert a submitted password into the DOM (on error or while auth settles).
+      pass = '';
       if (!disposed && body.isConnected) render();
     }
   }
@@ -159,6 +159,7 @@ export function mountLogin(root: HTMLElement): () => void {
     } else if (t.hasAttribute('data-cancel')) {
       cancel();
     } else if (t.hasAttribute('data-eye')) {
+      if (loading) return;
       obscure = !obscure;
       render('[name=pass]');
     }

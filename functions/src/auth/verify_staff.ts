@@ -4,7 +4,7 @@ import { getAuth } from 'firebase-admin/auth';
 import { logger } from 'firebase-functions';
 import * as crypto from 'crypto';
 import {
-  cleanStr, checkRateLimit, recordLoginFailure, clearLoginAttempts,
+  cleanStr, checkRateLimit, recordLoginFailure, clearLoginAttempts, clearWindowBudget,
   checkWindowBudget, checkAndRecordWindowFailure, clientIpFromRequest, enforceFixedWindowRateLimit,
   hashPasswordAsync, verifyPasswordAsync, requireStaff,
 } from '../util/security';
@@ -37,6 +37,8 @@ const GLOBAL_PIN_ATTEMPT_MAX = 120;
 const GLOBAL_PIN_WINDOW_MS = 15 * 60 * 1000;
 const PASSWORD_IP_RATE_MAX = 30;
 const PASSWORD_IP_WINDOW_MS = 15 * 60 * 1000;
+const PASSWORD_USER_FAIL_MAX = 20;
+const PASSWORD_USER_FAIL_WINDOW_MS = 15 * 60 * 1000;
 const DUMMY_SCRYPT_HASH =
   'scrypt$00000000000000000000000000000000$0000000000000000000000000000000000000000000000000000000000000000';
 // Bounded TTL: a warm instance must eventually re-check the collection so a
@@ -215,9 +217,22 @@ async function verifyPasswordLogin(
   if (!/^[a-z0-9._-]{2,64}$/.test(username)) throw new HttpsError('invalid-argument', GENERIC_FAIL);
 
   const rateKey = `staff:${username}:${clientIp}`;
+  const userFailKey = `staff:pw_user:${username}`;
   await checkRateLimit(rateKey);
+  await checkWindowBudget(
+    userFailKey,
+    PASSWORD_USER_FAIL_MAX,
+    PASSWORD_USER_FAIL_WINDOW_MS,
+    'Too many failed login attempts for this account. Please try again later.',
+  );
   const fail = async () => {
     await recordLoginFailure(rateKey);
+    await checkAndRecordWindowFailure(
+      userFailKey,
+      PASSWORD_USER_FAIL_MAX,
+      PASSWORD_USER_FAIL_WINDOW_MS,
+      'Too many failed login attempts for this account. Please try again later.',
+    );
     return { success: false, message: GENERIC_FAIL };
   };
 
@@ -248,6 +263,7 @@ async function verifyPasswordLogin(
   }
 
   await clearLoginAttempts(rateKey);
+  await clearWindowBudget(userFailKey);
   await staffRef.update({ lastLoginAt: FieldValue.serverTimestamp() }).catch(() => {});
 
   const { role, customToken } = await createStaffToken(username, data.role);

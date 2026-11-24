@@ -190,9 +190,12 @@ export function firstPaymentId(payments: any[] | null): string {
   return String(paid?.id || payments?.[0]?.id || '');
 }
 
-/** Returns the integer amount in centavos of the paid PayMongo payment, or null if absent/invalid. */
+/** Returns the integer PHP amount in centavos of the paid PayMongo payment, or null if absent/invalid. */
 export function paidPaymentAmountCentavos(payments: any[] | null): number | null {
   const paid = payments?.find((p: any) => p?.attributes?.status === 'paid');
+  const currency = paid?.attributes?.currency;
+  const normalizedCurrency = String(currency ?? '').trim().toUpperCase();
+  if (normalizedCurrency && normalizedCurrency !== 'PHP') return null;
   const amt = paid?.attributes?.amount;
   return typeof amt === 'number' && Number.isInteger(amt) && amt > 0 ? amt : null;
 }
