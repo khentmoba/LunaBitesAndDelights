@@ -1037,7 +1037,7 @@ const feedOrder = {
   timestamp: new Date().toISOString(),
 };
 
-test('a live feed update keeps the KDS search box node, value and focus', async () => {
+test('a live feed update never re-creates the KDS search box (invariant guard)', async () => {
   const stub = {
     callFn: async () => ({ success: true, orders: [feedOrder], scanned: 1, truncated: false }),
   };
@@ -1051,8 +1051,9 @@ test('a live feed update keeps the KDS search box node, value and focus', async 
     input.focus();
     assert.equal(dom.window.document.activeElement, input);
 
-    // A second feed refresh used to rebuild the whole control bar through
-    // renderControls(), replacing the input and dropping focus mid-typing.
+    // renderAll() runs on every published snapshot. The control bar is built
+    // once at mount, so the input must stay the same node or a staffer
+    // filtering the board loses focus and cursor position mid-word.
     root.querySelector('[data-act="sync"]').click();
     await new Promise((r) => setTimeout(r, 60));
 

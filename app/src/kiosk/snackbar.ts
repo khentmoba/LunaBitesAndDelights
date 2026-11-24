@@ -9,9 +9,11 @@ export interface SnackOptions {
   icon?: string;
   /** Staff snacks: square corners, 13px bold text. */
   square?: boolean;
+  /** Bottom offset for pages whose own bottom bar would sit under the snack. */
+  bottom?: string;
 }
 
-export function snack(message: string, { color, seconds = 4, action, icon, square }: SnackOptions = {}): void {
+export function snack(message: string, { color, seconds = 4, action, icon, square, bottom }: SnackOptions = {}): void {
   if (current) {
     clearTimeout(current.timer);
     current.el.remove();
@@ -20,6 +22,7 @@ export function snack(message: string, { color, seconds = 4, action, icon, squar
   el.className = square ? 'snack snack--square' : 'snack';
   el.setAttribute('role', 'status');
   if (color) el.style.background = color;
+  if (bottom) el.style.bottom = bottom;
   if (icon) {
     const i = document.createElement('span');
     i.className = 'icon snack__icon';

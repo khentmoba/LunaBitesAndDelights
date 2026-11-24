@@ -256,6 +256,12 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
           const wasLive = isLive;
           isLive = true;
           fromCache = snap.metadata.fromCache;
+          if (!wasLive) {
+            // The mirror is the board's source now; a warning about the
+            // fallback scan stopped applying the moment this snapshot arrived.
+            truncated = false;
+            scanned = 0;
+          }
           if (!fromCache) {
             fetchSeq++;
             fetchInFlight = false;
@@ -448,17 +454,17 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
     ${auth ? '<button type="button" class="kerr__btn kerr__btn--auth" data-act="signin">SIGN IN</button>' : ''}
     ${authHalted ? '' : '<button type="button" class="kerr__btn" data-act="retry">RETRY</button>'}
   </div>`;
-    } else if (truncated) {
-      html = `
-  <div class="kerr kerr--warn" role="status">${icon('warning_amber_rounded')}<span class="kerr__text">Partial board — the order scan stopped after ${scanned} orders, so older active orders may be missing.</span>
-    <button type="button" class="kerr__btn" data-act="retry">SYNC</button>
-  </div>`;
     } else if (isOffline || (isLive && fromCache)) {
       const msg = isOffline
         ? 'Connection offline — showing cached orders. New orders will sync when back online.'
         : 'Reconnecting to live feed — showing cached orders.';
       html = `
   <div class="kerr kerr--warn" role="status">${icon('warning_amber_rounded')}<span class="kerr__text">${esc(msg)}</span>
+    <button type="button" class="kerr__btn" data-act="retry">SYNC</button>
+  </div>`;
+    } else if (truncated) {
+      html = `
+  <div class="kerr kerr--warn" role="status">${icon('warning_amber_rounded')}<span class="kerr__text">Partial board — the order scan stopped after ${scanned} orders, so older active orders may be missing.</span>
     <button type="button" class="kerr__btn" data-act="retry">SYNC</button>
   </div>`;
     }
@@ -657,8 +663,8 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
   function renderAll() {
     if (disposed) return;
     renderBar();
-    // The filter bar is built once and synced in place: rebuilding it on every
-    // feed update dropped the search box's focus and cursor mid-typing.
+    // The filter bar is built once at mount; sync it in place so a feed update
+    // can never re-create the search input and drop its focus or cursor.
     syncControls();
     renderBanner();
     renderBoard();

@@ -114,7 +114,7 @@ body { overflow: hidden; }
 <script>
 import { $, esc } from '../../kiosk/dom';
 import { DRAFT, load, save, type CheckoutDraft } from '../../kiosk/handoff';
-import { currentPosition, disposePendingLookups, mapsKey, reverseGeocode, searchAddress, shortAddress, type Place } from '../../kiosk/geo';
+import { LOCATION_UNAVAILABLE_MESSAGE, currentPosition, disposePendingLookups, mapsKey, reverseGeocode, searchAddress, shortAddress, type Place } from '../../kiosk/geo';
 import { glyph } from '../../kiosk/icons';
 import { popTo, watchInactivity } from '../../kiosk/inactivity';
 import { STORE, deliveryDistance } from '../../kiosk/order';
@@ -295,7 +295,13 @@ async function goToMyLocation() {
     if (loading || seq !== locateSeq) return;
     if (!pos) {
       // A denied or unavailable location used to look like a dead button.
-      snack('Location unavailable. Drag the map to set your pin.', { color: ERROR, seconds: 5 });
+      const card = document.querySelector<HTMLElement>('.mp-bottom');
+      const offset = card ? Math.ceil(card.getBoundingClientRect().height) + 26 : 0;
+      snack(LOCATION_UNAVAILABLE_MESSAGE, {
+        color: ERROR,
+        seconds: 5,
+        ...(offset ? { bottom: `calc(${offset}px + env(safe-area-inset-bottom))` } : {}),
+      });
       return;
     }
     lat = pos.lat;

@@ -15,6 +15,7 @@ const { resolvePicks, displayPrice } = await import('../../app/src/kiosk/presele
 const { cart } = await import('../../app/src/kiosk/cart.ts');
 const order = await import('../../app/src/kiosk/order.ts');
 const { isPaymentUrl } = await import('../../app/src/kiosk/payment-host.ts');
+const { LOCATION_UNAVAILABLE_MESSAGE } = await import('../../app/src/kiosk/geo.ts');
 const { validReceipt, validPending } = await import('../../app/src/kiosk/handoff.ts');
 
 test('haversine stays finite for identical and antipodal-jitter coordinates', () => {
@@ -129,8 +130,10 @@ test('a rejected Google Maps key shows our notice instead of the map error overl
 
 test('locate-me explains a denied location instead of failing silently', () => {
   const src = readFileSync(new URL('../../app/src/pages/kiosk/map.astro', import.meta.url), 'utf8');
-  assert.match(src, /if \(!pos\) \{\s*\/\/ A denied or unavailable location used to look like a dead button\.\s*\n\s*snack\('Location unavailable\. Drag the map to set your pin\.'/);
-  assert.match(src, /import \{ snack \} from '\.\.\/\.\.\/kiosk\/snackbar'/);
+  assert.equal(LOCATION_UNAVAILABLE_MESSAGE, 'Location unavailable. Drag the map to set your pin.');
+  assert.match(src, /if \(!pos\) \{[\s\S]*?snack\(LOCATION_UNAVAILABLE_MESSAGE,/);
+  assert.match(src, /import \{ LOCATION_UNAVAILABLE_MESSAGE, currentPosition,/, 'the map uses the shared copy');
+  assert.match(src, /bottom: `calc\(\$\{offset\}px \+ env\(safe-area-inset-bottom\)\)`/, 'the snack clears the page bottom card');
 });
 
 test('GCash cancellation clears the pending handoff, not just the draft flag', () => {
