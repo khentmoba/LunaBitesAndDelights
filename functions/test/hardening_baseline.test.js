@@ -760,7 +760,7 @@ test('runManualSalesReport skips chats that already received a failed attempt, t
     assert.equal(retry.sent, true);
     assert.equal(retry.skippedChats, 1);
     assert.deepEqual(sentTo, ['chat2'], 'the chat that already got it is not spammed again');
-    assert.deepEqual(store.get(guardKey).deliveredChatIds, []);
+    assert.deepEqual(store.get(guardKey).deliveredChatIds, ['chat1', 'chat2'], 'delivered chats stay recorded');
     assert.equal(store.get(guardKey).status, 'sent');
 
     sentTo.length = 0;
@@ -1136,6 +1136,78 @@ test('runManualSalesReport blocks concurrent in-flight sends and retries sent-st
     const firstResult = await first;
     assert.equal(firstResult.sent, true);
     assert.equal(store.get('daily_reports_sent/manual-2026-11-24').status, 'sent', 'transient sent-state persist error should recover on retry');
+  } finally {
+    telegramChatIds.value = origChatIds;
+    telegramApi.setBot(null);
+    telegramApi.setTelegramRetryConfig(null);
+  }
+});
+
+test('a manual report with unpersistable sent state is not re-sent after the lease expires', async () => {
+  const { runManualSalesReport } = require('../lib/reporting/manual_report');
+  const telegramApi = require('../lib/telegram_api');
+  const { telegramChatIds } = require('../lib/secrets');
+
+  const origChatIds = telegramChatIds.value;
+  telegramChatIds.value = () => 'chat1,chat2';
+  telegramApi.setTelegramRetryConfig({ maxAttempts: 1, sleep: async () => {} });
+
+  const store = new Map();
+  const guardKey = 'manual-2026-11-25';
+  const fakeDb = {
+    collection() {
+      return {
+        doc(id) {
+          const ref = {
+            id,
+            async get() {
+              const d = store.get(id);
+              return { exists: Boolean(d), data: () => ({ ...d }) };
+            },
+            async set(data, opts) {
+              // Every attempt to persist 'sent' fails: the guard stays 'sending'.
+              if (data.status === 'sent') throw new Error('transient Firestore write failure');
+              store.set(id, { ...(opts?.merge ? (store.get(id) || {}) : {}), ...data });
+            },
+          };
+          return ref;
+        },
+      };
+    },
+    async runTransaction(fn) {
+      return fn({
+        get: (ref) => ref.get(),
+        set: (ref, data, opts) => ref.set(data, opts),
+      });
+    },
+  };
+
+  let sends = [];
+  telegramApi.setBot({
+    async sendMessage(id) {
+      sends.push(id);
+      return { message_id: 1 };
+    },
+    async sendPhoto() { return {}; },
+  });
+
+  const aggregate = async () => ({
+    date: '2026-11-25', totalSales: 250, totalOrders: 2, kioskSales: 250, staffSales: 0, topItems: [],
+  });
+
+  try {
+    const first = await runManualSalesReport('2026-11-25', { db: fakeDb, aggregate, persistBackoffMs: [0, 0] });
+    assert.equal(first.sent, true);
+    assert.deepEqual([...sends].sort(), ['chat1', 'chat2']);
+    assert.equal(store.get(guardKey).status, 'sending', 'sent state never persisted');
+    assert.deepEqual([...store.get(guardKey).deliveredChatIds].sort(), ['chat1', 'chat2']);
+
+    store.get(guardKey).claimedAt = Date.now() - 61_000;
+    sends = [];
+    const retry = await runManualSalesReport('2026-11-25', { db: fakeDb, aggregate, persistBackoffMs: [0, 0] });
+    assert.equal(retry.sent, true);
+    assert.equal(retry.skippedChats, 2);
+    assert.deepEqual(sends, [], 'chats that already received the report must be skipped');
   } finally {
     telegramChatIds.value = origChatIds;
     telegramApi.setBot(null);

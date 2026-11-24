@@ -107,8 +107,10 @@ export async function runManualSalesReport(
     subtitle: '_\\(Triggered by Staff\\)_',
   });
 
+  let newlyDelivered: string[];
   try {
-    await sendToAll(message, { skipChatIds: alreadyDelivered });
+    const result = await sendToAll(message, { skipChatIds: alreadyDelivered });
+    newlyDelivered = deliveredIds(result?.deliveredChatIds);
   } catch (err: any) {
     await guardRef.set(
       {
@@ -123,7 +125,12 @@ export async function runManualSalesReport(
     throw err;
   }
 
-  const sentPayload = { status: 'sent', deliveredChatIds: [], sentAt: Date.now(), expireAt };
+  // Keep the delivered chats on the guard even on success. Deliberate later
+  // reports still reach everyone (status 'sent' clears carry-forward), but if
+  // every sent-state write fails the stale 'sending' lease must not re-send to
+  // chats that already got this report once it expires.
+  const allDelivered = Array.from(new Set([...alreadyDelivered, ...newlyDelivered]));
+  const sentPayload = { status: 'sent', deliveredChatIds: allDelivered, sentAt: Date.now(), expireAt };
   const persistBackoffMs = opts.persistBackoffMs ?? [0, 250, 500, 1000];
   let lastPersistErr: unknown = null;
   for (let attempt = 0; attempt < persistBackoffMs.length; attempt++) {
@@ -143,6 +150,11 @@ export async function runManualSalesReport(
       `Manual report for ${dateLabel} sent but its guard doc could not be updated after ${persistBackoffMs.length} attempts`,
       { error: lastPersistErr },
     );
+    // The guard is still 'sending'. Remember who got this report so a retry
+    // after the lease expires skips them instead of sending it a second time.
+    await guardRef.set({ deliveredChatIds: allDelivered, expireAt }, { merge: true }).catch((e) => {
+      logger.warn(`Could not record delivered chats for manual report ${dateLabel}`, e);
+    });
   }
   return { sent: true, message: 'SUCCESS', skippedChats: alreadyDelivered.length };
 }
