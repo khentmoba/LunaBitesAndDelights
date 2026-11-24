@@ -148,4 +148,10 @@ describe('staff auth: scrypt PIN and password verification', () => {
     assert.throws(() => parseCurrentPassword('a'.repeat(MAX_PASSWORD_LENGTH + 1)), /Missing or invalid currentPassword/);
     assert.throws(() => parseCurrentPassword(null), /Missing or invalid currentPassword/);
   });
+
+  test('staffAuthUid derives the Firebase Auth UID from the staff_accounts doc id', () => {
+    const { staffAuthUid } = require('../lib/auth/verify_staff');
+    assert.equal(staffAuthUid('admin'), 'staff_admin');
+    assert.equal(staffAuthUid('staff1'), 'staff_staff1');
+  });
 });

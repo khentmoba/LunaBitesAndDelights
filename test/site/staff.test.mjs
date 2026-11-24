@@ -151,6 +151,8 @@ test('staff service worker serves immutable assets cache-first and prunes naviga
     },
   };
   let fetchHandler = null;
+  let activateHandler = null;
+  const deletedCaches = [];
   const ctx = vm.createContext({
     URL,
     Response,
@@ -158,24 +160,34 @@ test('staff service worker serves immutable assets cache-first and prunes naviga
     self: {
       addEventListener(type, fn) {
         if (type === 'fetch') fetchHandler = fn;
+        if (type === 'activate') activateHandler = fn;
       },
       skipWaiting() {},
       clients: { claim() {} },
     },
     caches: {
       async open() { return cache; },
-      async keys() { return ['luna-staff-v3']; },
-      async delete() { return true; },
+      async keys() { return ['luna-staff-v3', 'luna-staff-v4']; },
+      async delete(key) { deletedCaches.push(key); return true; },
     },
     async fetch(req) {
       if (req.url.includes('partial')) {
-        return { ok: true, status: 206, clone() { return { ok: true, status: 206 }; } };
+        return { ok: true, status: 206, redirected: false, clone() { return { ok: true, status: 206, redirected: false }; } };
       }
-      return { ok: true, status: 200, clone() { return { ok: true, status: 200 }; } };
+      if (req.url.includes('redirected')) {
+        return { ok: true, status: 200, redirected: true, clone() { return { ok: true, status: 200, redirected: true }; } };
+      }
+      return { ok: true, status: 200, redirected: false, clone() { return { ok: true, status: 200, redirected: false }; } };
     },
   });
   vm.runInContext(sw, ctx);
   assert.ok(fetchHandler, 'sw.js should register a fetch listener');
+  assert.ok(activateHandler, 'sw.js should register an activate listener');
+
+  const activateWaits = [];
+  activateHandler({ waitUntil(p) { activateWaits.push(p); } });
+  await Promise.all(activateWaits);
+  assert.deepEqual(deletedCaches, ['luna-staff-v3'], 'activate should purge previous staff cache versions');
 
   // Seed non-navigation assets that must never be evicted by navigation pruning.
   store.set('https://lunabitesanddelights.web.app/_astro/app.js', { ok: true });
@@ -223,6 +235,23 @@ test('staff service worker serves immutable assets cache-first and prunes naviga
   await partialRes;
   await Promise.all(partialWaits);
   assert.equal(store.has('https://lunabitesanddelights.web.app/_astro/partial.js'), false);
+
+  // Redirected 200 navigation responses break offline navigate mode if cached;
+  // verify the worker skips caching them.
+  const redirectWaits = [];
+  let redirectRes = null;
+  fetchHandler({
+    request: {
+      method: 'GET',
+      mode: 'navigate',
+      url: 'https://lunabitesanddelights.web.app/staff/redirected',
+    },
+    respondWith(p) { redirectRes = p; },
+    waitUntil(p) { redirectWaits.push(p); },
+  });
+  await redirectRes;
+  await Promise.all(redirectWaits);
+  assert.equal(store.has('https://lunabitesanddelights.web.app/staff/redirected'), false);
 });
 
 test('kds delayed badge keeps INK contrast on elapsed-time ticks and dashboard handles non-admin badge', () => {

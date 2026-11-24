@@ -2,7 +2,7 @@
 // good copy of each staff page for when the kitchen tablet drops off Wi-Fi.
 // HTML navigations always come from the network first so deploys show up on
 // the next load; immutable hashed bundles and fonts are served cache-first.
-const CACHE = 'luna-staff-v3';
+const CACHE = 'luna-staff-v4';
 const MAX_ASTRO_ENTRIES = 40;
 const MAX_NAVIGATION_ENTRIES = 8;
 
@@ -45,6 +45,10 @@ function matchCache(req) {
   return caches.open(CACHE).then((c) => c.match(req));
 }
 
+function isCacheableResponse(res) {
+  return res.status === 200 && !res.redirected;
+}
+
 self.addEventListener('fetch', (event) => {
   const req = event.request;
   const url = new URL(req.url);
@@ -55,7 +59,7 @@ self.addEventListener('fetch', (event) => {
       matchCache(req).then((hit) => {
         if (hit) return hit;
         return fetch(req).then((res) => {
-          if (res.status === 200) {
+          if (isCacheableResponse(res)) {
             const copy = res.clone();
             event.waitUntil(cacheAndPrune(req, copy).catch(() => {}));
           }
@@ -70,7 +74,7 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       matchCache(req).then((hit) => {
         const net = fetch(req).then((res) => {
-          if (res.status === 200) {
+          if (isCacheableResponse(res)) {
             const copy = res.clone();
             event.waitUntil(cacheAndPrune(req, copy).catch(() => {}));
           }
@@ -90,7 +94,7 @@ self.addEventListener('fetch', (event) => {
   event.respondWith(
     fetch(req)
       .then((res) => {
-        if (res.status === 200) {
+        if (isCacheableResponse(res)) {
           const copy = res.clone();
           event.waitUntil(cacheAndPrune(req, copy).catch(() => {}));
         }

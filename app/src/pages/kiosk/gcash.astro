@@ -87,6 +87,7 @@ import { callFn } from '../../kiosk/firebase';
 import { DRAFT, PENDING, RECEIPT, load, save, validPending, type CheckoutDraft, type PendingPayment } from '../../kiosk/handoff';
 import { glyph } from '../../kiosk/icons';
 import { popTo, watchInactivity } from '../../kiosk/inactivity';
+import { verifyPaymentErrorMessage } from '../../kiosk/order';
 import { isPaymentUrl } from '../../kiosk/payment-host';
 
 const pending = load<PendingPayment>(PENDING);
@@ -195,9 +196,7 @@ async function verify(p: PendingPayment) {
       return;
     }
     setVerifying(false);
-    setVerifyError(res.paymentStatus === 'PAYMENT_FAILED'
-      ? 'Payment was declined or failed. Please try paying again.'
-      : 'Payment has not cleared yet. Finish authorizing in the PayMongo tab, then tap again.');
+    setVerifyError(verifyPaymentErrorMessage(res.paymentStatus));
   } catch {
     setVerifying(false);
     setVerifyError('Unable to verify payment right now. Check your connection and try again.');

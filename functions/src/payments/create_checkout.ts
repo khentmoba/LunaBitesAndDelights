@@ -138,6 +138,25 @@ export function validateAndPriceItems(rawItems: unknown): { items: PricedItem[];
   return { items, total };
 }
 
+/** Rejects orders that cannot accept a new PayMongo checkout session. */
+export function assertOrderCheckoutEligible(orderData: Record<string, any>): void {
+  if (String(orderData.paymentMethod || '').toLowerCase() !== 'gcash') {
+    throw new HttpsError('failed-precondition', 'Checkout session is only available for GCash orders');
+  }
+  if (orderData.status === 'Cancelled') {
+    throw new HttpsError('failed-precondition', 'Order is cancelled');
+  }
+  if (orderData.status === 'Completed') {
+    throw new HttpsError('failed-precondition', 'Order is already completed');
+  }
+  if (orderData.paymentStatus === 'PAID') {
+    throw new HttpsError('failed-precondition', 'Order is already paid');
+  }
+  if (orderData.paymentStatus === 'PAYMENT_EXPIRED') {
+    throw new HttpsError('failed-precondition', 'Order payment session has expired');
+  }
+}
+
 /**
  * Persists a newly created PayMongo checkout session inside a transaction,
  * returning the authoritative `{ sessionId, checkoutUrl }` directly from the
@@ -156,15 +175,7 @@ export async function persistCheckoutSession(
       throw new HttpsError('not-found', 'Order not found');
     }
     const current = snap.data()!;
-    if (String(current.paymentMethod || '').toLowerCase() !== 'gcash') {
-      throw new HttpsError('failed-precondition', 'Checkout session is only available for GCash orders');
-    }
-    if (current.status === 'Cancelled') {
-      throw new HttpsError('failed-precondition', 'Order is cancelled');
-    }
-    if (current.paymentStatus === 'PAID') {
-      throw new HttpsError('failed-precondition', 'Order is already paid');
-    }
+    assertOrderCheckoutEligible(current);
     const prevIds: string[] = Array.isArray(current.checkoutSessionIds)
       ? current.checkoutSessionIds.filter((s: unknown): s is string => typeof s === 'string' && s.length > 0)
       : (typeof current.checkoutSessionId === 'string' && current.checkoutSessionId.length > 0
@@ -239,15 +250,7 @@ export const createCheckoutSession = onCall(
     if (orderData.orderId !== orderId) {
       throw new HttpsError('permission-denied', 'Order reference mismatch');
     }
-    if (String(orderData.paymentMethod || '').toLowerCase() !== 'gcash') {
-      throw new HttpsError('failed-precondition', 'Checkout session is only available for GCash orders');
-    }
-    if (orderData.status === 'Cancelled') {
-      throw new HttpsError('failed-precondition', 'Order is cancelled');
-    }
-    if (orderData.paymentStatus === 'PAID') {
-      throw new HttpsError('failed-precondition', 'Order is already paid');
-    }
+    assertOrderCheckoutEligible(orderData);
 
     // Price strictly from the authoritative persisted order items, never client-supplied items.
     const { items: pricedItems, total: itemsTotal } = validateAndPriceItems(orderData.items);
@@ -327,8 +330,19 @@ export const createCheckoutSession = onCall(
         throw new HttpsError('internal', 'Payment provider error');
       }
 
-      const { sessionId: resolvedSessionId, checkoutUrl: resolvedCheckoutUrl } =
-        await persistCheckoutSession(getFirestore(), orderRef, parsedCheckout, itemsTotal);
+      let resolvedSessionId: string;
+      let resolvedCheckoutUrl: string;
+      try {
+        const persisted = await persistCheckoutSession(getFirestore(), orderRef, parsedCheckout, itemsTotal);
+        resolvedSessionId = persisted.sessionId;
+        resolvedCheckoutUrl = persisted.checkoutUrl;
+      } catch (persistErr) {
+        logger.warn(
+          `Failed to persist PayMongo session ${parsedCheckout.sessionId} for order ${orderId}; provider session may be orphaned`,
+          persistErr,
+        );
+        throw persistErr;
+      }
 
       logger.info(`Checkout session resolved for order ${orderId}: ${resolvedSessionId}`);
       // #17: only what the client needs to redirect.

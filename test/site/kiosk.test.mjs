@@ -336,3 +336,41 @@ test('newIdempotencyKey falls back to crypto.getRandomValues when randomUUID is 
     Object.defineProperty(crypto, 'randomUUID', { value: origRandomUUID, configurable: true, writable: true });
   }
 });
+
+test('fitLabels does not shrink text to 0px or NaNpx when parent width is zero or padding is NaN', async () => {
+  const { JSDOM } = await import('jsdom');
+  const { fitLabels } = await import('../../app/src/kiosk/fit.ts');
+  const dom = new JSDOM('<!doctype html><html><body><div id="wrap"><span data-fit style="font-size:20px">HELLO</span></div></body></html>');
+  const prevWindow = globalThis.window;
+  const prevDocument = globalThis.document;
+  const prevGetComputedStyle = globalThis.getComputedStyle;
+  try {
+    globalThis.window = dom.window;
+    globalThis.document = dom.window.document;
+    globalThis.getComputedStyle = dom.window.getComputedStyle.bind(dom.window);
+    const wrap = dom.window.document.getElementById('wrap');
+    const span = wrap.querySelector('[data-fit]');
+    Object.defineProperty(wrap, 'clientWidth', { value: 0, configurable: true });
+    span.getBoundingClientRect = () => ({ width: 120, height: 20, top: 0, left: 0, right: 120, bottom: 20 });
+    fitLabels(dom.window.document);
+    assert.equal(span.style.fontSize, '');
+
+    Object.defineProperty(wrap, 'clientWidth', { value: 100, configurable: true });
+    globalThis.getComputedStyle = () => ({ paddingLeft: 'auto', paddingRight: 'auto', fontSize: '20px', letterSpacing: 'normal' });
+    fitLabels(dom.window.document);
+    assert.equal(span.style.fontSize, '');
+  } finally {
+    globalThis.window = prevWindow;
+    globalThis.document = prevDocument;
+    globalThis.getComputedStyle = prevGetComputedStyle;
+    dom.window.close();
+  }
+});
+
+test('verifyPaymentErrorMessage maps failed, expired, and pending payment statuses', async () => {
+  const { verifyPaymentErrorMessage } = await import('../../app/src/kiosk/order.ts');
+  assert.match(verifyPaymentErrorMessage('PAYMENT_FAILED'), /declined or failed/i);
+  assert.match(verifyPaymentErrorMessage('PAYMENT_EXPIRED'), /expired/i);
+  assert.match(verifyPaymentErrorMessage('AWAITING_PAYMENT'), /not cleared yet/i);
+  assert.match(verifyPaymentErrorMessage(undefined), /not cleared yet/i);
+});
