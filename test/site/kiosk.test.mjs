@@ -127,6 +127,12 @@ test('a rejected Google Maps key shows our notice instead of the map error overl
   assert.match(src, /function degrade\(\) \{\s*mapEl\.innerHTML = '';/);
 });
 
+test('locate-me explains a denied location instead of failing silently', () => {
+  const src = readFileSync(new URL('../../app/src/pages/kiosk/map.astro', import.meta.url), 'utf8');
+  assert.match(src, /if \(!pos\) \{\s*\/\/ A denied or unavailable location used to look like a dead button\.\s*\n\s*snack\('Location unavailable\. Drag the map to set your pin\.'/);
+  assert.match(src, /import \{ snack \} from '\.\.\/\.\.\/kiosk\/snackbar'/);
+});
+
 test('GCash cancellation clears the pending handoff, not just the draft flag', () => {
   const src = readFileSync(new URL('../../app/src/pages/kiosk/gcash.astro', import.meta.url), 'utf8');
   assert.match(src, /function cancel\(\)[\s\S]*?save\(PENDING, null\)/);
@@ -208,23 +214,53 @@ test('delivery distance is measured from the nearer kitchen', () => {
   assert.ok(Math.abs(order.deliveryDistance(9.03, 125.52) - order.haversine(order.STORE.lat, order.STORE.lng, 9.03, 125.52)) < 1e-9);
 });
 
-test('the saved order and its notification match the Flutter payloads', () => {
-  const o = {
-    orderId: 'LU-261116-010405', items: [{ name: 'Shawarma Wrap', variant: 'Solo', price: 60, quantity: 2 }], totalAmount: 120,
-    timestamp: new Date(), dateLabel: '2026-11-16', type: 'Delivery', entryType: 'Kiosk', customerName: 'Ana', customerPhone: '09171234567',
-    customerAddress: 'Purok 5', lat: 9.02, lng: 125.51, deliveryFee: 0, totalDistance: 0.4, paymentMethod: 'Cash', paymentStatus: 'NOT PAID', status: 'Pending',
-  };
-  const f = order.orderFields(o);
-  assert.equal(f.items[0].total, 120);
-  assert.equal(f.checkoutSessionId, null);
-  assert.equal(f.paymongoPaymentId, null);
-  assert.equal('itemsCount' in f, false);
-  assert.equal('timestamp' in f, false);
-  const n = order.notificationFor(o, '2026-11-16  01:04', 'doc1');
-  assert.equal(n.orderDocId, 'doc1');
-  assert.equal(n.orderNumber, o.orderId);
-  assert.equal(n.total, 120);
-  assert.equal(n.orderType, 'Delivery');
+test('placeOrder only writes through the server callable and fails closed when it is unavailable', async () => {
+  const { registerHooks } = await import('node:module');
+  const hooks = registerHooks({
+    resolve(specifier, context, nextResolve) {
+      if (specifier === './firebase') return { url: 'stub://order-callable-firebase', shortCircuit: true };
+      return nextResolve(specifier, context);
+    },
+    load(url, context, nextLoad) {
+      if (url === 'stub://order-callable-firebase') {
+        return {
+          format: 'module',
+          source: `export const callFn = async () => {
+  throw Object.assign(new Error('callable not deployed'), { code: 'functions/not-found' });
+};
+`,
+          shortCircuit: true,
+        };
+      }
+      return nextLoad(url, context);
+    },
+  });
+  try {
+    const { placeOrder } = await import(`../../app/src/kiosk/order.ts?fail-closed=${Date.now()}`);
+    const o = {
+      orderId: 'LU-261116-010405', items: [{ name: 'Shawarma Wrap', variant: 'Solo', price: 60, quantity: 2 }], totalAmount: 120,
+      timestamp: new Date(), dateLabel: '2026-11-16', type: 'Delivery', entryType: 'Kiosk', customerName: 'Ana', customerPhone: '09171234567',
+      customerAddress: 'Purok 5', lat: 9.02, lng: 125.51, deliveryFee: 0, totalDistance: 0.4, paymentMethod: 'Cash', paymentStatus: 'NOT PAID', status: 'Pending',
+    };
+    // A missing/unreachable callable must surface as a save error. Before SEC-01
+    // was closed in the client, this fell through to a direct Firestore write of
+    // client-supplied prices.
+    const result = await placeOrder(o, 'abcdef0123456789abcdef0123456789');
+    assert.equal(result.docId, null);
+    assert.equal(result.telegramSent, false);
+    assert.equal(result.errorCode, 'not-found');
+  } finally {
+    hooks.deregister();
+  }
+});
+
+test('the kiosk order module has no direct Firestore write path', () => {
+  const src = readFileSync(new URL('../../app/src/kiosk/order.ts', import.meta.url), 'utf8');
+  assert.doesNotMatch(src, /firebase\/firestore/, 'the kiosk order module must not import a Firestore SDK');
+  assert.doesNotMatch(src, /setDoc|addDoc|updateDoc|doc\(fs\.collection/, 'no client-side order document write');
+  assert.doesNotMatch(src, /sendOrderNotification/, 'the kitchen alert is emitted by onOrderWritten, not the client');
+  const firebaseSrc = readFileSync(new URL('../../app/src/kiosk/firebase.ts', import.meta.url), 'utf8');
+  assert.doesNotMatch(firebaseSrc, /firestore\/lite/, 'the unused lite SDK getter must stay gone');
 });
 
 test('GCash only opens https PayMongo-family checkout links', () => {

@@ -135,50 +135,6 @@ export interface Order {
 export const orderItems = (items: readonly CartItem[]): OrderItem[] =>
   items.map((i) => ({ name: i.name, variant: i.variant, price: i.price, quantity: i.quantity }));
 
-/** OrderModel.toJson, minus the timestamp, which the caller turns into a Firestore Timestamp. */
-export function orderFields(order: Order) {
-  return {
-    orderId: order.orderId,
-    items: order.items.map((i) => ({ ...i, total: i.price * i.quantity })),
-    totalAmount: order.totalAmount,
-    dateLabel: order.dateLabel,
-    type: order.type,
-    entryType: order.entryType,
-    customerName: order.customerName,
-    customerPhone: order.customerPhone,
-    customerAddress: order.customerAddress,
-    lat: order.lat,
-    lng: order.lng,
-    deliveryFee: order.deliveryFee,
-    totalDistance: order.totalDistance,
-    paymentMethod: order.paymentMethod,
-    paymentStatus: order.paymentStatus,
-    status: order.status,
-    checkoutSessionId: null,
-    paymongoPaymentId: null,
-  };
-}
-
-/** The sendOrderNotification payload. */
-export function notificationFor(order: Order, timeStr: string, orderDocId: string) {
-  return {
-    orderDocId,
-    orderNumber: order.orderId,
-    customerName: order.customerName,
-    customerAddress: order.customerAddress,
-    customerPhone: order.customerPhone,
-    items: order.items,
-    total: order.totalAmount,
-    timeStr,
-    orderType: order.type,
-    deliveryFee: order.deliveryFee,
-    paymentMethod: order.paymentMethod,
-    paymentStatus: order.paymentStatus,
-    lat: order.lat,
-    lng: order.lng,
-  };
-}
-
 /** Generates an alphanumeric idempotency key for safe order submission retries. */
 export function newIdempotencyKey(): string {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
@@ -194,16 +150,20 @@ export function newIdempotencyKey(): string {
 }
 
 /**
- * Places an order via the server-validated `placeOrder` callable (onOrderWritten
- * handles Telegram notification reliably). Falls back to direct Firestore write
- * + `sendOrderNotification` only if the callable is not yet deployed.
+ * Places an order through the server-validated `placeOrder` callable, which
+ * re-prices every line, assigns the display number and status server-side, and
+ * lets `onOrderWritten` deliver the Telegram notification with retries.
+ *
+ * There is deliberately no client-side Firestore write here: a direct
+ * `orders` create would skip server pricing, the per-IP order rate limit and
+ * the idempotency fingerprint. If the callable is unavailable the kiosk shows
+ * a save error instead of writing an unvalidated order (SEC-01).
  */
 export async function placeOrder(
   order: Order,
-  timeStr: string,
   idempotencyKey?: string,
 ): Promise<{ docId: string | null; telegramSent: boolean; orderId?: string; totalAmount?: number; items?: OrderItem[]; errorCode?: string }> {
-  const { firebaseDbLite, callFn } = await import('./firebase');
+  const { callFn } = await import('./firebase');
   try {
     const res = await callFn<{
       success?: boolean;
@@ -240,27 +200,7 @@ export async function placeOrder(
     const code = typeof (e as { code?: unknown })?.code === 'string'
       ? String((e as { code?: unknown }).code).replace(/^functions\//, '')
       : '';
-    if (code !== 'not-found' && code !== 'unimplemented') {
-      console.error(`Error placing order ${order.orderId}`, e);
-      return { docId: null, telegramSent: false, ...(code ? { errorCode: code } : {}) };
-    }
-  }
-
-  let docId: string;
-  try {
-    const [db, fs] = await Promise.all([firebaseDbLite(), import('firebase/firestore/lite')]);
-    const ref = fs.doc(fs.collection(db, 'orders'));
-    await fs.setDoc(ref, { ...orderFields(order), timestamp: fs.Timestamp.fromDate(order.timestamp) });
-    docId = ref.id;
-  } catch (e) {
-    console.error(`Error saving order ${order.orderId}`, e);
-    return { docId: null, telegramSent: false };
-  }
-  try {
-    const data = await callFn<{ success?: boolean }>('sendOrderNotification', notificationFor(order, timeStr, docId));
-    return { docId, telegramSent: data.success === true, items: order.items };
-  } catch (e) {
-    console.error(`Telegram notification error for order ${order.orderId}`, e);
-    return { docId, telegramSent: false };
+    console.error(`Error placing order ${order.orderId}`, e);
+    return { docId: null, telegramSent: false, ...(code ? { errorCode: code } : {}) };
   }
 }
