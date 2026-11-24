@@ -282,7 +282,7 @@ test('kds delayed badge keeps INK contrast on elapsed-time ticks and dashboard h
   assert.match(dashSrc, /if\s*\(disposed\s*\|\|\s*seq\s*!==\s*fetchSeq\s*\|\|\s*!getStaff\(\)\)\s*return;/);
 
   const checkoutSrc = readFileSync(join(root, 'app/src/pages/kiosk/checkout.astro'), 'utf8');
-  assert.match(checkoutSrc, /isWalkIn:\s*draft\.orderType\s*===\s*'Walk-In'/);
+  assert.match(checkoutSrc, /isWalkIn:\s*order\.type\s*===\s*'Walk-In'/);
 
   // KDS updateStatus clears busy state before haltOnAuthError, tears down background timers/listeners, and uses targeted renderBoard() in finally
   assert.match(kdsSrc, /function haltOnAuthError\(message: string\)\s*\{\s*authHalted = true;[\s\S]*stopBackgroundActivity\(\);/);
@@ -709,4 +709,254 @@ test('disposePendingLookups clears timers and aborts controllers, and kds locks 
 
   const mapSrc = readFileSync(join(root, 'app/src/pages/kiosk/map.astro'), 'utf8');
   assert.match(mapSrc, /window\.addEventListener\('pagehide',[\s\S]*?disposePendingLookups/);
+});
+
+test('mountDashboard logs out instead of opening stale order sheet on expanded-fetch auth error', async () => {
+  const dom = new JSDOM('<!doctype html><html><body><div id="root"></div></body></html>', {
+    url: 'https://lunabitesanddelights.web.app/staff/dashboard',
+  });
+  const prevWindow = globalThis.window;
+  const prevDocument = globalThis.document;
+  const prevAddEventListener = globalThis.addEventListener;
+  const prevRemoveEventListener = globalThis.removeEventListener;
+  const prevRequestAnimationFrame = globalThis.requestAnimationFrame;
+  const prevCancelAnimationFrame = globalThis.cancelAnimationFrame;
+  const prevGetComputedStyle = globalThis.getComputedStyle;
+  globalThis.window = dom.window;
+  globalThis.document = dom.window.document;
+  globalThis.addEventListener = dom.window.addEventListener.bind(dom.window);
+  globalThis.removeEventListener = dom.window.removeEventListener.bind(dom.window);
+  globalThis.requestAnimationFrame = (cb) => dom.window.setTimeout(cb, 0);
+  globalThis.cancelAnimationFrame = (id) => dom.window.clearTimeout(id);
+  globalThis.getComputedStyle = dom.window.getComputedStyle.bind(dom.window);
+
+  dom.window.HTMLDialogElement.prototype.showModal = function showModal() {
+    this.open = true;
+  };
+  dom.window.HTMLDialogElement.prototype.close = function close() {
+    this.open = false;
+    this.dispatchEvent(new dom.window.Event('close'));
+  };
+
+  let logoutCalls = 0;
+  let activeOrdersCalls = 0;
+  const tenOrders = Array.from({ length: 10 }, (_, i) => ({
+    id: `ord_${i}`,
+    orderNumber: `LU-00${i}`,
+    customerName: `Guest ${i}`,
+    type: 'Pickup',
+    total: 99,
+    timestamp: new Date().toISOString(),
+    status: 'Pending',
+  }));
+
+  globalThis.__dashStubs = {
+    callFn: async (name) => {
+      if (name === 'getSalesAnalytics') {
+        return { success: true, totalRevenue: 990, orderCount: 10, averageOrderValue: 99, totalItemsSold: 10 };
+      }
+      if (name === 'getActiveOrders') {
+        activeOrdersCalls++;
+        if (activeOrdersCalls === 1) return { success: true, orders: tenOrders };
+        throw { code: 'functions/unauthenticated', message: 'Sign in required' };
+      }
+      return { success: true };
+    },
+    logout: async () => { logoutCalls++; },
+  };
+
+  const hooks = registerHooks({
+    resolve(specifier, context, nextResolve) {
+      if (specifier === '../kiosk/firebase.ts') return { url: 'stub://dash-firebase', shortCircuit: true };
+      if (specifier === './session.ts') return { url: 'stub://dash-session', shortCircuit: true };
+      return nextResolve(specifier, context);
+    },
+    load(url, context, nextLoad) {
+      if (url === 'stub://dash-firebase') {
+        return {
+          format: 'module',
+          source: 'export const callFn = (...args) => globalThis.__dashStubs.callFn(...args);',
+          shortCircuit: true,
+        };
+      }
+      if (url === 'stub://dash-session') {
+        return {
+          format: 'module',
+          source: `export const fnError = (e) => e && typeof e === 'object' && 'code' in e ? { code: String(e.code).replace(/^functions\\//, ''), message: String(e.message || e.code) } : null;
+export const isAuthCode = (code) => code === 'unauthenticated' || code === 'permission-denied';
+export const isAuthErrorText = () => false;
+export const logout = (...args) => globalThis.__dashStubs.logout(...args);
+export const staffErrorMessage = () => 'err';`,
+          shortCircuit: true,
+        };
+      }
+      return nextLoad(url, context);
+    },
+  });
+
+  try {
+    const { mountDashboard } = await import(`../../app/src/staff/dashboard.ts?test=${Date.now()}`);
+    const root = dom.window.document.getElementById('root');
+    const dispose = mountDashboard(root, () => ({ username: 'admin', role: 'admin', isAdmin: true }));
+    try {
+      await new Promise((r) => setImmediate(r));
+      await new Promise((r) => setImmediate(r));
+      root.querySelector('button[data-act="history"]').click();
+      await new Promise((r) => setImmediate(r));
+      await new Promise((r) => setImmediate(r));
+      assert.equal(logoutCalls, 1, 'auth error during expanded history fetch must trigger logout');
+      assert.equal(dom.window.document.querySelector('dialog.osheet'), null, 'stale order sheet must not open after auth failure');
+    } finally {
+      dispose();
+    }
+  } finally {
+    hooks.deregister();
+    delete globalThis.__dashStubs;
+    globalThis.window = prevWindow;
+    globalThis.document = prevDocument;
+    globalThis.addEventListener = prevAddEventListener;
+    globalThis.removeEventListener = prevRemoveEventListener;
+    globalThis.requestAnimationFrame = prevRequestAnimationFrame;
+    globalThis.cancelAnimationFrame = prevCancelAnimationFrame;
+    globalThis.getComputedStyle = prevGetComputedStyle;
+    dom.window.close();
+  }
+});
+
+test('watchInactivity ignores duplicate warn while dialog is open without throwing', async () => {
+  const dom = new JSDOM('<!doctype html><html><body></body></html>', {
+    url: 'https://lunabitesanddelights.web.app/kiosk/menu',
+  });
+  const prevWindow = globalThis.window;
+  const prevDocument = globalThis.document;
+  const prevSessionStorage = globalThis.sessionStorage;
+  globalThis.window = dom.window;
+  globalThis.document = dom.window.document;
+  globalThis.sessionStorage = dom.window.sessionStorage;
+
+  let showModalCalls = 0;
+  dom.window.HTMLDialogElement.prototype.showModal = function showModal() {
+    if (this.open) throw new dom.window.DOMException('Already open', 'InvalidStateError');
+    this.open = true;
+    showModalCalls++;
+  };
+  dom.window.HTMLDialogElement.prototype.close = function close() {
+    this.open = false;
+  };
+
+  try {
+    const { watchInactivity } = await import(`../../app/src/kiosk/inactivity.ts?test=${Date.now()}`);
+    watchInactivity(20);
+    await new Promise((r) => setTimeout(r, 40));
+    assert.equal(showModalCalls, 1, 'idle dialog should open once');
+    const dialog = dom.window.document.querySelector('dialog.idle');
+    assert.ok(dialog && dialog.open, 'idle dialog should be open');
+    // Triggering pagehide cleans up timers and closes cleanly.
+    dom.window.dispatchEvent(new dom.window.Event('pagehide'));
+    assert.equal(dialog.open, false);
+  } finally {
+    globalThis.window = prevWindow;
+    globalThis.document = prevDocument;
+    globalThis.sessionStorage = prevSessionStorage;
+    dom.window.close();
+  }
+});
+
+test('mountKds cleans up print slip host and body class on teardown before afterprint', async () => {
+  const dom = new JSDOM('<!doctype html><html><body><div id="root"></div></body></html>', {
+    url: 'https://lunabitesanddelights.web.app/staff/kds',
+  });
+  const prevWindow = globalThis.window;
+  const prevDocument = globalThis.document;
+  const prevMatchMedia = globalThis.matchMedia;
+  const prevAddEventListener = globalThis.addEventListener;
+  const prevRemoveEventListener = globalThis.removeEventListener;
+  globalThis.window = dom.window;
+  globalThis.document = dom.window.document;
+  globalThis.addEventListener = dom.window.addEventListener.bind(dom.window);
+  globalThis.removeEventListener = dom.window.removeEventListener.bind(dom.window);
+  const fakeMatchMedia = () => ({
+    matches: true,
+    addEventListener() {},
+    removeEventListener() {},
+  });
+  globalThis.matchMedia = fakeMatchMedia;
+  dom.window.matchMedia = fakeMatchMedia;
+  dom.window.print = () => {};
+  dom.window.HTMLDialogElement.prototype.showModal = function showModal() { this.open = true; };
+  dom.window.HTMLDialogElement.prototype.close = function close() {
+    this.open = false;
+    this.dispatchEvent(new dom.window.Event('close'));
+  };
+
+  globalThis.__kdsPrintStubs = {
+    callFn: async () => ({
+      success: true,
+      orders: [{
+        id: 'ord_p1',
+        orderNumber: 'LU-P1',
+        customerName: 'Ana',
+        type: 'Pickup',
+        status: 'Pending',
+        total: 99,
+        items: [{ name: 'Shawarma Wrap', variant: 'Solo', quantity: 1 }],
+        timestamp: new Date().toISOString(),
+      }],
+    }),
+  };
+
+  const hooks = registerHooks({
+    resolve(specifier, context, nextResolve) {
+      if (specifier === '../kiosk/firebase.ts') return { url: 'stub://kds-print-firebase', shortCircuit: true };
+      if (specifier === './chime.ts') return { url: 'stub://kds-print-chime', shortCircuit: true };
+      return nextResolve(specifier, context);
+    },
+    load(url, context, nextLoad) {
+      if (url === 'stub://kds-print-firebase') {
+        return {
+          format: 'module',
+          source: `export const callFn = (...args) => globalThis.__kdsPrintStubs.callFn(...args);
+export const firebaseDb = () => Promise.reject(new Error('offline'));
+export const firebaseAuth = () => Promise.reject(new Error('offline'));`,
+          shortCircuit: true,
+        };
+      }
+      if (url === 'stub://kds-print-chime') {
+        return {
+          format: 'module',
+          source: 'export let soundEnabled = false; export const setSound = () => {}; export const playOrderChime = () => {};',
+          shortCircuit: true,
+        };
+      }
+      return nextLoad(url, context);
+    },
+  });
+
+  try {
+    const { mountKds } = await import(`../../app/src/staff/kds.ts?test=${Date.now()}`);
+    const root = dom.window.document.getElementById('root');
+    const dispose = mountKds(root, () => ({ username: 'admin', role: 'admin', isAdmin: true }));
+    await new Promise((r) => setTimeout(r, 30));
+    const ticketBtn = root.querySelector('button[data-ticket="ord_p1"]');
+    assert.ok(ticketBtn, 'ticket button should render for loaded order');
+    ticketBtn.click();
+    const printBtn = dom.window.document.querySelector('dialog button[data-print]');
+    assert.ok(printBtn, 'print button should render inside ticket dialog');
+    printBtn.click();
+    assert.equal(dom.window.document.body.classList.contains('is-printing-slip'), true);
+    assert.ok(dom.window.document.querySelector('.kslip-print'));
+    // Tear down before afterprint fires: print artifacts must be cleaned up immediately.
+    dispose();
+    assert.equal(dom.window.document.body.classList.contains('is-printing-slip'), false);
+    assert.equal(dom.window.document.querySelector('.kslip-print'), null);
+  } finally {
+    hooks.deregister();
+    delete globalThis.__kdsPrintStubs;
+    globalThis.window = prevWindow;
+    globalThis.document = prevDocument;
+    globalThis.matchMedia = prevMatchMedia;
+    globalThis.addEventListener = prevAddEventListener;
+    globalThis.removeEventListener = prevRemoveEventListener;
+    dom.window.close();
+  }
 });

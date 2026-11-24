@@ -23,6 +23,18 @@ export function kdsMirrorDoc(id: string, data: FirebaseFirestore.DocumentData) {
 }
 
 /**
+ * Returns true when an order stopped being visible to KDS and its mirror doc
+ * must be deleted. Returns false when neither `before` nor `after` was visible
+ * (e.g. unpaid GCash lifecycle writes), avoiding an unnecessary transaction.
+ */
+export function shouldDeleteKdsMirror(
+  before: FirebaseFirestore.DocumentData | undefined,
+  after: FirebaseFirestore.DocumentData | undefined,
+): boolean {
+  return Boolean(before && isOrderVisibleInKds(before) && !(after && isOrderVisibleInKds(after)));
+}
+
+/**
  * Returns true when an order first becomes visible to the kitchen (immediately
  * on create for Cash/Staff orders, or upon payment confirmation for GCash).
  */
@@ -101,6 +113,7 @@ export const onOrderWritten = onDocumentWritten(
         });
         return;
       }
+      if (!shouldDeleteKdsMirror(before, after)) return;
       await db.runTransaction(async (tx) => {
         const snap = await tx.get(mirrorRef);
         if (!snap.exists) return;

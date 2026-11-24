@@ -49,7 +49,8 @@ export function watchInactivity(timeoutMs = TIMEOUT_MS, options: WatchInactivity
     idle = window.setTimeout(warn, timeoutMs);
   };
   const warn = () => {
-    if (pauseWhenHidden && document.hidden) return;
+    if (dialog.open || (pauseWhenHidden && document.hidden)) return;
+    clearInterval(tick);
     let left = COUNTDOWN_S;
     count.textContent = String(left);
     dialog.showModal();
@@ -57,6 +58,7 @@ export function watchInactivity(timeoutMs = TIMEOUT_MS, options: WatchInactivity
       if (left > 1) count.textContent = String(--left);
       else {
         clearInterval(tick);
+        tick = 0;
         dialog.close();
         resetKiosk();
       }

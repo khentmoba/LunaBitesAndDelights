@@ -31,6 +31,31 @@ export function isAllowedStatusTransition(currentStatus: string, nextStatus: str
   return Boolean(allowed && allowed.has(nextStatus));
 }
 
+/**
+ * Builds the Firestore update patch for `updateOrderStatus`, returning `null`
+ * when no write is needed. Never overwrites an already-recorded cancellation
+ * reason on a duplicate `Cancelled -> Cancelled` call.
+ */
+export function buildStatusUpdate(
+  currentData: Record<string, any> | undefined,
+  nextStatus: string,
+  cancellationReason: string,
+): Record<string, any> | null {
+  const currentStatus = String(currentData?.status || 'Pending');
+  const existingReason = typeof currentData?.cancellationReason === 'string'
+    ? currentData.cancellationReason.trim()
+    : '';
+  if (currentStatus === nextStatus) {
+    if (nextStatus === 'Cancelled' && cancellationReason && !existingReason) {
+      return { status: nextStatus, cancellationReason };
+    }
+    return null;
+  }
+  const update: Record<string, any> = { status: nextStatus };
+  if (cancellationReason) update.cancellationReason = cancellationReason;
+  return update;
+}
+
 /** Clamps an optional caller-supplied limit to [1, 200], defaulting to 200. */
 export function clampOrdersLimit(raw: unknown): number {
   const n = typeof raw === 'number' ? raw : Number(raw);
@@ -245,16 +270,16 @@ export const updateOrderStatus = onCall(async (request) => {
       if (!snap.exists) {
         throw new HttpsError('not-found', 'Order not found');
       }
-      const currentStatus = String(snap.data()?.status || 'Pending');
+      const currentData = snap.data();
+      const currentStatus = String(currentData?.status || 'Pending');
       if (!isAllowedStatusTransition(currentStatus, status)) {
         throw new HttpsError(
           'failed-precondition',
           `Cannot transition order from ${currentStatus} to ${status}`,
         );
       }
-      if (currentStatus === status && !cancellationReason) return;
-      const update: Record<string, any> = { status };
-      if (cancellationReason) update.cancellationReason = cancellationReason;
+      const update = buildStatusUpdate(currentData, status, cancellationReason);
+      if (!update) return;
       tx.update(orderRef, update);
     });
     logger.info(`Order ${orderId} status updated to ${status}`);

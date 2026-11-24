@@ -120,7 +120,12 @@ export async function checkRateLimit(key: string): Promise<void> {
     const fd = fresh.data()!;
     const fFails = fd.fails || 0;
     const fLockedUntil = fd.lockedUntil?.toDate?.() as Date | undefined;
-    if (fFails >= MAX_ATTEMPTS && (!fLockedUntil || fLockedUntil.getTime() <= Date.now())) {
+    const now = Date.now();
+    if (fFails >= MAX_ATTEMPTS && fLockedUntil && fLockedUntil.getTime() > now) {
+      const mins = Math.ceil((fLockedUntil.getTime() - now) / 60000);
+      throw new HttpsError('resource-exhausted', `Too many attempts. Try again in ${mins}m`);
+    }
+    if (fFails >= MAX_ATTEMPTS && (!fLockedUntil || fLockedUntil.getTime() <= now)) {
       tx.delete(ref);
     }
   });

@@ -67,6 +67,7 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
   let searchTimer = 0;
   let clock = 0;
   let detachBackgroundListeners: (() => void) | null = null;
+  let activePrintCleanup: (() => void) | null = null;
   let fetchInFlight = false;
   let fetchSeq = 0;
   let liveSignature = '';
@@ -176,6 +177,8 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
     clock = 0;
     detachBackgroundListeners?.();
     detachBackgroundListeners = null;
+    activePrintCleanup?.();
+    activePrintCleanup = null;
   }
 
   function haltOnAuthError(message: string) {
@@ -681,6 +684,7 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
 </div>`);
     d.querySelector('[data-close]')!.addEventListener('click', () => d.close());
     d.querySelector('[data-print]')!.addEventListener('click', () => {
+      activePrintCleanup?.();
       const slipEl = d.querySelector<HTMLElement>('.kslip');
       document.querySelectorAll('.kslip-print').forEach((el) => el.remove());
       let printHost: HTMLDivElement | null = null;
@@ -700,12 +704,14 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
       const cleanup = () => {
         if (cleaned) return;
         cleaned = true;
+        if (activePrintCleanup === cleanup) activePrintCleanup = null;
         clearTimeout(fallbackTimer);
         document.body.classList.remove('is-printing-slip');
         printHost?.remove();
         window.removeEventListener('afterprint', cleanup);
         printMq.removeEventListener('change', onPrintChange);
       };
+      activePrintCleanup = cleanup;
       window.addEventListener('afterprint', cleanup);
       printMq.addEventListener('change', onPrintChange);
       d.close();
