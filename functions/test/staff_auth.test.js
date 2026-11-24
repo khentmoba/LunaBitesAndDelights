@@ -130,4 +130,14 @@ describe('staff auth: scrypt PIN and password verification', () => {
     assert.equal(await verifyPasswordAsync('secret', oddHex), 'bad');
     assert.equal(await verifyPasswordAsync('secret', shortHex), 'bad');
   });
+
+  test('isValidPasswordInput caps password length to prevent scrypt DoS', () => {
+    const { isValidPasswordInput, MAX_PASSWORD_LENGTH } = require('../lib/auth/verify_staff');
+    assert.equal(isValidPasswordInput('validPass123'), true);
+    assert.equal(isValidPasswordInput('a'.repeat(MAX_PASSWORD_LENGTH)), true);
+    assert.equal(isValidPasswordInput('a'.repeat(MAX_PASSWORD_LENGTH + 1)), false);
+    assert.equal(isValidPasswordInput(''), false);
+    assert.equal(isValidPasswordInput(null), false);
+    assert.equal(isValidPasswordInput(12345), false);
+  });
 });

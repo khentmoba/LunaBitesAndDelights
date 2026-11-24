@@ -230,3 +230,73 @@ test('GCash only opens https PayMongo-family checkout links', () => {
   assert.equal(isPaymentUrl('javascript:alert(1)'), false);
   assert.equal(isPaymentUrl('not a url'), false);
 });
+
+test('hasStoredStaffUser settles cleanly on blocked or aborted IndexedDB and detects staff users', async () => {
+  const { hasStoredStaffUser } = await import('../../app/src/kiosk/staff-hint.ts');
+  const prevIdb = globalThis.indexedDB;
+  try {
+    globalThis.indexedDB = {
+      open() {
+        const req = {};
+        queueMicrotask(() => req.onblocked?.());
+        return req;
+      },
+    };
+    assert.equal(await hasStoredStaffUser(), false);
+
+    let closed = false;
+    globalThis.indexedDB = {
+      open() {
+        const req = {};
+        queueMicrotask(() => {
+          req.result = {
+            objectStoreNames: { contains: () => true },
+            close() { closed = true; },
+            transaction() {
+              const tx = {
+                objectStore: () => ({ getAll: () => ({}) }),
+              };
+              queueMicrotask(() => tx.onabort?.());
+              return tx;
+            },
+          };
+          req.onsuccess?.();
+        });
+        return req;
+      },
+    };
+    assert.equal(await hasStoredStaffUser(), false);
+    assert.equal(closed, true);
+
+    globalThis.indexedDB = {
+      open() {
+        const req = {};
+        queueMicrotask(() => {
+          req.result = {
+            objectStoreNames: { contains: () => true },
+            close() {},
+            transaction() {
+              return {
+                objectStore: () => ({
+                  getAll() {
+                    const all = {};
+                    queueMicrotask(() => {
+                      all.result = [{ fbase_key: 'firebase:authUser:key', value: { uid: 'staff_admin' } }];
+                      all.onsuccess?.();
+                    });
+                    return all;
+                  },
+                }),
+              };
+            },
+          };
+          req.onsuccess?.();
+        });
+        return req;
+      },
+    };
+    assert.equal(await hasStoredStaffUser(), true);
+  } finally {
+    globalThis.indexedDB = prevIdb;
+  }
+});

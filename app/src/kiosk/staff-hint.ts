@@ -12,33 +12,50 @@ export const staffUsernameFor = (uid: string): string | null =>
  */
 export function hasStoredStaffUser(): Promise<boolean> {
   return new Promise((resolve) => {
+    let settled = false;
+    const finish = (value: boolean, db?: IDBDatabase) => {
+      if (settled) return;
+      settled = true;
+      try {
+        db?.close();
+      } catch {
+        // Ignore close errors after aborted transactions.
+      }
+      resolve(value);
+    };
     try {
       const open = indexedDB.open('firebaseLocalStorageDb');
       open.onupgradeneeded = () => {
         open.transaction?.abort();
-        resolve(false);
+        finish(false);
       };
-      open.onerror = () => resolve(false);
+      open.onblocked = () => finish(false);
+      open.onerror = () => finish(false);
       open.onsuccess = () => {
         const db = open.result;
         if (!db.objectStoreNames.contains('firebaseLocalStorage')) {
-          db.close();
-          resolve(false);
+          finish(false, db);
           return;
         }
-        const all = db.transaction('firebaseLocalStorage', 'readonly').objectStore('firebaseLocalStorage').getAll();
-        all.onsuccess = () => {
-          db.close();
-          const rows = all.result as { fbase_key?: string; value?: { uid?: string } }[];
-          resolve(rows.some((r) => r.fbase_key?.startsWith('firebase:authUser:') && staffUsernameFor(r.value?.uid ?? '') !== null));
-        };
-        all.onerror = () => {
-          db.close();
-          resolve(false);
-        };
+        try {
+          const tx = db.transaction('firebaseLocalStorage', 'readonly');
+          tx.onabort = () => finish(false, db);
+          tx.onerror = () => finish(false, db);
+          const all = tx.objectStore('firebaseLocalStorage').getAll();
+          all.onsuccess = () => {
+            const rows = all.result as { fbase_key?: string; value?: { uid?: string } }[];
+            finish(
+              rows.some((r) => r.fbase_key?.startsWith('firebase:authUser:') && staffUsernameFor(r.value?.uid ?? '') !== null),
+              db,
+            );
+          };
+          all.onerror = () => finish(false, db);
+        } catch {
+          finish(false, db);
+        }
       };
     } catch {
-      resolve(false);
+      finish(false);
     }
   });
 }

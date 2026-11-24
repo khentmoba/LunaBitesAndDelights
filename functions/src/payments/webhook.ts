@@ -99,7 +99,7 @@ export const paymongoWebhook = onRequest(
       return;
     }
     try {
-      const webhookSecret = paymongoWebhookSecret.value();
+      const webhookSecret = paymongoWebhookSecret.value().trim();
       const clientIp = clientIpFromRequest(req) || 'unknown';
       try {
         await enforceFixedWindowRateLimit(

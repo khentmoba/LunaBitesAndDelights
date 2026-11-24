@@ -622,3 +622,26 @@ test('persistCheckoutSession returns the winning attempt session after a transac
   assert.strictEqual(lastWritten.checkoutSessionId, 'cs_new');
   assert.strictEqual(lastWritten.checkoutUrl, 'https://checkout.paymongo.com/cs_new');
 });
+
+test('paymongoAuthHeader trims secret whitespace and rejects whitespace-only secret', () => {
+  const { paymongoAuthHeader } = require('../lib/payments/paymongo');
+  const { paymongoSecret } = require('../lib/secrets');
+  const orig = paymongoSecret.value;
+  try {
+    paymongoSecret.value = () => 'sk_test_abc123\n';
+    assert.strictEqual(
+      paymongoAuthHeader(true),
+      Buffer.from('sk_test_abc123:').toString('base64'),
+    );
+    paymongoSecret.value = () => '   \n';
+    assert.throws(() => paymongoAuthHeader(true), /Payment service not configured/);
+  } finally {
+    paymongoSecret.value = orig;
+  }
+});
+
+test('getMapTilerStaticMapUrl trims and URL-encodes the API key', () => {
+  const { getMapTilerStaticMapUrl } = require('../lib/orders/send_notification');
+  const url = getMapTilerStaticMapUrl(9.02, 125.51, 'key+with spaces\n');
+  assert.ok(url.includes('key=key%2Bwith%20spaces&'), `unexpected url: ${url}`);
+});

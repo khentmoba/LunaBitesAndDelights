@@ -668,6 +668,16 @@ test('runDailySalesReport tracks partial deliveries, skips permanent errors, and
     assert.equal(res.sent, true);
     assert.deepEqual(sentTo, ['chat2']);
     assert.equal(store.get('2026-11-23').status, 'sending');
+
+    // A retry arriving while the `sending` lease is still active must report
+    // inFlight: true so the scheduled trigger throws and keeps retrying.
+    const inFlightRes = await runDailySalesReport('2026-11-23', { db: fakeDb, persistBackoffMs: [0], aggregate: async () => null });
+    assert.deepEqual(inFlightRes, { sent: false, skipped: true, inFlight: true });
+
+    // Once marked sent, duplicate runs skip cleanly without requesting retry.
+    store.set('2026-11-23', { status: 'sent', sentAt: Date.now() });
+    const sentRes = await runDailySalesReport('2026-11-23', { db: fakeDb, persistBackoffMs: [0], aggregate: async () => null });
+    assert.deepEqual(sentRes, { sent: false, skipped: true, inFlight: false });
   } finally {
     telegramChatIds.value = origChatIds;
     telegramApi.setBot(null);

@@ -20,19 +20,29 @@ export function scheduledReportDate(scheduleTime?: string, eventTime?: string, n
   return phtDateLabel(now);
 }
 
+export type DailyReportClaimStatus = 'claimed' | 'already-sent' | 'in-flight' | 'failed-permanent';
+
+export function evaluateDailyReportClaim(
+  current: Record<string, any> | undefined,
+  nowMs = Date.now(),
+): DailyReportClaimStatus {
+  if (!current) return 'claimed';
+  if (current.status === 'sent') return 'already-sent';
+  if (current.status === 'failed_permanent') return 'failed-permanent';
+  if (current.status === 'sending') {
+    const claimedAt = current.claimedAt;
+    if (typeof claimedAt === 'number' && Number.isFinite(claimedAt) && nowMs - claimedAt < DAILY_REPORT_CLAIM_TTL_MS) {
+      return 'in-flight';
+    }
+  }
+  return 'claimed';
+}
+
 export function canClaimDailyReport(
   current: Record<string, any> | undefined,
   nowMs = Date.now(),
 ): boolean {
-  if (!current) return true;
-  if (current.status === 'sent' || current.status === 'failed_permanent') return false;
-  if (current.status === 'sending') {
-    const claimedAt = current.claimedAt;
-    if (typeof claimedAt === 'number' && Number.isFinite(claimedAt) && nowMs - claimedAt < DAILY_REPORT_CLAIM_TTL_MS) {
-      return false;
-    }
-  }
-  return true;
+  return evaluateDailyReportClaim(current, nowMs) === 'claimed';
 }
 
 export async function runDailySalesReport(
@@ -42,15 +52,15 @@ export async function runDailySalesReport(
     persistBackoffMs?: number[];
     aggregate?: typeof aggregateDailySales;
   } = {},
-): Promise<{ sent: boolean; skipped?: boolean; permanentFailure?: boolean }> {
+): Promise<{ sent: boolean; skipped?: boolean; inFlight?: boolean; permanentFailure?: boolean }> {
   const db = opts.db ?? getFirestore();
   const aggregate = opts.aggregate ?? aggregateDailySales;
   const guardRef = db.collection(DAILY_REPORTS_SENT_COLLECTION).doc(dateLabel);
   const nowMs = Date.now();
   const expireAt = Timestamp.fromMillis(nowMs + DAILY_REPORT_TTL_MS);
 
-  const { claimed, deliveredChatIds } = await db.runTransaction<{
-    claimed: boolean;
+  const { status: claimStatus, deliveredChatIds } = await db.runTransaction<{
+    status: DailyReportClaimStatus;
     deliveredChatIds: string[];
   }>(async (tx) => {
     const snap = await tx.get(guardRef);
@@ -58,16 +68,21 @@ export async function runDailySalesReport(
     const prevDelivered = Array.isArray(existing?.deliveredChatIds)
       ? existing.deliveredChatIds.filter((id: unknown): id is string => typeof id === 'string' && id.length > 0)
       : [];
-    if (!canClaimDailyReport(existing, nowMs)) {
-      return { claimed: false, deliveredChatIds: prevDelivered };
+    const status = evaluateDailyReportClaim(existing, nowMs);
+    if (status !== 'claimed') {
+      return { status, deliveredChatIds: prevDelivered };
     }
     tx.set(guardRef, { status: 'sending', claimedAt: nowMs, expireAt }, { merge: true });
-    return { claimed: true, deliveredChatIds: prevDelivered };
+    return { status, deliveredChatIds: prevDelivered };
   });
 
-  if (!claimed) {
-    logger.info(`Daily report for ${dateLabel} already sent, permanently failed, or in-flight; skipping duplicate run`);
-    return { sent: false, skipped: true };
+  if (claimStatus === 'in-flight') {
+    logger.warn(`Daily report for ${dateLabel} is currently in-flight; caller should retry until settled`);
+    return { sent: false, skipped: true, inFlight: true };
+  }
+  if (claimStatus !== 'claimed') {
+    logger.info(`Daily report for ${dateLabel} already sent or permanently failed; skipping duplicate run`);
+    return { sent: false, skipped: true, inFlight: false };
   }
 
   logger.info(`Running daily report for ${dateLabel}`);
@@ -151,5 +166,9 @@ export const dailySalesReport = onSchedule({
 }, async (event) => {
   // A delayed retry just after midnight must still report the day the
   // schedule fired for, not the following PHT date.
-  await runDailySalesReport(scheduledReportDate(event.scheduleTime));
+  const dateLabel = scheduledReportDate(event.scheduleTime);
+  const res = await runDailySalesReport(dateLabel);
+  if (res.inFlight) {
+    throw new Error(`Daily report for ${dateLabel} is still in-flight; retrying until settled`);
+  }
 });
