@@ -50,6 +50,8 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
   let connecting = false;
   let loading = false;
   let error: string | null = null;
+  let truncated = false;
+  let scanned = 0;
   let typeFilter: TypeFilter = 'ALL';
   let query = '';
   let showCompleted = false;
@@ -132,11 +134,15 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
     renderBar();
     renderBanner();
     try {
-      const data = await callFn<{ success?: boolean; orders?: KdsOrder[]; message?: string }>('getActiveOrders', { includeCompleted: showCompleted });
+      const data = await callFn<{ success?: boolean; orders?: KdsOrder[]; message?: string; truncated?: boolean; scanned?: number }>('getActiveOrders', { includeCompleted: showCompleted });
       if (disposed || seq !== fetchSeq) return;
       if (data.success === true) {
         polled = data.orders ?? [];
         polledFresh = true;
+        // The callable reports when its scan budget stopped before the board
+        // was full; without surfacing it a partial board looks complete.
+        truncated = data.truncated === true;
+        scanned = typeof data.scanned === 'number' && Number.isFinite(data.scanned) ? data.scanned : 0;
         publish();
       } else {
         error = data.message ?? 'Failed to load active orders.';
@@ -250,6 +256,12 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
           const wasLive = isLive;
           isLive = true;
           fromCache = snap.metadata.fromCache;
+          if (!wasLive) {
+            // The mirror is the board's source now; a warning about the
+            // fallback scan stopped applying the moment this snapshot arrived.
+            truncated = false;
+            scanned = 0;
+          }
           if (!fromCache) {
             fetchSeq++;
             fetchInFlight = false;
@@ -317,15 +329,18 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
     updating.add(orderId);
     renderBoard();
     try {
-      const data = await callFn<{ success?: boolean; message?: string }>('updateOrderStatus', {
+      const data = await callFn<{ success?: boolean; message?: string; changed?: boolean }>('updateOrderStatus', {
         orderId,
         status,
         ...(cancellationReason ? { cancellationReason } : {}),
       });
       if (disposed) return;
       if (data.success === true) {
-        if (!isLive) await fetchActive(true, true);
-        staffSnack(`Order updated: ${status}`, SUCCESS);
+        // A duplicate tap (two tablets, or a resync after the board moved) is
+        // not an update: say what happened instead of claiming a change.
+        if (data.changed === false) staffSnack(`Order already ${status}`, INK_SOFT);
+        else staffSnack(`Order updated: ${status}`, SUCCESS);
+        if (!isLive || data.changed === false) await fetchActive(true, true);
       } else {
         staffSnack(`Error: ${data.message}`, ERROR);
       }
@@ -425,7 +440,8 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
     for (const b of ctl.querySelectorAll<HTMLElement>('[data-filter]')) b.setAttribute('aria-pressed', String(b.dataset.filter === typeFilter));
     const h = ctl.querySelector<HTMLElement>('[data-act=history]')!;
     h.setAttribute('aria-pressed', String(showCompleted));
-    h.querySelector('.icon')!.outerHTML = icon(showCompleted ? 'check_box_outlined' : 'check_box_outline_blank_outlined');
+    const historyIcon = h.querySelector<HTMLElement>('.icon');
+    if (historyIcon) historyIcon.textContent = glyph(showCompleted ? 'check_box_outlined' : 'check_box_outline_blank_outlined');
     ctl.querySelector<HTMLElement>('[data-act=clear]')!.hidden = !query;
   }
 
@@ -444,6 +460,11 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
         : 'Reconnecting to live feed — showing cached orders.';
       html = `
   <div class="kerr kerr--warn" role="status">${icon('warning_amber_rounded')}<span class="kerr__text">${esc(msg)}</span>
+    <button type="button" class="kerr__btn" data-act="retry">SYNC</button>
+  </div>`;
+    } else if (truncated) {
+      html = `
+  <div class="kerr kerr--warn" role="status">${icon('warning_amber_rounded')}<span class="kerr__text">Partial board — the order scan stopped after ${scanned} orders, so older active orders may be missing.</span>
     <button type="button" class="kerr__btn" data-act="retry">SYNC</button>
   </div>`;
     }
@@ -642,6 +663,8 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
   function renderAll() {
     if (disposed) return;
     renderBar();
+    // The filter bar is built once at mount; sync it in place so a feed update
+    // can never re-create the search input and drop its focus or cursor.
     syncControls();
     renderBanner();
     renderBoard();
@@ -793,7 +816,10 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
       ctl.querySelector<HTMLInputElement>('[data-search]')!.value = '';
       syncControls();
       renderBoard();
-    } else if (act === 'retry') void fetchActive();
+    } else if (act === 'retry') {
+      void fetchActive();
+      if (!unsub && !connecting) void startLiveListener();
+    }
     else if (act === 'signin') void logout();
     else if (t.dataset.filter) {
       typeFilter = t.dataset.filter as TypeFilter;

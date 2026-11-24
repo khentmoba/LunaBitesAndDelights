@@ -414,7 +414,7 @@ async function submit() {
       draft.pendingCart = key;
       persist();
     }
-    const result = await placeOrder(order, timeStr, draft.idempotencyKey);
+    const result = await placeOrder(order, draft.idempotencyKey);
     docId = result.docId;
     telegramSent = result.telegramSent;
     errorCode = result.errorCode;

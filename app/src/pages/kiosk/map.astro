@@ -114,10 +114,13 @@ body { overflow: hidden; }
 <script>
 import { $, esc } from '../../kiosk/dom';
 import { DRAFT, load, save, type CheckoutDraft } from '../../kiosk/handoff';
-import { currentPosition, disposePendingLookups, mapsKey, reverseGeocode, searchAddress, shortAddress, type Place } from '../../kiosk/geo';
+import { LOCATION_UNAVAILABLE_MESSAGE, LOCATION_UNAVAILABLE_SEARCH_MESSAGE, currentPosition, disposePendingLookups, mapsKey, reverseGeocode, searchAddress, shortAddress, type Place } from '../../kiosk/geo';
 import { glyph } from '../../kiosk/icons';
 import { popTo, watchInactivity } from '../../kiosk/inactivity';
 import { STORE, deliveryDistance } from '../../kiosk/order';
+import { snack } from '../../kiosk/snackbar';
+
+const ERROR = '#B3261E';
 
 const draft = load<CheckoutDraft>(DRAFT);
 let address = draft?.address ?? '';
@@ -191,7 +194,9 @@ function loadMaps(key: string): Promise<typeof google.maps> {
 }
 
 if (!mapsKey) {
-  notice.hidden = false;
+  // No tiles at all: everything that branches on a painted map (including the
+  // locate-me copy) must take the degraded path, not just the notice.
+  degrade();
 } else {
   // Google paints its own "didn't load Google Maps correctly" overlay when the
   // key is rejected. Swap it for our notice instead of leaking that to a shopper.
@@ -289,7 +294,18 @@ async function goToMyLocation() {
   render();
   try {
     const pos = await currentPosition();
-    if (!pos || loading || seq !== locateSeq) return;
+    if (loading || seq !== locateSeq) return;
+    if (!pos) {
+      // A denied or unavailable location used to look like a dead button.
+      const card = document.querySelector<HTMLElement>('.mp-bottom');
+      const offset = card ? Math.ceil(card.getBoundingClientRect().height) + 26 : 0;
+      snack(degraded ? LOCATION_UNAVAILABLE_SEARCH_MESSAGE : LOCATION_UNAVAILABLE_MESSAGE, {
+        color: ERROR,
+        seconds: 5,
+        ...(offset ? { bottom: `calc(${offset}px + env(safe-area-inset-bottom))` } : {}),
+      });
+      return;
+    }
     lat = pos.lat;
     lng = pos.lng;
     clearTimeout(addressTimer);

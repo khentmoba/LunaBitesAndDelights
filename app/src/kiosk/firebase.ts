@@ -1,13 +1,13 @@
 // Firebase for the kiosk: the lunaexpress web app, App Check through reCAPTCHA Enterprise when
 // a site key is built in, callables in us-central1 with a 15 s timeout, and
 // Firebase Auth for the staff session.
-// Each SDK is loaded lazily on first use so pages only download what they need
-// (e.g. checkout uses firestore/lite instead of the full 581 KB Firestore SDK,
-// and staff reports/dashboard never download Firestore at all).
+// Each SDK is loaded lazily on first use so pages only download what they need:
+// only the KDS pulls the full Firestore SDK, and staff reports/dashboard never
+// load Firestore at all. The kiosk writes orders through `placeOrder`, so it
+// never loads a Firestore SDK.
 import type { FirebaseApp } from 'firebase/app';
 import type { Auth } from 'firebase/auth';
 import type { Firestore } from 'firebase/firestore';
-import type { Firestore as LiteFirestore } from 'firebase/firestore/lite';
 import type { Functions } from 'firebase/functions';
 
 const emulators = import.meta.env.PUBLIC_FIREBASE_EMULATORS === '1';
@@ -25,7 +25,6 @@ const config = {
 let appPromise: Promise<FirebaseApp> | null = null;
 let authPromise: Promise<Auth> | null = null;
 let functionsPromise: Promise<Functions> | null = null;
-let dbLitePromise: Promise<LiteFirestore> | null = null;
 let dbPromise: Promise<Firestore> | null = null;
 
 function memo<T>(get: () => Promise<T>, reset: () => void): Promise<T> {
@@ -73,16 +72,6 @@ export function firebaseFunctions(): Promise<Functions> {
     return functions;
   }, () => { functionsPromise = null; });
   return functionsPromise;
-}
-
-export function firebaseDbLite(): Promise<LiteFirestore> {
-  dbLitePromise ??= memo(async () => {
-    const [app, fs] = await Promise.all([firebaseApp(), import('firebase/firestore/lite')]);
-    const db = fs.getFirestore(app);
-    if (emulators) fs.connectFirestoreEmulator(db, '127.0.0.1', 8080);
-    return db;
-  }, () => { dbLitePromise = null; });
-  return dbLitePromise;
 }
 
 export function firebaseDb(): Promise<Firestore> {

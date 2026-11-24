@@ -189,6 +189,43 @@ export async function getLegacyItemCounts(
   return counts;
 }
 
+/** True when applying the call would actually change the stored order. */
+export interface StatusChangeOutcome {
+  changed: boolean;
+  previousStatus: string;
+}
+
+/**
+ * Applies one status transition inside a transaction and answers for the
+ * document it just read, so caller responses and logs can be derived from the
+ * committed outcome rather than from the request.
+ */
+export async function applyOrderStatus(
+  db: Pick<FirebaseFirestore.Firestore, 'runTransaction'>,
+  orderRef: FirebaseFirestore.DocumentReference,
+  status: string,
+  cancellationReason: string,
+): Promise<StatusChangeOutcome> {
+  return db.runTransaction(async (tx) => {
+    const snap = await tx.get(orderRef);
+    if (!snap.exists) {
+      throw new HttpsError('not-found', 'Order not found');
+    }
+    const currentData = snap.data();
+    const currentStatus = String(currentData?.status || 'Pending');
+    if (!isAllowedStatusTransition(currentStatus, status)) {
+      throw new HttpsError(
+        'failed-precondition',
+        `Cannot transition order from ${currentStatus} to ${status}`,
+      );
+    }
+    const update = buildStatusUpdate(currentData, status, cancellationReason);
+    if (!update) return { changed: false, previousStatus: currentStatus };
+    tx.update(orderRef, update);
+    return { changed: true, previousStatus: currentStatus };
+  });
+}
+
 export const getActiveOrders = onCall(async (request) => {
   requireStaff(request); // #6 + #7
   const db = getFirestore();
@@ -265,25 +302,13 @@ export const updateOrderStatus = onCall(async (request) => {
   const db = getFirestore();
   try {
     const orderRef = db.collection('orders').doc(orderId);
-    await db.runTransaction(async (tx) => {
-      const snap = await tx.get(orderRef);
-      if (!snap.exists) {
-        throw new HttpsError('not-found', 'Order not found');
-      }
-      const currentData = snap.data();
-      const currentStatus = String(currentData?.status || 'Pending');
-      if (!isAllowedStatusTransition(currentStatus, status)) {
-        throw new HttpsError(
-          'failed-precondition',
-          `Cannot transition order from ${currentStatus} to ${status}`,
-        );
-      }
-      const update = buildStatusUpdate(currentData, status, cancellationReason);
-      if (!update) return;
-      tx.update(orderRef, update);
-    });
-    logger.info(`Order ${orderId} status updated to ${status}`);
-    return { success: true };
+    const outcome = await applyOrderStatus(db, orderRef, status, cancellationReason);
+    if (outcome.changed) {
+      logger.info(`Order ${orderId} status updated from ${outcome.previousStatus} to ${status}`);
+    } else {
+      logger.info(`Order ${orderId} already ${status}; no write needed`);
+    }
+    return { success: true, changed: outcome.changed };
   } catch (error: any) {
     if (error instanceof HttpsError) throw error;
     if (error?.code === 5 || error?.code === 'not-found') {

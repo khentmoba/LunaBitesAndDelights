@@ -7,6 +7,11 @@ const REVERSE = 'https://nominatim.openstreetmap.org/reverse?format=json&zoom=18
 /** Empty when no Google Maps key was built in; the map then shows no tiles. */
 export const mapsKey = import.meta.env?.PUBLIC_GOOGLE_MAPS_KEY ?? '';
 
+/** What the map page says when the browser cannot or will not report a position. */
+export const LOCATION_UNAVAILABLE_MESSAGE = 'Location unavailable. Drag the map to set your pin.';
+/** The same failure when no map is painted (missing/rejected key): only search can set the pin. */
+export const LOCATION_UNAVAILABLE_SEARCH_MESSAGE = 'Location unavailable. Search your street to set your pin.';
+
 type Address = Record<string, string | undefined>;
 
 export interface Place {

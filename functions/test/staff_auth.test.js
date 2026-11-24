@@ -83,7 +83,20 @@ describe('staff auth: scrypt PIN and password verification', () => {
     const fakeDb = {
       collection(name) {
         assert.equal(name, 'staff_accounts');
+        const query = {
+          select() {
+            return query;
+          },
+          limit() {
+            return query;
+          },
+          // No other accounts yet, so the duplicate-PIN check finds nothing.
+          async get() {
+            return { docs: [] };
+          },
+        };
         return {
+          ...query,
           doc(id) {
             return {
               async set(data, opts) {

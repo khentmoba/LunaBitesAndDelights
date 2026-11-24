@@ -1,0 +1,86 @@
+{
+  "target": "ts",
+  "capturedAt": "2026-11-24T13:46:58.638Z",
+  "viewports": [
+    [
+      320,
+      640,
+      2
+    ],
+    [
+      390,
+      844,
+      2
+    ],
+    [
+      768,
+      1024,
+      2
+    ],
+    [
+      1440,
+      900,
+      1
+    ]
+  ],
+  "screens": [
+    {
+      "name": "kiosk-map",
+      "width": 320,
+      "file": "kiosk-map-320.png",
+      "path": "/kiosk/map",
+      "ready": true
+    },
+    {
+      "name": "kiosk-map",
+      "width": 390,
+      "file": "kiosk-map-390.png",
+      "path": "/kiosk/map",
+      "ready": true
+    },
+    {
+      "name": "kiosk-map",
+      "width": 768,
+      "file": "kiosk-map-768.png",
+      "path": "/kiosk/map",
+      "ready": true
+    },
+    {
+      "name": "kiosk-map",
+      "width": 1440,
+      "file": "kiosk-map-1440.png",
+      "path": "/kiosk/map",
+      "ready": true
+    },
+    {
+      "name": "kiosk-map-denied",
+      "width": 320,
+      "file": "kiosk-map-denied-320.png",
+      "path": "/kiosk/map",
+      "ready": true
+    },
+    {
+      "name": "kiosk-map-denied",
+      "width": 390,
+      "file": "kiosk-map-denied-390.png",
+      "path": "/kiosk/map",
+      "ready": true
+    },
+    {
+      "name": "kiosk-map-denied",
+      "width": 768,
+      "file": "kiosk-map-denied-768.png",
+      "path": "/kiosk/map",
+      "ready": true
+    },
+    {
+      "name": "kiosk-map-denied",
+      "width": 1440,
+      "file": "kiosk-map-denied-1440.png",
+      "path": "/kiosk/map",
+      "ready": true
+    }
+  ],
+  "timedOut": [],
+  "errors": []
+}
