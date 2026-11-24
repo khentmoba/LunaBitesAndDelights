@@ -695,3 +695,36 @@ test('assertOrderCheckoutEligible and persistCheckoutSession reject Completed an
     assert.strictEqual(wrote, false, `persistCheckoutSession should not write for ${label}`);
   }
 });
+
+test('paymongoWebhook rejects invalid signatures before touching Firestore rate limits', async () => {
+  const { paymongoWebhook } = require('../lib/payments/webhook');
+  const { paymongoWebhookSecret } = require('../lib/secrets');
+  const origSecret = paymongoWebhookSecret.value;
+  let statusCode = null;
+  let body = null;
+  const req = {
+    method: 'POST',
+    headers: { 'paymongo-signature': 't=1700000000,li=0000000000000000000000000000000000000000000000000000000000000000' },
+    rawBody: Buffer.from('{}'),
+    body: {},
+    ip: '203.0.113.10',
+  };
+  const res = {
+    status(code) {
+      statusCode = code;
+      return this;
+    },
+    send(msg) {
+      body = msg;
+      return this;
+    },
+  };
+  try {
+    paymongoWebhookSecret.value = () => 'whsec_test_secret';
+    await paymongoWebhook(req, res);
+    assert.strictEqual(statusCode, 401);
+    assert.strictEqual(body, 'Invalid signature');
+  } finally {
+    paymongoWebhookSecret.value = origSecret;
+  }
+});

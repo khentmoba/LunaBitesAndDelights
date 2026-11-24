@@ -21,7 +21,6 @@ export { resolveOrderDocId };
 const MAX_SIG_AGE_SEC = 300;
 const WEBHOOK_RATE_WINDOW_MS = 60 * 1000;
 const WEBHOOK_RATE_MAX = 120;
-const WEBHOOK_UNVERIFIED_RATE_MAX = 30;
 
 /**
  * Extracts `{ type, sessionId }` from PayMongo's JSON:API webhook envelope
@@ -100,11 +99,21 @@ export const paymongoWebhook = onRequest(
     }
     try {
       const webhookSecret = paymongoWebhookSecret.value().trim();
+      if (!verifyPaymongoSignature(
+        req.headers['paymongo-signature'],
+        (req as any).rawBody,
+        webhookSecret,
+      )) {
+        logger.warn('PayMongo webhook signature invalid or missing');
+        res.status(401).send('Invalid signature');
+        return;
+      }
+
       const clientIp = clientIpFromRequest(req) || 'unknown';
       try {
         await enforceFixedWindowRateLimit(
           `webhook:paymongo:${clientIp}`,
-          webhookSecret ? WEBHOOK_RATE_MAX : WEBHOOK_UNVERIFIED_RATE_MAX,
+          WEBHOOK_RATE_MAX,
           WEBHOOK_RATE_WINDOW_MS,
         );
       } catch (rateErr) {
@@ -114,16 +123,6 @@ export const paymongoWebhook = onRequest(
         }
         logger.error('PayMongo webhook rate-limit check failed:', rateErr);
         res.status(500).send('Retry');
-        return;
-      }
-
-      if (!verifyPaymongoSignature(
-        req.headers['paymongo-signature'],
-        (req as any).rawBody,
-        webhookSecret,
-      )) {
-        logger.warn('PayMongo webhook signature invalid or missing');
-        res.status(401).send('Invalid signature');
         return;
       }
 

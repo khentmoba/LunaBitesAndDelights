@@ -32,18 +32,33 @@ export function cameFromApp(): boolean {
   }
 }
 
+const openDialogs = new Set<HTMLDialogElement>();
+
 /** Opens a modal dialog built from `html`; it removes itself once closed. */
 export function showDialog(html: string, cls = 'sdialog'): HTMLDialogElement {
   const d = document.createElement('dialog');
   d.className = cls;
   d.innerHTML = html;
-  d.addEventListener('close', () => d.remove());
+  openDialogs.add(d);
+  d.addEventListener('close', () => {
+    openDialogs.delete(d);
+    d.remove();
+  });
   d.addEventListener('click', (e) => {
     if (e.target === d) d.close();
   });
   document.body.append(d);
   d.showModal();
   return d;
+}
+
+/** Closes and removes any open staff modal dialogs (e.g. on logout or screen teardown). */
+export function closeAllDialogs(): void {
+  for (const d of [...openDialogs]) {
+    openDialogs.delete(d);
+    if (d.open) d.close();
+    d.remove();
+  }
 }
 
 /** Runs each gradient exactly corner to corner (top-left to bottom-right) by setting the angle from the box's size. */

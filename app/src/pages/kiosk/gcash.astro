@@ -99,6 +99,7 @@ let starting = false;
 
 /** Navigator.pop(context, false): back to checkout, which says the payment did not go through. */
 function cancel() {
+  if (verifying) return;
   const draft = load<CheckoutDraft>(DRAFT);
   if (draft) {
     save(DRAFT, {
@@ -131,7 +132,9 @@ function setVerifying(on: boolean) {
   verifying = on;
   const paid = $<HTMLButtonElement>('[data-paid]');
   paid.disabled = on;
-  $<HTMLButtonElement>('[data-cancel-pay]').disabled = on;
+  document.querySelectorAll<HTMLButtonElement>('[data-cancel]').forEach((b) => {
+    b.disabled = on;
+  });
   const icon = $('[data-paid-icon]');
   icon.className = on ? 'gc-btn-spinner spinner' : 'icon';
   icon.textContent = on ? '' : glyph('check_circle_outline_rounded');

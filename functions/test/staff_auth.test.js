@@ -154,4 +154,13 @@ describe('staff auth: scrypt PIN and password verification', () => {
     assert.equal(staffAuthUid('admin'), 'staff_admin');
     assert.equal(staffAuthUid('staff1'), 'staff_staff1');
   });
+
+  test('staffDocIdFromUid validates prefix and document id format', () => {
+    const { staffDocIdFromUid } = require('../lib/auth/verify_staff');
+    assert.equal(staffDocIdFromUid('staff_admin'), 'admin');
+    assert.equal(staffDocIdFromUid('staff_cook.1-a'), 'cook.1-a');
+    for (const bad of ['', 'admin', 'staff_', 'staff_a', 'staff_../other', 'staff_a/b', 'staff_has space']) {
+      assert.throws(() => staffDocIdFromUid(bad), /Invalid staff account/, `expected rejection for ${JSON.stringify(bad)}`);
+    }
+  });
 });
