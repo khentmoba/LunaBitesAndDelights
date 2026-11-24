@@ -317,6 +317,12 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
             reconnectTimer = 0;
             fetchSeq++;
             fetchInFlight = false;
+            // A fresh server snapshot supersedes any prior polling error or
+            // fallback-scan truncation warning, even if the listener had
+            // previously delivered a cached snapshot (`wasLive === true`).
+            error = null;
+            truncated = false;
+            scanned = 0;
           } else if (!isOffline && !pollTimer && !cacheFallbackTimer) {
             // Firestore keeps onSnapshot open (without firing its error callback)
             // when a tablet's WebChannel stalls in cache-only mode. Fall back to
@@ -330,11 +336,11 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
               ensureFallbackTimers();
             }, CACHE_FALLBACK_MS);
           }
-          if (!wasLive && !fromCache) {
-            // The mirror is the board's source now; a warning about the
-            // fallback scan stopped applying the moment this snapshot arrived.
-            truncated = false;
-            scanned = 0;
+          if (fromCache && polledFresh) {
+            if (!fetchInFlight) loading = false;
+            renderBar();
+            renderBanner();
+            return;
           }
           const nextLive = snap.docs.map((d) => kdsOrderFromDoc(d.id, d.data(), toDate));
           const nextSignature = JSON.stringify(nextLive);
@@ -702,7 +708,7 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
     if (tab === 3 && !showCompleted) {
       showCompleted = true;
       publish();
-      if (!isLive) void fetchActive(false);
+      if (!isLive || fromCache) void fetchActive(false);
     } else {
       syncTabs();
     }
@@ -874,7 +880,7 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
     else if (act === 'history') {
       showCompleted = !showCompleted;
       publish();
-      if (showCompleted && !isLive) void fetchActive(false);
+      if (showCompleted && (!isLive || fromCache)) void fetchActive(false);
     } else if (act === 'clear') {
       clearTimeout(searchTimer);
       query = '';

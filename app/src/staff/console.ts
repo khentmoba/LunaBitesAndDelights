@@ -5,7 +5,7 @@ import { cart } from '../kiosk/cart.ts';
 import { callFn } from '../kiosk/firebase.ts';
 import type { IconName } from '../kiosk/icons.ts';
 import { snack } from '../kiosk/snackbar.ts';
-import { fnError, logout } from './session.ts';
+import { fnError, isAuthCode, logout } from './session.ts';
 import { esc, go, icon, showDialog } from './ui.ts';
 
 const ORANGE = '#FF9800';
@@ -59,9 +59,16 @@ export function openStaffConsole(onLogout: () => void): void {
       }
     } catch (e) {
       if (!d.isConnected) return;
+      const fe = fnError(e);
+      if (fe && isAuthCode(fe.code)) {
+        d.close();
+        void logout();
+        onLogout();
+        snack(`Staff session expired (${fe.code}). Please sign in again.`, { color: ERROR });
+        return;
+      }
       generating = false;
       render();
-      const fe = fnError(e);
       snack(`CRASH: ${fe ? fe.message : String(e).split('\n')[0]}`, { color: ERROR });
     }
   }
