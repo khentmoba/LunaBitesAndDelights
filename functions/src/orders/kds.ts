@@ -1,8 +1,11 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
-import { getFirestore } from 'firebase-admin/firestore';
+import { getFirestore, Timestamp } from 'firebase-admin/firestore';
 import { logger } from 'firebase-functions';
 import { requireStaff, validDocId, cleanStr, optStr } from '../util/security';
 import { finiteNumber } from '../util';
+
+export const KDS_COLLECTION = 'kds_orders';
+export const KDS_MIRROR_TTL_MS = 10 * 24 * 60 * 60 * 1000;
 
 const VALID_STATUSES = ['Pending', 'Preparing', 'Ready', 'Completed', 'Cancelled'];
 const ALLOWED_STATUS_TRANSITIONS: Record<string, ReadonlySet<string>> = {
@@ -138,6 +141,27 @@ export const projectOrder = (id: string, d: FirebaseFirestore.DocumentData) => {
   };
 };
 
+/** Kitchen-screen mirror doc: the same trimmed projection the callable returns, plus a queryable time. */
+export function kdsMirrorDoc(id: string, data: FirebaseFirestore.DocumentData) {
+  const ts = data.timestamp instanceof Timestamp
+    ? data.timestamp
+    : Timestamp.fromDate(new Date(toIsoTimestamp(data.timestamp)));
+  return { ...projectOrder(id, data), ts };
+}
+
+/** Full `kds_orders/{id}` write payload including event ordering watermark and TTL expiry. */
+export function buildKdsMirrorWrite(
+  id: string,
+  data: FirebaseFirestore.DocumentData,
+  sourceEventMs: number,
+) {
+  return {
+    ...kdsMirrorDoc(id, data),
+    sourceEventMs,
+    expireAt: Timestamp.fromMillis(sourceEventMs + KDS_MIRROR_TTL_MS),
+  };
+}
+
 /** Returns a persisted non-negative numeric item count, or null when absent/invalid. */
 export function validStoredItemsCount(raw: unknown): number | null {
   return typeof raw === 'number' && Number.isFinite(raw) && raw >= 0 ? raw : null;
@@ -218,6 +242,7 @@ export async function applyOrderStatus(
   orderRef: FirebaseFirestore.DocumentReference,
   status: string,
   cancellationReason: string,
+  mirrorRef?: FirebaseFirestore.DocumentReference,
 ): Promise<StatusChangeOutcome> {
   return db.runTransaction(async (tx) => {
     const snap = await tx.get(orderRef);
@@ -235,6 +260,12 @@ export async function applyOrderStatus(
     const update = buildStatusUpdate(currentData, status, cancellationReason);
     if (!update) return { changed: false, previousStatus: currentStatus };
     tx.update(orderRef, update);
+    if (mirrorRef) {
+      const merged = { ...(currentData ?? {}), ...update };
+      if (isOrderVisibleInKds(merged)) {
+        tx.set(mirrorRef, buildKdsMirrorWrite(orderRef.id, merged, Date.now()));
+      }
+    }
     return { changed: true, previousStatus: currentStatus };
   });
 }
@@ -315,7 +346,8 @@ export const updateOrderStatus = onCall(async (request) => {
   const db = getFirestore();
   try {
     const orderRef = db.collection('orders').doc(orderId);
-    const outcome = await applyOrderStatus(db, orderRef, status, cancellationReason);
+    const mirrorRef = db.collection(KDS_COLLECTION).doc(orderId);
+    const outcome = await applyOrderStatus(db, orderRef, status, cancellationReason, mirrorRef);
     if (outcome.changed) {
       logger.info(`Order ${orderId} status updated from ${outcome.previousStatus} to ${status}`);
     } else {

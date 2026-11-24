@@ -4,6 +4,7 @@ import { logger } from 'firebase-functions';
 import { paymongoSecret } from '../secrets';
 import { escapeMd } from '../telegram_api';
 import { ALNUM_DOC_ID } from '../util/security';
+import { KDS_COLLECTION, buildKdsMirrorWrite, isOrderVisibleInKds } from '../orders/kds';
 
 export interface VerifiedCheckoutSession {
   payments: any[];
@@ -278,6 +279,13 @@ export async function markOrderPaidOnce(
       paidFields.paidAfterCancel = true;
     }
     tx.set(orderRef, paidFields, { merge: true });
+    const merged = { ...data, ...paidFields };
+    if (typeof db.collection === 'function' && isOrderVisibleInKds(merged)) {
+      tx.set(
+        db.collection(KDS_COLLECTION).doc(orderRef.id),
+        buildKdsMirrorWrite(orderRef.id, merged, Date.now()),
+      );
+    }
     return { transitioned: true, alreadyPaid: false };
   });
 }

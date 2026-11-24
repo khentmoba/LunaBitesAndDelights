@@ -1,26 +1,22 @@
 import { onDocumentWritten } from 'firebase-functions/v2/firestore';
 import { getFirestore, FieldValue, Timestamp } from 'firebase-admin/firestore';
 import { logger } from 'firebase-functions';
-import { projectOrder, isOrderVisibleInKds, toIsoTimestamp } from './kds';
+import {
+  isOrderVisibleInKds,
+  kdsMirrorDoc,
+} from './kds';
 import { notifyOrderOnce, notifyPaymentConfirmedOnce } from './send_notification';
 import { isPermanentTelegramError, hasTelegramConfig } from '../telegram_api';
 import { dayDeltas, incrementPayload } from '../reporting/daily_stats';
 import { telegramToken, telegramChatIds, googleMapsApiKey } from '../secrets';
 
+export { kdsMirrorDoc };
 export const KDS_COLLECTION = 'kds_orders';
 export const DAILY_STATS_COLLECTION = 'dailyStats';
 const EVENT_GUARD_COLLECTION = 'stats_events';
 const GUARD_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 export const KDS_MIRROR_TTL_MS = 10 * 24 * 60 * 60 * 1000;
 const MAX_TELEGRAM_RETRY_AGE_MS = 10 * 60 * 1000;
-
-/** Kitchen-screen mirror doc: the same trimmed projection the callable returns, plus a queryable time. */
-export function kdsMirrorDoc(id: string, data: FirebaseFirestore.DocumentData) {
-  const ts = data.timestamp instanceof Timestamp
-    ? data.timestamp
-    : Timestamp.fromDate(new Date(toIsoTimestamp(data.timestamp)));
-  return { ...projectOrder(id, data), ts };
-}
 
 /**
  * Returns true when an order stopped being visible to KDS and its mirror doc

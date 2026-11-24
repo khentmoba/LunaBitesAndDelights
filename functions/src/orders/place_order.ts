@@ -1,10 +1,11 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
-import { getFirestore, FieldValue } from 'firebase-admin/firestore';
+import { getFirestore, Timestamp } from 'firebase-admin/firestore';
 import { logger } from 'firebase-functions';
 import * as crypto from 'crypto';
 import { phtDateLabel } from '../util';
 import { cleanStr, optStr, clientIpFromRequest, enforceFixedWindowRateLimit } from '../util/security';
 import { validateAndPriceItems } from '../payments/create_checkout';
+import { KDS_COLLECTION, buildKdsMirrorWrite, isOrderVisibleInKds } from './kds';
 
 const ORDER_TYPES = new Set(['Pickup', 'Delivery', 'Walk-In']);
 const PAYMENT_METHODS = new Set(['Cash', 'GCash']);
@@ -128,12 +129,13 @@ export const placeOrder = onCall(async (request) => {
   const rawIdempotencyKey = parseIdempotencyKey(d.idempotencyKey);
 
   const db = getFirestore();
+  const nowTs = Timestamp.now();
   const payload = {
     orderId,
     items,
     itemsCount: items.reduce((sum, item) => sum + item.quantity, 0),
     totalAmount,
-    timestamp: FieldValue.serverTimestamp(),
+    timestamp: nowTs,
     dateLabel: phtDateLabel(),
     type,
     entryType,
@@ -150,6 +152,7 @@ export const placeOrder = onCall(async (request) => {
     checkoutSessionId: null,
     paymongoPaymentId: null,
   };
+  const visibleInKds = isOrderVisibleInKds(payload);
 
   if (rawIdempotencyKey) {
     const idempotencyHash = orderPayloadFingerprint({
@@ -163,6 +166,7 @@ export const placeOrder = onCall(async (request) => {
       items,
     });
     const ref = db.collection('orders').doc(idempotentOrderDocId(rawIdempotencyKey));
+    const mirrorRef = db.collection(KDS_COLLECTION).doc(ref.id);
     const outcome = await db.runTransaction(async (tx) => {
       const snap = await tx.get(ref);
       if (snap.exists) {
@@ -178,6 +182,9 @@ export const placeOrder = onCall(async (request) => {
         };
       }
       tx.set(ref, { ...payload, idempotencyHash });
+      if (visibleInKds) {
+        tx.set(mirrorRef, buildKdsMirrorWrite(ref.id, payload, nowTs.toMillis()));
+      }
       return { deduplicated: false, orderId, totalAmount, items };
     });
     if (outcome.deduplicated) {
@@ -195,7 +202,14 @@ export const placeOrder = onCall(async (request) => {
   }
 
   const ref = db.collection('orders').doc();
-  await ref.set(payload);
+  if (visibleInKds) {
+    const batch = db.batch();
+    batch.set(ref, payload);
+    batch.set(db.collection(KDS_COLLECTION).doc(ref.id), buildKdsMirrorWrite(ref.id, payload, nowTs.toMillis()));
+    await batch.commit();
+  } else {
+    await ref.set(payload);
+  }
 
   logger.info(`Order ${orderId} (${ref.id}) placed via callable [${entryType}/${type}/${paymentMethod}]`);
   return { success: true, docId: ref.id, orderId, totalAmount, items };

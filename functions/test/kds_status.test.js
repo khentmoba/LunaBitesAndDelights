@@ -7,8 +7,10 @@ const { applyOrderStatus, pageSizeForActiveOrders, MAX_SCAN_DOCS } = require('..
 
 function fakeDb(current) {
   const writes = [];
+  const sets = [];
   return {
     writes,
+    sets,
     async runTransaction(fn) {
       return fn({
         async get() {
@@ -16,6 +18,9 @@ function fakeDb(current) {
         },
         update(_ref, patch) {
           writes.push(patch);
+        },
+        set(ref, doc) {
+          sets.push({ ref, doc });
         },
       });
     },
@@ -64,6 +69,41 @@ describe('applyOrderStatus', () => {
     const db = fakeDb(undefined);
     await assert.rejects(applyOrderStatus(db, orderRef, 'Preparing', ''), (err) => err.code === 'not-found');
     assert.deepEqual(db.writes, []);
+  });
+
+  test('atomically mirrors visible order status updates to kds_orders when mirrorRef is passed', async () => {
+    const mirrorRef = { id: 'ord1', path: 'kds_orders/ord1' };
+    const db = fakeDb({
+      orderId: 'LU-100',
+      customerName: 'Ana',
+      paymentMethod: 'Cash',
+      paymentStatus: 'NOT PAID',
+      status: 'Pending',
+      totalAmount: 99,
+      items: [{ name: 'Shawarma Wrap', variant: 'Solo', quantity: 1, price: 60 }],
+      timestamp: '2026-11-24T10:00:00.000Z',
+    });
+    const outcome = await applyOrderStatus(db, orderRef, 'Preparing', '', mirrorRef);
+    assert.deepEqual(outcome, { changed: true, previousStatus: 'Pending' });
+    assert.equal(db.sets.length, 1);
+    assert.strictEqual(db.sets[0].ref, mirrorRef);
+    assert.equal(db.sets[0].doc.status, 'Preparing');
+    assert.equal(db.sets[0].doc.orderNumber, 'LU-100');
+    assert.equal(typeof db.sets[0].doc.sourceEventMs, 'number');
+    assert.ok(db.sets[0].doc.expireAt);
+  });
+
+  test('skips kds_orders mirror write for unpaid GCash orders', async () => {
+    const mirrorRef = { id: 'ord_gcash', path: 'kds_orders/ord_gcash' };
+    const db = fakeDb({
+      orderId: 'LU-GCASH',
+      paymentMethod: 'GCash',
+      paymentStatus: 'AWAITING_PAYMENT',
+      status: 'Pending',
+    });
+    const outcome = await applyOrderStatus(db, orderRef, 'Cancelled', 'Duplicate / Test Order', mirrorRef);
+    assert.deepEqual(outcome, { changed: true, previousStatus: 'Pending' });
+    assert.equal(db.sets.length, 0);
   });
 });
 
