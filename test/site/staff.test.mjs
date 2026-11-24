@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { registerHooks } from 'node:module';
 import vm from 'node:vm';
 
 const kds = await import('../../app/src/staff/kds-data.ts');
@@ -166,8 +167,11 @@ test('staff service worker serves immutable assets cache-first and prunes naviga
       async keys() { return ['luna-staff-v3']; },
       async delete() { return true; },
     },
-    async fetch() {
-      return { ok: true, clone() { return { ok: true }; } };
+    async fetch(req) {
+      if (req.url.includes('partial')) {
+        return { ok: true, status: 206, clone() { return { ok: true, status: 206 }; } };
+      }
+      return { ok: true, status: 200, clone() { return { ok: true, status: 200 }; } };
     },
   });
   vm.runInContext(sw, ctx);
@@ -202,6 +206,23 @@ test('staff service worker serves immutable assets cache-first and prunes naviga
   assert.ok(store.has('https://lunabitesanddelights.web.app/_astro/app.js'));
   assert.ok(store.has('https://lunabitesanddelights.web.app/kiosk/fonts/inter.woff2'));
   assert.ok(store.has('https://lunabitesanddelights.web.app/kiosk/images/luna_logo.webp'));
+
+  // 206 Partial Content responses are ok=true but Cache.put() rejects them;
+  // verify the worker skips caching them.
+  const partialWaits = [];
+  let partialRes = null;
+  fetchHandler({
+    request: {
+      method: 'GET',
+      mode: 'cors',
+      url: 'https://lunabitesanddelights.web.app/_astro/partial.js',
+    },
+    respondWith(p) { partialRes = p; },
+    waitUntil(p) { partialWaits.push(p); },
+  });
+  await partialRes;
+  await Promise.all(partialWaits);
+  assert.equal(store.has('https://lunabitesanddelights.web.app/_astro/partial.js'), false);
 });
 
 test('kds delayed badge keeps INK contrast on elapsed-time ticks and dashboard handles non-admin badge', () => {
@@ -310,4 +331,112 @@ test('kiosk menu sheet and GCash page recover from a second tap and a failed ret
   assert.match(gcashSrc, /checkoutUrl = null;\s*sessionId = null;\s*setVerifyError\(null\);/);
   // …and clear the stale "session is not ready" complaint once it arrives.
   assert.match(gcashSrc, /if \(sessionId\) setVerifyError\(null\);/);
+});
+
+test('mountLogin cancels backspace long-press on pointercancel and ignores late verifyStaff after dispose', async () => {
+  const dom = new JSDOM('<!doctype html><html><body><div id="root"></div></body></html>');
+  const prevWindow = globalThis.window;
+  const prevDocument = globalThis.document;
+  const prevClearTimeout = globalThis.clearTimeout;
+
+  const timers = new Map();
+  let nextTimerId = 1000;
+  dom.window.setTimeout = (fn) => {
+    const id = nextTimerId++;
+    timers.set(id, fn);
+    return id;
+  };
+  globalThis.clearTimeout = (id) => {
+    if (timers.has(id)) {
+      timers.delete(id);
+      return;
+    }
+    prevClearTimeout(id);
+  };
+  globalThis.window = dom.window;
+  globalThis.document = dom.window.document;
+
+  let resolveVerify = null;
+  let signInCalls = 0;
+  let snackCalls = 0;
+  globalThis.__loginStubs = {
+    callFn: () => new Promise((resolve) => { resolveVerify = resolve; }),
+    signInWithToken: async () => { signInCalls += 1; },
+    snack: () => { snackCalls += 1; },
+  };
+
+  const hooks = registerHooks({
+    resolve(specifier, context, nextResolve) {
+      if (context.parentURL?.includes('app/src/staff/login.ts')) {
+        if (specifier === '../kiosk/firebase.ts') return { url: 'stub://login-firebase', shortCircuit: true };
+        if (specifier === './session.ts') return { url: 'stub://login-session', shortCircuit: true };
+        if (specifier === '../kiosk/snackbar.ts') return { url: 'stub://login-snackbar', shortCircuit: true };
+      }
+      return nextResolve(specifier, context);
+    },
+    load(url, context, nextLoad) {
+      if (url === 'stub://login-firebase') {
+        return {
+          format: 'module',
+          source: 'export const callFn = (...args) => globalThis.__loginStubs.callFn(...args);',
+          shortCircuit: true,
+        };
+      }
+      if (url === 'stub://login-session') {
+        return {
+          format: 'module',
+          source: 'export const fnError = () => null; export const signInWithToken = (...args) => globalThis.__loginStubs.signInWithToken(...args);',
+          shortCircuit: true,
+        };
+      }
+      if (url === 'stub://login-snackbar') {
+        return {
+          format: 'module',
+          source: 'export const snack = (...args) => globalThis.__loginStubs.snack(...args);',
+          shortCircuit: true,
+        };
+      }
+      return nextLoad(url, context);
+    },
+  });
+
+  try {
+    const { mountLogin } = await import('../../app/src/staff/login.ts');
+    const root = dom.window.document.getElementById('root');
+    const dispose = mountLogin(root);
+
+    // Enter 4 PIN digits.
+    for (const d of ['1', '2', '3', '4']) {
+      root.querySelector(`[data-digit="${d}"]`).click();
+    }
+    assert.equal(root.querySelector('.login__slots').getAttribute('aria-label'), '4 digits entered');
+
+    // pointerdown on [data-back] starts the hold timer; pointercancel must clear it so the PIN survives.
+    const backBtn = root.querySelector('[data-back]');
+    backBtn.dispatchEvent(new dom.window.Event('pointerdown', { bubbles: true }));
+    assert.equal(timers.size, 1, 'long-press should arm the hold timer');
+    backBtn.dispatchEvent(new dom.window.Event('pointercancel', { bubbles: true }));
+    assert.equal(timers.size, 0, 'pointercancel should clear the hold timer');
+    for (const fn of [...timers.values()]) fn();
+    assert.equal(root.querySelector('.login__slots').getAttribute('aria-label'), '4 digits entered');
+
+    // Start an in-flight verifyStaff call, dispose the login view, then resolve the call late.
+    root.querySelector('[data-submit]').click();
+    assert.equal(typeof resolveVerify, 'function', 'submit should invoke verifyStaff');
+    const htmlBeforeDispose = root.innerHTML;
+    dispose();
+    resolveVerify({ success: true, username: 'admin', role: 'admin', customToken: 'tok-123' });
+    await new Promise((r) => setImmediate(r));
+    await new Promise((r) => setImmediate(r));
+
+    assert.equal(signInCalls, 0, 'disposed login must not call signInWithToken on late verifyStaff response');
+    assert.equal(snackCalls, 0, 'disposed login must not show a welcome snack on late response');
+    assert.equal(root.innerHTML, htmlBeforeDispose, 'disposed login must not re-render in finally');
+  } finally {
+    hooks.deregister();
+    delete globalThis.__loginStubs;
+    globalThis.window = prevWindow;
+    globalThis.document = prevDocument;
+    globalThis.clearTimeout = prevClearTimeout;
+  }
 });

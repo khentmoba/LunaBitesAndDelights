@@ -59,14 +59,22 @@ export function cleanStr(v: unknown, max = 200, field = 'field'): string {
 /** Optional free-text field: '' when absent, capped when present. */
 export function optStr(v: unknown, max = 500): string {
   if (v == null) return '';
-  const s = String(v).trim();
+  if (typeof v !== 'string') throw new HttpsError('invalid-argument', 'Invalid field');
+  const s = v.trim();
   if (s.length > max) throw new HttpsError('invalid-argument', 'Field too long');
   return s;
 }
 
 /** Positive integer within a sane range (money, quantities). */
 export function cleanInt(v: unknown, max: number, field = 'field'): number {
-  const n = typeof v === 'number' ? v : Number(v);
+  let n: number;
+  if (typeof v === 'number') {
+    n = v;
+  } else if (typeof v === 'string' && /^\d+$/.test(v.trim())) {
+    n = Number(v.trim());
+  } else {
+    throw new HttpsError('invalid-argument', `Invalid ${field}`);
+  }
   if (!Number.isInteger(n) || n < 0 || n > max) {
     throw new HttpsError('invalid-argument', `Invalid ${field}`);
   }
