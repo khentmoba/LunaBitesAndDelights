@@ -723,6 +723,10 @@ export async function reconcileMissedOrderNotifications(
     const data = doc.data();
     if (!isOrderVisibleInKds(data)) return false;
     if (data.telegramSent === true) return false;
+    // `shouldNotifyKitchen`, `sendOrderNotification` and the KDS all refuse a
+    // cancelled order, so a failed claim left behind by an outage must not
+    // resurrect a "please prepare this order" alert after staff cancelled it.
+    if (data.status === 'Cancelled') return false;
     const readyMs = orderReadyTimeMs(data);
     if (readyMs > 0 && nowMs - readyMs < minAgeMs) return false;
     return true;
@@ -744,6 +748,8 @@ export async function reconcileMissedOrderNotifications(
     // A terminal order can still have a claimed-but-unsent notification when
     // staff completed it immediately. Retry that existing lease, but do not
     // create a brand-new notification for an order staff already closed out.
+    // The candidate filter above already drops cancelled orders; this second
+    // terminal guard is defence in depth for any future caller of this filter.
     const terminal = orderDoc.data().status === 'Cancelled' || orderDoc.data().status === 'Completed';
     if (terminal && !hasOrderNotificationState(notifData)) return false;
     if (notifData?.telegramSent === true) return false;

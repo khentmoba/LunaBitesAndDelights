@@ -201,6 +201,17 @@ test('notifyOrderOnce resumes partial multi-chat failures and reconcileMissedOrd
     await db.doc('orders/rec_cancelled').set(order({
       orderId: 'LU-CANCEL-REC', type: 'Pickup', status: 'Cancelled', timestamp: twoMinAgo,
     }));
+    // A transient Telegram outage left a failed claim behind before staff cancelled
+    // the order. The reconciler must not announce an order the trigger, the callable
+    // and `shouldNotifyKitchen` all refuse to announce.
+    await db.doc('orders/rec_cancelled_claimed').set(order({
+      orderId: 'LU-CANCEL-CLAIMED', type: 'Pickup', status: 'Cancelled', timestamp: twoMinAgo,
+    }));
+    await db.collection(ORDER_NOTIFICATIONS_COLLECTION).doc('rec_cancelled_claimed').set({
+      telegramSent: false,
+      telegramStatus: 'failed',
+      attempts: 1,
+    });
     await db.doc('orders/rec_completed').set(order({
       orderId: 'LU-DONE-REC', type: 'Pickup', status: 'Completed', timestamp: twoMinAgo,
     }));
@@ -237,6 +248,14 @@ test('notifyOrderOnce resumes partial multi-chat failures and reconcileMissedOrd
     assert.ok(sentLog.some((s) => s.text.includes('LU\\-MISSED')));
     assert.ok(sentLog.some((s) => s.text.includes('LU\\-OUTAGE\\-REC')));
     assert.ok(sentLog.some((s) => s.text.includes('LU\\-DELAYED\\-GCASH')));
+    assert.ok(
+      !sentLog.some((s) => s.text.includes('LU\\-CANCEL\\-CLAIMED')),
+      'a cancelled order with a failed claim must never be announced',
+    );
+    const cancelledNotif = await db.collection(ORDER_NOTIFICATIONS_COLLECTION).doc('rec_cancelled_claimed').get();
+    assert.strictEqual(cancelledNotif.get('telegramSent'), false);
+    assert.strictEqual(cancelledNotif.get('telegramStatus'), 'failed');
+    assert.strictEqual(cancelledNotif.get('reconcileAttempts'), undefined);
     assert.strictEqual(
       (await db.collection(ORDER_NOTIFICATIONS_COLLECTION).doc('rec_missed').get()).get('telegramSent'),
       true,
