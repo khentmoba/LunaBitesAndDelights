@@ -751,8 +751,10 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
     const t = (e.target as HTMLElement).closest<HTMLElement>('button');
     if (!t || t.hasAttribute('disabled')) return;
     const act = t.dataset.act;
-    if (act === 'back') history.back();
-    else if (act === 'sync') {
+    if (act === 'back') {
+      if (history.length > 1) history.back();
+      else go('/staff/dashboard');
+    } else if (act === 'sync') {
       void fetchActive();
       if (!unsub && !connecting) void startLiveListener();
     }

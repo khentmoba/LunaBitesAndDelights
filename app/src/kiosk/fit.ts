@@ -13,7 +13,7 @@ function fitBatch(nodes: HTMLElement[]): void {
     const box = getComputedStyle(parent);
     const room = parent.clientWidth - parseFloat(box.paddingLeft) - parseFloat(box.paddingRight);
     const width = el.getBoundingClientRect().width;
-    if (width <= room || width === 0) continue;
+    if (!(room > 0) || width <= room || width === 0) continue;
     const k = room / width;
     const own = getComputedStyle(el);
     const tracking = parseFloat(own.letterSpacing);

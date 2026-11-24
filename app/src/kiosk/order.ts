@@ -19,6 +19,17 @@ export function statusesFor(isStaff: boolean, paymentMethod: PaymentMethod) {
   } as const;
 }
 
+/** User-facing status copy when verifyCheckoutPayment reports an unpaid order. */
+export function verifyPaymentErrorMessage(paymentStatus?: string): string {
+  if (paymentStatus === 'PAYMENT_FAILED') {
+    return 'Payment was declined or failed. Please try paying again.';
+  }
+  if (paymentStatus === 'PAYMENT_EXPIRED') {
+    return 'Payment session has expired. Please go back and place a new order.';
+  }
+  return 'Payment has not cleared yet. Finish authorizing in the PayMongo tab, then tap again.';
+}
+
 /** A reason the rules would reject this order, or null if they accept it. */
 export function rejectionFor(customerName: string, itemCount: number): string | null {
   if (customerName.length === 0) return 'Please enter a name for this order.';

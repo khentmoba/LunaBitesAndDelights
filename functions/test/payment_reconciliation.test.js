@@ -645,3 +645,53 @@ test('getMapTilerStaticMapUrl trims and URL-encodes the API key', () => {
   const url = getMapTilerStaticMapUrl(9.02, 125.51, 'key+with spaces\n');
   assert.ok(url.includes('key=key%2Bwith%20spaces&'), `unexpected url: ${url}`);
 });
+
+test('assertOrderCheckoutEligible and persistCheckoutSession reject Completed and PAYMENT_EXPIRED orders', async () => {
+  const { assertOrderCheckoutEligible, persistCheckoutSession } = require('../lib/payments/create_checkout');
+
+  assert.doesNotThrow(() =>
+    assertOrderCheckoutEligible({ paymentMethod: 'GCash', status: 'Pending', paymentStatus: 'AWAITING_PAYMENT' }),
+  );
+  assert.doesNotThrow(() =>
+    assertOrderCheckoutEligible({ paymentMethod: 'GCash', status: 'Pending', paymentStatus: 'PAYMENT_FAILED' }),
+  );
+  assert.throws(
+    () => assertOrderCheckoutEligible({ paymentMethod: 'GCash', status: 'Completed', paymentStatus: 'AWAITING_PAYMENT' }),
+    /Order is already completed/,
+  );
+  assert.throws(
+    () => assertOrderCheckoutEligible({ paymentMethod: 'GCash', status: 'Pending', paymentStatus: 'PAYMENT_EXPIRED' }),
+    /Order payment session has expired/,
+  );
+
+  for (const [label, orderData, pattern] of [
+    ['PAYMENT_EXPIRED', { paymentMethod: 'GCash', status: 'Pending', paymentStatus: 'PAYMENT_EXPIRED' }, /Order payment session has expired/],
+    ['Completed', { paymentMethod: 'GCash', status: 'Completed', paymentStatus: 'AWAITING_PAYMENT' }, /Order is already completed/],
+    ['Cancelled', { paymentMethod: 'GCash', status: 'Cancelled', paymentStatus: 'AWAITING_PAYMENT' }, /Order is cancelled/],
+  ]) {
+    let wrote = false;
+    const fakeDb = {
+      async runTransaction(fn) {
+        return fn({
+          get: async () => ({
+            exists: true,
+            data: () => orderData,
+          }),
+          set() {
+            wrote = true;
+          },
+        });
+      },
+    };
+    await assert.rejects(
+      persistCheckoutSession(
+        fakeDb,
+        { id: `ord_${label}` },
+        { sessionId: 'cs_new', checkoutUrl: 'https://checkout.paymongo.com/cs_new' },
+        150,
+      ),
+      pattern,
+    );
+    assert.strictEqual(wrote, false, `persistCheckoutSession should not write for ${label}`);
+  }
+});

@@ -106,9 +106,14 @@ async function ensureStaffSeeded(db: Firestore): Promise<void> {
   staffSeededAt = Date.now();
 }
 
-async function createStaffToken(uidName: string, rawRole: unknown) {
+/** Mints the Firebase Auth UID for a staff_accounts document ID so updateStaffPin resolves the same doc. */
+export function staffAuthUid(docId: string): string {
+  return `staff_${docId}`;
+}
+
+async function createStaffToken(docId: string, rawRole: unknown) {
   const role = rawRole === 'admin' ? 'admin' : 'staff';
-  const customToken = await getAuth().createCustomToken(`staff_${uidName}`, { role });
+  const customToken = await getAuth().createCustomToken(staffAuthUid(docId), { role });
   return { role, customToken };
 }
 
@@ -164,12 +169,15 @@ async function verifyPinLogin(db: Firestore, request: CallableRequest, pin: stri
   const accountName = String(matchedUser.data.username || matchedUser.id);
   if (matchedPinResult === 'ok-legacy' && matchedUser.docRef) {
     await matchedUser.docRef.update({ pinHash: await hashPasswordAsync(pin) });
-    logger.info(`Upgraded legacy staff PIN hash to scrypt for ${accountName}`);
+    logger.info(`Upgraded legacy staff PIN hash to scrypt for ${matchedUser.id}`);
   }
 
   await clearLoginAttempts(pinRateKey);
-  const { role, customToken } = await createStaffToken(accountName, matchedUser.data.role);
-  logger.info(`Staff PIN login successful for ${accountName} as ${role}`);
+  if (matchedUser.docRef) {
+    await matchedUser.docRef.update({ lastLoginAt: FieldValue.serverTimestamp() }).catch(() => {});
+  }
+  const { role, customToken } = await createStaffToken(matchedUser.id, matchedUser.data.role);
+  logger.info(`Staff PIN login successful for ${matchedUser.id} as ${role}`);
   return { success: true, username: accountName, role, customToken };
 }
 

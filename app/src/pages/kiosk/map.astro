@@ -416,13 +416,21 @@ void (async () => {
   // Preserve a shopper-entered address when opening the map. They can still
   // explicitly move the pin, search, or locate themselves to resolve it.
   if (draft?.pinned || draft?.address?.trim()) return;
-  const pos = await currentPosition();
-  if (userInteracted) return;
-  if (pos) {
-    lat = pos.lat;
-    lng = pos.lng;
+  const seq = ++locateSeq;
+  locating = true;
+  render();
+  try {
+    const pos = await currentPosition();
+    if (userInteracted || loading || seq !== locateSeq) return;
+    if (pos) {
+      lat = pos.lat;
+      lng = pos.lng;
+    }
+    moveTo(lat, lng);
+    await fetchAddress(lat, lng);
+  } finally {
+    locating = false;
+    render();
   }
-  moveTo(lat, lng);
-  await fetchAddress(lat, lng);
 })();
 </script>
