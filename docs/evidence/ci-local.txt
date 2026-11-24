@@ -1,4 +1,4 @@
-Local run of .github/workflows/pr-checks.yml at 65800c4 + working tree, 2026-11-24T13:36:26.339Z, node v24.22.2
+Local run of .github/workflows/pr-checks.yml at cccad15 + working tree, 2026-11-24T13:48:03.919Z, node v24.22.2
 note: functions runs on node 22 in CI
 note: rules runs on node 22 in CI
 note: site runs on node 22 in CI
@@ -9,7 +9,7 @@ PASS  TypeScript build (functions) exit=0 2s
 PASS  Lint (promise checks) (functions) exit=0 3s
 PASS  Unit tests (functions) exit=0 6s
 PASS  Report outdated npm deps (informational) (functions) exit=0 1s
-PASS  Fail on high/critical runtime vulnerabilities (functions) exit=0 4s
+PASS  Fail on high/critical runtime vulnerabilities (functions) exit=0 2s
 
 ## rules
 SKIP  npm ci (.) up-to-date

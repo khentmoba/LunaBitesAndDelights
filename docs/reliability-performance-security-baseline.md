@@ -214,7 +214,7 @@ The following controls reflect the codebase reviewed on 2026-11-24 (see also `do
 #### REL-15 — Explain a denied location on the delivery map
 - **Where:** `app/src/pages/kiosk/map.astro`, `app/src/kiosk/geo.ts`, `app/src/kiosk/snackbar.ts`, `app/src/kiosk/tokens.css`
 - **Failure Mode:** `goToMyLocation()` returned silently when `currentPosition()` resolved `null` (permission denied, no GPS, or a 12 s timeout), so the shopper tapped a button that appeared dead and could not tell whether the pin had moved. The shared `.snack` also sat at `z-index: 100`, under this page's own overlays (`500–700`).
-- **Resolution:** The copy lives in `LOCATION_UNAVAILABLE_MESSAGE` (`app/src/kiosk/geo.ts`) and the button shows it in the snackbar, which now paints at `z-index: 800` and accepts a bottom offset. The map measures its own bottom card so the message sits above it instead of covering CONFIRM LOCATION.
+- **Resolution:** The copy lives in `LOCATION_UNAVAILABLE_MESSAGE` / `LOCATION_UNAVAILABLE_SEARCH_MESSAGE` (`app/src/kiosk/geo.ts`); a degraded map (missing or rejected key) now takes the same `degrade()` path, so the message only names a control the page offers. The snackbar paints at `z-index: 800` and accepts a bottom offset; the map measures its own bottom card so the message sits above it instead of covering CONFIRM LOCATION.
 - **Proof:** `test/site/kiosk.test.mjs` asserts the shared message value, the null-position branch that announces it, and the measured bottom offset; the emulator capture shows CONFIRM LOCATION still visible under the message.
 
 ---

@@ -1,6 +1,6 @@
 {
   "target": "ts",
-  "capturedAt": "2026-11-24T13:34:21.844Z",
+  "capturedAt": "2026-11-24T13:46:58.638Z",
   "viewports": [
     [
       320,
@@ -78,62 +78,6 @@
       "width": 1440,
       "file": "kiosk-map-denied-1440.png",
       "path": "/kiosk/map",
-      "ready": true
-    },
-    {
-      "name": "staff-kds",
-      "width": 320,
-      "file": "staff-kds-320.png",
-      "path": "/staff/kds?staff=1",
-      "ready": true
-    },
-    {
-      "name": "staff-kds",
-      "width": 390,
-      "file": "staff-kds-390.png",
-      "path": "/staff/kds?staff=1",
-      "ready": true
-    },
-    {
-      "name": "staff-kds",
-      "width": 768,
-      "file": "staff-kds-768.png",
-      "path": "/staff/kds?staff=1",
-      "ready": true
-    },
-    {
-      "name": "staff-kds",
-      "width": 1440,
-      "file": "staff-kds-1440.png",
-      "path": "/staff/kds?staff=1",
-      "ready": true
-    },
-    {
-      "name": "staff-kds-partial",
-      "width": 320,
-      "file": "staff-kds-partial-320.png",
-      "path": "/staff/kds?staff=1",
-      "ready": true
-    },
-    {
-      "name": "staff-kds-partial",
-      "width": 390,
-      "file": "staff-kds-partial-390.png",
-      "path": "/staff/kds?staff=1",
-      "ready": true
-    },
-    {
-      "name": "staff-kds-partial",
-      "width": 768,
-      "file": "staff-kds-partial-768.png",
-      "path": "/staff/kds?staff=1",
-      "ready": true
-    },
-    {
-      "name": "staff-kds-partial",
-      "width": 1440,
-      "file": "staff-kds-partial-1440.png",
-      "path": "/staff/kds?staff=1",
       "ready": true
     }
   ],
