@@ -541,8 +541,8 @@ test('kds history toggle supersedes in-flight polling and map loadMaps times out
   const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
   const kdsSrc = readFileSync(join(root, 'app/src/staff/kds.ts'), 'utf8');
   assert.match(kdsSrc, /if \(disposed \|\| authHalted\) \{\s*connecting = false;\s*return;\s*\}/);
-  assert.match(kdsSrc, /if \(tab === 3 && !showCompleted\) \{\s*showCompleted = true;\s*publish\(\);\s*if \(!isLive\) void fetchActive\(false\);/);
-  assert.match(kdsSrc, /else if \(act === 'history'\) \{\s*showCompleted = !showCompleted;\s*publish\(\);\s*if \(showCompleted && !isLive\) void fetchActive\(false\);/);
+  assert.match(kdsSrc, /if \(tab === 3 && !showCompleted\) \{\s*showCompleted = true;\s*publish\(\);\s*if \(!isLive \|\| fromCache\) void fetchActive\(false\);/);
+  assert.match(kdsSrc, /else if \(act === 'history'\) \{\s*showCompleted = !showCompleted;\s*publish\(\);\s*if \(showCompleted && \(!isLive \|\| fromCache\)\) void fetchActive\(false\);/);
 
   const mapSrc = readFileSync(join(root, 'app/src/pages/kiosk/map.astro'), 'utf8');
   assert.match(mapSrc, /const MAPS_LOAD_TIMEOUT_MS = 10_000;/);
@@ -1280,5 +1280,235 @@ test('live KDS updates immediately on new server snapshot, chimes, updates tab t
     assert.equal(listenerStarts, prevListeners + 1, 'online event restarts stuck cached listener');
   } finally {
     cleanup();
+  }
+});
+
+test('KDS live server snapshot clears prior polling error and truncation banner, and HISTORY fetches while cached', async () => {
+  let snapCb = null;
+  let mode = 'truncated';
+  const fetchArgs = [];
+  class FakeTimestamp {
+    constructor(ms) { this.ms = ms; }
+    static fromMillis(ms) { return new FakeTimestamp(ms); }
+    toDate() { return new Date(this.ms); }
+  }
+  const docSnap = (o) => ({ id: o.id, data: () => ({ ...o, ts: new FakeTimestamp(Date.parse(o.timestamp)) }) });
+  const stub = {
+    callFn: async (name, params) => {
+      if (name === 'getActiveOrders') {
+        fetchArgs.push(params);
+        if (mode === 'error') throw new Error('offline');
+        return {
+          success: true,
+          orders: [feedOrder],
+          scanned: mode === 'truncated' ? 2000 : 1,
+          truncated: mode === 'truncated',
+        };
+      }
+      return { success: true };
+    },
+    firestore: {
+      Timestamp: FakeTimestamp,
+      collection: () => ({}),
+      where: () => ({}),
+      orderBy: () => ({}),
+      limit: () => ({}),
+      query: () => ({}),
+      onSnapshot: (_q, _opts, onNext) => {
+        snapCb = onNext;
+        return () => {};
+      },
+    },
+  };
+  const { root, cleanup } = await mountKdsForTest(stub);
+  try {
+    await new Promise((r) => setTimeout(r, 40));
+    // Cached snapshot sets wasLive = true while fromCache = true.
+    snapCb({ docs: [docSnap(feedOrder)], metadata: { fromCache: true } });
+
+    // Manual sync returns a truncated fallback scan -> Partial board warning appears.
+    root.querySelector('[data-act="sync"]').click();
+    await new Promise((r) => setTimeout(r, 40));
+    assert.ok(root.querySelector('[data-banner] .kerr--warn'), 'truncated scan shows warning while cached');
+
+    // Toggling HISTORY while stuck in cache-only mode must fetch completed orders.
+    const beforeHistory = fetchArgs.length;
+    root.querySelector('[data-act="history"]').click();
+    await new Promise((r) => setTimeout(r, 40));
+    assert.equal(fetchArgs.length, beforeHistory + 1, 'HISTORY toggle triggers getActiveOrders while cached');
+    assert.equal(fetchArgs[fetchArgs.length - 1]?.includeCompleted, true);
+
+    // A subsequent polling failure shows the error banner.
+    mode = 'error';
+    root.querySelector('[data-act="sync"]').click();
+    await new Promise((r) => setTimeout(r, 40));
+    assert.ok(root.querySelector('[data-banner] .kerr[role="alert"]'), 'polling failure shows error alert');
+
+    // Fresh server snapshot arrives (wasLive was already true) -> clears both error and truncation banners.
+    snapCb({ docs: [docSnap(feedOrder)], metadata: { fromCache: false } });
+    assert.equal(root.querySelector('[data-banner] .kerr'), null, 'live server snapshot clears stale error and truncation banners');
+  } finally {
+    cleanup();
+  }
+});
+
+test('openStaffConsole signs out and closes on auth-expired triggerManualReport', async () => {
+  const dom = new JSDOM('<!doctype html><html><body></body></html>');
+  const prevWindow = globalThis.window;
+  const prevDocument = globalThis.document;
+  const prevHTMLElement = globalThis.HTMLElement;
+  dom.window.HTMLDialogElement.prototype.showModal = function showModal() { this.open = true; };
+  dom.window.HTMLDialogElement.prototype.close = function close() {
+    this.open = false;
+    this.dispatchEvent(new dom.window.Event('close'));
+  };
+  globalThis.window = dom.window;
+  globalThis.document = dom.window.document;
+  globalThis.HTMLElement = dom.window.HTMLElement;
+
+  let logoutCalls = 0;
+  let onLogoutCalls = 0;
+  const snacks = [];
+  globalThis.__consoleStubs = {
+    callFn: async () => {
+      const err = new Error('Sign in required');
+      err.code = 'functions/unauthenticated';
+      throw err;
+    },
+    logout: async () => { logoutCalls++; },
+    snack: (msg, opts) => { snacks.push({ msg, opts }); },
+  };
+
+  const hooks = registerHooks({
+    resolve(specifier, context, nextResolve) {
+      if (context.parentURL?.includes('app/src/staff/console.ts')) {
+        if (specifier === './console.css') return { url: 'stub://console-css', shortCircuit: true };
+        if (specifier === '../kiosk/firebase.ts') return { url: 'stub://console-firebase', shortCircuit: true };
+        if (specifier === './session.ts') return { url: 'stub://console-session', shortCircuit: true };
+        if (specifier === '../kiosk/snackbar.ts') return { url: 'stub://console-snackbar', shortCircuit: true };
+      }
+      return nextResolve(specifier, context);
+    },
+    load(url, context, nextLoad) {
+      if (url === 'stub://console-css') return { format: 'module', source: '', shortCircuit: true };
+      if (url === 'stub://console-firebase') {
+        return { format: 'module', source: 'export const callFn = (...a) => globalThis.__consoleStubs.callFn(...a);', shortCircuit: true };
+      }
+      if (url === 'stub://console-session') {
+        return {
+          format: 'module',
+          source: `
+            export const fnError = (e) => e && e.code ? { code: String(e.code).replace(/^functions\\//, ''), message: e.message || e.code } : null;
+            export const isAuthCode = (c) => c === 'unauthenticated' || c === 'permission-denied';
+            export const logout = () => globalThis.__consoleStubs.logout();
+          `,
+          shortCircuit: true,
+        };
+      }
+      if (url === 'stub://console-snackbar') {
+        return { format: 'module', source: 'export const snack = (...a) => globalThis.__consoleStubs.snack(...a);', shortCircuit: true };
+      }
+      return nextLoad(url, context);
+    },
+  });
+
+  try {
+    const { openStaffConsole } = await import(`../../app/src/staff/console.ts?t=${Date.now()}`);
+    openStaffConsole(() => { onLogoutCalls++; });
+    const dialog = dom.window.document.querySelector('dialog.scon');
+    assert.ok(dialog, 'staff console dialog opens');
+    dialog.querySelector('[data-act="report"]').click();
+    await new Promise((r) => setTimeout(r, 30));
+
+    assert.equal(logoutCalls, 1, 'auth failure triggers logout()');
+    assert.equal(onLogoutCalls, 1, 'auth failure notifies host via onLogout()');
+    assert.equal(dom.window.document.querySelector('dialog.scon'), null, 'dialog closes on auth failure');
+    assert.match(snacks[0]?.msg ?? '', /Staff session expired \(unauthenticated\)/);
+  } finally {
+    hooks.deregister();
+    delete globalThis.__consoleStubs;
+    globalThis.window = prevWindow;
+    globalThis.document = prevDocument;
+    globalThis.HTMLElement = prevHTMLElement;
+    dom.window.close();
+  }
+});
+
+test('mountDashboard preserves healthy recent orders when getSalesAnalytics fails transiently', async () => {
+  const dom = new JSDOM('<!doctype html><html><body><div id="root"></div></body></html>');
+  const prevWindow = globalThis.window;
+  const prevDocument = globalThis.document;
+  const prevHTMLElement = globalThis.HTMLElement;
+  const prevAdd = globalThis.addEventListener;
+  const prevRemove = globalThis.removeEventListener;
+  const prevGetComputedStyle = globalThis.getComputedStyle;
+  const prevCancelRaf = globalThis.cancelAnimationFrame;
+  globalThis.window = dom.window;
+  globalThis.document = dom.window.document;
+  globalThis.HTMLElement = dom.window.HTMLElement;
+  globalThis.addEventListener = dom.window.addEventListener.bind(dom.window);
+  globalThis.removeEventListener = dom.window.removeEventListener.bind(dom.window);
+  globalThis.getComputedStyle = dom.window.getComputedStyle.bind(dom.window);
+  globalThis.cancelAnimationFrame = () => {};
+
+  globalThis.__dashStubs = {
+    callFn: async (name) => {
+      if (name === 'getSalesAnalytics') throw new Error('analytics timeout');
+      if (name === 'getActiveOrders') {
+        return { success: true, orders: [feedOrder] };
+      }
+      return { success: true };
+    },
+  };
+
+  const hooks = registerHooks({
+    resolve(specifier, context, nextResolve) {
+      if (context.parentURL?.includes('app/src/staff/dashboard.ts')) {
+        if (specifier === '../kiosk/firebase.ts') return { url: 'stub://dash-firebase', shortCircuit: true };
+        if (specifier === './session.ts') return { url: 'stub://dash-session', shortCircuit: true };
+      }
+      return nextResolve(specifier, context);
+    },
+    load(url, context, nextLoad) {
+      if (url === 'stub://dash-firebase') {
+        return { format: 'module', source: 'export const callFn = (...a) => globalThis.__dashStubs.callFn(...a);', shortCircuit: true };
+      }
+      if (url === 'stub://dash-session') {
+        return {
+          format: 'module',
+          source: `
+            export const fnError = () => null;
+            export const isAuthCode = () => false;
+            export const isAuthErrorText = () => false;
+            export const logout = async () => {};
+            export const staffErrorMessage = (_e, _p, offline) => offline;
+          `,
+          shortCircuit: true,
+        };
+      }
+      return nextLoad(url, context);
+    },
+  });
+
+  try {
+    const { mountDashboard } = await import(`../../app/src/staff/dashboard.ts?t=${Date.now()}`);
+    const root = dom.window.document.getElementById('root');
+    const dispose = mountDashboard(root, () => ({ username: 'admin', role: 'admin', isAdmin: true }));
+    await new Promise((r) => setTimeout(r, 40));
+
+    assert.ok(root.querySelector('.derr[role="alert"]'), 'analytics failure surfaces an alert banner');
+    assert.match(root.textContent, /LU-FEED1/, 'healthy recent orders still render despite analytics failure');
+    dispose();
+  } finally {
+    hooks.deregister();
+    delete globalThis.__dashStubs;
+    globalThis.window = prevWindow;
+    globalThis.document = prevDocument;
+    globalThis.HTMLElement = prevHTMLElement;
+    globalThis.addEventListener = prevAdd;
+    globalThis.removeEventListener = prevRemove;
+    globalThis.getComputedStyle = prevGetComputedStyle;
+    globalThis.cancelAnimationFrame = prevCancelRaf;
+    dom.window.close();
   }
 });

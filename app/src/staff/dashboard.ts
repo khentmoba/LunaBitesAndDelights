@@ -75,7 +75,7 @@ export function mountDashboard(root: HTMLElement, getStaff: () => Staff | null):
     allOrders = null;
     render();
     try {
-      const [analytics, res] = await Promise.all([
+      const [analyticsRes, ordersRes] = await Promise.allSettled([
         callFn<Record<string, unknown>>('getSalesAnalytics'),
         callFn<{ success?: boolean; orders?: Record<string, unknown>[] }>('getActiveOrders', {
           includeCompleted: true,
@@ -84,26 +84,44 @@ export function mountDashboard(root: HTMLElement, getStaff: () => Staff | null):
         }),
       ]);
       if (disposed || seq !== fetchSeq) return;
-      const raw = res.orders ?? [];
-      let items = int(analytics.totalItemsSold);
-      if (items === 0 && raw.length) {
-        const today = phtDateLabel(new Date());
-        for (const o of raw) {
-          if (o.status === 'Cancelled') continue;
-          if (String(o.paymentMethod ?? '').toLowerCase() === 'gcash' && o.paymentStatus !== 'PAID') continue;
-          const ts = new Date(String(o.timestamp ?? ''));
-          if (!Number.isNaN(ts.getTime()) && phtDateLabel(ts) === today) items += int(o.itemsCount);
-        }
-      }
-      if (analytics.success === true) {
-        stats = { revenue: int(analytics.totalRevenue), count: int(analytics.orderCount), avg: int(analytics.averageOrderValue), items };
+      const authFailure = [analyticsRes, ordersRes].find(
+        (r): r is PromiseRejectedResult => r.status === 'rejected' && isAuthCode(fnError(r.reason)?.code ?? ''),
+      );
+      if (authFailure) {
+        error = staffErrorMessage(authFailure.reason, 'Could not load dashboard data', 'Error connecting to server. Tap RETRY to sync.');
       } else {
-        error = typeof analytics.message === 'string' && analytics.message ? analytics.message : 'Could not load sales analytics.';
-      }
-      if (res.success === true) {
-        orders = raw.map(tileFrom);
-      } else if (error === null) {
-        error = 'Could not load recent orders.';
+        const res = ordersRes.status === 'fulfilled' ? ordersRes.value : null;
+        const raw = res?.orders ?? [];
+        if (analyticsRes.status === 'fulfilled') {
+          const analytics = analyticsRes.value;
+          let items = int(analytics.totalItemsSold);
+          if (items === 0 && raw.length) {
+            const today = phtDateLabel(new Date());
+            for (const o of raw) {
+              if (o.status === 'Cancelled') continue;
+              if (String(o.paymentMethod ?? '').toLowerCase() === 'gcash' && o.paymentStatus !== 'PAID') continue;
+              const ts = new Date(String(o.timestamp ?? ''));
+              if (!Number.isNaN(ts.getTime()) && phtDateLabel(ts) === today) items += int(o.itemsCount);
+            }
+          }
+          if (analytics.success === true) {
+            stats = { revenue: int(analytics.totalRevenue), count: int(analytics.orderCount), avg: int(analytics.averageOrderValue), items };
+          } else {
+            error = typeof analytics.message === 'string' && analytics.message ? analytics.message : 'Could not load sales analytics.';
+          }
+        } else {
+          error = staffErrorMessage(analyticsRes.reason, 'Could not load sales analytics', 'Error connecting to server. Tap RETRY to sync.');
+        }
+
+        if (res) {
+          if (res.success === true) {
+            orders = raw.map(tileFrom);
+          } else if (error === null) {
+            error = 'Could not load recent orders.';
+          }
+        } else if (ordersRes.status === 'rejected' && error === null) {
+          error = staffErrorMessage(ordersRes.reason, 'Could not load recent orders', 'Error connecting to server. Tap RETRY to sync.');
+        }
       }
     } catch (e) {
       if (disposed || seq !== fetchSeq) return;
