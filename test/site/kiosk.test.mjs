@@ -15,7 +15,7 @@ const { resolvePicks, displayPrice } = await import('../../app/src/kiosk/presele
 const { cart } = await import('../../app/src/kiosk/cart.ts');
 const order = await import('../../app/src/kiosk/order.ts');
 const { isPaymentUrl } = await import('../../app/src/kiosk/payment-host.ts');
-const { LOCATION_UNAVAILABLE_MESSAGE } = await import('../../app/src/kiosk/geo.ts');
+const { LOCATION_UNAVAILABLE_MESSAGE, LOCATION_UNAVAILABLE_SEARCH_MESSAGE } = await import('../../app/src/kiosk/geo.ts');
 const { validReceipt, validPending } = await import('../../app/src/kiosk/handoff.ts');
 
 test('haversine stays finite for identical and antipodal-jitter coordinates', () => {
@@ -125,14 +125,16 @@ test('a rejected Google Maps key shows our notice instead of the map error overl
   const src = readFileSync(new URL('../../app/src/pages/kiosk/map.astro', import.meta.url), 'utf8');
   assert.match(src, /gm_authFailure/);
   assert.match(src, /\.catch\(degrade\)/);
+  assert.match(src, /if \(!mapsKey\) \{\s*\/\/ No tiles at all[\s\S]*?degrade\(\);/, 'a missing key takes the same degraded path as a rejected one');
   assert.match(src, /function degrade\(\) \{\s*mapEl\.innerHTML = '';/);
 });
 
 test('locate-me explains a denied location instead of failing silently', () => {
   const src = readFileSync(new URL('../../app/src/pages/kiosk/map.astro', import.meta.url), 'utf8');
   assert.equal(LOCATION_UNAVAILABLE_MESSAGE, 'Location unavailable. Drag the map to set your pin.');
-  assert.match(src, /if \(!pos\) \{[\s\S]*?snack\(LOCATION_UNAVAILABLE_MESSAGE,/);
-  assert.match(src, /import \{ LOCATION_UNAVAILABLE_MESSAGE, currentPosition,/, 'the map uses the shared copy');
+  assert.equal(LOCATION_UNAVAILABLE_SEARCH_MESSAGE, 'Location unavailable. Search your street to set your pin.');
+  assert.match(src, /if \(!pos\) \{[\s\S]*?snack\(degraded \? LOCATION_UNAVAILABLE_SEARCH_MESSAGE : LOCATION_UNAVAILABLE_MESSAGE,/, 'the copy names a control the page can offer');
+  assert.match(src, /import \{ LOCATION_UNAVAILABLE_MESSAGE, LOCATION_UNAVAILABLE_SEARCH_MESSAGE, currentPosition,/, 'the map uses the shared copy');
   assert.match(src, /bottom: `calc\(\$\{offset\}px \+ env\(safe-area-inset-bottom\)\)`/, 'the snack clears the page bottom card');
 });
 
