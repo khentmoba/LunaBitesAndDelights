@@ -3,7 +3,7 @@
 // open; if the listener fails the board polls every 10 s instead.
 import { callFn, firebaseDb } from '../kiosk/firebase.ts';
 import { glyph, type IconName } from '../kiosk/icons.ts';
-import { playOrderChime, setSound, soundEnabled } from './chime.ts';
+import { playOrderChime, setSound, soundEnabled, unlockAudio } from './chime.ts';
 import {
   KDS_LIMIT,
   KDS_LOOKBACK_MS,
@@ -14,6 +14,7 @@ import {
   isClosedKdsStatus,
   isDelayed,
   kdsOrderFromDoc,
+  kdsTabTitle,
   mapsDirectionsUrl,
   mergeKdsOrders,
   numText,
@@ -28,6 +29,7 @@ import { ERROR, INK, INK_SOFT, PLATE, SUCCESS, cameFromApp, esc, go, icon, showD
 const POLL_MS = 10_000;
 const RECONNECT_MS = 60_000;
 const INITIAL_FALLBACK_MS = 4_000;
+const CACHE_FALLBACK_MS = 8_000;
 const LOOKBACK_REFRESH_MS = 6 * 60 * 60 * 1000;
 const CANCEL_REASONS = ['Item Out of Stock', 'Customer Requested Cancellation', 'Duplicate / Test Order', 'Store Closing / Capacity'];
 
@@ -65,9 +67,12 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
   let pollTimer = 0;
   let reconnectTimer = 0;
   let initialFallbackTimer = 0;
+  let cacheFallbackTimer = 0;
   let lookbackTimer = 0;
   let searchTimer = 0;
   let clock = 0;
+  let wakeLock: { release: () => Promise<void> } | null = null;
+  const baseTitle = document.title || 'Luna Live Operations';
   let detachBackgroundListeners: (() => void) | null = null;
   let activePrintCleanup: (() => void) | null = null;
   let fetchInFlight = false;
@@ -113,6 +118,7 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
 
   function checkNewOrders(fresh: KdsOrder[]) {
     const ids = new Set(fresh.filter((o) => o.status === 'Pending').map((o) => String(o.id ?? o.orderNumber)));
+    document.title = kdsTabTitle(ids.size, baseTitle);
     if (initialDone) {
       const arrivals = [...ids].filter((id) => !knownPending.has(id)).length;
       if (arrivals) {
@@ -139,6 +145,10 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
       if (data.success === true) {
         polled = data.orders ?? [];
         polledFresh = true;
+        if (!isLive || fromCache) {
+          live = null;
+          liveSignature = '';
+        }
         // The callable reports when its scan budget stopped before the board
         // was full; without surfacing it a partial board looks complete.
         truncated = data.truncated === true;
@@ -166,11 +176,47 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
     }
   }
 
+  function acquireWakeLock() {
+    if (disposed || authHalted || document.hidden || wakeLock) return;
+    const wl = (navigator as Navigator & { wakeLock?: { request: (type: 'screen') => Promise<{ release: () => Promise<void>; addEventListener?: (t: string, fn: () => void) => void }> } }).wakeLock;
+    if (!wl?.request) return;
+    void wl.request('screen').then(
+      (sentinel) => {
+        if (disposed || authHalted || document.hidden) {
+          void sentinel.release().catch(() => {});
+          return;
+        }
+        wakeLock = sentinel;
+        sentinel.addEventListener?.('release', () => {
+          if (wakeLock === sentinel) wakeLock = null;
+        });
+      },
+      () => {},
+    );
+  }
+
+  function releaseWakeLock() {
+    const current = wakeLock;
+    wakeLock = null;
+    if (current) void current.release().catch(() => {});
+  }
+
+  function ensureFallbackTimers() {
+    pollTimer ||= window.setInterval(() => {
+      if (!document.hidden && getStaff()) void fetchActive(true);
+    }, POLL_MS);
+    reconnectTimer ||= window.setInterval(() => {
+      if (!disposed && (!isLive || fromCache) && !connecting && getStaff()) void startLiveListener();
+    }, RECONNECT_MS);
+  }
+
   function stopBackgroundActivity() {
     unsub?.();
     unsub = null;
     clearTimeout(initialFallbackTimer);
     initialFallbackTimer = 0;
+    clearTimeout(cacheFallbackTimer);
+    cacheFallbackTimer = 0;
     clearTimeout(searchTimer);
     searchTimer = 0;
     clearInterval(pollTimer);
@@ -181,10 +227,12 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
     lookbackTimer = 0;
     clearInterval(clock);
     clock = 0;
+    releaseWakeLock();
     detachBackgroundListeners?.();
     detachBackgroundListeners = null;
     activePrintCleanup?.();
     activePrintCleanup = null;
+    document.title = baseTitle;
   }
 
   function haltOnAuthError(message: string) {
@@ -210,23 +258,31 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
     polledFresh = false;
     clearTimeout(initialFallbackTimer);
     initialFallbackTimer = 0;
+    clearTimeout(cacheFallbackTimer);
+    cacheFallbackTimer = 0;
     connecting = false;
     isLive = false;
     if (disposed || authHalted) return;
     renderBar();
     if (!polled.length) void fetchActive(true);
-    pollTimer ||= window.setInterval(() => {
-      if (!document.hidden && getStaff()) void fetchActive(true);
-    }, POLL_MS);
-    reconnectTimer ||= window.setInterval(() => {
-      if (!disposed && !isLive && !connecting && getStaff()) void startLiveListener();
-    }, RECONNECT_MS);
+    ensureFallbackTimers();
   }
 
   async function startLiveListener() {
     if (disposed || authHalted || connecting) return;
     connecting = true;
     renderBar();
+    clearTimeout(initialFallbackTimer);
+    initialFallbackTimer = window.setTimeout(() => {
+      initialFallbackTimer = 0;
+      if (disposed || authHalted || (isLive && !fromCache)) return;
+      connecting = false;
+      live = null;
+      liveSignature = '';
+      renderBar();
+      if (!polled.length && getStaff()) void fetchActive(true);
+      ensureFallbackTimers();
+    }, INITIAL_FALLBACK_MS);
     try {
       const [db, fs] = await Promise.all([firebaseDb(), import('firebase/firestore')]);
       if (disposed || authHalted) {
@@ -246,25 +302,39 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
         { includeMetadataChanges: true },
         (snap) => {
           if (disposed || authHalted) return;
-          clearTimeout(initialFallbackTimer);
-          initialFallbackTimer = 0;
-          clearInterval(pollTimer);
-          pollTimer = 0;
-          clearInterval(reconnectTimer);
-          reconnectTimer = 0;
           connecting = false;
           const wasLive = isLive;
           isLive = true;
           fromCache = snap.metadata.fromCache;
-          if (!wasLive) {
+          if (!fromCache) {
+            clearTimeout(initialFallbackTimer);
+            initialFallbackTimer = 0;
+            clearTimeout(cacheFallbackTimer);
+            cacheFallbackTimer = 0;
+            clearInterval(pollTimer);
+            pollTimer = 0;
+            clearInterval(reconnectTimer);
+            reconnectTimer = 0;
+            fetchSeq++;
+            fetchInFlight = false;
+          } else if (!isOffline && !pollTimer && !cacheFallbackTimer) {
+            // Firestore keeps onSnapshot open (without firing its error callback)
+            // when a tablet's WebChannel stalls in cache-only mode. Fall back to
+            // callable polling if a server snapshot does not arrive shortly.
+            cacheFallbackTimer = window.setTimeout(() => {
+              cacheFallbackTimer = 0;
+              if (disposed || authHalted || !fromCache || isOffline || !getStaff()) return;
+              live = null;
+              liveSignature = '';
+              void fetchActive(true);
+              ensureFallbackTimers();
+            }, CACHE_FALLBACK_MS);
+          }
+          if (!wasLive && !fromCache) {
             // The mirror is the board's source now; a warning about the
             // fallback scan stopped applying the moment this snapshot arrived.
             truncated = false;
             scanned = 0;
-          }
-          if (!fromCache) {
-            fetchSeq++;
-            fetchInFlight = false;
           }
           const nextLive = snap.docs.map((d) => kdsOrderFromDoc(d.id, d.data(), toDate));
           const nextSignature = JSON.stringify(nextLive);
@@ -312,11 +382,6 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
   async function startFeeds() {
     loading = true;
     renderBar();
-    // Start real-time listener first; only fall back to getActiveOrders if it
-    // does not deliver an initial snapshot within INITIAL_FALLBACK_MS.
-    initialFallbackTimer = window.setTimeout(() => {
-      if (!disposed && !isLive && !polled.length) void fetchActive();
-    }, INITIAL_FALLBACK_MS);
     await startLiveListener();
     if (disposed || authHalted) return;
     lookbackTimer ||= window.setInterval(() => {
@@ -340,7 +405,7 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
         // not an update: say what happened instead of claiming a change.
         if (data.changed === false) staffSnack(`Order already ${status}`, INK_SOFT);
         else staffSnack(`Order updated: ${status}`, SUCCESS);
-        if (!isLive || data.changed === false) await fetchActive(true, true);
+        if (!isLive || fromCache || data.changed === false) await fetchActive(true, true);
       } else {
         staffSnack(`Error: ${data.message}`, ERROR);
       }
@@ -401,7 +466,7 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
     <div class="kbar__text">
       <h1 class="kbar__name"><span class="kbar__long">LUNA LIVE OPERATIONS</span><span class="kbar__short">LIVE KDS</span></h1>
       <div class="kbar__status">
-        <span class="kbar__dot" style="background:${feed.color}"></span>
+        <span class="kbar__dot${isLive && !fromCache && !isOffline ? ' is-live' : ''}" style="background:${feed.color}"></span>
         <span class="kbar__feed mb" role="status" aria-label="${esc(feed.label)}"><span class="kbar__long">Purok 5 Kiosk · ${esc(feed.long)}</span><span class="kbar__short">${esc(feed.short)}</span></span>
         <span class="kbar__role${admin ? ' kbar__role--admin' : ''}">${admin ? 'ADMIN' : 'STAFF'}</span>
       </div>
@@ -801,7 +866,7 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
       else go('/staff/dashboard');
     } else if (act === 'sync') {
       void fetchActive();
-      if (!unsub && !connecting) void startLiveListener();
+      if ((!unsub || fromCache) && !connecting) void startLiveListener();
     }
     else if (act === 'sound') toggleSound();
     else if (act === 'exit') exit();
@@ -818,7 +883,7 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
       renderBoard();
     } else if (act === 'retry') {
       void fetchActive();
-      if (!unsub && !connecting) void startLiveListener();
+      if ((!unsub || fromCache) && !connecting) void startLiveListener();
     }
     else if (act === 'signin') void logout();
     else if (t.dataset.filter) {
@@ -911,24 +976,37 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
     if (disposed || document.hidden) return;
     now = Date.now();
     refreshElapsedTimes();
-    if (!isLive && getStaff()) void fetchActive(true);
+    acquireWakeLock();
+    if (getStaff()) {
+      if (!isLive || fromCache) void fetchActive(true);
+      if (!connecting) void startLiveListener();
+    }
   };
   const onOnline = () => {
     isOffline = false;
     if (disposed) return;
     renderBar();
     renderBanner();
-    if (!isLive && getStaff()) {
+    if ((!isLive || fromCache) && getStaff()) {
       void fetchActive(true);
       if (!connecting) void startLiveListener();
     }
   };
   const onOffline = () => {
     isOffline = true;
+    clearTimeout(cacheFallbackTimer);
+    cacheFallbackTimer = 0;
     if (disposed) return;
     renderBar();
     renderBanner();
   };
+  const onFirstGesture = () => {
+    unlockAudio();
+    document.removeEventListener('pointerdown', onFirstGesture);
+    document.removeEventListener('keydown', onFirstGesture);
+  };
+  document.addEventListener('pointerdown', onFirstGesture, { passive: true });
+  document.addEventListener('keydown', onFirstGesture, { passive: true });
   document.addEventListener('visibilitychange', onVisibilityChange);
   addEventListener('online', onOnline);
   addEventListener('offline', onOffline);
@@ -938,6 +1016,8 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
   };
   wideMq.addEventListener('change', onLayout);
   detachBackgroundListeners = () => {
+    document.removeEventListener('pointerdown', onFirstGesture);
+    document.removeEventListener('keydown', onFirstGesture);
     document.removeEventListener('visibilitychange', onVisibilityChange);
     removeEventListener('online', onOnline);
     removeEventListener('offline', onOffline);
@@ -951,6 +1031,7 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
 
   renderControls();
   renderAll();
+  acquireWakeLock();
   void startFeeds();
 
   return () => {

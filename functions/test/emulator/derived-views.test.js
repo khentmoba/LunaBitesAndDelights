@@ -340,3 +340,50 @@ test('reconcileMissedPaymentNotifications reclaims a payment alert that was sent
     delete process.env.TELEGRAM_CHAT_ID;
   }
 });
+
+test('placeOrder and updateOrderStatus write kds_orders atomically without waiting for trigger lag', async () => {
+  const placed = await call('placeOrder', {
+    type: 'Pickup',
+    paymentMethod: 'Cash',
+    customerName: 'Instant Test',
+    customerPhone: '09171234567',
+    items: [{ name: 'Shawarma Wrap', variant: 'Solo', price: 60, quantity: 1 }],
+    idempotencyKey: 'instant_kds_mirror_test_0001',
+  });
+  assert.strictEqual(placed.success, true);
+  // Immediately after placeOrder returns, kds_orders/{docId} must already exist
+  // without polling or waiting for the async onOrderWritten trigger.
+  const immediateSnap = await db.doc(`kds_orders/${placed.docId}`).get();
+  assert.strictEqual(immediateSnap.exists, true, 'kds_orders doc must exist immediately after placeOrder');
+  assert.strictEqual(immediateSnap.get('status'), 'Pending');
+  assert.strictEqual(immediateSnap.get('customerName'), 'Instant Test');
+  assert.ok(immediateSnap.get('ts') instanceof Timestamp);
+  assert.ok(immediateSnap.get('expireAt') instanceof Timestamp);
+
+  // Immediately after updateOrderStatus returns, kds_orders/{docId} must reflect Preparing.
+  const moved = await call('updateOrderStatus', { orderId: placed.docId, status: 'Preparing' });
+  assert.strictEqual(moved.success, true);
+  assert.strictEqual(moved.changed, true);
+  const movedSnap = await db.doc(`kds_orders/${placed.docId}`).get();
+  assert.strictEqual(movedSnap.get('status'), 'Preparing', 'kds_orders must reflect Preparing immediately');
+
+  // Unpaid customer GCash order must NOT appear in kds_orders until paid.
+  const unpaidRes = await fetch(`${FUNCTIONS}/placeOrder`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
+      data: {
+        type: 'Pickup',
+        paymentMethod: 'GCash',
+        customerName: 'Unpaid GCash',
+        customerPhone: '09171234568',
+        items: [{ name: 'Shawarma Wrap', variant: 'Solo', price: 60, quantity: 1 }],
+        idempotencyKey: 'unpaid_gcash_kds_test_0001',
+      },
+    }),
+  });
+  assert.strictEqual(unpaidRes.ok, true);
+  const unpaidBody = await unpaidRes.json();
+  const unpaidMirror = await db.doc(`kds_orders/${unpaidBody.result.docId}`).get();
+  assert.strictEqual(unpaidMirror.exists, false, 'unpaid GCash order must stay out of kds_orders');
+});

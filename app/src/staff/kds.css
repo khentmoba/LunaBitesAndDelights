@@ -15,6 +15,9 @@
 .kbar__short { display: none; }
 .kbar__status { display: flex; align-items: center; min-width: 0; }
 .kbar__dot { flex: none; width: 6px; height: 6px; margin-right: 5px; }
+.kbar__dot.is-live { animation: klive-pulse 2.4s ease-in-out infinite; }
+@keyframes klive-pulse { 0%, 100% { opacity: 1; } 50% { opacity: .4; } }
+@media (prefers-reduced-motion: reduce) { .kbar__dot.is-live { animation: none; } }
 .kbar__feed { min-width: 0; font-size: 11px; font-weight: 800; letter-spacing: -.2px; color: var(--ink-soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .kbar__role { flex: none; margin-left: 6px; padding: 1px 5px; background: var(--card); border: 1px solid var(--rule); font-size: 9px; font-weight: 800; letter-spacing: .5px; line-height: 1.4; }
 .kbar__role--admin { background: var(--plate); border: 1px solid var(--pink-ink); color: var(--on-plate); }

@@ -20,6 +20,16 @@ function note(ac: AudioContext, freq: number, gain: number, start: number, end: 
   osc.stop(ac.currentTime + end);
 }
 
+export function unlockAudio(): void {
+  if (!soundEnabled || typeof AudioContext === 'undefined') return;
+  try {
+    const ac = (ctx ??= new AudioContext());
+    if (ac.state === 'suspended') void ac.resume().catch(() => {});
+  } catch {
+    // AudioContext unavailable in this environment.
+  }
+}
+
 export function playOrderChime(): void {
   if (!soundEnabled) return;
   try {
@@ -29,8 +39,13 @@ export function playOrderChime(): void {
       note(ac, 880, 0.3, 0.15, 0.65);
     };
     if (ac.state === 'suspended') {
-      void ac.resume().then(trigger, () => {});
-    } else {
+      void ac.resume().then(
+        () => {
+          if (ac.state === 'running') trigger();
+        },
+        () => {},
+      );
+    } else if (ac.state === 'running') {
       trigger();
     }
   } catch {

@@ -791,3 +791,56 @@ test('projectOrder and projectOrderSummary clamp non-finite/negative numbers and
   assert.strictEqual(summary.total, 0);
   assert.strictEqual(summary.itemsCount, 3);
 });
+
+test('markOrderPaidOnce atomically mirrors a paid GCash order to kds_orders in the same transaction', async () => {
+  const firestoreMod = require('firebase-admin/firestore');
+  const origGetFirestore = firestoreMod.getFirestore;
+  const txSets = [];
+  try {
+    firestoreMod.getFirestore = () => ({
+      collection(name) {
+        return {
+          doc(id) {
+            return { path: `${name}/${id}`, id };
+          },
+        };
+      },
+      async runTransaction(fn) {
+        return fn({
+          async get() {
+            return {
+              exists: true,
+              data: () => ({
+                orderId: 'LU-GCASH-PAID',
+                customerName: 'Ben',
+                paymentMethod: 'GCash',
+                paymentStatus: 'AWAITING_PAYMENT',
+                checkoutSessionId: 'cs_live',
+                totalAmount: 150,
+                status: 'Pending',
+                type: 'Delivery',
+                items: [{ name: 'Shawarma Wrap', variant: 'Solo', quantity: 2, price: 75 }],
+                timestamp: '2026-11-24T12:00:00.000Z',
+              }),
+            };
+          },
+          set(ref, doc, opts) {
+            txSets.push({ ref, doc, opts });
+          },
+        });
+      },
+    });
+
+    const result = await markOrderPaidOnce({ id: 'ord_gcash_1' }, 'pay_live_1', '', 'cs_live', 15000);
+    assert.deepStrictEqual(result, { transitioned: true, alreadyPaid: false });
+    assert.strictEqual(txSets.length, 2);
+    assert.strictEqual(txSets[1].ref.path, 'kds_orders/ord_gcash_1');
+    assert.strictEqual(txSets[1].doc.paymentStatus, 'PAID');
+    assert.strictEqual(txSets[1].doc.orderNumber, 'LU-GCASH-PAID');
+    assert.strictEqual(txSets[1].doc.paymongoPaymentId, undefined, 'mirror never leaks payment ids');
+    assert.strictEqual(typeof txSets[1].doc.sourceEventMs, 'number');
+    assert.ok(txSets[1].doc.expireAt);
+  } finally {
+    firestoreMod.getFirestore = origGetFirestore;
+  }
+});

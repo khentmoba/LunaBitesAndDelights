@@ -75,7 +75,10 @@ test('live orders win over polled ones by default, and polledWins lets manual sy
 
   // Stale cached snapshot must not clobber a fresher manual sync; server snapshot must replace it.
   assert.equal(kds.shouldSkipUnchangedLiveSnapshot(true, 'sig', 'sig', 1, true, true), true);
+  assert.equal(kds.shouldSkipUnchangedLiveSnapshot(true, 'sig-different-cache', 'sig', 1, true, true), true);
   assert.equal(kds.shouldSkipUnchangedLiveSnapshot(true, 'sig', 'sig', 1, false, true), false);
+  assert.equal(kds.kdsTabTitle(0), 'Luna Live Operations');
+  assert.equal(kds.kdsTabTitle(3), '(3) Luna Live Operations');
 });
 
 test('mirror docs become callable-shaped orders', () => {
@@ -588,7 +591,7 @@ test('kds post-mutation poll supersedes in-flight silent poll and gcash guards h
   const kdsSrc = readFileSync(join(root, 'app/src/staff/kds.ts'), 'utf8');
   assert.match(kdsSrc, /async function fetchActive\(silent = false, force = false\)/);
   assert.match(kdsSrc, /if \(silent && !force && fetchInFlight\) return;/);
-  assert.match(kdsSrc, /if \(!isLive \|\| data\.changed === false\) await fetchActive\(true, true\);/);
+  assert.match(kdsSrc, /if \(!isLive \|\| fromCache \|\| data\.changed === false\) await fetchActive\(true, true\);/);
 
   const gateSrc = readFileSync(join(root, 'app/src/staff/gate.ts'), 'utf8');
   assert.match(gateSrc, /closeAllDialogs\(\);/);
@@ -978,7 +981,7 @@ export const firebaseAuth = () => Promise.reject(new Error('offline'));`,
       if (url === 'stub://kds-print-chime') {
         return {
           format: 'module',
-          source: 'export let soundEnabled = false; export const setSound = () => {}; export const playOrderChime = () => {};',
+          source: 'export let soundEnabled = false; export const setSound = () => {}; export const playOrderChime = () => {}; export const unlockAudio = () => {};',
           shortCircuit: true,
         };
       }
@@ -1041,6 +1044,9 @@ async function mountKdsForTest(stub) {
     resolve(specifier, context, nextResolve) {
       if (specifier === '../kiosk/firebase.ts') return { url: 'stub://kds-feed-firebase', shortCircuit: true };
       if (specifier === './chime.ts') return { url: 'stub://kds-feed-chime', shortCircuit: true };
+      if (specifier === 'firebase/firestore' && globalThis.__kdsFeedStubs?.firestore) {
+        return { url: 'stub://kds-feed-firestore', shortCircuit: true };
+      }
       return nextResolve(specifier, context);
     },
     load(url, context, nextLoad) {
@@ -1048,15 +1054,31 @@ async function mountKdsForTest(stub) {
         return {
           format: 'module',
           source: `export const callFn = (...args) => globalThis.__kdsFeedStubs.callFn(...args);
-export const firebaseDb = () => Promise.reject(new Error('offline'));
+export const firebaseDb = () => globalThis.__kdsFeedStubs.firestore ? Promise.resolve({}) : Promise.reject(new Error('offline'));
 export const firebaseAuth = () => Promise.reject(new Error('offline'));`,
+          shortCircuit: true,
+        };
+      }
+      if (url === 'stub://kds-feed-firestore') {
+        return {
+          format: 'module',
+          source: `export const collection = (...args) => globalThis.__kdsFeedStubs.firestore.collection(...args);
+export const query = (...args) => globalThis.__kdsFeedStubs.firestore.query(...args);
+export const where = (...args) => globalThis.__kdsFeedStubs.firestore.where(...args);
+export const orderBy = (...args) => globalThis.__kdsFeedStubs.firestore.orderBy(...args);
+export const limit = (...args) => globalThis.__kdsFeedStubs.firestore.limit(...args);
+export const Timestamp = globalThis.__kdsFeedStubs.firestore.Timestamp;
+export const onSnapshot = (...args) => globalThis.__kdsFeedStubs.firestore.onSnapshot(...args);`,
           shortCircuit: true,
         };
       }
       if (url === 'stub://kds-feed-chime') {
         return {
           format: 'module',
-          source: 'export let soundEnabled = false; export const setSound = () => {}; export const playOrderChime = () => {};',
+          source: `export let soundEnabled = false;
+export const setSound = () => {};
+export const unlockAudio = (...args) => globalThis.__kdsFeedStubs.unlockAudio?.(...args);
+export const playOrderChime = (...args) => globalThis.__kdsFeedStubs.playOrderChime?.(...args);`,
           shortCircuit: true,
         };
       }
@@ -1164,6 +1186,98 @@ test('a duplicate status tap reports the order as already in that column', async
     const snack = dom.window.document.querySelector('.snack');
     assert.ok(snack, 'a snackbar reports the outcome');
     assert.match(snack.textContent, /Order already Preparing/);
+  } finally {
+    cleanup();
+  }
+});
+
+test('live KDS updates immediately on new server snapshot, chimes, updates tab title, and recovers from stuck cache on reconnect', async () => {
+  let snapCb = null;
+  let listenerStarts = 0;
+  let fetchCalls = 0;
+  let chimeCalls = 0;
+  let unlockCalls = 0;
+  class FakeTimestamp {
+    constructor(ms) { this.ms = ms; }
+    static fromMillis(ms) { return new FakeTimestamp(ms); }
+    toDate() { return new Date(this.ms); }
+  }
+  const docSnap = (o) => ({ id: o.id, data: () => ({ ...o, ts: new FakeTimestamp(Date.parse(o.timestamp)) }) });
+  const stub = {
+    callFn: async (name) => {
+      if (name === 'updateOrderStatus') return { success: true, changed: true };
+      fetchCalls++;
+      return { success: true, orders: [feedOrder], scanned: 1, truncated: false };
+    },
+    playOrderChime: () => { chimeCalls++; },
+    unlockAudio: () => { unlockCalls++; },
+    firestore: {
+      Timestamp: FakeTimestamp,
+      collection: () => ({}),
+      where: () => ({}),
+      orderBy: () => ({}),
+      limit: () => ({}),
+      query: () => ({}),
+      onSnapshot: (_q, _opts, onNext) => {
+        listenerStarts++;
+        snapCb = onNext;
+        return () => {};
+      },
+    },
+  };
+  const { dom, root, cleanup } = await mountKdsForTest(stub);
+  try {
+    await new Promise((r) => setTimeout(r, 40));
+    assert.equal(listenerStarts, 1, 'initial live listener attached');
+    assert.equal(typeof snapCb, 'function');
+
+    // First user gesture unlocks AudioContext for subsequent live chimes.
+    dom.window.document.dispatchEvent(new dom.window.Event('pointerdown', { bubbles: true }));
+    assert.equal(unlockCalls, 1, 'first gesture unlocks audio');
+
+    // Initial server snapshot with 1 pending order.
+    snapCb({ docs: [docSnap(feedOrder)], metadata: { fromCache: false } });
+    assert.equal(root.querySelector('[data-count="Pending"]').textContent, '1');
+    assert.equal(dom.window.document.title, '(1) Luna Live Operations');
+    assert.equal(chimeCalls, 0, 'initial load does not chime');
+    assert.ok(root.querySelector('.kbar__dot.is-live'), 'live dot animates when server-connected');
+
+    // Second live order arrives from Firestore -> immediately renders, chimes, updates count & title.
+    const incomingOrder = {
+      ...feedOrder,
+      id: 'ord_live2',
+      orderNumber: 'LU-LIVE2',
+      customerName: 'Carlo',
+      timestamp: new Date(Date.now() + 1000).toISOString(),
+    };
+    snapCb({ docs: [docSnap(incomingOrder), docSnap(feedOrder)], metadata: { fromCache: false } });
+    assert.equal(root.querySelector('[data-count="Pending"]').textContent, '2');
+    assert.equal(dom.window.document.title, '(2) Luna Live Operations');
+    assert.equal(chimeCalls, 1, 'incoming live order triggers chime');
+    assert.match(root.textContent, /LU-LIVE2/);
+
+    // Simulate WebChannel stalling into cache-only mode, then network coming back online:
+    // online handler must fetchActive AND restart the live listener even though isLive is true.
+    snapCb({ docs: [docSnap(incomingOrder), docSnap(feedOrder)], metadata: { fromCache: true } });
+    assert.equal(root.querySelector('.kbar__dot.is-live'), null, 'live pulse stops while cached');
+
+    // A status mutation while stuck in cache-only mode must force a post-mutation resync
+    // instead of leaving the card in the old column until the next poll interval.
+    // Because getActiveOrders only returns [feedOrder], the stale cached incomingOrder
+    // must also be dropped rather than kept as a phantom card.
+    const fetchesBeforeTap = fetchCalls;
+    root.querySelector(`[data-status="Preparing"][data-id="${feedOrder.id}"]`).click();
+    await new Promise((r) => setTimeout(r, 40));
+    assert.equal(fetchCalls, fetchesBeforeTap + 1, 'status update while fromCache triggers immediate resync');
+    assert.equal(root.querySelector('[data-count="Pending"]').textContent, '1', 'closed order dropped from stale cache (no phantom card)');
+    assert.doesNotMatch(root.textContent, /LU-LIVE2/, 'stale cached order absent from authoritative polled response is removed');
+
+    const prevListeners = listenerStarts;
+    const prevFetches = fetchCalls;
+    dom.window.dispatchEvent(new dom.window.Event('online'));
+    await new Promise((r) => setTimeout(r, 40));
+    assert.equal(fetchCalls, prevFetches + 1, 'online event catches up via getActiveOrders while cached');
+    assert.equal(listenerStarts, prevListeners + 1, 'online event restarts stuck cached listener');
   } finally {
     cleanup();
   }

@@ -75,8 +75,14 @@ export function shouldSkipUnchangedLiveSnapshot(
   fromCache = false,
   polledFresh = false,
 ): boolean {
+  if (fromCache && polledFresh) return true;
   if (!wasLive || nextSignature !== liveSignature) return false;
-  return polledCount === 0 || (fromCache && polledFresh);
+  return polledCount === 0;
+}
+
+/** Browser tab title carrying the live Pending queue count for at-a-glance monitoring. */
+export function kdsTabTitle(pendingCount: number, baseTitle = 'Luna Live Operations'): string {
+  return pendingCount > 0 ? `(${pendingCount}) ${baseTitle}` : baseTitle;
 }
 
 export type TypeFilter = 'ALL' | 'Delivery' | 'Pickup' | 'Walk-In';
