@@ -111,6 +111,18 @@ export function staffAuthUid(docId: string): string {
   return `staff_${docId}`;
 }
 
+/** Extracts and validates the staff_accounts document ID from a Firebase Auth UID. */
+export function staffDocIdFromUid(uid: string): string {
+  if (!uid.startsWith('staff_')) {
+    throw new HttpsError('permission-denied', 'Invalid staff account');
+  }
+  const docId = uid.slice('staff_'.length);
+  if (!/^[A-Za-z0-9._-]{2,64}$/.test(docId)) {
+    throw new HttpsError('permission-denied', 'Invalid staff account');
+  }
+  return docId;
+}
+
 async function createStaffToken(docId: string, rawRole: unknown) {
   const role = rawRole === 'admin' ? 'admin' : 'staff';
   const customToken = await getAuth().createCustomToken(staffAuthUid(docId), { role });
@@ -270,7 +282,7 @@ export const updateStaffPin = onCall(
     throw new HttpsError('invalid-argument', 'PIN must be between 4 and 8 digits');
   }
 
-  const username = uid.replace(/^staff_/, '');
+  const username = staffDocIdFromUid(uid);
   const db = getFirestore();
   const staffRef = db.collection('staff_accounts').doc(username);
   const doc = await staffRef.get();

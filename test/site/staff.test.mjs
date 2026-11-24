@@ -482,3 +482,54 @@ test('kds history toggle supersedes in-flight polling and map loadMaps times out
   assert.match(mapSrc, /reject\(new Error\('Google Maps load timed out'\)\)/);
   assert.match(mapSrc, /if \(degraded\) return;/);
 });
+
+test('showDialog tracks open modals and closeAllDialogs removes them on teardown', async () => {
+  const { showDialog, closeAllDialogs } = await import('../../app/src/staff/ui.ts');
+  const dom = new JSDOM('<!doctype html><html><body></body></html>');
+  const prevDocument = globalThis.document;
+  const origCreate = dom.window.document.createElement.bind(dom.window.document);
+  dom.window.document.createElement = (tag, opts) => {
+    const el = origCreate(tag, opts);
+    if (tag.toLowerCase() === 'dialog') {
+      el.open = false;
+      el.showModal = () => { el.open = true; };
+      el.close = () => {
+        if (!el.open) return;
+        el.open = false;
+        el.dispatchEvent(new dom.window.Event('close'));
+      };
+    }
+    return el;
+  };
+  globalThis.document = dom.window.document;
+  try {
+    const d1 = showDialog('<p>Order history</p>', 'osheet');
+    const d2 = showDialog('<p>Cancel order</p>', 'sdialog');
+    assert.equal(dom.window.document.querySelectorAll('dialog').length, 2);
+    assert.equal(d1.open, true);
+    assert.equal(d2.open, true);
+
+    closeAllDialogs();
+    assert.equal(d1.open, false);
+    assert.equal(d2.open, false);
+    assert.equal(dom.window.document.querySelectorAll('dialog').length, 0);
+  } finally {
+    globalThis.document = prevDocument;
+    dom.window.close();
+  }
+});
+
+test('kds post-mutation poll supersedes in-flight silent poll and gcash guards header back while verifying', () => {
+  const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
+  const kdsSrc = readFileSync(join(root, 'app/src/staff/kds.ts'), 'utf8');
+  assert.match(kdsSrc, /async function fetchActive\(silent = false, force = false\)/);
+  assert.match(kdsSrc, /if \(silent && !force && fetchInFlight\) return;/);
+  assert.match(kdsSrc, /if \(!isLive\) await fetchActive\(true, true\);/);
+
+  const gateSrc = readFileSync(join(root, 'app/src/staff/gate.ts'), 'utf8');
+  assert.match(gateSrc, /closeAllDialogs\(\);/);
+
+  const gcashSrc = readFileSync(join(root, 'app/src/pages/kiosk/gcash.astro'), 'utf8');
+  assert.match(gcashSrc, /function cancel\(\) \{\s*if \(verifying\) return;/);
+  assert.match(gcashSrc, /document\.querySelectorAll<HTMLButtonElement>\('\[data-cancel\]'\)\.forEach\(\(b\) => \{\s*b\.disabled = on;\s*\}\);/);
+});

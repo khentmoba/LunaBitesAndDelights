@@ -374,3 +374,85 @@ test('verifyPaymentErrorMessage maps failed, expired, and pending payment status
   assert.match(verifyPaymentErrorMessage('AWAITING_PAYMENT'), /not cleared yet/i);
   assert.match(verifyPaymentErrorMessage(undefined), /not cleared yet/i);
 });
+
+test('watchInactivity clears timers and closes idle dialog on pagehide and re-arms on persisted pageshow', async () => {
+  const { JSDOM } = await import('jsdom');
+  const { watchInactivity } = await import('../../app/src/kiosk/inactivity.ts');
+  const dom = new JSDOM('<!doctype html><html><body></body></html>', { url: 'http://localhost/kiosk/menu' });
+  const prevWindow = globalThis.window;
+  const prevDocument = globalThis.document;
+  const prevClearTimeout = globalThis.clearTimeout;
+  const prevClearInterval = globalThis.clearInterval;
+
+  const timeouts = new Map();
+  const intervals = new Map();
+  let nextId = 1;
+  dom.window.setTimeout = (fn) => {
+    const id = nextId++;
+    timeouts.set(id, fn);
+    return id;
+  };
+  dom.window.setInterval = (fn) => {
+    const id = nextId++;
+    intervals.set(id, fn);
+    return id;
+  };
+  globalThis.clearTimeout = (id) => {
+    if (timeouts.has(id)) {
+      timeouts.delete(id);
+      return;
+    }
+    prevClearTimeout(id);
+  };
+  globalThis.clearInterval = (id) => {
+    if (intervals.has(id)) {
+      intervals.delete(id);
+      return;
+    }
+    prevClearInterval(id);
+  };
+
+  // JSDOM does not implement HTMLDialogElement.showModal/close natively.
+  const origCreate = dom.window.document.createElement.bind(dom.window.document);
+  dom.window.document.createElement = (tag, opts) => {
+    const el = origCreate(tag, opts);
+    if (tag.toLowerCase() === 'dialog') {
+      el.open = false;
+      el.showModal = () => { el.open = true; };
+      el.close = () => { el.open = false; };
+    }
+    return el;
+  };
+
+  globalThis.window = dom.window;
+  globalThis.document = dom.window.document;
+  try {
+    watchInactivity(1000);
+    assert.equal(timeouts.size, 1, 'initial idle timer should be armed');
+    // Fire idle timeout to open the warning dialog and start countdown interval.
+    const [warnFn] = [...timeouts.values()];
+    timeouts.clear();
+    warnFn();
+    const dialog = dom.window.document.querySelector('dialog.idle');
+    assert.equal(dialog.open, true, 'idle dialog should open on timeout');
+    assert.equal(intervals.size, 1, 'countdown interval should be running');
+
+    // Navigating away into bfcache must clear timers and close the dialog.
+    dom.window.dispatchEvent(new dom.window.Event('pagehide'));
+    assert.equal(dialog.open, false, 'pagehide must close open idle dialog');
+    assert.equal(timeouts.size, 0, 'pagehide must clear idle timeout');
+    assert.equal(intervals.size, 0, 'pagehide must clear countdown interval');
+
+    // Restoring from bfcache must re-arm a fresh idle timer.
+    const ps = new dom.window.Event('pageshow');
+    Object.defineProperty(ps, 'persisted', { value: true });
+    dom.window.dispatchEvent(ps);
+    assert.equal(timeouts.size, 1, 'persisted pageshow must re-arm idle timer');
+  } finally {
+    globalThis.window = prevWindow;
+    globalThis.document = prevDocument;
+    globalThis.clearTimeout = prevClearTimeout;
+    globalThis.clearInterval = prevClearInterval;
+    dom.window.close();
+  }
+});

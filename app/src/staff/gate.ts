@@ -1,6 +1,7 @@
 // Every staff screen sits behind the sign-in gate until the session is staff.
 import { mountLogin } from './login.ts';
 import { currentStaff, watchStaff, type Staff } from './session.ts';
+import { closeAllDialogs } from './ui.ts';
 
 type Mount = (root: HTMLElement, staff: () => Staff | null) => (() => void) | void;
 
@@ -18,6 +19,7 @@ export function gate(root: HTMLElement, mount: Mount): void {
   watchStaff((staff) => {
     const want = staff ? 'screen' : 'login';
     if (want === shown) return;
+    closeAllDialogs();
     dispose?.();
     dispose = undefined;
     shown = want;

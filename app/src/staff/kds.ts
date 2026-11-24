@@ -120,9 +120,9 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
     initialDone = true;
   }
 
-  async function fetchActive(silent = false) {
+  async function fetchActive(silent = false, force = false) {
     if (authHalted || !getStaff()) return;
-    if (silent && fetchInFlight) return;
+    if (silent && !force && fetchInFlight) return;
     const seq = ++fetchSeq;
     fetchInFlight = true;
     if (!silent) loading = true;
@@ -306,7 +306,7 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
       });
       if (disposed) return;
       if (data.success === true) {
-        if (!isLive) await fetchActive(true);
+        if (!isLive) await fetchActive(true, true);
         staffSnack(`Order updated: ${status}`, SUCCESS);
       } else {
         staffSnack(`Error: ${data.message}`, ERROR);

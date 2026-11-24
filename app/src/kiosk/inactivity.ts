@@ -1,8 +1,8 @@
 // Inactivity watcher: after two idle
 // minutes, warn for 15 seconds, then clear the order and go back to the splash.
-import { cart } from './cart';
-import { DRAFT, PENDING, RECEIPT, save } from './handoff';
-import { kioskSession } from './session';
+import { cart } from './cart.ts';
+import { DRAFT, PENDING, RECEIPT, save } from './handoff.ts';
+import { kioskSession } from './session.ts';
 
 const TIMEOUT_MS = 2 * 60 * 1000;
 const COUNTDOWN_S = 15;
@@ -85,6 +85,16 @@ export function watchInactivity(timeoutMs = TIMEOUT_MS, options: WatchInactivity
       }
     });
   }
+  window.addEventListener('pagehide', () => {
+    clearTimeout(idle);
+    idle = 0;
+    clearInterval(tick);
+    tick = 0;
+    if (dialog.open) dialog.close();
+  });
+  window.addEventListener('pageshow', (e) => {
+    if (e.persisted) arm(true);
+  });
   arm(true);
 }
 
