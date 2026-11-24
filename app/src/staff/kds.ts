@@ -268,14 +268,18 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
     ensureFallbackTimers();
   }
 
-  async function startLiveListener() {
+  async function startLiveListener(silent = false) {
     if (disposed || authHalted || connecting) return;
-    connecting = true;
-    renderBar();
+    if (!silent) {
+      connecting = true;
+      renderBar();
+    }
     clearTimeout(initialFallbackTimer);
     initialFallbackTimer = window.setTimeout(() => {
       initialFallbackTimer = 0;
       if (disposed || authHalted || (isLive && !fromCache)) return;
+      clearTimeout(cacheFallbackTimer);
+      cacheFallbackTimer = 0;
       connecting = false;
       live = null;
       liveSignature = '';
@@ -391,7 +395,7 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
     await startLiveListener();
     if (disposed || authHalted) return;
     lookbackTimer ||= window.setInterval(() => {
-      if (!disposed && isLive && getStaff()) void startLiveListener();
+      if (!disposed && isLive && getStaff()) void startLiveListener(true);
     }, LOOKBACK_REFRESH_MS);
   }
 

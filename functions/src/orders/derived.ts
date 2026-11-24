@@ -18,6 +18,39 @@ const GUARD_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 export const KDS_MIRROR_TTL_MS = 10 * 24 * 60 * 60 * 1000;
 const MAX_TELEGRAM_RETRY_AGE_MS = 10 * 60 * 1000;
 
+function deepEqual(a: unknown, b: unknown): boolean {
+  if (Object.is(a, b)) return true;
+  if (typeof a !== typeof b || a === null || b === null || typeof a !== 'object') return false;
+  if (Array.isArray(a) !== Array.isArray(b)) return false;
+  if (Array.isArray(a)) {
+    const arrB = b as unknown[];
+    return a.length === arrB.length && a.every((v, i) => deepEqual(v, arrB[i]));
+  }
+  const objA = a as Record<string, unknown>;
+  const objB = b as Record<string, unknown>;
+  const keysA = Object.keys(objA);
+  const keysB = Object.keys(objB);
+  if (keysA.length !== keysB.length) return false;
+  return keysA.every((k) => Object.prototype.hasOwnProperty.call(objB, k) && deepEqual(objA[k], objB[k]));
+}
+
+/**
+ * Returns true when an existing `kds_orders/{id}` mirror doc already matches
+ * `next` (ignoring event watermark and TTL metadata, and key insertion order).
+ */
+export function isKdsMirrorUnchanged(
+  existing: FirebaseFirestore.DocumentData | undefined,
+  next: ReturnType<typeof kdsMirrorDoc>,
+): boolean {
+  if (!existing || !existing.expireAt) return false;
+  const { sourceEventMs: _s, expireAt: _e, ts: existingTs, ...existingRest } = existing;
+  const { ts: nextTs, ...nextRest } = next;
+  const existingMs = typeof existingTs?.toMillis === 'function' ? existingTs.toMillis() : NaN;
+  const nextMs = typeof nextTs?.toMillis === 'function' ? nextTs.toMillis() : NaN;
+  if (!Number.isFinite(existingMs) || existingMs !== nextMs) return false;
+  return deepEqual(existingRest, nextRest);
+}
+
 /**
  * Returns true when an order stopped being visible to KDS and its mirror doc
  * must be deleted. Returns false when neither `before` nor `after` was visible
@@ -99,8 +132,10 @@ export const onOrderWritten = onDocumentWritten(
         }
         await db.runTransaction(async (tx) => {
           const snap = await tx.get(mirrorRef);
-          const prevMs = snap.exists ? Number(snap.data()?.sourceEventMs) : 0;
+          const existing = snap.exists ? snap.data() : undefined;
+          const prevMs = existing ? Number(existing.sourceEventMs) : 0;
           if (Number.isFinite(prevMs) && prevMs > eventTimeMs) return;
+          if (isKdsMirrorUnchanged(existing, next)) return;
           tx.set(mirrorRef, {
             ...next,
             sourceEventMs: eventTimeMs,
