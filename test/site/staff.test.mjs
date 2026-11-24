@@ -534,7 +534,7 @@ test('kds post-mutation poll supersedes in-flight silent poll and gcash guards h
   const kdsSrc = readFileSync(join(root, 'app/src/staff/kds.ts'), 'utf8');
   assert.match(kdsSrc, /async function fetchActive\(silent = false, force = false\)/);
   assert.match(kdsSrc, /if \(silent && !force && fetchInFlight\) return;/);
-  assert.match(kdsSrc, /if \(!isLive\) await fetchActive\(true, true\);/);
+  assert.match(kdsSrc, /if \(!isLive \|\| data\.changed === false\) await fetchActive\(true, true\);/);
 
   const gateSrc = readFileSync(join(root, 'app/src/staff/gate.ts'), 'utf8');
   assert.match(gateSrc, /closeAllDialogs\(\);/);
@@ -958,5 +958,158 @@ export const firebaseAuth = () => Promise.reject(new Error('offline'));`,
     globalThis.addEventListener = prevAddEventListener;
     globalThis.removeEventListener = prevRemoveEventListener;
     dom.window.close();
+  }
+});
+
+/** Mounts the KDS in jsdom with stubbed Firebase/chime modules; `stub.callFn` answers the callables. */
+async function mountKdsForTest(stub) {
+  const dom = new JSDOM('<!doctype html><html><body><div id="root"></div></body></html>', {
+    url: 'https://lunabitesanddelights.web.app/staff/kds',
+  });
+  const prev = {
+    window: globalThis.window,
+    document: globalThis.document,
+    matchMedia: globalThis.matchMedia,
+    addEventListener: globalThis.addEventListener,
+    removeEventListener: globalThis.removeEventListener,
+  };
+  globalThis.window = dom.window;
+  globalThis.document = dom.window.document;
+  globalThis.addEventListener = dom.window.addEventListener.bind(dom.window);
+  globalThis.removeEventListener = dom.window.removeEventListener.bind(dom.window);
+  const fakeMatchMedia = () => ({ matches: true, addEventListener() {}, removeEventListener() {} });
+  globalThis.matchMedia = fakeMatchMedia;
+  dom.window.matchMedia = fakeMatchMedia;
+
+  globalThis.__kdsFeedStubs = stub;
+  const { registerHooks } = await import('node:module');
+  const hooks = registerHooks({
+    resolve(specifier, context, nextResolve) {
+      if (specifier === '../kiosk/firebase.ts') return { url: 'stub://kds-feed-firebase', shortCircuit: true };
+      if (specifier === './chime.ts') return { url: 'stub://kds-feed-chime', shortCircuit: true };
+      return nextResolve(specifier, context);
+    },
+    load(url, context, nextLoad) {
+      if (url === 'stub://kds-feed-firebase') {
+        return {
+          format: 'module',
+          source: `export const callFn = (...args) => globalThis.__kdsFeedStubs.callFn(...args);
+export const firebaseDb = () => Promise.reject(new Error('offline'));
+export const firebaseAuth = () => Promise.reject(new Error('offline'));`,
+          shortCircuit: true,
+        };
+      }
+      if (url === 'stub://kds-feed-chime') {
+        return {
+          format: 'module',
+          source: 'export let soundEnabled = false; export const setSound = () => {}; export const playOrderChime = () => {};',
+          shortCircuit: true,
+        };
+      }
+      return nextLoad(url, context);
+    },
+  });
+  const { mountKds } = await import(`../../app/src/staff/kds.ts?feed=${Date.now()}-${Math.random()}`);
+  const root = dom.window.document.getElementById('root');
+  const dispose = mountKds(root, () => ({ username: 'admin', role: 'admin', isAdmin: true }));
+  const cleanup = () => {
+    dispose();
+    hooks.deregister();
+    delete globalThis.__kdsFeedStubs;
+    globalThis.window = prev.window;
+    globalThis.document = prev.document;
+    globalThis.matchMedia = prev.matchMedia;
+    globalThis.addEventListener = prev.addEventListener;
+    globalThis.removeEventListener = prev.removeEventListener;
+    dom.window.close();
+  };
+  return { dom, root, cleanup };
+}
+
+const feedOrder = {
+  id: 'ord_feed1',
+  orderNumber: 'LU-FEED1',
+  customerName: 'Ana',
+  type: 'Pickup',
+  status: 'Pending',
+  total: 99,
+  items: [{ name: 'Shawarma Wrap', variant: 'Solo', quantity: 1 }],
+  timestamp: new Date().toISOString(),
+};
+
+test('a live feed update keeps the KDS search box node, value and focus', async () => {
+  const stub = {
+    callFn: async () => ({ success: true, orders: [feedOrder], scanned: 1, truncated: false }),
+  };
+  const { dom, root, cleanup } = await mountKdsForTest(stub);
+  try {
+    await new Promise((r) => setTimeout(r, 60));
+    const input = root.querySelector('[data-search]');
+    assert.ok(input, 'search box renders');
+    input.value = 'shawarma';
+    input.dispatchEvent(new dom.window.Event('input', { bubbles: true }));
+    input.focus();
+    assert.equal(dom.window.document.activeElement, input);
+
+    // A second feed refresh used to rebuild the whole control bar through
+    // renderControls(), replacing the input and dropping focus mid-typing.
+    root.querySelector('[data-act="sync"]').click();
+    await new Promise((r) => setTimeout(r, 60));
+
+    assert.equal(root.querySelector('[data-search]'), input, 'the search input must not be re-created');
+    assert.equal(input.value, 'shawarma', 'typed text survives the refresh');
+    assert.equal(dom.window.document.activeElement, input, 'focus stays in the search box');
+  } finally {
+    cleanup();
+  }
+});
+
+test('the KDS surfaces a truncated order scan instead of showing a partial board as complete', async () => {
+  let truncated = true;
+  const stub = {
+    callFn: async () => ({
+      success: true,
+      orders: [feedOrder],
+      scanned: truncated ? 2000 : 1,
+      truncated,
+    }),
+  };
+  const { root, cleanup } = await mountKdsForTest(stub);
+  try {
+    await new Promise((r) => setTimeout(r, 60));
+    const banner = root.querySelector('[data-banner] .kerr--warn');
+    assert.ok(banner, 'a warning banner is shown');
+    assert.match(banner.textContent, /Partial board/);
+    assert.match(banner.textContent, /2000 orders/);
+    assert.ok(banner.querySelector('[data-act="retry"]'), 'the banner offers a SYNC recovery');
+
+    truncated = false;
+    banner.querySelector('[data-act="retry"]').click();
+    await new Promise((r) => setTimeout(r, 60));
+    assert.equal(root.querySelector('[data-banner] .kerr--warn'), null, 'a complete scan clears the warning');
+  } finally {
+    cleanup();
+  }
+});
+
+test('a duplicate status tap reports the order as already in that column', async () => {
+  const stub = {
+    callFn: async (name) => {
+      if (name === 'updateOrderStatus') return { success: true, changed: false };
+      return { success: true, orders: [feedOrder], scanned: 1, truncated: false };
+    },
+  };
+  const { dom, root, cleanup } = await mountKdsForTest(stub);
+  try {
+    await new Promise((r) => setTimeout(r, 60));
+    const start = root.querySelector('[data-status="Preparing"]');
+    assert.ok(start, 'the pending card offers START PREPARING');
+    start.click();
+    await new Promise((r) => setTimeout(r, 60));
+    const snack = dom.window.document.querySelector('.snack');
+    assert.ok(snack, 'a snackbar reports the outcome');
+    assert.match(snack.textContent, /Order already Preparing/);
+  } finally {
+    cleanup();
   }
 });
