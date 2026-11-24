@@ -58,6 +58,20 @@ export function mergeKdsOrders(live: KdsOrder[], polled: KdsOrder[]): KdsOrder[]
 
 export const isClosedKdsStatus = (status: unknown): boolean => status === 'Completed' || status === 'Cancelled';
 
+/**
+ * True when a live Firestore snapshot only changed metadata (e.g. cache/server
+ * sync) and can skip rebuilding cards. Requires the listener to already have
+ * been live prior to this snapshot so reconnects always publish fresh state.
+ */
+export function shouldSkipUnchangedLiveSnapshot(
+  wasLive: boolean,
+  nextSignature: string,
+  liveSignature: string,
+  polledCount: number,
+): boolean {
+  return wasLive && nextSignature === liveSignature && polledCount === 0;
+}
+
 export type TypeFilter = 'ALL' | 'Delivery' | 'Pickup' | 'Walk-In';
 
 export function filterOrders(list: KdsOrder[], typeFilter: TypeFilter, query: string): KdsOrder[] {

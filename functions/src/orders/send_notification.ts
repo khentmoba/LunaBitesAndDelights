@@ -878,6 +878,39 @@ export async function reconcileMissedPaymentNotifications(
   return { checked: docs.length, retried: jobs.length, sent, failed };
 }
 
+export async function runOrderNotificationReconciliation(
+  db: Firestore = getFirestore(),
+  opts: {
+    nowMs?: number;
+    runOrders?: typeof reconcileMissedOrderNotifications;
+    runPayments?: typeof reconcileMissedPaymentNotifications;
+  } = {},
+): Promise<{
+  orders: { checked: number; retried: number; sent: number; failed: number };
+  payments: { checked: number; retried: number; sent: number; failed: number };
+}> {
+  const nowMs = opts.nowMs ?? Date.now();
+  const paidSnap = await db.collection('orders')
+    .where('paidAt', '>=', new Date(nowMs - RECONCILE_LOOKBACK_MS).toISOString())
+    .orderBy('paidAt', 'desc')
+    .limit(RECONCILE_BATCH_LIMIT)
+    .get();
+  // Run sequentially so a paid order missing both alerts does not contend on
+  // the same `order_notifications/{orderDocId}` document or double Telegram bursts.
+  const runOrders = opts.runOrders ?? reconcileMissedOrderNotifications;
+  const runPayments = opts.runPayments ?? reconcileMissedPaymentNotifications;
+  const emptySummary = { checked: 0, retried: 0, sent: 0, failed: 0 };
+  const orders = await runOrders(db, { nowMs, paidDocs: paidSnap.docs }).catch((err: unknown) => {
+    logger.error('Order notification reconciliation pass failed', err);
+    return { ...emptySummary };
+  });
+  const payments = await runPayments(db, { nowMs, paidDocs: paidSnap.docs }).catch((err: unknown) => {
+    logger.error('Payment notification reconciliation pass failed', err);
+    return { ...emptySummary };
+  });
+  return { orders, payments };
+}
+
 export const reconcileOrderNotifications = onSchedule(
   {
     schedule: 'every 2 minutes',
@@ -893,17 +926,7 @@ export const reconcileOrderNotifications = onSchedule(
       logger.warn('reconcileOrderNotifications: Telegram config missing; skipping reconciliation');
       return;
     }
-    const db = getFirestore();
-    const nowMs = Date.now();
-    const paidSnap = await db.collection('orders')
-      .where('paidAt', '>=', new Date(nowMs - RECONCILE_LOOKBACK_MS).toISOString())
-      .orderBy('paidAt', 'desc')
-      .limit(RECONCILE_BATCH_LIMIT)
-      .get();
-    const [orders, payments] = await Promise.all([
-      reconcileMissedOrderNotifications(db, { nowMs, paidDocs: paidSnap.docs }),
-      reconcileMissedPaymentNotifications(db, { nowMs, paidDocs: paidSnap.docs }),
-    ]);
+    const { orders, payments } = await runOrderNotificationReconciliation(getFirestore());
     if (orders.retried > 0) logger.info('Order notification reconciliation completed', orders);
     if (payments.retried > 0) logger.info('Payment notification reconciliation completed', payments);
   },

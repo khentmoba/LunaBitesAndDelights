@@ -140,4 +140,12 @@ describe('staff auth: scrypt PIN and password verification', () => {
     assert.equal(isValidPasswordInput(null), false);
     assert.equal(isValidPasswordInput(12345), false);
   });
+
+  test('parseCurrentPassword preserves leading/trailing whitespace and rejects invalid inputs', () => {
+    const { parseCurrentPassword, MAX_PASSWORD_LENGTH } = require('../lib/auth/verify_staff');
+    assert.equal(parseCurrentPassword('  spaced pass  '), '  spaced pass  ');
+    assert.throws(() => parseCurrentPassword(''), /Missing or invalid currentPassword/);
+    assert.throws(() => parseCurrentPassword('a'.repeat(MAX_PASSWORD_LENGTH + 1)), /Missing or invalid currentPassword/);
+    assert.throws(() => parseCurrentPassword(null), /Missing or invalid currentPassword/);
+  });
 });

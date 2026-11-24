@@ -18,6 +18,7 @@ import {
   mergeKdsOrders,
   numText,
   qtyOf,
+  shouldSkipUnchangedLiveSnapshot,
   type KdsOrder,
   type TypeFilter,
 } from './kds-data.ts';
@@ -237,6 +238,7 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
           clearInterval(reconnectTimer);
           reconnectTimer = 0;
           connecting = false;
+          const wasLive = isLive;
           isLive = true;
           fromCache = snap.metadata.fromCache;
           const nextLive = snap.docs.map((d) => kdsOrderFromDoc(d.id, d.data(), toDate));
@@ -245,8 +247,9 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
           // flips that leave the documents untouched. Rebuilding every card for
           // those steals scroll position and burns the tablet's CPU, so only the
           // feed indicator is redrawn.
-          const unchanged = isLive && nextSignature === liveSignature && polled.length === 0;
+          const unchanged = shouldSkipUnchangedLiveSnapshot(wasLive, nextSignature, liveSignature, polled.length);
           if (unchanged) {
+            if (!fetchInFlight) loading = false;
             renderBar();
             renderBanner();
             return;

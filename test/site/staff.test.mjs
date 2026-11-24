@@ -248,14 +248,21 @@ test('kds delayed badge keeps INK contrast on elapsed-time ticks and dashboard h
   assert.match(gateSrc, /else dispose = mountLogin\(root\);/);
 });
 
-test('kds skips the board rebuild on metadata-only snapshots and stops after an auth halt', () => {
+test('kds skips the board rebuild on metadata-only snapshots and stops after an auth halt', async () => {
+  const { shouldSkipUnchangedLiveSnapshot } = await import('../../app/src/staff/kds-data.ts');
+  assert.equal(shouldSkipUnchangedLiveSnapshot(true, '[{"id":"1"}]', '[{"id":"1"}]', 0), true);
+  assert.equal(shouldSkipUnchangedLiveSnapshot(false, '[{"id":"1"}]', '[{"id":"1"}]', 0), false, 'reconnect must publish fresh state');
+  assert.equal(shouldSkipUnchangedLiveSnapshot(true, '[{"id":"1"}]', '[{"id":"1"}]', 1), false, 'polled fallback orders must be cleared');
+  assert.equal(shouldSkipUnchangedLiveSnapshot(true, '[{"id":"2"}]', '[{"id":"1"}]', 0), false);
+
   const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
   const kdsSrc = readFileSync(join(root, 'app/src/staff/kds.ts'), 'utf8');
 
   // includeMetadataChanges fires on cache/server flips; rebuilding every card for
   // those steals scroll position, so only the feed indicator is redrawn.
-  assert.match(kdsSrc, /const unchanged = isLive && nextSignature === liveSignature && polled\.length === 0;/);
-  assert.match(kdsSrc, /if \(unchanged\) \{\s*renderBar\(\);\s*renderBanner\(\);\s*return;\s*\}/);
+  assert.match(kdsSrc, /const wasLive = isLive;\s*isLive = true;/);
+  assert.match(kdsSrc, /const unchanged = shouldSkipUnchangedLiveSnapshot\(wasLive, nextSignature, liveSignature, polled\.length\);/);
+  assert.match(kdsSrc, /if \(unchanged\) \{\s*if \(!fetchInFlight\) loading = false;\s*renderBar\(\);\s*renderBanner\(\);\s*return;\s*\}/);
   assert.match(kdsSrc, /let liveSignature = '';/);
   assert.match(kdsSrc, /liveSignature = '';/);
 
