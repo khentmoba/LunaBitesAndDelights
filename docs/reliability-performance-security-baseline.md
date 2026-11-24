@@ -17,7 +17,7 @@ The following controls reflect the codebase reviewed on 2026-11-24 (see also `do
 - **Staff authentication & rate limiting:** `verifyStaff` and `updateStaffPin` (`functions/src/auth/verify_staff.ts`) use per-user salted `scrypt` (`512MiB`, concurrency `10`), atomic seeding (`batch.create`), IP-scoped fixed-window rate limits, and per-account/IP lockouts backed by TTL-enabled `login_attempts` and `rate_limits` collections.
 - **Derived views & notification deduplication:** `onOrderWritten` (`functions/src/orders/derived.ts`, `retry: true`) maintains `kds_orders` (with `sourceEventMs` out-of-order guard and TTL), `dailyStats` (with `stats_events` idempotency guard), and Telegram notifications (deduplicated via `order_notifications/{orderDocId}` with `photoSent` persistence and 10m stale-retry cutoff).
 - **Storage & Hosting headers:** `storage.rules` is default-deny. `firebase.json` enforces HSTS, `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy`, `Permissions-Policy`, `COOP`, immutable caching for `/_astro/**`, and strict CSP without `'unsafe-inline'` in `script-src` for `/staff/**` and `/kiosk/**`.
-- **Frontend performance & KDS resilience:** Lazy Firebase SDK imports (`app/src/kiosk/firebase.ts`), `firestore/lite` on checkout, bounded Nominatim caching + 800ms debounce (`app/src/kiosk/geo.ts`), rAF-throttled layout fitting (`fit.ts`, `dashboard.ts`), hidden-tab KDS polling pause, auth-error timer teardown, keyboard-accessible KDS tabs, and navigation-cache bounds in `app/public/staff/sw.js`.
+- **Frontend performance & KDS resilience:** Lazy Firebase SDK imports (`app/src/kiosk/firebase.ts`), no Firestore SDK on any kiosk page (orders go through `placeOrder` only), bounded Nominatim caching + 800ms debounce (`app/src/kiosk/geo.ts`), rAF-throttled layout fitting (`fit.ts`, `dashboard.ts`), hidden-tab KDS polling pause, auth-error timer teardown, keyboard-accessible KDS tabs, and navigation-cache bounds in `app/public/staff/sw.js`.
 - **Dashboard payloads:** Staff dashboard summary calls select persisted `itemsCount` rather than transferring complete `items[]` and order coordinates, phone numbers, or addresses.
 - **CI regression gates:** `.github/workflows/pr-checks.yml` enforces TypeScript builds, ESLint promise checks, unit tests, Firestore rules emulator tests, derived-views emulator tests, Astro checks/tests, and `npm audit --omit=dev --audit-level=high`.
 
@@ -27,7 +27,7 @@ The following controls reflect the codebase reviewed on 2026-11-24 (see also `do
 
 | ID | Priority | Status | Type | Area | Summary |
 |---|---|---|---|---|---|
-| **SEC-01** | Critical | Pending (prod-gated) | Prod-gated | `firestore.rules` | Direct unauthenticated client `create` on `orders/{orderId}` bypasses `placeOrder` |
+| **SEC-01** | Critical | Partially resolved (client half done; rules prod-gated) | Prod-gated | `firestore.rules` | Direct unauthenticated client `create` on `orders/{orderId}` bypasses `placeOrder` |
 | **SEC-02** | High | Pending (prod-gated) | Prod-gated | `firestore.rules` | Legacy `pasugo_errands` / `pasugo_sessions` / `riders` rules expose public PII & allow unauthenticated writes |
 | **SEC-03** | High | Resolved (secret provisioned; HMAC required) | Code-only | `functions/src/payments/webhook.ts` | `PAYMONGO_WEBHOOK_SECRET` is bound via `defineSecret`; webhook signature verification fails closed when missing or invalid |
 | **SEC-04** | High | Pending (prod-gated) | Prod-gated | Public `onCall` functions | `enforceAppCheck: true` not enabled on public callables |
@@ -37,13 +37,16 @@ The following controls reflect the codebase reviewed on 2026-11-24 (see also `do
 | **SEC-08** | Low | Resolved | Code-only | `functions/src/util/security.ts` | `clientIpFromRequest` falls back to `socket.remoteAddress`, and logs once per 10 minutes when no client IP is derivable |
 | **SEC-09** | Medium | Resolved | Code-only | `functions/scripts/backfill-derived-views.js` | Backfill wrote a 30-day `kds_orders` `expireAt` while the trigger writes 10 days, reintroducing the PII retention `SEC-07` removed |
 | **SEC-10** | Medium | Resolved | Code-only | `functions/src/auth/verify_staff.ts` | The global PIN *attempt* budget reused the 20-failure cap, so ordinary successful sign-ins could lock the whole team out of PIN login |
+| **SEC-11** | High | Resolved | Code-only | `app/src/kiosk/order.ts` | The kiosk kept a direct Firestore order `create` fallback, so a missing callable silently wrote client-priced, unvalidated orders (SEC-01's client half) |
+| **SEC-12** | Medium | Resolved | Code-only | `functions/scripts/reset-staff-credentials.js` | The credential reset script could set a PIN another staff account already used; PIN sign-in signs in as the first match, so the staffer could land in the admin account |
 
 ### Details
 
 #### SEC-01 — Lock down direct client writes to `orders/{orderId}`
-- **Where:** `firestore.rules:14-39`, `app/src/kiosk/order.ts:212-227`
+- **Where:** `firestore.rules:14-39`, `app/src/kiosk/order.ts`
 - **Risk:** Although the kiosk now submits orders through `placeOrder`, Firestore rules still permit unauthenticated `create` on `orders/{orderId}` with client-chosen `totalAmount`, `items`, `dateLabel`, and payment fields. Because `onOrderWritten` triggers on every `orders` document write, a direct client write bypasses `placeOrder` rate limits and server pricing, injects fake Cash orders into `kds_orders`, pollutes `dailyStats`, and triggers kitchen Telegram alerts.
 - **Remediation:** Once `placeOrder` is confirmed live in production, remove the direct-write fallback in `app/src/kiosk/order.ts` and change `orders/{orderId}` in `firestore.rules` to `allow read, write: if false;` (deploying rules with explicit approval).
+- **Client half done (SEC-11):** the kiosk no longer holds any direct Firestore write path; a missing or failing callable now surfaces as a save error instead of an unvalidated write. The rules change remains production-gated.
 
 #### SEC-02 — Retire legacy `pasugo_*` and `riders` Firestore rules
 - **Where:** `firestore.rules:66-163`
@@ -90,6 +93,18 @@ The following controls reflect the codebase reviewed on 2026-11-24 (see also `do
 - **Resolution:** The attempt ceiling is now `120` per 15 minutes (6× the failure budget) — unreachable by hand, still bounded for a flood.
 - **Proof:** `functions/test/hardening_baseline.test.js` asserts the ceiling keeps at least 4× headroom over the failure budget and that the budget is still reserved before PIN verification.
 
+#### SEC-11 — Remove the kiosk's direct order-write fallback
+- **Where:** `app/src/kiosk/order.ts`, `app/src/kiosk/firebase.ts`
+- **Risk:** `placeOrder` fell back to `setDoc(orders/{autoId})` + `sendOrderNotification` whenever the callable answered `not-found`/`unimplemented`. That path wrote client-supplied prices, totals, `dateLabel` and status straight through the still-open create rule, skipping server pricing, the per-IP order rate limit and the idempotency fingerprint. A renamed or undeployed callable would therefore take orders silently instead of failing.
+- **Resolution:** The fallback, its `orderFields`/`notificationFor` payload builders and the now-unused `firebaseDbLite()` getter are gone; the kiosk has no Firestore write path at all. A missing callable returns `errorCode: 'not-found'` and checkout shows its save-error copy. This also removes the reachable `firebase/firestore/lite` chunk from the build (PERF-09). The `orders` create rule itself stays until it is deployed with approval (SEC-01).
+- **Proof:** `test/site/kiosk.test.mjs` exercises `placeOrder` with a stubbed callable that rejects `not-found` and asserts `{ docId: null, errorCode: 'not-found' }`, and scans the module for `firebase/firestore`, `setDoc`/`addDoc` and `sendOrderNotification`.
+
+#### SEC-12 — Make the credential reset script enforce PIN uniqueness
+- **Where:** `functions/scripts/reset-staff-credentials.js`
+- **Risk:** `updateStaffPin` refuses a PIN that already belongs to another account, but the documented reset script (`node functions/scripts/reset-staff-credentials.js --username … --pin …`) did not. `verifyStaff` resolves a PIN by scanning `staff_accounts` and signing in as the first match, so two accounts sharing a PIN can hand a staffer the admin session (or fail unpredictably as the scan order changes).
+- **Resolution:** The script now verifies the new PIN against every other account's `pinHash` and aborts with `PIN is already used by staff account "…"` before writing anything.
+- **Proof:** `functions/test/staff_credentials_script.test.js` seeds two accounts and asserts the duplicate PIN is rejected with no write, that an account can keep its own PIN while rotating its password, and that malformed input never writes.
+
 ---
 
 ## 3. Reliability Improvements Backlog
@@ -107,6 +122,10 @@ The following controls reflect the codebase reviewed on 2026-11-24 (see also `do
 | **REL-09** | Medium | Resolved | Code-only | `app/src/staff/kds.ts` | KDS `updateStatus` shadowed the module `authHalted` flag, and metadata-only Firestore snapshots rebuilt the whole board |
 | **REL-10** | Medium | Resolved | Code-only | `app/src/pages/kiosk/menu.astro`, `app/src/pages/kiosk/gcash.astro` | A second card tap threw `InvalidStateError` from `showModal()`, and a failed GCash retry kept the previous dead checkout session |
 | **REL-11** | Medium | Resolved | Code-only | `functions/src/orders/send_notification.ts` | The notification reconciler re-announced orders staff had already cancelled when an earlier Telegram attempt had left a failed claim behind |
+| **REL-12** | Medium | Resolved | Code-only | `app/src/staff/kds.ts` | Every live feed update rebuilt the filter bar, replacing the search input and dropping focus/cursor mid-typing on the kitchen tablet |
+| **REL-13** | Medium | Resolved | Code-only | `app/src/staff/kds.ts`, `functions/src/orders/kds.ts` | A truncated `getActiveOrders` scan was only logged; the board showed a partial board as complete |
+| **REL-14** | Low | Resolved | Code-only | `functions/src/orders/kds.ts` | `updateOrderStatus` logged and reported a status update even when the transaction wrote nothing (duplicate tap / concurrent tablet) |
+| **REL-15** | Low | Resolved | Code-only | `app/src/pages/kiosk/map.astro` | "Use my location" did nothing when geolocation was denied, so the pin flow looked broken |
 
 ### Details
 
@@ -174,13 +193,37 @@ The following controls reflect the codebase reviewed on 2026-11-24 (see also `do
 - **Resolution:** `reconcileMissedOrderNotifications` now drops `status === 'Cancelled'` orders while building its candidate list, before any `order_notifications` read, so a failed claim left by an outage can no longer resurrect a cancelled order's alert. The jobs filter keeps its own terminal guard as defence in depth.
 - **Proof:** `functions/test/emulator/derived-views.test.js` seeds a cancelled order that carries a failed claim and asserts the sweep neither retries it nor flips its claim; run against the pre-fix code the same assertion failed with `retried 4 !== 3`.
 
+#### REL-12 — Keep the KDS search box alive across live updates
+- **Where:** `app/src/staff/kds.ts`
+- **Failure Mode:** `renderAll()` called `renderControls()`, which rewrote `ctl.innerHTML` on every published feed update (any new order, any status change by another tablet). The search `<input>` and every filter chip were re-created each time, so a staffer who was filtering the board lost focus and cursor position mid-word. `renderBar()`/`renderBanner()` were already diffed for exactly this reason; the control bar was missed.
+- **Resolution:** The control bar is built once at mount and `renderAll()` now calls `syncControls()`, which updates `aria-pressed`, the history glyph (via `textContent`, not `outerHTML`) and the clear button in place.
+- **Proof:** `test/site/staff.test.mjs` mounts the KDS in jsdom, types into the search box, triggers a feed refresh, and asserts the same input node survives with its value and focus intact.
+
+#### REL-13 — Surface a truncated kitchen board
+- **Where:** `functions/src/orders/kds.ts`, `app/src/staff/kds.ts`
+- **Failure Mode:** REL-01 replaced the silent 600-document scan cap with a 2 000-document budget that logs and returns `truncated`/`scanned`. Nothing consumed those fields, so when the callable stopped before filling the board the tablet still showed it as complete — the exact silent data loss REL-01 set out to remove, just one layer up.
+- **Resolution:** The board stores `truncated`/`scanned` from each successful `getActiveOrders` call and shows a warning banner (`role="status"`) naming the scan limit and offering SYNC, which also restarts the live listener if it had fallen back to polling. A later complete scan clears it.
+- **Proof:** `test/site/staff.test.mjs` stubs a truncated response, asserts the banner text includes the scanned count and the SYNC control, then asserts a complete response clears it.
+
+#### REL-14 — Answer status calls from the committed outcome
+- **Where:** `functions/src/orders/kds.ts`
+- **Failure Mode:** `updateOrderStatus` logged `status updated to X` and returned `{ success: true }` even when `buildStatusUpdate` returned `null` (the order already held that status). Two tablets tapping the same column, or a resync, produced a log line and a "Order updated" snackbar for a write that never happened, and the tablet skipped the resync that would have shown the truth.
+- **Resolution:** The transaction body is now the exported `applyOrderStatus()` helper, which returns `{ changed, previousStatus }` from the transaction. The callable logs the real transition (or `already X; no write needed`) and returns `changed`; the board shows `Order already X` and forces a resync when nothing changed. This also satisfies CODING_STANDARDS' "derive caller responses and operational logs from the post-transaction result".
+- **Proof:** `functions/test/kds_status.test.js` covers a real transition, a duplicate no-op, a repeated cancel with/without a reason, an illegal transition and a missing order; `test/site/staff.test.mjs` asserts the duplicate-tap snackbar copy.
+
+#### REL-15 — Explain a denied location on the delivery map
+- **Where:** `app/src/pages/kiosk/map.astro`
+- **Failure Mode:** `goToMyLocation()` returned silently when `currentPosition()` resolved `null` (permission denied, no GPS, or a 12 s timeout), so the shopper tapped a button that appeared dead and could not tell whether the pin had moved.
+- **Resolution:** The button now shows the kiosk snackbar `Location unavailable. Drag the map to set your pin.` and leaves the tile-free picker usable.
+- **Proof:** `test/site/kiosk.test.mjs` asserts the null-position branch announces that recovery copy and imports the shared snackbar.
+
 ---
 
 ## 4. Performance Improvements Backlog
 
 | ID | Priority | Status | Type | Area | Summary |
 |---|---|---|---|---|---|
-| **PERF-01** | High | Partially resolved (index prod-gated) | Mixed | `functions/src/orders/kds.ts`, `firestore.indexes.json` | Indexed active-order query still pending; the scan ceiling is now a logged 2 000-document budget instead of a silent 600-document cap |
+| **PERF-01** | High | Partially resolved (index prod-gated) | Mixed | `functions/src/orders/kds.ts`, `firestore.indexes.json` | Indexed active-order query still pending; the scan ceiling is now a logged 2 000-document budget and the KDS shows a warning banner when it truncates (REL-13) |
 | **PERF-02** | High | Deferred | Code-only | `functions/src/index.ts` | Split codebases / lazy-load handlers when dependencies grow (currently only `firebase-admin` + `firebase-functions`) |
 | **PERF-03** | Medium | Resolved | Code-only | `app/src/staff/dashboard.ts`, `functions/src/orders/kds.ts`, `functions/src/orders/place_order.ts` | Dashboard summary query selects persisted `itemsCount`, excluding full item arrays, coordinates, and phone/address fields |
 | **PERF-04** | Medium | Pending (prod-gated) | Prod-gated | `functions/src/auth/verify_staff.ts` | Peppered `pinLookupHash` requires new `PIN_PEPPER_SECRET` in Secret Manager + backfill |
@@ -188,6 +231,7 @@ The following controls reflect the codebase reviewed on 2026-11-24 (see also `do
 | **PERF-06** | Low | Resolved | Code-only | `app/src/staff/reports.ts` | `fitTitle` resize listener now throttled with `requestAnimationFrame` + `cancelAnimationFrame` on dispose |
 | **PERF-07** | Low | Deferred | Code-only | `firebase.json:59-64` | Static images use 1-day `max-age=86400`; hashed assets can use immutable caching |
 | **PERF-08** | Low | Pending (prod-gated) | Prod-gated | `functions/src/index.ts`, customer callables | Evaluate `minInstances: 1` for `placeOrder` / `createCheckoutSession` from Cloud Monitoring p95 telemetry |
+| **PERF-09** | Low | Resolved | Code-only | `app/src/kiosk/order.ts`, `app/src/kiosk/firebase.ts` | Removing the direct-write fallback removed the reachable `firebase/firestore/lite` chunk (114,614 B raw) from the kiosk build and stops the shared `./firebase` module from carrying an unused getter |
 
 ### Details
 
@@ -230,6 +274,12 @@ The following controls reflect the codebase reviewed on 2026-11-24 (see also `do
 - **Bottleneck:** `minInstances` defaults to `0`; first customer order after an idle period incurs a cold start.
 - **Improvement:** Track p95 latency in Cloud Monitoring for `placeOrder` and `createCheckoutSession`. If cold starts exceed target checkout UX budgets, evaluate `minInstances: 1` for those two endpoints (after applying PERF-02).
 
+#### PERF-09 — Drop the reachable Firestore-lite chunk from the kiosk
+- **Where:** `app/src/kiosk/firebase.ts`, `app/src/kiosk/order.ts`
+- **Bottleneck:** `firebaseDbLite()` existed only for the direct-write fallback. Vite emitted the lite SDK as `_astro/index.esm.*.js` (114,614 B raw, ~35 KB gzip) and every kiosk page that imported `./firebase` for `callFn` carried the dynamic-import map to it.
+- **Resolution:** Removing SEC-11's fallback removed the getter and the chunk; the built `_astro` directory now ships no `firebase/firestore/lite` bundle, and only the staff KDS loads the full Firestore SDK it actually uses.
+- **Proof:** `app build` output listing before/after (the 114,614 B `index.esm` chunk is gone) and `test/site/kiosk.test.mjs`'s module scan.
+
 ---
 
 ## 5. Recommended Execution Roadmap
@@ -245,7 +295,7 @@ The following controls reflect the codebase reviewed on 2026-11-24 (see also `do
 8. **SEC-05:** Bundle remaining inline scripts on storefront/payment pages and remove `'unsafe-inline'` from global `script-src`.
 
 ### Phase 2 — Production-Gated Security & Index Rollouts (Requires Explicit Deployment Approval)
-1. **SEC-01 & SEC-02:** Remove legacy direct-write fallback in `app/src/kiosk/order.ts`, lock down `orders/{orderId}` (`allow read, write: if false`), and remove unused `pasugo_*` / `riders` blocks from `firestore.rules`.
+1. **SEC-01 & SEC-02:** Lock down `orders/{orderId}` (`allow read, write: if false`) and remove unused `pasugo_*` / `riders` blocks from `firestore.rules`. The client-side direct-write fallback is already gone (SEC-11).
 2. **REL-01 & PERF-01:** Deploy composite Firestore indexes in `firestore.indexes.json` and switch `getActiveOrders` to indexed active-order queries.
 3. **SEC-04:** Enable `enforceAppCheck: true` on public callables after verifying App Check token coverage in Firebase Console.
 
