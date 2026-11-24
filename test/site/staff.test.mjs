@@ -254,7 +254,7 @@ test('kds delayed badge keeps INK contrast on elapsed-time ticks and dashboard h
   assert.match(kdsSrc, /if \(err && isAuthCode\(err\.code\)\)[\s\S]*updating\.delete\(orderId\);[\s\S]*haltOnAuthError\(/);
   assert.match(kdsSrc, /updating\.delete\(orderId\);\s*\n\s*if \(!disposed && !authHalted\) renderBoard\(\);/);
   assert.match(kdsSrc, /const onOnline = \(\) => \{[\s\S]*startLiveListener\(\)/);
-  assert.match(kdsSrc, /await Promise\.all\(\[firebaseDb\(\), import\('firebase\/firestore'\)\]\);[\s\S]*if \(disposed \|\| authHalted\) return;[\s\S]*unsub\?\.\(\);/);
+  assert.match(kdsSrc, /await Promise\.all\(\[firebaseDb\(\), import\('firebase\/firestore'\)\]\);[\s\S]*if \(disposed \|\| authHalted\) \{[\s\S]*?return;[\s\S]*?\}[\s\S]*unsub\?\.\(\);/);
   assert.match(kdsSrc, /await startLiveListener\(\);\s*if \(disposed \|\| authHalted\) return;\s*lookbackTimer/);
 
   // Staff login returns cleanup wired by gate.ts
@@ -439,4 +439,17 @@ test('mountLogin cancels backspace long-press on pointercancel and ignores late 
     globalThis.document = prevDocument;
     globalThis.clearTimeout = prevClearTimeout;
   }
+});
+
+test('kds history toggle supersedes in-flight polling and map loadMaps times out cleanly', () => {
+  const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
+  const kdsSrc = readFileSync(join(root, 'app/src/staff/kds.ts'), 'utf8');
+  assert.match(kdsSrc, /if \(disposed \|\| authHalted\) \{\s*connecting = false;\s*return;\s*\}/);
+  assert.match(kdsSrc, /if \(tab === 3 && !showCompleted\) \{\s*showCompleted = true;\s*publish\(\);\s*if \(!isLive\) void fetchActive\(false\);/);
+  assert.match(kdsSrc, /else if \(act === 'history'\) \{\s*showCompleted = !showCompleted;\s*publish\(\);\s*if \(showCompleted && !isLive\) void fetchActive\(false\);/);
+
+  const mapSrc = readFileSync(join(root, 'app/src/pages/kiosk/map.astro'), 'utf8');
+  assert.match(mapSrc, /const MAPS_LOAD_TIMEOUT_MS = 10_000;/);
+  assert.match(mapSrc, /reject\(new Error\('Google Maps load timed out'\)\)/);
+  assert.match(mapSrc, /if \(degraded\) return;/);
 });

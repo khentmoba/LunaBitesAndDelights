@@ -10,6 +10,7 @@ import { logger } from 'firebase-functions';
 const MANUAL_REPORT_WINDOW_MS = 5 * 60 * 1000;
 const MANUAL_REPORT_MAX = 2;
 const MANUAL_REPORT_GUARD_COLLECTION = 'daily_reports_sent';
+const MANUAL_REPORT_CLAIM_TTL_MS = 60 * 1000;
 const MANUAL_REPORT_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 
 /** Guard doc for one day's manual report; kept apart from the scheduled report's date doc. */
@@ -17,9 +18,26 @@ export const manualReportGuardId = (dateLabel: string): string => `manual-${date
 
 export interface ManualReportOutcome {
   sent: boolean;
+  inFlight?: boolean;
   message: string;
   /** Chats already carrying this day's report, skipped so a retry cannot spam them. */
   skippedChats: number;
+}
+
+export type ManualReportClaimStatus = 'claimed' | 'in-flight';
+
+/** Returns 'in-flight' when another manual report send holds an unexpired lease. */
+export function evaluateManualReportClaim(
+  current: Record<string, any> | undefined,
+  nowMs = Date.now(),
+): ManualReportClaimStatus {
+  if (current?.status === 'sending') {
+    const claimedAt = current.claimedAt;
+    if (typeof claimedAt === 'number' && Number.isFinite(claimedAt) && nowMs - claimedAt < MANUAL_REPORT_CLAIM_TTL_MS) {
+      return 'in-flight';
+    }
+  }
+  return 'claimed';
 }
 
 function deliveredIds(raw: unknown): string[] {
@@ -29,13 +47,17 @@ function deliveredIds(raw: unknown): string[] {
 }
 
 /**
- * Sends today's sales summary to every Telegram chat. A partial delivery is
- * persisted, so retrying after a transient failure only reaches the chats that
- * did not get the report — the scheduled report already behaves this way.
+ * Sends today's sales summary to every Telegram chat. Claims an atomic lease so
+ * concurrent triggers cannot double-send, and persists partial deliveries so
+ * retrying after a transient failure only reaches the chats that missed it.
  */
 export async function runManualSalesReport(
   dateLabel = phtDateLabel(),
-  opts: { db?: Firestore; aggregate?: typeof aggregateDailySales } = {},
+  opts: {
+    db?: Firestore;
+    aggregate?: typeof aggregateDailySales;
+    persistBackoffMs?: number[];
+  } = {},
 ): Promise<ManualReportOutcome> {
   const db = opts.db ?? getFirestore();
   const aggregate = opts.aggregate ?? aggregateDailySales;
@@ -44,12 +66,41 @@ export async function runManualSalesReport(
   if (!report) return { sent: false, message: 'No orders found for today', skippedChats: 0 };
 
   const guardRef = db.collection(MANUAL_REPORT_GUARD_COLLECTION).doc(manualReportGuardId(dateLabel));
-  const guard = await guardRef.get().catch(() => null);
-  const guardData = guard?.exists ? guard.data() : undefined;
-  // Only a *failed* attempt's partial deliveries are skipped. A deliberate
-  // second report of the day (status 'sent') must still reach every chat.
-  const alreadyDelivered = guardData?.status === 'failed' ? deliveredIds(guardData.deliveredChatIds) : [];
-  const expireAt = Timestamp.fromMillis(Date.now() + MANUAL_REPORT_TTL_MS);
+  const nowMs = Date.now();
+  const expireAt = Timestamp.fromMillis(nowMs + MANUAL_REPORT_TTL_MS);
+
+  const { status: claimStatus, alreadyDelivered } = await db.runTransaction<{
+    status: ManualReportClaimStatus;
+    alreadyDelivered: string[];
+  }>(async (tx) => {
+    const snap = await tx.get(guardRef);
+    const guardData = snap.exists ? snap.data() : undefined;
+    const status = evaluateManualReportClaim(guardData, nowMs);
+    if (status === 'in-flight') {
+      return { status, alreadyDelivered: [] };
+    }
+    // Only a *failed* or expired-in-flight attempt's partial deliveries are
+    // skipped. A deliberate second report after status 'sent' reaches every chat.
+    const carryForward = guardData?.status === 'failed' || guardData?.status === 'sending'
+      ? deliveredIds(guardData.deliveredChatIds)
+      : [];
+    tx.set(
+      guardRef,
+      { status: 'sending', claimedAt: nowMs, deliveredChatIds: carryForward, expireAt },
+      { merge: true },
+    );
+    return { status, alreadyDelivered: carryForward };
+  });
+
+  if (claimStatus === 'in-flight') {
+    logger.warn(`Manual report for ${dateLabel} is already in-flight; skipping duplicate send`);
+    return {
+      sent: false,
+      inFlight: true,
+      message: 'Manual sales report is already being sent.',
+      skippedChats: 0,
+    };
+  }
 
   const message = salesReportMessage(report, {
     title: 'Manual Sales Report',
@@ -58,13 +109,6 @@ export async function runManualSalesReport(
 
   try {
     await sendToAll(message, { skipChatIds: alreadyDelivered });
-    await guardRef.set(
-      { status: 'sent', deliveredChatIds: [], sentAt: Date.now(), expireAt },
-      { merge: true },
-    ).catch((err) => {
-      logger.warn(`Manual report for ${dateLabel} sent but its guard doc could not be updated`, err);
-    });
-    return { sent: true, message: 'SUCCESS', skippedChats: alreadyDelivered.length };
   } catch (err: any) {
     await guardRef.set(
       {
@@ -78,6 +122,29 @@ export async function runManualSalesReport(
     });
     throw err;
   }
+
+  const sentPayload = { status: 'sent', deliveredChatIds: [], sentAt: Date.now(), expireAt };
+  const persistBackoffMs = opts.persistBackoffMs ?? [0, 250, 500, 1000];
+  let lastPersistErr: unknown = null;
+  for (let attempt = 0; attempt < persistBackoffMs.length; attempt++) {
+    if (persistBackoffMs[attempt] > 0) {
+      await new Promise((resolve) => setTimeout(resolve, persistBackoffMs[attempt]));
+    }
+    try {
+      await guardRef.set(sentPayload, { merge: true });
+      lastPersistErr = null;
+      break;
+    } catch (err) {
+      lastPersistErr = err;
+    }
+  }
+  if (lastPersistErr !== null) {
+    logger.error(
+      `Manual report for ${dateLabel} sent but its guard doc could not be updated after ${persistBackoffMs.length} attempts`,
+      { error: lastPersistErr },
+    );
+  }
+  return { sent: true, message: 'SUCCESS', skippedChats: alreadyDelivered.length };
 }
 
 export const triggerManualReport = onCall(
@@ -93,7 +160,13 @@ export const triggerManualReport = onCall(
     logger.info('Manual report triggered');
     try {
       const result = await runManualSalesReport();
-      if (!result.sent) return { success: false, message: result.message };
+      if (!result.sent) {
+        return {
+          success: false,
+          ...(result.inFlight ? { inFlight: true } : {}),
+          message: result.message,
+        };
+      }
       return { success: true, message: result.message };
     } catch (error: any) {
       if (error instanceof HttpsError) throw error;

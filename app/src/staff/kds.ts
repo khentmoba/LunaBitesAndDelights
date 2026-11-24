@@ -217,7 +217,10 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
     renderBar();
     try {
       const [db, fs] = await Promise.all([firebaseDb(), import('firebase/firestore')]);
-      if (disposed || authHalted) return;
+      if (disposed || authHalted) {
+        connecting = false;
+        return;
+      }
       unsub?.();
       const q = fs.query(
         fs.collection(db, 'kds_orders'),
@@ -594,7 +597,7 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
     if (tab === 3 && !showCompleted) {
       showCompleted = true;
       publish();
-      if (!isLive) void fetchActive(true);
+      if (!isLive) void fetchActive(false);
     } else {
       syncTabs();
     }
@@ -759,7 +762,7 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
     else if (act === 'history') {
       showCompleted = !showCompleted;
       publish();
-      if (showCompleted && !isLive) void fetchActive(true);
+      if (showCompleted && !isLive) void fetchActive(false);
     } else if (act === 'clear') {
       clearTimeout(searchTimer);
       query = '';

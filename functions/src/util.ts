@@ -6,6 +6,12 @@ export function phtDateLabel(d = new Date()): string {
   return `${pht.getUTCFullYear()}-${m}-${day}`;
 }
 
+/** Coerces a numeric field to a finite number, defaulting invalid/NaN values to 0. */
+export function finiteNumber(v: unknown): number {
+  const n = typeof v === "number" ? v : Number(v);
+  return Number.isFinite(n) ? n : 0;
+}
+
 /** Composite item key including variant: 'Name (Variant)' or 'Name'. */
 export function itemKey(name: string, variant?: string): string {
   return variant ? `${name} (${variant})` : name;

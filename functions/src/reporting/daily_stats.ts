@@ -1,6 +1,6 @@
 import { FieldValue, Firestore, Query, QueryDocumentSnapshot, QuerySnapshot } from 'firebase-admin/firestore';
 import { HttpsError } from 'firebase-functions/v2/https';
-import { itemKey, isCountableOrder, ChannelBucket } from '../util';
+import { itemKey, isCountableOrder, finiteNumber, ChannelBucket } from '../util';
 
 export const STATS_META_DOC = 'stats_meta/dailyStats';
 export const BACKFILL_CACHE_TTL_MS = 5 * 60 * 1000;
@@ -116,20 +116,23 @@ export function contributionOf(data: Record<string, any> | undefined): Contribut
   if (!data || !isCountableOrder(data)) return null;
   const items: Contribution['items'] = {};
   let itemsSold = 0;
-  for (const item of data.items || []) {
-    const name = item.name || 'Unknown';
-    const variant = item.variant || '';
-    const qty = Number(item.quantity || item.qty) || 1;
+  const rawItems = Array.isArray(data.items) ? data.items : [];
+  for (const item of rawItems) {
+    if (!item || typeof item !== 'object') continue;
+    const name = typeof item.name === 'string' && item.name.length > 0 ? item.name : 'Unknown';
+    const variant = typeof item.variant === 'string' ? item.variant : '';
+    const rawQty = finiteNumber(item.quantity || item.qty);
+    const qty = rawQty > 0 ? rawQty : 1;
     itemsSold += qty;
     const key = statsItemKey(name, variant);
     const slot = items[key] || (items[key] = { name, variant, qty: 0, revenue: 0 });
     slot.qty += qty;
-    slot.revenue += (item.price || 0) * qty;
+    slot.revenue += finiteNumber(item.price) * qty;
   }
   const type = data.type || 'Pickup';
   return {
     date: safeDateLabel(data.dateLabel),
-    amount: data.totalAmount || 0,
+    amount: finiteNumber(data.totalAmount),
     itemsSold,
     channel: type === 'Walk-In' ? 'walkIn' : type === 'Delivery' ? 'delivery' : 'pickup',
     entryType: data.entryType === 'Staff' ? 'staff' : 'kiosk',
