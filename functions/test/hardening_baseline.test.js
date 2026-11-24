@@ -1153,3 +1153,37 @@ test('parseIdempotencyKey rejects non-string and malformed keys while allowing a
     assert.throws(() => parseIdempotencyKey(bad), (err) => err && err.code === 'invalid-argument');
   }
 });
+
+test('shouldDeleteKdsMirror skips delete transactions for orders never visible in KDS', () => {
+  const { shouldDeleteKdsMirror } = require('../lib/orders/derived');
+  const unpaidGcash = { paymentMethod: 'GCash', paymentStatus: 'AWAITING_PAYMENT', status: 'Pending' };
+  const expiredGcash = { paymentMethod: 'GCash', paymentStatus: 'PAYMENT_EXPIRED', status: 'Cancelled' };
+  const paidGcash = { paymentMethod: 'GCash', paymentStatus: 'PAID', status: 'Pending' };
+  const cashOrder = { paymentMethod: 'Cash', paymentStatus: 'NOT PAID', status: 'Pending' };
+
+  assert.equal(shouldDeleteKdsMirror(undefined, unpaidGcash), false);
+  assert.equal(shouldDeleteKdsMirror(unpaidGcash, expiredGcash), false);
+  assert.equal(shouldDeleteKdsMirror(unpaidGcash, undefined), false);
+  assert.equal(shouldDeleteKdsMirror(paidGcash, unpaidGcash), true);
+  assert.equal(shouldDeleteKdsMirror(cashOrder, undefined), true);
+  assert.equal(shouldDeleteKdsMirror(cashOrder, cashOrder), false);
+});
+
+test('buildStatusUpdate preserves an existing cancellationReason on duplicate Cancelled calls', () => {
+  const { buildStatusUpdate } = require('../lib/orders/kds');
+  assert.equal(
+    buildStatusUpdate({ status: 'Cancelled', cancellationReason: 'Payment session expired' }, 'Cancelled', 'Duplicate / Test Order'),
+    null,
+    'duplicate cancel must not overwrite an existing cancellationReason',
+  );
+  assert.deepEqual(
+    buildStatusUpdate({ status: 'Cancelled' }, 'Cancelled', 'Customer Requested Cancellation'),
+    { status: 'Cancelled', cancellationReason: 'Customer Requested Cancellation' },
+    'duplicate cancel may backfill a missing cancellationReason',
+  );
+  assert.deepEqual(
+    buildStatusUpdate({ status: 'Pending' }, 'Cancelled', 'Item Out of Stock'),
+    { status: 'Cancelled', cancellationReason: 'Item Out of Stock' },
+  );
+  assert.equal(buildStatusUpdate({ status: 'Preparing' }, 'Preparing', ''), null);
+});

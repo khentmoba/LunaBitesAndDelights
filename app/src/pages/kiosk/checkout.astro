@@ -327,7 +327,7 @@ function restore() {
 
 for (const tile of document.querySelectorAll<HTMLElement>('.co-tile')) {
   tile.addEventListener('click', () => {
-    if ((tile as HTMLButtonElement).disabled || tile.dataset.value === 'GCash') return;
+    if (loading || (tile as HTMLButtonElement).disabled || tile.dataset.value === 'GCash') return;
     if (tile.dataset.group === 'type') {
       draft.orderType = tile.dataset.value as OrderType;
       clearPending();
@@ -446,10 +446,10 @@ async function submit() {
   const receiptItems = serverItems?.length ? serverItems : order.items;
   const receipt: Receipt = {
     orderNumber, customerName: name, customerAddress: address, customerPhone: phone,
-    items: receiptItems, total, timeStr, isWalkIn: draft.orderType === 'Walk-In', orderType: draft.orderType, telegramSent,
+    items: receiptItems, total, timeStr, isWalkIn: order.type === 'Walk-In', orderType: order.type, telegramSent,
   };
 
-  if (draft.paymentMethod === 'GCash' && !isStaff) {
+  if (order.paymentMethod === 'GCash' && !isStaff) {
     draft.pendingDocId = docId;
     draft.pendingNumber = orderNumber;
     draft.pendingCart = cartKey();

@@ -6,7 +6,7 @@ import { callFn } from '../kiosk/firebase.ts';
 import type { IconName } from '../kiosk/icons.ts';
 import { localStamp, phtDateLabel } from '../kiosk/order.ts';
 import { snack } from '../kiosk/snackbar.ts';
-import { isAuthErrorText, logout, staffErrorMessage, type Staff } from './session.ts';
+import { fnError, isAuthCode, isAuthErrorText, logout, staffErrorMessage, type Staff } from './session.ts';
 import { diagonals, esc, go, icon, int, showDialog } from './ui.ts';
 
 interface Tile {
@@ -200,8 +200,13 @@ ${
             allOrders = res.orders.map(tileFrom);
             list = allOrders;
           }
-        } catch {
+        } catch (e) {
           if (disposed || seq !== fetchSeq || !getStaff()) return;
+          const fe = fnError(e);
+          if (fe && isAuthCode(fe.code)) {
+            void logout();
+            return;
+          }
           // Fall back to the already-loaded recent orders if the expanded fetch fails.
         }
       }

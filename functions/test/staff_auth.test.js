@@ -363,4 +363,47 @@ describe('staff auth: scrypt PIN and password verification', () => {
       firestoreMod.getFirestore = origGetFirestore;
     }
   });
+
+  test('checkRateLimit re-enforces lockout when a concurrent failure re-locks inside the cleanup transaction', async () => {
+    const firestoreMod = require('firebase-admin/firestore');
+    const { checkRateLimit } = require('../lib/util/security');
+    const origGetFirestore = firestoreMod.getFirestore;
+    let getCalls = 0;
+    let deleted = false;
+    const expiredDate = new Date(Date.now() - 60_000);
+    const activeLockDate = new Date(Date.now() + 10 * 60_000);
+
+    const fakeRef = {
+      async get() {
+        getCalls++;
+        // First read (outside tx) sees an expired lockout; tx.get sees a concurrent re-lock.
+        const lockedUntil = getCalls === 1 ? expiredDate : activeLockDate;
+        return {
+          exists: true,
+          data: () => ({ fails: 5, lockedUntil: { toDate: () => lockedUntil } }),
+        };
+      },
+    };
+
+    firestoreMod.getFirestore = () => ({
+      collection: () => ({ doc: () => fakeRef }),
+      async runTransaction(fn) {
+        const tx = {
+          get: (ref) => ref.get(),
+          delete: () => { deleted = true; },
+        };
+        return fn(tx);
+      },
+    });
+
+    try {
+      await assert.rejects(
+        checkRateLimit('staff:admin:203.0.113.10'),
+        (err) => err?.code === 'resource-exhausted',
+      );
+      assert.equal(deleted, false, 'active concurrent lockout must not be deleted');
+    } finally {
+      firestoreMod.getFirestore = origGetFirestore;
+    }
+  });
 });
