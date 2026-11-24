@@ -67,6 +67,7 @@ export function watchInactivity(timeoutMs = TIMEOUT_MS, options: WatchInactivity
   dialog.addEventListener('cancel', (e) => e.preventDefault());
   dialog.querySelector('[data-idle-stay]')!.addEventListener('click', () => {
     clearInterval(tick);
+    tick = 0;
     dialog.close();
     arm(true);
   });

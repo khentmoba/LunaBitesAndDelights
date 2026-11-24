@@ -3,7 +3,8 @@
 // response that claims otherwise makes the tablet resync against a stale view.
 const { describe, test } = require('node:test');
 const assert = require('node:assert/strict');
-const { applyOrderStatus, pageSizeForActiveOrders, MAX_SCAN_DOCS } = require('../lib/orders/kds');
+const { applyOrderStatus, pageSizeForActiveOrders, MAX_SCAN_DOCS, buildKdsMirrorWrite } = require('../lib/orders/kds');
+const { isKdsMirrorUnchanged, kdsMirrorDoc } = require('../lib/orders/derived');
 
 function fakeDb(current) {
   const writes = [];
@@ -118,5 +119,40 @@ describe('pageSizeForActiveOrders', () => {
     assert.equal(pageSizeForActiveOrders(10, false, MAX_SCAN_DOCS), 50);
     assert.equal(pageSizeForActiveOrders(200, false, 35), 35);
     assert.equal(pageSizeForActiveOrders(10, true, 5), 5);
+  });
+});
+
+describe('isKdsMirrorUnchanged', () => {
+  const sampleOrder = {
+    orderId: 'LU-200',
+    customerName: 'Ana',
+    paymentMethod: 'Cash',
+    paymentStatus: 'NOT PAID',
+    status: 'Pending',
+    totalAmount: 99,
+    items: [{ name: 'Shawarma Wrap', variant: 'Solo', quantity: 1, price: 60 }],
+    timestamp: '2026-11-24T10:00:00.000Z',
+  };
+
+  test('returns true when mirror fields match regardless of key order or metadata', () => {
+    const written = buildKdsMirrorWrite('ord200', sampleOrder, 1700000000000);
+    const reordered = {};
+    for (const key of Object.keys(written).sort()) {
+      reordered[key] = written[key];
+    }
+    const next = kdsMirrorDoc('ord200', sampleOrder);
+    assert.equal(isKdsMirrorUnchanged(reordered, next), true);
+  });
+
+  test('returns false when expireAt is missing or order fields changed', () => {
+    const written = buildKdsMirrorWrite('ord200', sampleOrder, 1700000000000);
+    const next = kdsMirrorDoc('ord200', sampleOrder);
+
+    const noExpire = { ...written };
+    delete noExpire.expireAt;
+    assert.equal(isKdsMirrorUnchanged(noExpire, next), false);
+
+    const updatedNext = kdsMirrorDoc('ord200', { ...sampleOrder, status: 'Preparing' });
+    assert.equal(isKdsMirrorUnchanged(written, updatedNext), false);
   });
 });
