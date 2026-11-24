@@ -106,6 +106,7 @@ The following controls reflect the codebase reviewed on 2026-11-24 (see also `do
 | **REL-08** | Low | Resolved | Code-only | `functions/src/orders/derived.ts` | Set explicit `timeoutSeconds: 45` on `onOrderWritten` (below `TELEGRAM_CLAIM_TTL_MS = 60s`) |
 | **REL-09** | Medium | Resolved | Code-only | `app/src/staff/kds.ts` | KDS `updateStatus` shadowed the module `authHalted` flag, and metadata-only Firestore snapshots rebuilt the whole board |
 | **REL-10** | Medium | Resolved | Code-only | `app/src/pages/kiosk/menu.astro`, `app/src/pages/kiosk/gcash.astro` | A second card tap threw `InvalidStateError` from `showModal()`, and a failed GCash retry kept the previous dead checkout session |
+| **REL-11** | Medium | Resolved | Code-only | `functions/src/orders/send_notification.ts` | The notification reconciler re-announced orders staff had already cancelled when an earlier Telegram attempt had left a failed claim behind |
 
 ### Details
 
@@ -166,6 +167,12 @@ The following controls reflect the codebase reviewed on 2026-11-24 (see also `do
   2. `start()` reused the module-level `checkoutUrl`/`sessionId` and never cleared the "Checkout session is not ready yet" message. After a failed `createCheckoutSession`, a retry could leave the dead session id in place, and a retry that succeeded left the stale error on screen so "I HAVE PAID" looked broken.
 - **Resolution:** `openSheet` returns early while a sheet is open (keeping the first one and its `close` promise intact); `start()` resets `checkoutUrl`/`sessionId`/the verify error before calling the provider and clears the error again once a session arrives.
 - **Proof:** `test/site/staff.test.mjs` asserts the sheet guard and both GCash resets.
+
+#### REL-11 — Stop the reconciler from re-announcing cancelled orders
+- **Where:** `functions/src/orders/send_notification.ts` (`reconcileMissedOrderNotifications`)
+- **Failure Mode:** Three paths refuse to announce a cancelled order: `shouldNotifyKitchen` on the trigger, `sendOrderNotification` (failed-precondition), and the kitchen board's read filter (the `kds_orders` mirror keeps the cancelled ticket for history). The two-minute reconciler only skipped cancelled orders that had *no* notification state at all (the `terminal && !hasOrderNotificationState(...)` guard). When an earlier Telegram attempt failed transiently and left `telegramStatus: 'failed'` in `order_notifications/{orderDocId}`, that record made the order look retryable, so the next sweep sent "🔔 NEW ORDER — … Please prepare this order!" for an order staff had already cancelled.
+- **Resolution:** `reconcileMissedOrderNotifications` now drops `status === 'Cancelled'` orders while building its candidate list, before any `order_notifications` read, so a failed claim left by an outage can no longer resurrect a cancelled order's alert. The jobs filter keeps its own terminal guard as defence in depth.
+- **Proof:** `functions/test/emulator/derived-views.test.js` seeds a cancelled order that carries a failed claim and asserts the sweep neither retries it nor flips its claim; run against the pre-fix code the same assertion failed with `retried 4 !== 3`.
 
 ---
 
