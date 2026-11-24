@@ -3,7 +3,7 @@
 // response that claims otherwise makes the tablet resync against a stale view.
 const { describe, test } = require('node:test');
 const assert = require('node:assert/strict');
-const { applyOrderStatus } = require('../lib/orders/kds');
+const { applyOrderStatus, pageSizeForActiveOrders, MAX_SCAN_DOCS } = require('../lib/orders/kds');
 
 function fakeDb(current) {
   const writes = [];
@@ -64,5 +64,19 @@ describe('applyOrderStatus', () => {
     const db = fakeDb(undefined);
     await assert.rejects(applyOrderStatus(db, orderRef, 'Preparing', ''), (err) => err.code === 'not-found');
     assert.deepEqual(db.writes, []);
+  });
+});
+
+describe('pageSizeForActiveOrders', () => {
+  test('trims over-fetching for small includeCompleted dashboard queries', () => {
+    assert.equal(pageSizeForActiveOrders(10, true, MAX_SCAN_DOCS), 20);
+    assert.equal(pageSizeForActiveOrders(50, true, MAX_SCAN_DOCS), 60);
+    assert.equal(pageSizeForActiveOrders(200, true, MAX_SCAN_DOCS), 200);
+  });
+
+  test('keeps a larger buffer for active-only KDS queries and clamps to remaining scan budget', () => {
+    assert.equal(pageSizeForActiveOrders(10, false, MAX_SCAN_DOCS), 50);
+    assert.equal(pageSizeForActiveOrders(200, false, 35), 35);
+    assert.equal(pageSizeForActiveOrders(10, true, 5), 5);
   });
 });

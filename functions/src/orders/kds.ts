@@ -56,6 +56,19 @@ export function buildStatusUpdate(
   return update;
 }
 
+/** Computes a page size for `getActiveOrders` that minimizes over-fetching and never overshoots the scan ceiling. */
+export function pageSizeForActiveOrders(
+  maxDocs: number,
+  includeCompleted: boolean,
+  remainingScanBudget = MAX_SCAN_DOCS,
+): number {
+  const budget = Math.max(1, Math.trunc(remainingScanBudget));
+  const base = includeCompleted
+    ? Math.min(Math.max(maxDocs + 10, 20), MAX_ORDERS_LIMIT)
+    : Math.min(Math.max(maxDocs * 2, 50), MAX_ORDERS_LIMIT);
+  return Math.min(base, budget);
+}
+
 /** Clamps an optional caller-supplied limit to [1, 200], defaulting to 200. */
 export function clampOrdersLimit(raw: unknown): number {
   const n = typeof raw === 'number' ? raw : Number(raw);
@@ -235,7 +248,6 @@ export const getActiveOrders = onCall(async (request) => {
   try {
     // 7-day lookback so yesterday's active and history orders are never cut off
     const lookbackThreshold = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-    const pageSize = Math.min(Math.max(maxDocs * 2, 50), MAX_ORDERS_LIMIT);
     const orders = [];
     let cursor: FirebaseFirestore.QueryDocumentSnapshot | null = null;
     let scanned = 0;
@@ -248,6 +260,7 @@ export const getActiveOrders = onCall(async (request) => {
         truncated = true;
         break;
       }
+      const pageSize = pageSizeForActiveOrders(maxDocs, includeCompleted, MAX_SCAN_DOCS - scanned);
       let q = db.collection('orders')
         .where('timestamp', '>=', lookbackThreshold)
         .orderBy('timestamp', 'desc')

@@ -288,6 +288,9 @@ function renderForm() {
 
   const blocked = delivery && !draft.pinned;
   $('[data-blocked]').hidden = !blocked;
+  nameInput.readOnly = loading;
+  phoneInput.readOnly = loading;
+  addressInput.readOnly = loading;
   confirmBtn.classList.toggle('is-blocked', blocked);
   confirmBtn.disabled = blocked || loading;
   confirmBtn.setAttribute('aria-busy', String(loading));
@@ -341,6 +344,7 @@ for (const tile of document.querySelectorAll<HTMLElement>('.co-tile')) {
 }
 
 form.addEventListener('input', () => {
+  if (loading) return;
   draft.name = nameInput.value;
   draft.phone = phoneInput.value;
   draft.address = addressInput.value;
@@ -348,7 +352,13 @@ form.addEventListener('input', () => {
   persist();
 });
 
-$('[data-pin]').addEventListener('click', () => persist());
+$('[data-pin]').addEventListener('click', (e) => {
+  if (loading) {
+    e.preventDefault();
+    return;
+  }
+  persist();
+});
 document.querySelectorAll('[data-back]').forEach((b) => b.addEventListener('click', () => popTo('/kiosk/cart')));
 
 form.addEventListener('submit', (e) => {

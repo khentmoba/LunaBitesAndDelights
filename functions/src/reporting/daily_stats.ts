@@ -248,8 +248,20 @@ export function dayFromDoc(id: string, d: Record<string, any>): DayStats {
   for (const k of ['walkIn', 'delivery', 'pickup'] as const) day.channel[k] = readBucket(d.channel?.[k]);
   for (const k of ['kiosk', 'staff'] as const) day.entryType[k] = readBucket(d.entryType?.[k]);
   for (const k of ['cash', 'gcash'] as const) day.paymentMethod[k] = readBucket(d.paymentMethod?.[k]);
-  for (const [k, it] of Object.entries<any>(d.items || {})) {
-    day.items[k] = { name: String(it?.name ?? k), variant: String(it?.variant ?? ''), qty: num(it?.qty), revenue: num(it?.revenue) };
+  if (d.items && typeof d.items === 'object' && !Array.isArray(d.items)) {
+    for (const [k, it] of Object.entries<any>(d.items)) {
+      Object.defineProperty(day.items, k, {
+        value: {
+          name: String(it?.name ?? k),
+          variant: String(it?.variant ?? ''),
+          qty: num(it?.qty),
+          revenue: num(it?.revenue),
+        },
+        enumerable: true,
+        writable: true,
+        configurable: true,
+      });
+    }
   }
   return day;
 }

@@ -88,7 +88,7 @@ import { DRAFT, PENDING, RECEIPT, load, save, validPending, type CheckoutDraft, 
 import { glyph } from '../../kiosk/icons';
 import { popTo, watchInactivity } from '../../kiosk/inactivity';
 import { verifyPaymentErrorMessage } from '../../kiosk/order';
-import { isPaymentUrl } from '../../kiosk/payment-host';
+import { parseCheckoutSessionResponse } from '../../kiosk/payment-host';
 
 const pending = load<PendingPayment>(PENDING);
 
@@ -163,11 +163,10 @@ async function start(p: PendingPayment) {
       customerName: p.customerName,
       customerPhone: p.customerPhone,
     });
-    if (!isPaymentUrl(data.checkoutUrl)) throw new Error('The payment link is not a PayMongo page.');
-    checkoutUrl = data.checkoutUrl;
-    sessionId = data.checkoutSessionId == null ? null : String(data.checkoutSessionId);
-    // Clear a "session is not ready" complaint raised while this call was in flight.
-    if (sessionId) setVerifyError(null);
+    const parsed = parseCheckoutSessionResponse(data);
+    checkoutUrl = parsed.checkoutUrl;
+    sessionId = parsed.sessionId;
+    setVerifyError(null);
     show('ready');
     // Browsers block window.open() after an async gap (no user activation), so
     // the visible OPEN PAYMENT PAGE button is the only reliable way to open it.

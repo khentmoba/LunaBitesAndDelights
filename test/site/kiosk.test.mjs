@@ -497,3 +497,30 @@ test('watchInactivity clears timers and closes idle dialog on pagehide and re-ar
     dom.window.close();
   }
 });
+
+test('parseCheckoutSessionResponse rejects missing or blank session ids and non-PayMongo URLs', async () => {
+  const { parseCheckoutSessionResponse } = await import('../../app/src/kiosk/payment-host.ts');
+  assert.deepEqual(
+    parseCheckoutSessionResponse({
+      checkoutUrl: 'https://checkout.paymongo.com/cs_abc123',
+      checkoutSessionId: ' cs_abc123 ',
+    }),
+    { checkoutUrl: 'https://checkout.paymongo.com/cs_abc123', sessionId: 'cs_abc123' },
+  );
+  assert.throws(
+    () => parseCheckoutSessionResponse({ checkoutUrl: 'https://checkout.paymongo.com/cs_abc123', checkoutSessionId: '' }),
+    /could not be initialized/i,
+  );
+  assert.throws(
+    () => parseCheckoutSessionResponse({ checkoutUrl: 'https://checkout.paymongo.com/cs_abc123', checkoutSessionId: '   ' }),
+    /could not be initialized/i,
+  );
+  assert.throws(
+    () => parseCheckoutSessionResponse({ checkoutUrl: 'https://checkout.paymongo.com/cs_abc123' }),
+    /could not be initialized/i,
+  );
+  assert.throws(
+    () => parseCheckoutSessionResponse({ checkoutUrl: 'https://evil.example/pay', checkoutSessionId: 'cs_abc123' }),
+    /not a PayMongo page/i,
+  );
+});

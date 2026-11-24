@@ -13,3 +13,18 @@ export function isPaymentUrl(url: string): boolean {
   const host = u.hostname.toLowerCase();
   return ALLOWED.some((a) => host === a || host.endsWith(`.${a}`));
 }
+
+/** Validates a `createCheckoutSession` response before entering the ready state. */
+export function parseCheckoutSessionResponse(
+  data: { checkoutUrl?: unknown; checkoutSessionId?: unknown } | null | undefined,
+): { checkoutUrl: string; sessionId: string } {
+  const checkoutUrl = typeof data?.checkoutUrl === 'string' ? data.checkoutUrl.trim() : '';
+  if (!isPaymentUrl(checkoutUrl)) {
+    throw new Error('The payment link is not a PayMongo page.');
+  }
+  const sessionId = typeof data?.checkoutSessionId === 'string' ? data.checkoutSessionId.trim() : '';
+  if (!sessionId) {
+    throw new Error('Payment session could not be initialized. Please retry.');
+  }
+  return { checkoutUrl, sessionId };
+}
