@@ -41,12 +41,12 @@ async function cacheAndPrune(req, res) {
   }
 }
 
-function matchCache(req) {
-  return caches.open(CACHE).then((c) => c.match(req));
+function matchCache(req, opts) {
+  return caches.open(CACHE).then((c) => c.match(req, opts));
 }
 
 function isCacheableResponse(res) {
-  return res.status === 200 && !res.redirected;
+  return res.type === 'basic' && res.status === 200 && !res.redirected;
 }
 
 self.addEventListener('fetch', (event) => {
@@ -100,6 +100,10 @@ self.addEventListener('fetch', (event) => {
         }
         return res;
       })
-      .catch(() => matchCache(req).then((hit) => hit ?? Response.error())),
+      .catch(() =>
+        matchCache(req)
+          .then((hit) => hit ?? (req.mode === 'navigate' ? matchCache(req, { ignoreSearch: true }) : undefined))
+          .then((hit) => hit ?? Response.error()),
+      ),
   );
 });

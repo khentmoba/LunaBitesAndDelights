@@ -38,6 +38,8 @@ export function orderPayloadFingerprint(input: {
   customerName: string;
   customerPhone: string;
   customerAddress: string;
+  lat?: number | null;
+  lng?: number | null;
   items: Array<{ name: string; variant: string; price: number; quantity: number }>;
 }): string {
   const canonical = JSON.stringify({
@@ -46,6 +48,8 @@ export function orderPayloadFingerprint(input: {
     customerName: input.customerName,
     customerPhone: input.customerPhone,
     customerAddress: input.customerAddress,
+    lat: input.lat ?? null,
+    lng: input.lng ?? null,
     items: input.items.map((i) => [i.name, i.variant, i.price, i.quantity]),
   });
   return crypto.createHash('sha256').update(canonical).digest('hex');
@@ -154,6 +158,8 @@ export const placeOrder = onCall(async (request) => {
       customerName,
       customerPhone,
       customerAddress: payload.customerAddress,
+      lat: payload.lat,
+      lng: payload.lng,
       items,
     });
     const ref = db.collection('orders').doc(idempotentOrderDocId(rawIdempotencyKey));

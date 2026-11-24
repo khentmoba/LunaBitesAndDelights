@@ -10,7 +10,7 @@ import type { Auth } from 'firebase/auth';
 import type { Firestore } from 'firebase/firestore';
 import type { Functions } from 'firebase/functions';
 
-const emulators = import.meta.env.PUBLIC_FIREBASE_EMULATORS === '1';
+const emulators = import.meta.env?.PUBLIC_FIREBASE_EMULATORS === '1';
 
 const config = {
   apiKey: 'AIzaSyBAtF167ua5zEH-xhP2U9dObFWlQz3lF-Y',
@@ -39,7 +39,7 @@ export function firebaseApp(): Promise<FirebaseApp> {
     const { initializeApp, getApps } = await import('firebase/app');
     const app = getApps()[0] ?? initializeApp(config);
     if (!emulators) {
-      const siteKey = import.meta.env.PUBLIC_RECAPTCHA_SITE_KEY;
+      const siteKey = import.meta.env?.PUBLIC_RECAPTCHA_SITE_KEY;
       if (siteKey) {
         try {
           const { initializeAppCheck, ReCaptchaEnterpriseProvider } = await import('firebase/app-check');

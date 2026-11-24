@@ -222,6 +222,10 @@ if (!mapsKey) {
         if (Date.now() < ignoreIdleUntil) return;
         locateSeq++;
         userInteracted = true;
+        if (locating) {
+          locating = false;
+          render();
+        }
       });
       map.addListener('idle', () => {
         if (!map || loading || Date.now() < ignoreIdleUntil || !userInteracted) return;
@@ -313,8 +317,10 @@ async function goToMyLocation() {
     moveTo(lat, lng);
     await fetchAddress(lat, lng);
   } finally {
-    locating = false;
-    render();
+    if (seq === locateSeq) {
+      locating = false;
+      render();
+    }
   }
 }
 
@@ -375,6 +381,7 @@ list.addEventListener('click', (e) => {
   setSearching(false);
   clearTimeout(addressTimer);
   locateSeq++;
+  locating = false;
   userInteracted = true;
   moveTo(lat, lng);
   render();
@@ -450,12 +457,15 @@ void (async () => {
     if (pos) {
       lat = pos.lat;
       lng = pos.lng;
+      userInteracted = true;
     }
     moveTo(lat, lng);
     await fetchAddress(lat, lng);
   } finally {
-    locating = false;
-    render();
+    if (seq === locateSeq) {
+      locating = false;
+      render();
+    }
   }
 })();
 </script>

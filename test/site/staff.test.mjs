@@ -136,7 +136,7 @@ test('staff service worker serves immutable assets cache-first and prunes naviga
   const sw = readFileSync(join(root, 'app/public/staff/sw.js'), 'utf8');
   assert.match(sw, /const immutable\s*=.*\/_astro\//);
   assert.match(sw, /const fontAsset\s*=.*\/kiosk\/fonts\//);
-  assert.match(sw, /caches\.open\(CACHE\)\.then\(\(c\) => c\.match\(req\)\)/);
+  assert.match(sw, /caches\.open\(CACHE\)\.then\(\(c\) => c\.match\(req, opts\)\)/);
   assert.match(sw, /if \(immutable\)\s*\{[\s\S]*matchCache\(req\)/);
   assert.match(sw, /const MAX_NAVIGATION_ENTRIES = 8/);
 
@@ -147,8 +147,16 @@ test('staff service worker serves immutable assets cache-first and prunes naviga
     async put(req, res) {
       store.set(req.url, res);
     },
-    async match(req) {
-      return store.get(req.url);
+    async match(req, opts) {
+      if (store.has(req.url)) return store.get(req.url);
+      if (opts?.ignoreSearch) {
+        const target = new URL(req.url);
+        for (const [k, v] of store.entries()) {
+          const u = new URL(k);
+          if (u.origin === target.origin && u.pathname === target.pathname) return v;
+        }
+      }
+      return undefined;
     },
     async keys() {
       return [...store.keys()].map((url) => ({ url, mode: 'cors' }));
@@ -178,13 +186,19 @@ test('staff service worker serves immutable assets cache-first and prunes naviga
       async delete(key) { deletedCaches.push(key); return true; },
     },
     async fetch(req) {
+      if (req.url.includes('offline-query')) {
+        throw new TypeError('offline');
+      }
+      if (req.url.includes('opaque')) {
+        return { ok: true, type: 'opaque', status: 200, redirected: false, clone() { return { ok: true, type: 'opaque', status: 200, redirected: false }; } };
+      }
       if (req.url.includes('partial')) {
-        return { ok: true, status: 206, redirected: false, clone() { return { ok: true, status: 206, redirected: false }; } };
+        return { ok: true, type: 'basic', status: 206, redirected: false, clone() { return { ok: true, type: 'basic', status: 206, redirected: false }; } };
       }
       if (req.url.includes('redirected')) {
-        return { ok: true, status: 200, redirected: true, clone() { return { ok: true, status: 200, redirected: true }; } };
+        return { ok: true, type: 'basic', status: 200, redirected: true, clone() { return { ok: true, type: 'basic', status: 200, redirected: true }; } };
       }
-      return { ok: true, status: 200, redirected: false, clone() { return { ok: true, status: 200, redirected: false }; } };
+      return { ok: true, type: 'basic', status: 200, redirected: false, clone() { return { ok: true, type: 'basic', status: 200, redirected: false }; } };
     },
   });
   vm.runInContext(sw, ctx);
@@ -259,6 +273,45 @@ test('staff service worker serves immutable assets cache-first and prunes naviga
   await redirectRes;
   await Promise.all(redirectWaits);
   assert.equal(store.has('https://lunabitesanddelights.web.app/staff/redirected'), false);
+
+  // Opaque responses must never be cached.
+  const opaqueWaits = [];
+  let opaqueRes = null;
+  fetchHandler({
+    request: {
+      method: 'GET',
+      mode: 'navigate',
+      url: 'https://lunabitesanddelights.web.app/staff/opaque',
+    },
+    respondWith(p) { opaqueRes = p; },
+    waitUntil(p) { opaqueWaits.push(p); },
+  });
+  await opaqueRes;
+  await Promise.all(opaqueWaits);
+  assert.equal(store.has('https://lunabitesanddelights.web.app/staff/opaque'), false);
+
+  // Offline navigation with query params falls back to the cached shell via ignoreSearch.
+  const cachedShell = { ok: true, type: 'basic', status: 200, body: 'kds-shell' };
+  store.set('https://lunabitesanddelights.web.app/staff/offline-query', cachedShell);
+  let offlineRes = null;
+  fetchHandler({
+    request: {
+      method: 'GET',
+      mode: 'navigate',
+      url: 'https://lunabitesanddelights.web.app/staff/offline-query?source=pwa',
+    },
+    respondWith(p) { offlineRes = p; },
+    waitUntil() {},
+  });
+  assert.equal(await offlineRes, cachedShell);
+});
+
+test('tokenErrorAction preserves offline staff sessions instead of logging out on network error', async () => {
+  const { tokenErrorAction } = await import('../../app/src/staff/session.ts');
+  assert.equal(tokenErrorAction('auth/network-request-failed', true), 'keep');
+  assert.equal(tokenErrorAction('auth/network-request-failed', false), 'defer');
+  assert.equal(tokenErrorAction('auth/user-token-expired', false), 'logout');
+  assert.equal(tokenErrorAction('auth/id-token-revoked', true), 'logout');
 });
 
 test('kds delayed badge keeps INK contrast on elapsed-time ticks and dashboard handles non-admin badge', () => {
@@ -368,8 +421,9 @@ test('kiosk menu sheet and GCash page recover from a second tap and a failed ret
   const gcashSrc = readFileSync(join(root, 'app/src/pages/kiosk/gcash.astro'), 'utf8');
   // A retry must drop the previous session before asking for a new one…
   assert.match(gcashSrc, /checkoutUrl = null;\s*sessionId = null;\s*setVerifyError\(null\);/);
-  // …and clear the stale "session is not ready" complaint once it arrives.
-  assert.match(gcashSrc, /if \(sessionId\) setVerifyError\(null\);/);
+  // …validate both URL and sessionId via parseCheckoutSessionResponse and clear stale verify errors.
+  assert.match(gcashSrc, /const parsed = parseCheckoutSessionResponse\(data\);/);
+  assert.match(gcashSrc, /sessionId = parsed\.sessionId;\s*setVerifyError\(null\);/);
 });
 
 test('mountLogin cancels backspace long-press on pointercancel and ignores late verifyStaff after dispose', async () => {

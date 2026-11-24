@@ -444,6 +444,10 @@ test('orderPayloadFingerprint is deterministic and detects payload tampering', (
     orderPayloadFingerprint(base),
     orderPayloadFingerprint({ ...base, paymentMethod: 'Cash' }),
   );
+  assert.notStrictEqual(
+    orderPayloadFingerprint({ ...base, type: 'Delivery', lat: 9.02, lng: 125.51 }),
+    orderPayloadFingerprint({ ...base, type: 'Delivery', lat: 9.03, lng: 125.52 }),
+  );
 });
 
 test('clientIpFromRequest uses rightmost x-forwarded-for hop and falls back to rawRequest.ip', () => {

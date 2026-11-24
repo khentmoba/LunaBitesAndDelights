@@ -20,6 +20,14 @@ export function staffRoleFor(claims: Record<string, unknown> | undefined): Staff
   return role === 'admin' || role === 'staff' ? role : null;
 }
 
+/** Decides how to handle a getIdTokenResult() error without wiping offline sessions. */
+export function tokenErrorAction(code: string, hasMatchingCurrent: boolean): 'keep' | 'defer' | 'logout' {
+  if (code === 'auth/network-request-failed') {
+    return hasMatchingCurrent ? 'keep' : 'defer';
+  }
+  return 'logout';
+}
+
 const make = (username: string, role: StaffRole): Staff => ({
   username,
   role,
@@ -61,7 +69,12 @@ async function bind() {
         if (seq !== authSeq) return;
         console.warn('Staff token verification failed', e);
         const code = typeof (e as { code?: unknown })?.code === 'string' ? (e as { code: string }).code : '';
-        if (code === 'auth/network-request-failed' && current?.username === username) return;
+        const action = tokenErrorAction(code, current?.username === username);
+        if (action === 'keep') return;
+        if (action === 'defer') {
+          emit(null);
+          return;
+        }
         void logout();
       });
   });

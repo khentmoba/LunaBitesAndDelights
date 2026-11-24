@@ -194,6 +194,24 @@ test('stored docs round-trip and tolerate missing fields', () => {
   assert.strictEqual(sparse.date, '2026-11-15');
 });
 
+test('dayFromDoc ignores malformed items fields and stores __proto__ safely as an own property', () => {
+  const fromStr = dayFromDoc('2026-11-15', { items: 'corrupted' });
+  assert.deepStrictEqual(fromStr.items, {});
+  const fromArr = dayFromDoc('2026-11-15', { items: [{ name: 'Bad' }] });
+  assert.deepStrictEqual(fromArr.items, {});
+
+  const rawItems = Object.defineProperty({}, '__proto__', {
+    value: { name: 'Proto Item', variant: '', qty: 2, revenue: 100 },
+    enumerable: true,
+    configurable: true,
+    writable: true,
+  });
+  const parsed = dayFromDoc('2026-11-15', { items: rawItems });
+  assert.strictEqual(Object.getPrototypeOf(parsed.items), Object.prototype);
+  assert.strictEqual(Object.prototype.hasOwnProperty.call(parsed.items, '__proto__'), true);
+  assert.strictEqual(parsed.items['__proto__'].qty, 2);
+});
+
 test('salesAnalyticsFromDay matches scanning today orders', () => {
   const dateLabel = '2026-11-15';
   const r = rng(42);
