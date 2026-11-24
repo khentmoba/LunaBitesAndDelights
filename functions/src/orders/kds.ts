@@ -95,13 +95,18 @@ export const projectOrder = (id: string, d: FirebaseFirestore.DocumentData) => {
   };
 };
 
+/** Returns a persisted non-negative numeric item count, or null when absent/invalid. */
+export function validStoredItemsCount(raw: unknown): number | null {
+  return typeof raw === 'number' && Number.isFinite(raw) && raw >= 0 ? raw : null;
+}
+
 /** Lightweight summary projection for dashboard tiles without items[] or customer PII. */
 export const projectOrderSummary = (
   id: string,
   d: FirebaseFirestore.DocumentData,
   legacyItemsCount?: number,
 ) => {
-  const storedItemsCount = Number(d.itemsCount);
+  const storedItemsCount = validStoredItemsCount(d.itemsCount);
   const fallbackItemsCount = typeof legacyItemsCount === 'number'
     && Number.isFinite(legacyItemsCount)
     && legacyItemsCount >= 0
@@ -114,9 +119,7 @@ export const projectOrderSummary = (
     paymentMethod: String(d.paymentMethod || 'Cash'),
     paymentStatus: String(d.paymentStatus || 'NOT PAID'),
     entryType: String(d.entryType || ''),
-    itemsCount: Number.isFinite(storedItemsCount) && storedItemsCount >= 0
-      ? storedItemsCount
-      : fallbackItemsCount,
+    itemsCount: storedItemsCount !== null ? storedItemsCount : fallbackItemsCount,
     total: Number(d.totalAmount) || 0,
     type: String(d.type || ''),
     status: String(d.status || 'Pending'),
@@ -144,10 +147,7 @@ export async function getLegacyItemCounts(
   db: FirebaseFirestore.Firestore,
   docs: FirebaseFirestore.QueryDocumentSnapshot[],
 ): Promise<Map<string, number>> {
-  const legacyDocs = docs.filter((doc) => {
-    const count = Number(doc.get('itemsCount'));
-    return !Number.isFinite(count) || count < 0;
-  });
+  const legacyDocs = docs.filter((doc) => validStoredItemsCount(doc.get('itemsCount')) === null);
   const counts = new Map<string, number>();
   for (let i = 0; i < legacyDocs.length; i += LEGACY_ITEM_COUNT_BATCH_SIZE) {
     const batch = legacyDocs.slice(i, i + LEGACY_ITEM_COUNT_BATCH_SIZE);

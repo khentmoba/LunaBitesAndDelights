@@ -86,7 +86,7 @@ export const BASE2 = { lat: 9.121259, lng: 125.5429739 };
 export function haversine(lat1: number, lng1: number, lat2: number, lng2: number): number {
   const p = 0.017453292519943295;
   const a = 0.5 - Math.cos((lat2 - lat1) * p) / 2 + (Math.cos(lat1 * p) * Math.cos(lat2 * p) * (1 - Math.cos((lng2 - lng1) * p))) / 2;
-  return 12742 * Math.asin(Math.sqrt(a));
+  return 12742 * Math.asin(Math.sqrt(Math.min(1, Math.max(0, a))));
 }
 
 /** Kilometres from the nearer kitchen. */

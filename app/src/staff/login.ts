@@ -27,6 +27,7 @@ export function mountLogin(root: HTMLElement): () => void {
   let obscure = true;
   let loading = false;
   let error: string | null = null;
+  let disposed = false;
 
   root.innerHTML = `
 <div class="gate"><div class="login-wrap"><section class="login" aria-labelledby="login-title">
@@ -114,6 +115,7 @@ export function mountLogin(root: HTMLElement): () => void {
     render();
     try {
       const data = await callFn<VerifyResult>('verifyStaff', params, 30);
+      if (disposed) return;
       if (data.success !== true) {
         error = data.message ?? failure;
         return;
@@ -125,8 +127,10 @@ export function mountLogin(root: HTMLElement): () => void {
         return;
       }
       await signInWithToken(data.customToken);
+      if (disposed) return;
       snack(`Welcome, ${name}! (${role.toUpperCase()})`, { color: 'var(--plate)', icon: glyph('verified_user_rounded'), square: true });
     } catch (e) {
+      if (disposed) return;
       const fe = fnError(e);
       error = fe ? fe.message : `Failed to connect: ${e instanceof Error ? e.message.split('\n')[0] : String(e)}`;
     } finally {
@@ -134,7 +138,7 @@ export function mountLogin(root: HTMLElement): () => void {
       if (mode === 'pin') pin = '';
       // Never re-insert a rejected password into the DOM (the eye toggle could reveal it).
       if (error) pass = '';
-      if (body.isConnected) render();
+      if (!disposed && body.isConnected) render();
     }
   }
 
@@ -162,18 +166,20 @@ export function mountLogin(root: HTMLElement): () => void {
 
   // Long-press backspace clears the PIN.
   let hold = 0;
-  body.addEventListener('pointerdown', (e) => {
-    if (!(e.target as HTMLElement).closest('[data-back]')) return;
-    hold = window.setTimeout(() => {
-      hold = 0;
-      setPin('');
-    }, 500);
-  });
   const release = () => {
     if (hold) clearTimeout(hold);
     hold = 0;
   };
+  body.addEventListener('pointerdown', (e) => {
+    if (!(e.target as HTMLElement).closest('[data-back]')) return;
+    release();
+    hold = window.setTimeout(() => {
+      hold = 0;
+      if (!disposed) setPin('');
+    }, 500);
+  });
   body.addEventListener('pointerup', release);
+  body.addEventListener('pointercancel', release);
   body.addEventListener('pointerleave', release, true);
 
   body.addEventListener('input', (e) => {
@@ -214,6 +220,7 @@ export function mountLogin(root: HTMLElement): () => void {
 
   render();
   return () => {
+    disposed = true;
     release();
     root.ownerDocument.removeEventListener('keydown', onKey);
   };

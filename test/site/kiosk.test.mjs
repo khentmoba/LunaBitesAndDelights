@@ -17,6 +17,13 @@ const order = await import('../../app/src/kiosk/order.ts');
 const { isPaymentUrl } = await import('../../app/src/kiosk/payment-host.ts');
 const { validReceipt, validPending } = await import('../../app/src/kiosk/handoff.ts');
 
+test('haversine stays finite for identical and antipodal-jitter coordinates', () => {
+  assert.equal(order.haversine(9.020509, 125.517591, 9.020509, 125.517591), 0);
+  // Without clamping `a` to [0, 1], this near-antipodal pair yields a > 1 and NaN.
+  const jitter = order.haversine(57.83067566547953, 65.17280422360261, -57.83067557561815, 245.17280407305347);
+  assert.ok(Number.isFinite(jitter) && jitter > 20000);
+});
+
 test('receipt handoff rejects corrupt shapes so the page never blanks out', () => {
   const good = {
     orderNumber: 'LU-1', customerName: 'Ana', customerAddress: 'Purok 5', customerPhone: '09171234567',

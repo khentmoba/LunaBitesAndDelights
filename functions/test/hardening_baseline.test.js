@@ -1001,3 +1001,55 @@ test('clientIpFromRequest reports a missing client IP instead of silently sharin
   assert.equal(fresh({ headers: { 'x-forwarded-for': '203.0.113.9' } }), '203.0.113.9');
   resetMissingClientIpWarning();
 });
+
+test('optStr and cleanInt reject non-string and coerced non-integer inputs', () => {
+  const { optStr, cleanInt } = require('../lib/util/security');
+  assert.equal(optStr(undefined, 50), '');
+  assert.equal(optStr(null, 50), '');
+  assert.equal(optStr('  hello  ', 50), 'hello');
+  for (const bad of [{}, ['a'], 123, true, false]) {
+    assert.throws(() => optStr(bad, 50), (err) => err && err.code === 'invalid-argument');
+  }
+
+  assert.equal(cleanInt(0, 100, 'qty'), 0);
+  assert.equal(cleanInt(42, 100, 'qty'), 42);
+  assert.equal(cleanInt('42', 100, 'qty'), 42);
+  assert.equal(cleanInt(' 7 ', 100, 'qty'), 7);
+  for (const bad of ['', '  ', null, undefined, false, true, [], [5], {}, -1, 1.5, '1.5', '1e2', 101]) {
+    assert.throws(() => cleanInt(bad, 100, 'qty'), (err) => err && err.code === 'invalid-argument');
+  }
+});
+
+test('KDS summary item count falls back when itemsCount is null or empty string', async () => {
+  const { validStoredItemsCount } = require('../lib/orders/kds');
+  assert.equal(validStoredItemsCount(4), 4);
+  assert.equal(validStoredItemsCount(0), 0);
+  assert.equal(validStoredItemsCount(null), null);
+  assert.equal(validStoredItemsCount(''), null);
+  assert.equal(validStoredItemsCount(undefined), null);
+  assert.equal(validStoredItemsCount(-1), null);
+
+  const nullRef = { id: 'null-count' };
+  const emptyRef = { id: 'empty-count' };
+  const db = {
+    getAll: async (...args) => {
+      assert.deepEqual(args.slice(0, -1), [nullRef, emptyRef]);
+      return [
+        { id: 'null-count', exists: true, get: (f) => (f === 'items' ? [{ quantity: 2 }, { quantity: 3 }] : undefined) },
+        { id: 'empty-count', exists: true, get: (f) => (f === 'items' ? [{ qty: 4 }] : undefined) },
+      ];
+    },
+  };
+  const docs = [
+    { ref: nullRef, get: (f) => (f === 'itemsCount' ? null : undefined) },
+    { ref: emptyRef, get: (f) => (f === 'itemsCount' ? '' : undefined) },
+    { ref: { id: 'valid-zero' }, get: (f) => (f === 'itemsCount' ? 0 : undefined) },
+  ];
+  const counts = await getLegacyItemCounts(db, docs);
+  assert.equal(counts.get('null-count'), 5);
+  assert.equal(counts.get('empty-count'), 4);
+  assert.equal(counts.has('valid-zero'), false);
+  assert.equal(projectOrderSummary('null-count', { itemsCount: null }, 5).itemsCount, 5);
+  assert.equal(projectOrderSummary('empty-count', { itemsCount: '' }, 4).itemsCount, 4);
+  assert.equal(projectOrderSummary('valid-zero', { itemsCount: 0 }, 9).itemsCount, 0);
+});
