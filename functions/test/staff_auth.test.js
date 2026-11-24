@@ -257,4 +257,35 @@ describe('staff auth: scrypt PIN and password verification', () => {
       authMod.getAuth = origGetAuth;
     }
   });
+
+  test('nextLoginFailureState resets expired lockouts instead of re-locking on a single miss', () => {
+    const { nextLoginFailureState } = require('../lib/util/security');
+    const now = 1_700_000_000_000;
+
+    const first = nextLoginFailureState(undefined, now);
+    assert.equal(first.fails, 1);
+    assert.equal(first.reset, false);
+    assert.equal(first.lockedUntil, undefined);
+
+    const fifth = nextLoginFailureState({ fails: 4 }, now);
+    assert.equal(fifth.fails, 5);
+    assert.equal(fifth.reset, false);
+    assert.ok(fifth.lockedUntil instanceof Date && fifth.lockedUntil.getTime() > now);
+
+    const expired = nextLoginFailureState(
+      { fails: 5, lockedUntil: { toDate: () => new Date(now - 1_000) } },
+      now,
+    );
+    assert.equal(expired.fails, 1);
+    assert.equal(expired.reset, true);
+    assert.equal(expired.lockedUntil, undefined);
+
+    const active = nextLoginFailureState(
+      { fails: 5, lockedUntil: new Date(now + 60_000) },
+      now,
+    );
+    assert.equal(active.fails, 6);
+    assert.equal(active.reset, false);
+    assert.ok(active.lockedUntil instanceof Date && active.lockedUntil.getTime() > now);
+  });
 });

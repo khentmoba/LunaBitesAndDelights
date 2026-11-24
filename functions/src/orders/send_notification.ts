@@ -5,6 +5,7 @@ import { sendToAll, sendPhotoToAll, escapeMd, isPermanentTelegramError, hasTeleg
 import { telegramToken, telegramChatIds, googleMapsApiKey } from '../secrets';
 import { logger } from 'firebase-functions';
 import { ALNUM_DOC_ID, cleanStr, clientIpFromRequest, enforceFixedWindowRateLimit } from '../util/security';
+import { finiteNumber } from '../util';
 import { isOrderVisibleInKds } from './kds';
 import { formatPaymentConfirmedMessage } from '../payments/paymongo';
 
@@ -261,12 +262,16 @@ export function notificationDataFromOrder(
 ): OrderNotificationData {
   const orderType = ORDER_TYPES.includes(orderData.type) ? orderData.type : 'Pickup';
   const rawItems = Array.isArray(orderData.items) ? orderData.items : [];
-  const items = rawItems.slice(0, MAX_ITEMS).map((i: any) => ({
-    name: String(i?.name || 'Unknown').slice(0, 120),
-    variant: String(i?.variant || '').slice(0, 120),
-    price: Number(i?.price) || 0,
-    quantity: Number(i?.quantity ?? i?.qty) || 1,
-  }));
+  const items = rawItems.slice(0, MAX_ITEMS).map((i: any) => {
+    const rawPrice = finiteNumber(i?.price);
+    const rawQty = finiteNumber(i?.quantity ?? i?.qty);
+    return {
+      name: String(i?.name || 'Unknown').slice(0, 120),
+      variant: String(i?.variant || '').slice(0, 120),
+      price: rawPrice > 0 ? rawPrice : 0,
+      quantity: rawQty > 0 ? rawQty : 1,
+    };
+  });
   const lat = typeof orderData.lat === 'number' && Number.isFinite(orderData.lat) && Math.abs(orderData.lat) <= 90
     ? orderData.lat
     : null;
@@ -283,16 +288,19 @@ export function notificationDataFromOrder(
     timeStr = `${pht.getUTCFullYear()}-${two(pht.getUTCMonth() + 1)}-${two(pht.getUTCDate())}  ${two(pht.getUTCHours())}:${two(pht.getUTCMinutes())}`;
   }
 
+  const total = finiteNumber(orderData.totalAmount);
+  const deliveryFee = finiteNumber(orderData.deliveryFee);
+
   return {
     orderNumber: String(orderData.orderId || fallbackOrderId),
     customerName: String(orderData.customerName || ''),
     customerAddress: String(orderData.customerAddress || ''),
     customerPhone: String(orderData.customerPhone || ''),
     items,
-    total: Number(orderData.totalAmount) || 0,
+    total: total > 0 ? total : 0,
     timeStr,
     orderType,
-    deliveryFee: Number(orderData.deliveryFee) || 0,
+    deliveryFee: deliveryFee > 0 ? deliveryFee : 0,
     paymentMethod: String(orderData.paymentMethod || 'Cash'),
     paymentStatus: String(orderData.paymentStatus || 'NOT PAID'),
     lat,
