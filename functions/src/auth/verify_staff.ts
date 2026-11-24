@@ -17,6 +17,14 @@ export const MAX_PASSWORD_LENGTH = 200;
 export function isValidPasswordInput(password: unknown): password is string {
   return typeof password === 'string' && password.length > 0 && password.length <= MAX_PASSWORD_LENGTH;
 }
+
+/** Validates a password without trimming so leading/trailing spaces match verifyPasswordLogin. */
+export function parseCurrentPassword(raw: unknown): string {
+  if (!isValidPasswordInput(raw)) {
+    throw new HttpsError('invalid-argument', 'Missing or invalid currentPassword');
+  }
+  return raw;
+}
 const PIN_VERIFY_CONCURRENCY = 2;
 const GLOBAL_PIN_FAIL_KEY = 'staff:pin_login:global';
 const GLOBAL_PIN_FAIL_MAX = 20;
@@ -248,7 +256,7 @@ export const updateStaffPin = onCall(
   const updateRateKey = `staff:pin_update:${uid}`;
   await checkRateLimit(updateRateKey);
 
-  const currentPassword = cleanStr(request.data?.currentPassword, 200, 'currentPassword');
+  const currentPassword = parseCurrentPassword(request.data?.currentPassword);
   const newPin = cleanStr(request.data?.newPin, 16, 'newPin');
   if (!PIN_RE.test(newPin)) {
     throw new HttpsError('invalid-argument', 'PIN must be between 4 and 8 digits');

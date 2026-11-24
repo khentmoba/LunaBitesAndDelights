@@ -830,4 +830,79 @@ describe('Telegram MarkdownV2 escaping and order notifications', () => {
     assert.equal(getAllCalled, false, 'should not inspect notification docs when all paid orders are within minAgeMs');
     assert.deepEqual(summary, { checked: 0, retried: 0, sent: 0, failed: 0 });
   });
+
+  test('runOrderNotificationReconciliation runs order and payment passes sequentially with shared paidDocs', async () => {
+    const { runOrderNotificationReconciliation } = require('../lib/orders/send_notification');
+    const sharedDocs = [{ id: 'ord_1' }];
+    let queryCount = 0;
+    const fakeDb = {
+      collection(name) {
+        assert.equal(name, 'orders');
+        return {
+          where() { return this; },
+          orderBy() { return this; },
+          limit() { return this; },
+          async get() {
+            queryCount++;
+            return { docs: sharedDocs };
+          },
+        };
+      },
+    };
+
+    const trace = [];
+    const result = await runOrderNotificationReconciliation(fakeDb, {
+      nowMs: 1_700_000_000_000,
+      async runOrders(_db, opts) {
+        trace.push('orders:start');
+        assert.strictEqual(opts.paidDocs, sharedDocs);
+        await new Promise((r) => setTimeout(r, 15));
+        trace.push('orders:end');
+        return { checked: 1, retried: 1, sent: 1, failed: 0 };
+      },
+      async runPayments(_db, opts) {
+        trace.push('payments:start');
+        assert.strictEqual(opts.paidDocs, sharedDocs);
+        trace.push('payments:end');
+        return { checked: 1, retried: 1, sent: 1, failed: 0 };
+      },
+    });
+
+    assert.equal(queryCount, 1, 'paid orders query should run once and be shared');
+    assert.deepEqual(trace, ['orders:start', 'orders:end', 'payments:start', 'payments:end']);
+    assert.equal(result.orders.sent, 1);
+    assert.equal(result.payments.sent, 1);
+  });
+
+  test('runOrderNotificationReconciliation still runs payments pass when orders pass throws', async () => {
+    const { runOrderNotificationReconciliation } = require('../lib/orders/send_notification');
+    const sharedDocs = [{ id: 'ord_2' }];
+    const fakeDb = {
+      collection() {
+        return {
+          where() { return this; },
+          orderBy() { return this; },
+          limit() { return this; },
+          async get() { return { docs: sharedDocs }; },
+        };
+      },
+    };
+
+    let paymentsRan = false;
+    const result = await runOrderNotificationReconciliation(fakeDb, {
+      nowMs: 1_700_000_000_000,
+      async runOrders() {
+        throw new Error('transient Firestore read failure');
+      },
+      async runPayments(_db, opts) {
+        paymentsRan = true;
+        assert.strictEqual(opts.paidDocs, sharedDocs);
+        return { checked: 1, retried: 1, sent: 1, failed: 0 };
+      },
+    });
+
+    assert.equal(paymentsRan, true);
+    assert.deepEqual(result.orders, { checked: 0, retried: 0, sent: 0, failed: 0 });
+    assert.equal(result.payments.sent, 1);
+  });
 });

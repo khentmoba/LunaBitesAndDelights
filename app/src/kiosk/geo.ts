@@ -1,11 +1,11 @@
 // Location lookups: Nominatim search and
 // reverse lookups, a Google Maps browser key, and a best-effort browser position.
-import { waitForLookupSlot } from './lookup-spacing';
+import { waitForLookupSlot } from './lookup-spacing.ts';
 const SEARCH = 'https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=5';
 const REVERSE = 'https://nominatim.openstreetmap.org/reverse?format=json&zoom=18&addressdetails=1';
 
 /** Empty when no Google Maps key was built in; the map then shows no tiles. */
-export const mapsKey = import.meta.env.PUBLIC_GOOGLE_MAPS_KEY ?? '';
+export const mapsKey = import.meta.env?.PUBLIC_GOOGLE_MAPS_KEY ?? '';
 
 type Address = Record<string, string | undefined>;
 
@@ -28,26 +28,34 @@ export function shortAddress(address: Address | undefined): string {
   return parts.join(', ');
 }
 
-function combineSignal(signal: AbortSignal | undefined, timeoutMs: number): AbortSignal {
+export function combineSignal(
+  signal: AbortSignal | undefined,
+  timeoutMs: number,
+): { signal: AbortSignal; cleanup: () => void } {
+  const noop = () => {};
   if (typeof AbortSignal.timeout === 'function') {
     const timeout = AbortSignal.timeout(timeoutMs);
-    if (!signal) return timeout;
-    if (typeof AbortSignal.any === 'function') return AbortSignal.any([signal, timeout]);
+    if (!signal) return { signal: timeout, cleanup: noop };
+    if (typeof AbortSignal.any === 'function') {
+      return { signal: AbortSignal.any([signal, timeout]), cleanup: noop };
+    }
   }
-  // Older browsers: keep both the caller's abort and our deadline. Dropping
-  // either one leaves a geocode request hanging (or failing on every call).
+  // Older browsers: keep both the caller's abort and our deadline, and clear
+  // the timer + listener as soon as the fetch settles so successful lookups
+  // never leave dangling 8-second timers behind.
   const controller = new AbortController();
   const onAbort = () => controller.abort();
+  const cleanup = () => {
+    clearTimeout(timer);
+    signal?.removeEventListener('abort', onAbort);
+  };
   if (signal) {
     if (signal.aborted) controller.abort();
     else signal.addEventListener('abort', onAbort, { once: true });
   }
   const timer = setTimeout(() => controller.abort(), timeoutMs);
-  controller.signal.addEventListener('abort', () => {
-    clearTimeout(timer);
-    signal?.removeEventListener('abort', onAbort);
-  }, { once: true });
-  return controller.signal;
+  controller.signal.addEventListener('abort', cleanup, { once: true });
+  return { signal: controller.signal, cleanup };
 }
 
 const MAX_GEO_CACHE = 100;
@@ -68,11 +76,14 @@ export async function reverseGeocode(lat: number, lng: number, signal?: AbortSig
   const cached = reverseCache.get(cacheKey);
   if (cached) return cached;
   if (signal?.aborted) return { full: '', short: '' };
+  let cleanup = () => {};
   try {
     if (!(await waitForLookupSlot(signal))) return { full: '', short: '' };
+    const combined = combineSignal(signal, 8_000);
+    cleanup = combined.cleanup;
     const res = await fetch(`${REVERSE}&lat=${lat}&lon=${lng}`, {
       headers: { 'Accept-Language': 'en' },
-      signal: combineSignal(signal, 8_000),
+      signal: combined.signal,
     });
     if (!res.ok) return { full: '', short: '' };
     const data = (await res.json()) as { display_name?: string; address?: Address };
@@ -81,6 +92,8 @@ export async function reverseGeocode(lat: number, lng: number, signal?: AbortSig
     return result;
   } catch {
     return { full: '', short: '' };
+  } finally {
+    cleanup();
   }
 }
 
@@ -90,11 +103,14 @@ export async function searchAddress(query: string, signal?: AbortSignal): Promis
   const cached = searchCache.get(cacheKey);
   if (cached) return cached;
   if (signal?.aborted) return [];
+  let cleanup = () => {};
   try {
     if (!(await waitForLookupSlot(signal))) return [];
+    const combined = combineSignal(signal, 8_000);
+    cleanup = combined.cleanup;
     const res = await fetch(`${SEARCH}&q=${encodeURIComponent(query)}`, {
       headers: { 'Accept-Language': 'en' },
-      signal: combineSignal(signal, 8_000),
+      signal: combined.signal,
     });
     if (!res.ok) return [];
     const data: unknown = await res.json();
@@ -103,6 +119,8 @@ export async function searchAddress(query: string, signal?: AbortSignal): Promis
     return places;
   } catch {
     return [];
+  } finally {
+    cleanup();
   }
 }
 

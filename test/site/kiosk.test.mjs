@@ -80,7 +80,7 @@ test('Nominatim lookups keep at least a second between requests', async () => {
   assert.equal(spacing.claimLookupSlot(), 0);
 
   const geo = readFileSync(new URL('../../app/src/kiosk/geo.ts', import.meta.url), 'utf8');
-  assert.match(geo, /import \{ waitForLookupSlot \} from '\.\/lookup-spacing'/);
+  assert.match(geo, /import \{ waitForLookupSlot \} from '\.\/lookup-spacing(?:\.ts)?'/);
   assert.equal((geo.match(/await waitForLookupSlot\(signal\)/g) ?? []).length, 2, 'both lookups are spaced');
 });
 
@@ -298,5 +298,34 @@ test('hasStoredStaffUser settles cleanly on blocked or aborted IndexedDB and det
     assert.equal(await hasStoredStaffUser(), true);
   } finally {
     globalThis.indexedDB = prevIdb;
+  }
+});
+
+test('combineSignal cleans up fallback timeout and caller abort listener when settled', async () => {
+  const { combineSignal } = await import('../../app/src/kiosk/geo.ts');
+  const origAny = AbortSignal.any;
+  try {
+    AbortSignal.any = undefined;
+    const caller = new AbortController();
+    const { signal, cleanup } = combineSignal(caller.signal, 25);
+    cleanup();
+    await new Promise((r) => setTimeout(r, 45));
+    assert.equal(signal.aborted, false, 'cleanup must cancel the fallback timeout');
+    caller.abort();
+    assert.equal(signal.aborted, false, 'cleanup must detach the caller abort listener');
+  } finally {
+    AbortSignal.any = origAny;
+  }
+});
+
+test('newIdempotencyKey falls back to crypto.getRandomValues when randomUUID is unavailable', async () => {
+  const { newIdempotencyKey } = await import('../../app/src/kiosk/order.ts');
+  const origRandomUUID = crypto.randomUUID;
+  try {
+    Object.defineProperty(crypto, 'randomUUID', { value: undefined, configurable: true, writable: true });
+    const key = newIdempotencyKey();
+    assert.match(key, /^[0-9a-f]{32}$/);
+  } finally {
+    Object.defineProperty(crypto, 'randomUUID', { value: origRandomUUID, configurable: true, writable: true });
   }
 });
