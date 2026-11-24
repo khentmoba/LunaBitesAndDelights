@@ -2,6 +2,7 @@ import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { getFirestore } from 'firebase-admin/firestore';
 import { logger } from 'firebase-functions';
 import { requireStaff, validDocId, cleanStr, optStr } from '../util/security';
+import { finiteNumber } from '../util';
 
 const VALID_STATUSES = ['Pending', 'Preparing', 'Ready', 'Completed', 'Cancelled'];
 const ALLOWED_STATUS_TRANSITIONS: Record<string, ReadonlySet<string>> = {
@@ -57,7 +58,11 @@ export function isOrderVisibleInKds(d: FirebaseFirestore.DocumentData): boolean 
   return method !== 'gcash' || status === 'PAID';
 }
 
-const itemQty = (i: any): number => Number(i?.quantity) || Number(i?.qty) || 0;
+const nonNegFinite = (v: unknown): number => {
+  const n = finiteNumber(v);
+  return n > 0 ? n : 0;
+};
+const itemQty = (i: any): number => nonNegFinite(i?.quantity) || nonNegFinite(i?.qty);
 const countItems = (items: unknown): number => Array.isArray(items)
   ? items.reduce((sum: number, item: any) => sum + itemQty(item), 0)
   : 0;
@@ -71,24 +76,24 @@ export const projectOrder = (id: string, d: FirebaseFirestore.DocumentData) => {
     customerName: d.customerName || '',
     customerPhone: d.customerPhone || '',
     customerAddress: d.customerAddress || '',
-    lat: typeof d.lat === 'number' ? d.lat : null,
-    lng: typeof d.lng === 'number' ? d.lng : null,
-    deliveryFee: Number(d.deliveryFee) || 0,
+    lat: typeof d.lat === 'number' && Number.isFinite(d.lat) && Math.abs(d.lat) <= 90 ? d.lat : null,
+    lng: typeof d.lng === 'number' && Number.isFinite(d.lng) && Math.abs(d.lng) <= 180 ? d.lng : null,
+    deliveryFee: nonNegFinite(d.deliveryFee),
     paymentMethod: String(d.paymentMethod || 'Cash'),
     paymentStatus: String(d.paymentStatus || 'NOT PAID'),
     entryType: String(d.entryType || ''),
     items: rawItems.map((i: any) => {
       const qty = itemQty(i);
       return {
-        name: String(i.name || ''),
-        variant: String(i.variant || ''),
+        name: String(i?.name || ''),
+        variant: String(i?.variant || ''),
         qty,
         quantity: qty,
-        price: Number(i.price) || 0,
+        price: nonNegFinite(i?.price),
       };
     }),
     itemsCount: rawItems.reduce((s: number, i: any) => s + itemQty(i), 0),
-    total: Number(d.totalAmount) || 0,
+    total: nonNegFinite(d.totalAmount),
     type: String(d.type || ''),
     status: String(d.status || 'Pending'),
     timestamp: toIsoTimestamp(d.timestamp),
@@ -120,7 +125,7 @@ export const projectOrderSummary = (
     paymentStatus: String(d.paymentStatus || 'NOT PAID'),
     entryType: String(d.entryType || ''),
     itemsCount: storedItemsCount !== null ? storedItemsCount : fallbackItemsCount,
-    total: Number(d.totalAmount) || 0,
+    total: nonNegFinite(d.totalAmount),
     type: String(d.type || ''),
     status: String(d.status || 'Pending'),
     timestamp: toIsoTimestamp(d.timestamp),

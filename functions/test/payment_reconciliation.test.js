@@ -759,3 +759,31 @@ test('paidPaymentAmountCentavos accepts PHP or omitted currency and rejects non-
     false,
   );
 });
+
+test('projectOrder and projectOrderSummary clamp non-finite/negative numbers and invalid coordinates', () => {
+  const { projectOrder, projectOrderSummary } = require('../lib/orders/kds');
+  const raw = {
+    orderId: 'LU-261124-0001',
+    lat: 95,
+    lng: Number.POSITIVE_INFINITY,
+    deliveryFee: -25,
+    totalAmount: Number.POSITIVE_INFINITY,
+    paymentMethod: 'Cash',
+    status: 'Pending',
+    items: [null, { name: 'Wrap', quantity: -2, qty: 3, price: -10 }, { name: 'Tea', quantity: Number.NaN, price: Number.POSITIVE_INFINITY }],
+  };
+  const full = projectOrder('doc_bad', raw);
+  assert.strictEqual(full.lat, null);
+  assert.strictEqual(full.lng, null);
+  assert.strictEqual(full.deliveryFee, 0);
+  assert.strictEqual(full.total, 0);
+  assert.strictEqual(full.itemsCount, 3);
+  assert.strictEqual(full.items[0].name, '');
+  assert.strictEqual(full.items[1].qty, 3);
+  assert.strictEqual(full.items[1].price, 0);
+  assert.strictEqual(full.items[2].price, 0);
+
+  const summary = projectOrderSummary('doc_bad', raw);
+  assert.strictEqual(summary.total, 0);
+  assert.strictEqual(summary.itemsCount, 3);
+});

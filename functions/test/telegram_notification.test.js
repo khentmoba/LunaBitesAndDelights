@@ -905,4 +905,24 @@ describe('Telegram MarkdownV2 escaping and order notifications', () => {
     assert.deepEqual(result.orders, { checked: 0, retried: 0, sent: 0, failed: 0 });
     assert.equal(result.payments.sent, 1);
   });
+
+  test('notificationDataFromOrder clamps non-finite and negative numeric fields', () => {
+    const { notificationDataFromOrder } = require('../lib/orders/send_notification');
+    const data = notificationDataFromOrder(
+      {
+        orderId: 'LU-261124-0002',
+        type: 'Delivery',
+        totalAmount: Number.POSITIVE_INFINITY,
+        deliveryFee: -40,
+        items: [{ name: 'Wrap', price: -50, quantity: -2 }, { name: 'Fries', price: 'NaN', qty: 0 }],
+      },
+      'fallback-id',
+    );
+    assert.equal(data.total, 0);
+    assert.equal(data.deliveryFee, 0);
+    assert.equal(data.items[0].price, 0);
+    assert.equal(data.items[0].quantity, 1);
+    assert.equal(data.items[1].price, 0);
+    assert.equal(data.items[1].quantity, 1);
+  });
 });

@@ -315,3 +315,36 @@ test('contributionOf and finiteNumber tolerate malformed items and non-finite nu
   assert.strictEqual(stringy.items.Bad.revenue, 0);
   assert.strictEqual(stringy.items.Bad.qty, 1);
 });
+
+test('daily stats aggregation handles Object.prototype item names safely', () => {
+  const orders = [
+    {
+      dateLabel: '2026-11-24',
+      paymentMethod: 'Cash',
+      status: 'Completed',
+      totalAmount: 100,
+      items: [
+        { name: 'constructor', price: 25, quantity: 2 },
+        { name: 'toString', price: 50, quantity: 1 },
+        { name: '__proto__', price: 10, quantity: 1 },
+      ],
+    },
+  ];
+  const days = daysFromOrders(orders);
+  const day = days.get('2026-11-24');
+  assert.strictEqual(day.items.constructor.qty, 2);
+  assert.strictEqual(day.items.toString.qty, 1);
+  assert.strictEqual(Object.prototype.hasOwnProperty.call(day.items, '__proto__'), true);
+  assert.strictEqual(Object.getPrototypeOf(day.items), Object.prototype);
+
+  const analytics = salesAnalyticsFromDay('2026-11-24', day);
+  assert.strictEqual(analytics.topItems.find((i) => i.name === 'constructor')?.count, 2);
+
+  const lifetime = lifetimeReportFromDays(days.values(), {
+    start: '2026-11-24',
+    end: '2026-11-24',
+    isAllTime: false,
+  });
+  assert.strictEqual(lifetime.topItems.find((i) => i.name === 'constructor')?.quantity, 2);
+  assert.strictEqual(lifetime.topItems.find((i) => i.name === 'toString')?.quantity, 1);
+});

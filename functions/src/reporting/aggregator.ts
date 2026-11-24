@@ -45,7 +45,7 @@ export async function aggregateDailySales(dateLabel: string): Promise<DailySales
   let kioskSales = 0;
   let staffSales = 0;
   let totalOrders = 0;
-  const itemCounts: { [key: string]: number } = {};
+  const itemCounts: { [key: string]: number } = Object.create(null);
 
   for (const doc of snapshot) {
     const data = doc.data();

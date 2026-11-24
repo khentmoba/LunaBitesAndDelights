@@ -126,21 +126,47 @@ export async function checkRateLimit(key: string): Promise<void> {
   });
 }
 
+/** Computes the next login-failure counter, resetting expired lockouts instead of re-locking on a single miss. */
+export function nextLoginFailureState(
+  existing: Record<string, any> | undefined,
+  nowMs = Date.now(),
+): { fails: number; reset: boolean; lockedUntil?: Date } {
+  const prevFails = typeof existing?.fails === 'number' && Number.isFinite(existing.fails) && existing.fails > 0
+    ? existing.fails
+    : 0;
+  const rawLocked = existing?.lockedUntil;
+  const lockedUntil = typeof rawLocked?.toDate === 'function'
+    ? (rawLocked.toDate() as Date)
+    : rawLocked instanceof Date
+      ? rawLocked
+      : undefined;
+  const lockoutExpired = prevFails >= MAX_ATTEMPTS && (!lockedUntil || lockedUntil.getTime() <= nowMs);
+  const fails = lockoutExpired ? 1 : prevFails + 1;
+  return {
+    fails,
+    reset: lockoutExpired,
+    ...(fails >= MAX_ATTEMPTS ? { lockedUntil: new Date(nowMs + LOCKOUT_MS) } : {}),
+  };
+}
+
 export async function recordLoginFailure(key: string): Promise<void> {
   const db = getFirestore();
   const ref = db.collection('login_attempts').doc(hashToken(key));
   const now = Date.now();
   await db.runTransaction(async (tx) => {
     const snap = await tx.get(ref);
-    const fails = (snap.data()?.fails || 0) + 1;
-    tx.set(ref, {
-      fails,
+    const next = nextLoginFailureState(snap.exists ? snap.data() : undefined, now);
+    const payload = {
+      fails: next.fails,
       updatedAt: FieldValue.serverTimestamp(),
       expireAt: Timestamp.fromMillis(now + LOGIN_ATTEMPT_TTL_MS),
-      ...(fails >= MAX_ATTEMPTS
-        ? { lockedUntil: new Date(now + LOCKOUT_MS) }
-        : {}),
-    }, { merge: true });
+      ...(next.lockedUntil ? { lockedUntil: next.lockedUntil } : {}),
+    };
+    if (next.reset) {
+      tx.set(ref, payload);
+    } else {
+      tx.set(ref, payload, { merge: true });
+    }
   });
 }
 

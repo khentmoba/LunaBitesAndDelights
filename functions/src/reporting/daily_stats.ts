@@ -111,6 +111,20 @@ export function safeDateLabel(raw: unknown): string {
   return typeof raw === 'string' && VALID_DATE_LABEL.test(raw) ? raw : 'unknown';
 }
 
+function getOrCreateItemSlot(
+  items: DayStats['items'],
+  key: string,
+  name: string,
+  variant: string,
+): DayStats['items'][string] {
+  if (Object.prototype.hasOwnProperty.call(items, key)) {
+    return items[key];
+  }
+  const slot = { name, variant, qty: 0, revenue: 0 };
+  Object.defineProperty(items, key, { value: slot, enumerable: true, writable: true, configurable: true });
+  return slot;
+}
+
 /** Same counting rules the lifetime report has always used. */
 export function contributionOf(data: Record<string, any> | undefined): Contribution | null {
   if (!data || !isCountableOrder(data)) return null;
@@ -125,7 +139,7 @@ export function contributionOf(data: Record<string, any> | undefined): Contribut
     const qty = rawQty > 0 ? rawQty : 1;
     itemsSold += qty;
     const key = statsItemKey(name, variant);
-    const slot = items[key] || (items[key] = { name, variant, qty: 0, revenue: 0 });
+    const slot = getOrCreateItemSlot(items, key, name, variant);
     slot.qty += qty;
     slot.revenue += finiteNumber(item.price) * qty;
   }
@@ -151,7 +165,7 @@ export function applyToDay(day: DayStats, c: Contribution, sign: 1 | -1): void {
     b.count += sign;
   }
   for (const [key, it] of Object.entries(c.items)) {
-    const slot = day.items[key] || (day.items[key] = { name: it.name, variant: it.variant, qty: 0, revenue: 0 });
+    const slot = getOrCreateItemSlot(day.items, key, it.name, it.variant);
     slot.qty += sign * it.qty;
     slot.revenue += sign * it.revenue;
   }
@@ -242,7 +256,7 @@ export function dayFromDoc(id: string, d: Record<string, any>): DayStats {
 
 /** The getSalesAnalytics response body for a single day, built from its dailyStats summary. */
 export function salesAnalyticsFromDay(dateLabel: string, day: DayStats) {
-  const itemCounts: Record<string, number> = {};
+  const itemCounts: Record<string, number> = Object.create(null);
   for (const it of Object.values(day.items)) {
     if (it.qty <= 0) continue;
     const key = itemKey(it.name || 'Unknown', it.variant);
@@ -294,7 +308,7 @@ export function lifetimeReportFromDays(
       }
     }
     for (const [k, it] of Object.entries(day.items)) {
-      const slot = total.items[k] || (total.items[k] = { name: it.name, variant: it.variant, qty: 0, revenue: 0 });
+      const slot = getOrCreateItemSlot(total.items, k, it.name, it.variant);
       slot.qty += it.qty;
       slot.revenue += it.revenue;
     }

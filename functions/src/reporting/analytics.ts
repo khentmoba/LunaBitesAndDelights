@@ -27,7 +27,7 @@ export const getSalesAnalytics = onCall(async (request) => {
     let totalItemsSold = 0;
     let orderCount = 0;
     const channel = emptyChannel();
-    const itemCounts: { [key: string]: number } = {};
+    const itemCounts: { [key: string]: number } = Object.create(null);
 
     for (const doc of snapshot) {
       const data = doc.data();
