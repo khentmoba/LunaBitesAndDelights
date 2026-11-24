@@ -148,6 +148,10 @@ export async function clearLoginAttempts(key: string): Promise<void> {
   await getFirestore().collection('login_attempts').doc(hashToken(key)).delete().catch(() => {});
 }
 
+export async function clearWindowBudget(key: string): Promise<void> {
+  await getFirestore().collection('rate_limits').doc(hashToken(key)).delete().catch(() => {});
+}
+
 /** Extracts a best-effort client IP string from an Express/Cloud Functions request. */
 export function clientIpFromRequest(
   rawRequest?: {

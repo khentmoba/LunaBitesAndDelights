@@ -13,7 +13,7 @@ How each item is enforced, and the manual steps that can't live in code.
 | 6,9 | Server-side auth / sessions | Staff login returns a Firebase custom token w/ `role` claim (`verify_staff.ts`); KDS/analytics/report callables `requireStaff()`. No more forgeable `{success:true}` sessions. |
 | 8 | Block field tampering | Rules use `hasOnly()` allowlists on the `orders` create payload; `create_checkout.ts` re-prices every line from a server menu and rejects amount mismatches; webhook re-verifies PAID via PayMongo API. |
 | 10 | Hash passwords | Staff: scrypt + per-user salt (`security.ts`); legacy sha256 auto-upgrades on next login. First-run seed uses random passwords logged once — rotate after first login. |
-| 11 | Rate limit login | `checkRateLimit()` — 5 failures → 15-min lockout (Firestore-backed). |
+| 11 | Rate limit login | `checkRateLimit()` — 5 failures → 15-min per-IP lockout plus per-account `staff:pw_user` (20 failures / 15-min) and global PIN failure budgets (Firestore-backed). |
 | 12 | Bot protection | App Check wired in `app/src/kiosk/firebase.ts` (`PUBLIC_RECAPTCHA_SITE_KEY`, reCAPTCHA Enterprise key registered 2026-09-28). Enforcement stays OFF until clients roll out — then enable per-service in console. |
 | 13 | Parameterize queries | Firestore SDK (no string-built queries); doc IDs allowlisted `^[A-Za-z0-9_-]+$`; webhook/coordinate inputs type-checked. |
 | 14 | Validate all input | Server: `cleanStr/optStr/cleanInt/validDocId` on every callable. Client: `app/src/kiosk/order.ts` validates names and phone numbers before an order is sent. |

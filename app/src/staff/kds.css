@@ -24,7 +24,7 @@
 .kbar__ib { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; color: var(--pink-ink); }
 .kbar__ib .icon { font-size: 20px; }
 .kbar__ib:hover:not(:disabled) { background: rgb(179 14 82 / .08); }
-.kbar__ib:disabled { cursor: default; }
+.kbar__ib:disabled { cursor: default; color: var(--ink-soft); opacity: .65; }
 .kbar__ib.is-off { color: var(--ink-soft); }
 .kbar__ib--exit { color: var(--error); }
 .kbar__ib--exit .icon { font-size: 19px; }
@@ -180,7 +180,8 @@
 .kcard__tlabel { color: var(--pink-ink); font-size: 11px; font-weight: 700; letter-spacing: 1px; line-height: 1.4; }
 .kcard__tval { font-size: 20px; font-weight: 800; line-height: 1.02; letter-spacing: -.4px; }
 .kcard__cancel { min-width: 64px; min-height: 32px; padding: 0 12px; border-radius: 20px; color: var(--error); font-size: 11px; font-weight: 700; line-height: 1.4; }
-.kcard__cancel:hover { background: rgb(179 38 30 / .08); }
+.kcard__cancel:hover:not(:disabled) { background: rgb(179 38 30 / .08); }
+.kcard__cancel:disabled { opacity: .65; cursor: default; }
 .kact { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; margin-top: 6px; padding: 12px 8px; border: 1px solid rgb(179 14 82 / .4); color: var(--on-plate); font-size: 12px; font-weight: 800; letter-spacing: 1.5px; line-height: 1.4; }
 .kact .icon { font-size: 16px; }
 .kact--plate { background: var(--plate); }

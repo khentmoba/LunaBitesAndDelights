@@ -728,3 +728,34 @@ test('paymongoWebhook rejects invalid signatures before touching Firestore rate 
     paymongoWebhookSecret.value = origSecret;
   }
 });
+
+test('paidPaymentAmountCentavos accepts PHP or omitted currency and rejects non-PHP currencies', () => {
+  assert.strictEqual(
+    paidPaymentAmountCentavos([{ id: 'p1', attributes: { status: 'paid', amount: 15000, currency: 'PHP' } }]),
+    15000,
+  );
+  assert.strictEqual(
+    paidPaymentAmountCentavos([{ id: 'p2', attributes: { status: 'paid', amount: 15000, currency: ' php ' } }]),
+    15000,
+  );
+  assert.strictEqual(
+    paidPaymentAmountCentavos([{ id: 'p3', attributes: { status: 'paid', amount: 15000 } }]),
+    15000,
+  );
+  assert.strictEqual(
+    paidPaymentAmountCentavos([{ id: 'p3b', attributes: { status: 'paid', amount: 15000, currency: '' } }]),
+    15000,
+  );
+  assert.strictEqual(
+    paidPaymentAmountCentavos([{ id: 'p3c', attributes: { status: 'paid', amount: 15000, currency: '   ' } }]),
+    15000,
+  );
+  assert.strictEqual(
+    paidPaymentAmountCentavos([{ id: 'p4', attributes: { status: 'paid', amount: 15000, currency: 'USD' } }]),
+    null,
+  );
+  assert.strictEqual(
+    hasPaidPaymentForAmount([{ id: 'p5', attributes: { status: 'paid', amount: 15000, currency: 'USD' } }], 150),
+    false,
+  );
+});

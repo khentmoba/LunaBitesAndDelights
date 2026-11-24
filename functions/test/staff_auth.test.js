@@ -163,4 +163,98 @@ describe('staff auth: scrypt PIN and password verification', () => {
       assert.throws(() => staffDocIdFromUid(bad), /Invalid staff account/, `expected rejection for ${JSON.stringify(bad)}`);
     }
   });
+
+  test('verifyStaff enforces and clears per-username password failure budget across rotating IPs', async () => {
+    const firestoreMod = require('firebase-admin/firestore');
+    const authMod = require('firebase-admin/auth');
+    const { verifyStaff } = require('../lib/auth/verify_staff');
+    const origGetFirestore = firestoreMod.getFirestore;
+    const origGetAuth = authMod.getAuth;
+    const store = new Map();
+    const adminHash = await hashPasswordAsync('correct-password');
+    store.set('staff_accounts/admin', { username: 'admin', role: 'admin', passwordHash: adminHash });
+
+    const docRef = (col, id) => {
+      const key = `${col}/${id}`;
+      return {
+        id,
+        async get() {
+          const data = store.get(key);
+          return { exists: data !== undefined, data: () => (data ? { ...data } : undefined) };
+        },
+        async set(payload, opts) {
+          const prev = opts?.merge ? (store.get(key) || {}) : {};
+          store.set(key, { ...prev, ...payload });
+        },
+        async update(payload) {
+          const prev = store.get(key) || {};
+          store.set(key, { ...prev, ...payload });
+        },
+        async delete() {
+          store.delete(key);
+        },
+      };
+    };
+    const fakeDb = {
+      collection(name) {
+        return {
+          doc: (id) => docRef(name, id),
+          limit: () => ({
+            async get() {
+              const hasStaff = [...store.keys()].some((k) => k.startsWith(`${name}/`));
+              return { empty: !hasStaff };
+            },
+          }),
+        };
+      },
+      async runTransaction(fn) {
+        const tx = {
+          get: (ref) => ref.get(),
+          set: (ref, payload, opts) => { ref.set(payload, opts); },
+          delete: (ref) => { ref.delete(); },
+        };
+        return fn(tx);
+      },
+    };
+
+    firestoreMod.getFirestore = () => fakeDb;
+    authMod.getAuth = () => ({ createCustomToken: async () => 'fake-custom-token' });
+    try {
+      // A few failures followed by a proven valid login must clear the per-account budget.
+      for (let i = 1; i <= 3; i++) {
+        const res = await verifyStaff.run({
+          data: { username: 'admin', password: `wrong-pre-${i}` },
+          rawRequest: { headers: { 'x-forwarded-for': `198.51.100.${i}` } },
+        });
+        assert.equal(res.success, false);
+      }
+      const userBudgetEntry = [...store.entries()].find(([k, v]) => k.startsWith('rate_limits/') && v?.count === 3);
+      assert.ok(userBudgetEntry, 'expected per-account failure budget doc with count 3');
+      const okRes = await verifyStaff.run({
+        data: { username: 'admin', password: 'correct-password' },
+        rawRequest: { headers: { 'x-forwarded-for': '198.51.100.99' } },
+      });
+      assert.equal(okRes.success, true);
+      assert.equal(store.has(userBudgetEntry[0]), false, 'successful password login must clear per-account failure budget');
+
+      // 20 consecutive failures across rotating IPs must exhaust the per-account budget.
+      for (let i = 1; i <= 20; i++) {
+        const res = await verifyStaff.run({
+          data: { username: 'admin', password: `wrong-${i}` },
+          rawRequest: { headers: { 'x-forwarded-for': `203.0.113.${i}` } },
+        });
+        assert.equal(res.success, false);
+      }
+      await assert.rejects(
+        verifyStaff.run({
+          data: { username: 'admin', password: 'correct-password' },
+          rawRequest: { headers: { 'x-forwarded-for': '203.0.113.200' } },
+        }),
+        /Too many failed login attempts for this account/,
+      );
+    } finally {
+      firestoreMod.getFirestore = origGetFirestore;
+      authMod.getAuth = origGetAuth;
+    }
+  });
 });

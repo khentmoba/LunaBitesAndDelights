@@ -533,3 +533,170 @@ test('kds post-mutation poll supersedes in-flight silent poll and gcash guards h
   assert.match(gcashSrc, /function cancel\(\) \{\s*if \(verifying\) return;/);
   assert.match(gcashSrc, /document\.querySelectorAll<HTMLButtonElement>\('\[data-cancel\]'\)\.forEach\(\(b\) => \{\s*b\.disabled = on;\s*\}\);/);
 });
+
+test('registerStaffServiceWorker registers immediately when document is already complete', async () => {
+  const hooks = registerHooks({
+    resolve(specifier, context, nextResolve) {
+      if (context.parentURL?.includes('app/src/staff/gate.ts') && specifier === './session.ts') {
+        return { url: 'stub://gate-session', shortCircuit: true };
+      }
+      return nextResolve(specifier, context);
+    },
+    load(url, context, nextLoad) {
+      if (url === 'stub://gate-session') {
+        return {
+          format: 'module',
+          source: 'export const currentStaff = () => null; export const watchStaff = () => () => {};',
+          shortCircuit: true,
+        };
+      }
+      return nextLoad(url, context);
+    },
+  });
+  try {
+    const { registerStaffServiceWorker } = await import('../../app/src/staff/gate.ts');
+    const calls = [];
+    const fakeNav = {
+      serviceWorker: {
+        register: (url, opts) => {
+          calls.push({ url, opts });
+          return Promise.resolve();
+        },
+      },
+    };
+    let loadHandler = null;
+    const fakeWin = {
+      addEventListener(type, fn, opts) {
+        assert.equal(type, 'load');
+        assert.deepEqual(opts, { once: true });
+        loadHandler = fn;
+      },
+    };
+
+    // Already loaded: must register immediately without waiting for a load event that already fired.
+    assert.equal(registerStaffServiceWorker(fakeWin, { readyState: 'complete' }, fakeNav), true);
+    assert.deepEqual(calls, [{ url: '/staff/sw.js', opts: { scope: '/staff/' } }]);
+    assert.equal(loadHandler, null);
+
+    // Still loading: defers until window load fires once.
+    calls.length = 0;
+    assert.equal(registerStaffServiceWorker(fakeWin, { readyState: 'interactive' }, fakeNav), true);
+    assert.equal(calls.length, 0);
+    assert.equal(typeof loadHandler, 'function');
+    loadHandler();
+    assert.deepEqual(calls, [{ url: '/staff/sw.js', opts: { scope: '/staff/' } }]);
+
+    // Missing serviceWorker support: returns false without throwing.
+    assert.equal(registerStaffServiceWorker(fakeWin, { readyState: 'complete' }, {}), false);
+  } finally {
+    hooks.deregister();
+  }
+});
+
+test('mountLogin clears submitted password from DOM even on successful verification', async () => {
+  const dom = new JSDOM('<!doctype html><html><body><div id="root"></div></body></html>', {
+    url: 'https://lunabitesanddelights.web.app/staff/',
+  });
+  const prevWindow = globalThis.window;
+  const prevDocument = globalThis.document;
+  globalThis.window = dom.window;
+  globalThis.document = dom.window.document;
+
+  globalThis.__loginStubs = {
+    callFn: async () => ({ success: true, username: 'admin', role: 'admin', customToken: 'tok-ok' }),
+    signInWithToken: async () => {},
+    snack: () => {},
+  };
+
+  const hooks = registerHooks({
+    resolve(specifier, context, nextResolve) {
+      if (context.parentURL?.includes('app/src/staff/login.ts')) {
+        if (specifier === '../kiosk/firebase.ts') return { url: 'stub://login-firebase', shortCircuit: true };
+        if (specifier === './session.ts') return { url: 'stub://login-session', shortCircuit: true };
+        if (specifier === '../kiosk/snackbar.ts') return { url: 'stub://login-snackbar', shortCircuit: true };
+      }
+      return nextResolve(specifier, context);
+    },
+    load(url, context, nextLoad) {
+      if (url === 'stub://login-firebase') {
+        return {
+          format: 'module',
+          source: 'export const callFn = (...args) => globalThis.__loginStubs.callFn(...args);',
+          shortCircuit: true,
+        };
+      }
+      if (url === 'stub://login-session') {
+        return {
+          format: 'module',
+          source: 'export const fnError = () => null; export const signInWithToken = (...args) => globalThis.__loginStubs.signInWithToken(...args);',
+          shortCircuit: true,
+        };
+      }
+      if (url === 'stub://login-snackbar') {
+        return {
+          format: 'module',
+          source: 'export const snack = (...args) => globalThis.__loginStubs.snack(...args);',
+          shortCircuit: true,
+        };
+      }
+      return nextLoad(url, context);
+    },
+  });
+
+  try {
+    const { mountLogin } = await import('../../app/src/staff/login.ts');
+    const root = dom.window.document.getElementById('root');
+    const dispose = mountLogin(root);
+    try {
+      root.querySelector('[data-mode="password"]').click();
+      const userInput = root.querySelector('input[name="user"]');
+      const passInput = root.querySelector('input[name="pass"]');
+      userInput.value = 'admin';
+      passInput.value = 'TopSecret123';
+      root.querySelector('form[data-form]').dispatchEvent(new dom.window.Event('submit', { bubbles: true, cancelable: true }));
+      await new Promise((r) => setImmediate(r));
+      await new Promise((r) => setImmediate(r));
+      const rerenderedPass = root.querySelector('input[name="pass"]');
+      assert.ok(rerenderedPass instanceof dom.window.HTMLInputElement, 'password input must remain rendered');
+      assert.equal(rerenderedPass.value, '', 'submitted password must not be re-rendered into DOM');
+    } finally {
+      dispose();
+    }
+  } finally {
+    hooks.deregister();
+    delete globalThis.__loginStubs;
+    globalThis.window = prevWindow;
+    globalThis.document = prevDocument;
+    dom.window.close();
+  }
+});
+
+test('disposePendingLookups clears timers and aborts controllers, and kds locks actions on auth halt', async () => {
+  const { disposePendingLookups } = await import('../../app/src/kiosk/geo.ts');
+  const cleared = [];
+  const searchAbort = new AbortController();
+  const reverseAbort = new AbortController();
+  const state = {
+    searchTimer: 101,
+    addressTimer: 202,
+    searchAbort,
+    reverseAbort,
+  };
+  disposePendingLookups(state, (id) => cleared.push(id));
+  assert.deepEqual(cleared, [101, 202]);
+  assert.equal(state.searchTimer, 0);
+  assert.equal(state.addressTimer, 0);
+  assert.equal(searchAbort.signal.aborted, true);
+  assert.equal(reverseAbort.signal.aborted, true);
+  assert.equal(state.searchAbort, null);
+  assert.equal(state.reverseAbort, null);
+
+  const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
+  const kdsSrc = readFileSync(join(root, 'app/src/staff/kds.ts'), 'utf8');
+  assert.match(kdsSrc, /loading \|\| authHalted \? ' disabled' : ''/);
+  assert.match(kdsSrc, /const locked = busy \|\| authHalted;/);
+  assert.match(kdsSrc, /authHalted \? '' : '<button type="button" class="kerr__btn" data-act="retry">RETRY<\/button>'/);
+
+  const mapSrc = readFileSync(join(root, 'app/src/pages/kiosk/map.astro'), 'utf8');
+  assert.match(mapSrc, /window\.addEventListener\('pagehide',[\s\S]*?disposePendingLookups/);
+});

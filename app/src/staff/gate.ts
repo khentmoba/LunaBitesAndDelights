@@ -7,12 +7,30 @@ type Mount = (root: HTMLElement, staff: () => Staff | null) => (() => void) | vo
 
 let swRegistered = false;
 
+/** Registers the staff PWA service worker immediately if load already fired, else on load. */
+export function registerStaffServiceWorker(
+  win: Pick<Window, 'addEventListener'> = window,
+  doc: Pick<Document, 'readyState'> = document,
+  nav: { serviceWorker?: { register: (url: string, opts?: { scope?: string }) => Promise<unknown> } } | undefined =
+    typeof navigator !== 'undefined' ? navigator : undefined,
+): boolean {
+  const sw = nav?.serviceWorker;
+  if (!sw) return false;
+  const register = () => {
+    try {
+      void sw.register('/staff/sw.js', { scope: '/staff/' }).catch(() => {});
+    } catch {
+      // Ignore synchronous registration errors so the staff UI still mounts.
+    }
+  };
+  if (doc.readyState === 'complete') register();
+  else win.addEventListener('load', register, { once: true });
+  return true;
+}
+
 export function gate(root: HTMLElement, mount: Mount): void {
-  if (!swRegistered && typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
-    swRegistered = true;
-    window.addEventListener('load', () => {
-      void navigator.serviceWorker.register('/staff/sw.js', { scope: '/staff/' }).catch(() => {});
-    });
+  if (!swRegistered) {
+    swRegistered = registerStaffServiceWorker();
   }
   let shown: 'login' | 'screen' | null = null;
   let dispose: (() => void) | void;
