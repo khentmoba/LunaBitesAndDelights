@@ -716,6 +716,13 @@ test('runManualSalesReport skips chats that already received a failed attempt, t
         },
       };
     },
+    async runTransaction(fn) {
+      const tx = {
+        get: (ref) => ref.get(),
+        set: (ref, data, opts) => ref.set(data, opts),
+      };
+      return fn(tx);
+    },
   };
 
   const sentTo = [];
@@ -1052,4 +1059,97 @@ test('KDS summary item count falls back when itemsCount is null or empty string'
   assert.equal(projectOrderSummary('null-count', { itemsCount: null }, 5).itemsCount, 5);
   assert.equal(projectOrderSummary('empty-count', { itemsCount: '' }, 4).itemsCount, 4);
   assert.equal(projectOrderSummary('valid-zero', { itemsCount: 0 }, 9).itemsCount, 0);
+});
+
+test('runManualSalesReport blocks concurrent in-flight sends and retries sent-state persistence', async () => {
+  const { runManualSalesReport, evaluateManualReportClaim } = require('../lib/reporting/manual_report');
+  const telegramApi = require('../lib/telegram_api');
+  const { telegramChatIds } = require('../lib/secrets');
+
+  assert.equal(evaluateManualReportClaim(undefined, 10_000), 'claimed');
+  assert.equal(evaluateManualReportClaim({ status: 'sending', claimedAt: 9_000 }, 10_000), 'in-flight');
+  assert.equal(evaluateManualReportClaim({ status: 'sending', claimedAt: 10_000 - 60_001 }, 10_000), 'claimed');
+  assert.equal(evaluateManualReportClaim({ status: 'sent', claimedAt: 9_999 }, 10_000), 'claimed');
+
+  const origChatIds = telegramChatIds.value;
+  telegramChatIds.value = () => 'chat1';
+  telegramApi.setTelegramRetryConfig({ maxAttempts: 1, sleep: async () => {} });
+
+  const store = new Map();
+  let failSentWrites = 1;
+  const fakeDb = {
+    collection(name) {
+      return {
+        doc(id) {
+          const ref = {
+            id: `${name}/${id}`,
+            async get() {
+              const d = store.get(ref.id);
+              return { exists: Boolean(d), data: () => ({ ...d }) };
+            },
+            async set(data, opts) {
+              if (data.status === 'sent' && failSentWrites > 0) {
+                failSentWrites--;
+                throw new Error('transient Firestore write failure');
+              }
+              const prev = opts?.merge ? (store.get(ref.id) || {}) : {};
+              store.set(ref.id, { ...prev, ...data });
+            },
+          };
+          return ref;
+        },
+      };
+    },
+    async runTransaction(fn) {
+      const tx = {
+        get: (ref) => ref.get(),
+        set: (ref, data, opts) => ref.set(data, opts),
+      };
+      return fn(tx);
+    },
+  };
+
+  let releaseSend = null;
+  let sendCalls = 0;
+  telegramApi.setBot({
+    async sendMessage() {
+      sendCalls++;
+      await new Promise((resolve) => { releaseSend = resolve; });
+      return { message_id: 1 };
+    },
+    async sendPhoto() { return {}; },
+  });
+
+  const aggregate = async () => ({
+    date: '2026-11-24', totalSales: 250, totalOrders: 2, kioskSales: 250, staffSales: 0, topItems: [],
+  });
+
+  try {
+    const first = runManualSalesReport('2026-11-24', { db: fakeDb, aggregate, persistBackoffMs: [0, 0] });
+    await new Promise((r) => setImmediate(r));
+    const second = await runManualSalesReport('2026-11-24', { db: fakeDb, aggregate, persistBackoffMs: [0, 0] });
+    assert.equal(second.sent, false);
+    assert.equal(second.inFlight, true);
+    assert.equal(sendCalls, 1, 'concurrent trigger must not double-send to Telegram');
+
+    releaseSend();
+    const firstResult = await first;
+    assert.equal(firstResult.sent, true);
+    assert.equal(store.get('daily_reports_sent/manual-2026-11-24').status, 'sent', 'transient sent-state persist error should recover on retry');
+  } finally {
+    telegramChatIds.value = origChatIds;
+    telegramApi.setBot(null);
+    telegramApi.setTelegramRetryConfig(null);
+  }
+});
+
+test('parseIdempotencyKey rejects non-string and malformed keys while allowing absent values', () => {
+  const { parseIdempotencyKey } = require('../lib/orders/place_order');
+  assert.equal(parseIdempotencyKey(undefined), '');
+  assert.equal(parseIdempotencyKey(null), '');
+  assert.equal(parseIdempotencyKey(''), '');
+  assert.equal(parseIdempotencyKey('  abcd1234EFGH5678  '), 'abcd1234EFGH5678');
+  for (const bad of [1234567890123456, {}, ['abcd1234EFGH5678'], true, '   ', 'short', 'bad key with spaces!']) {
+    assert.throws(() => parseIdempotencyKey(bad), (err) => err && err.code === 'invalid-argument');
+  }
 });

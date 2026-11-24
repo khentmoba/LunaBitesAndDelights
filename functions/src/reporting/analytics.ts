@@ -1,7 +1,7 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { getFirestore } from 'firebase-admin/firestore';
 import { logger } from 'firebase-functions';
-import { phtDateLabel, emptyChannel, addToChannel, isCountableOrder, itemKey } from '../util';
+import { phtDateLabel, emptyChannel, addToChannel, isCountableOrder, itemKey, finiteNumber } from '../util';
 import { requireStaff } from '../util/security';
 import { dayFromDoc, emptyDay, isDailyStatsBackfilled, salesAnalyticsFromDay, scanOrdersForDate } from './daily_stats';
 
@@ -33,14 +33,17 @@ export const getSalesAnalytics = onCall(async (request) => {
       const data = doc.data();
       if (!isCountableOrder(data)) continue;
       orderCount += 1;
-      const totalAmount = data.totalAmount || 0;
+      const totalAmount = finiteNumber(data.totalAmount);
       totalRevenue += totalAmount;
       addToChannel(channel, data.type || 'Pickup', totalAmount);
 
-      for (const item of data.items || []) {
-        const name = item.name || 'Unknown';
-        const key = itemKey(name, item.variant);
-        const qty = Number(item.quantity || item.qty) || 1;
+      const rawItems = Array.isArray(data.items) ? data.items : [];
+      for (const item of rawItems) {
+        if (!item || typeof item !== 'object') continue;
+        const name = typeof item.name === 'string' && item.name ? item.name : 'Unknown';
+        const key = itemKey(name, typeof item.variant === 'string' ? item.variant : undefined);
+        const rawQty = finiteNumber(item.quantity || item.qty);
+        const qty = rawQty > 0 ? rawQty : 1;
         totalItemsSold += qty;
         itemCounts[key] = (itemCounts[key] || 0) + qty;
       }

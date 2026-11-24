@@ -13,6 +13,19 @@ const IDEMPOTENCY_KEY_RE = /^[A-Za-z0-9_-]{16,64}$/;
 const PLACE_ORDER_RATE_WINDOW_MS = 5 * 60 * 1000;
 const PLACE_ORDER_RATE_MAX = 20;
 
+/** Validates an optional idempotencyKey without silently ignoring malformed non-string inputs. */
+export function parseIdempotencyKey(raw: unknown): string {
+  if (raw === undefined || raw === null || raw === '') return '';
+  if (typeof raw !== 'string') {
+    throw new HttpsError('invalid-argument', 'Invalid idempotencyKey');
+  }
+  const key = raw.trim();
+  if (!IDEMPOTENCY_KEY_RE.test(key)) {
+    throw new HttpsError('invalid-argument', 'Invalid idempotencyKey');
+  }
+  return key;
+}
+
 /** Derives a deterministic alphanumeric Firestore order doc ID from an idempotency key. */
 export function idempotentOrderDocId(key: string): string {
   return `ord${crypto.createHash('sha256').update(key).digest('hex').slice(0, 28)}`;
@@ -108,10 +121,7 @@ export const placeOrder = onCall(async (request) => {
       ? 'AWAITING_PAYMENT'
       : 'NOT PAID';
 
-  const rawIdempotencyKey = typeof d.idempotencyKey === 'string' ? d.idempotencyKey.trim() : '';
-  if (rawIdempotencyKey && !IDEMPOTENCY_KEY_RE.test(rawIdempotencyKey)) {
-    throw new HttpsError('invalid-argument', 'Invalid idempotencyKey');
-  }
+  const rawIdempotencyKey = parseIdempotencyKey(d.idempotencyKey);
 
   const db = getFirestore();
   const payload = {

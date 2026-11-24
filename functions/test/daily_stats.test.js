@@ -281,3 +281,37 @@ test('isDailyStatsBackfilled caches true after first observation and does not ca
 
   resetBackfillCache();
 });
+
+test('contributionOf and finiteNumber tolerate malformed items and non-finite numeric fields', () => {
+  const { finiteNumber } = require('../lib/util');
+  assert.strictEqual(finiteNumber(42), 42);
+  assert.strictEqual(finiteNumber('120'), 120);
+  assert.strictEqual(finiteNumber('not-a-number'), 0);
+  assert.strictEqual(finiteNumber(Number.NaN), 0);
+  assert.strictEqual(finiteNumber(Number.POSITIVE_INFINITY), 0);
+  assert.strictEqual(finiteNumber({}), 0);
+
+  const malformed = contributionOf({
+    dateLabel: '2026-11-24',
+    paymentMethod: 'Cash',
+    status: 'Completed',
+    totalAmount: 'bad-total',
+    items: { notAnArray: true },
+  });
+  assert.strictEqual(malformed.amount, 0);
+  assert.strictEqual(malformed.itemsSold, 0);
+  assert.deepStrictEqual(malformed.items, {});
+
+  const stringy = contributionOf({
+    dateLabel: '2026-11-24',
+    paymentMethod: 'Cash',
+    status: 'Completed',
+    totalAmount: '150',
+    items: [null, { name: 'Wrap', price: '75', quantity: '2' }, { name: 'Bad', price: 'NaN', quantity: -3 }],
+  });
+  assert.strictEqual(stringy.amount, 150);
+  assert.strictEqual(stringy.itemsSold, 3);
+  assert.strictEqual(stringy.items.Wrap.revenue, 150);
+  assert.strictEqual(stringy.items.Bad.revenue, 0);
+  assert.strictEqual(stringy.items.Bad.qty, 1);
+});

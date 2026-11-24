@@ -1,5 +1,5 @@
 import { getFirestore } from 'firebase-admin/firestore';
-import { itemKey, isCountableOrder } from '../util';
+import { itemKey, isCountableOrder, finiteNumber } from '../util';
 import { escapeMd } from '../telegram_api';
 import { dayFromDoc, isDailyStatsBackfilled, scanOrdersForDate } from './daily_stats';
 
@@ -51,15 +51,18 @@ export async function aggregateDailySales(dateLabel: string): Promise<DailySales
     const data = doc.data();
     if (!isCountableOrder(data)) continue;
     totalOrders += 1;
-    const amount = data.totalAmount || 0;
+    const amount = finiteNumber(data.totalAmount);
     totalSales += amount;
 
     if (data.entryType === 'Staff') staffSales += amount;
     else kioskSales += amount;
 
-    for (const item of data.items || []) {
-      const key = itemKey(item.name, item.variant);
-      itemCounts[key] = (itemCounts[key] || 0) + (Number(item.quantity || item.qty) || 1);
+    const rawItems = Array.isArray(data.items) ? data.items : [];
+    for (const item of rawItems) {
+      if (!item || typeof item !== 'object') continue;
+      const key = itemKey(typeof item.name === 'string' && item.name ? item.name : 'Unknown', typeof item.variant === 'string' ? item.variant : undefined);
+      const rawQty = finiteNumber(item.quantity || item.qty);
+      itemCounts[key] = (itemCounts[key] || 0) + (rawQty > 0 ? rawQty : 1);
     }
   }
 
