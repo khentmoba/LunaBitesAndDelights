@@ -288,4 +288,79 @@ describe('staff auth: scrypt PIN and password verification', () => {
     assert.equal(active.reset, false);
     assert.ok(active.lockedUntil instanceof Date && active.lockedUntil.getTime() > now);
   });
+
+  test('updateStaffPin enforces an atomic fixed-window rate limit per staff UID', async () => {
+    const firestoreMod = require('firebase-admin/firestore');
+    const { updateStaffPin } = require('../lib/auth/verify_staff');
+    const origGetFirestore = firestoreMod.getFirestore;
+    const store = new Map();
+    const adminPwHash = await hashPasswordAsync('correct-password');
+    const adminPinHash = await hashPasswordAsync('1234');
+    store.set('staff_accounts/admin', { username: 'admin', role: 'admin', passwordHash: adminPwHash, pinHash: adminPinHash });
+
+    const docRef = (col, id) => {
+      const key = `${col}/${id}`;
+      return {
+        id,
+        async get() {
+          const data = store.get(key);
+          return { exists: data !== undefined, data: () => (data ? { ...data } : undefined) };
+        },
+        async set(payload, opts) {
+          const prev = opts?.merge ? (store.get(key) || {}) : {};
+          store.set(key, { ...prev, ...payload });
+        },
+        async update(payload) {
+          const prev = store.get(key) || {};
+          store.set(key, { ...prev, ...payload });
+        },
+        async delete() {
+          store.delete(key);
+        },
+      };
+    };
+    const fakeDb = {
+      collection(name) {
+        return {
+          doc: (id) => docRef(name, id),
+          select: () => ({
+            limit: () => ({
+              async get() {
+                const docs = [...store.entries()]
+                  .filter(([k]) => k.startsWith(`${name}/`))
+                  .map(([k, v]) => ({ id: k.slice(name.length + 1), data: () => ({ ...v }) }));
+                return { docs };
+              },
+            }),
+          }),
+        };
+      },
+      async runTransaction(fn) {
+        return fn({
+          get: (ref) => ref.get(),
+          set: (ref, payload, opts) => { ref.set(payload, opts); },
+          delete: (ref) => { ref.delete(); },
+        });
+      },
+    };
+    firestoreMod.getFirestore = () => fakeDb;
+    try {
+      for (let i = 0; i < 10; i++) {
+        const res = await updateStaffPin.run({
+          auth: { uid: 'staff_admin', token: { role: 'admin' } },
+          data: { currentPassword: 'correct-password', newPin: String(2000 + i) },
+        });
+        assert.equal(res.success, true);
+      }
+      await assert.rejects(
+        updateStaffPin.run({
+          auth: { uid: 'staff_admin', token: { role: 'admin' } },
+          data: { currentPassword: 'correct-password', newPin: '9999' },
+        }),
+        /Too many PIN update attempts/,
+      );
+    } finally {
+      firestoreMod.getFirestore = origGetFirestore;
+    }
+  });
 });

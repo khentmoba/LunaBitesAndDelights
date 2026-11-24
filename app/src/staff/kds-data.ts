@@ -44,11 +44,13 @@ export function kdsOrderFromDoc(id: string, data: Record<string, unknown>, tsToD
 
 const keyOf = (o: KdsOrder) => String(o.id ?? o.orderNumber);
 
-/** Live orders win; callable-only orders stay until the mirror has them. Newest first. */
-export function mergeKdsOrders(live: KdsOrder[], polled: KdsOrder[]): KdsOrder[] {
+/** Live orders win by default; set `polledWins` when a manual sync fetched newer data. Newest first. */
+export function mergeKdsOrders(live: KdsOrder[], polled: KdsOrder[], polledWins = false): KdsOrder[] {
   const byId = new Map<string, KdsOrder>();
-  for (const o of polled) byId.set(keyOf(o), o);
-  for (const o of live) byId.set(keyOf(o), o);
+  const first = polledWins ? live : polled;
+  const second = polledWins ? polled : live;
+  for (const o of first) byId.set(keyOf(o), o);
+  for (const o of second) byId.set(keyOf(o), o);
   return [...byId.values()].sort((a, b) => {
     const x = String(b.timestamp ?? '');
     const y = String(a.timestamp ?? '');
@@ -62,14 +64,19 @@ export const isClosedKdsStatus = (status: unknown): boolean => status === 'Compl
  * True when a live Firestore snapshot only changed metadata (e.g. cache/server
  * sync) and can skip rebuilding cards. Requires the listener to already have
  * been live prior to this snapshot so reconnects always publish fresh state.
+ * Also skips stale cached snapshots when a manual sync (`polledFresh`) holds
+ * fresher server data.
  */
 export function shouldSkipUnchangedLiveSnapshot(
   wasLive: boolean,
   nextSignature: string,
   liveSignature: string,
   polledCount: number,
+  fromCache = false,
+  polledFresh = false,
 ): boolean {
-  return wasLive && nextSignature === liveSignature && polledCount === 0;
+  if (!wasLive || nextSignature !== liveSignature) return false;
+  return polledCount === 0 || (fromCache && polledFresh);
 }
 
 export type TypeFilter = 'ALL' | 'Delivery' | 'Pickup' | 'Walk-In';

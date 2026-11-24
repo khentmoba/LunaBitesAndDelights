@@ -39,6 +39,8 @@ const PASSWORD_IP_RATE_MAX = 30;
 const PASSWORD_IP_WINDOW_MS = 15 * 60 * 1000;
 const PASSWORD_USER_FAIL_MAX = 20;
 const PASSWORD_USER_FAIL_WINDOW_MS = 15 * 60 * 1000;
+const PIN_UPDATE_RATE_MAX = 10;
+const PIN_UPDATE_WINDOW_MS = 15 * 60 * 1000;
 const DUMMY_SCRYPT_HASH =
   'scrypt$00000000000000000000000000000000$0000000000000000000000000000000000000000000000000000000000000000';
 // Bounded TTL: a warm instance must eventually re-check the collection so a
@@ -290,6 +292,12 @@ export const updateStaffPin = onCall(
   async (request) => {
   const uid = requireStaff(request);
   const updateRateKey = `staff:pin_update:${uid}`;
+  await enforceFixedWindowRateLimit(
+    `staff:pin_update_window:${uid}`,
+    PIN_UPDATE_RATE_MAX,
+    PIN_UPDATE_WINDOW_MS,
+    'Too many PIN update attempts. Please try again later.',
+  );
   await checkRateLimit(updateRateKey);
 
   const currentPassword = parseCurrentPassword(request.data?.currentPassword);
