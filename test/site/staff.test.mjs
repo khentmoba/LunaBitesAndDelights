@@ -63,12 +63,19 @@ test('kitchen filters and search', () => {
   assert.deepEqual(kds.filterOrders(orders, 'ALL', ' lu-003 ').map((o) => o.id), ['c']);
 });
 
-test('live orders win over polled ones, newest first', () => {
+test('live orders win over polled ones by default, and polledWins lets manual sync override stale cache', () => {
   const merged = kds.mergeKdsOrders([{ ...orders[0], status: 'Preparing' }], orders);
   assert.deepEqual(merged.map((o) => o.id), ['c', 'b', 'a']);
   assert.equal(merged[2].status, 'Preparing');
+  // Manual sync after a cached snapshot must let fresh polled data win.
+  const synced = kds.mergeKdsOrders([{ ...orders[0], status: 'Pending' }], [{ ...orders[0], status: 'Ready' }], true);
+  assert.equal(synced[0].status, 'Ready');
   // With no live snapshot there is nothing to prefer, so polling is the board.
   assert.deepEqual(kds.mergeKdsOrders([], [{ ...orders[0], status: 'Ready' }]).map((o) => o.status), ['Ready']);
+
+  // Stale cached snapshot must not clobber a fresher manual sync; server snapshot must replace it.
+  assert.equal(kds.shouldSkipUnchangedLiveSnapshot(true, 'sig', 'sig', 1, true, true), true);
+  assert.equal(kds.shouldSkipUnchangedLiveSnapshot(true, 'sig', 'sig', 1, false, true), false);
 });
 
 test('mirror docs become callable-shaped orders', () => {
@@ -311,7 +318,10 @@ test('kds skips the board rebuild on metadata-only snapshots and stops after an 
   // includeMetadataChanges fires on cache/server flips; rebuilding every card for
   // those steals scroll position, so only the feed indicator is redrawn.
   assert.match(kdsSrc, /const wasLive = isLive;\s*isLive = true;/);
-  assert.match(kdsSrc, /const unchanged = shouldSkipUnchangedLiveSnapshot\(wasLive, nextSignature, liveSignature, polled\.length\);/);
+  assert.match(
+    kdsSrc,
+    /const unchanged = shouldSkipUnchangedLiveSnapshot\(\s*wasLive,\s*nextSignature,\s*liveSignature,\s*polled\.length,\s*fromCache,\s*polledFresh,?\s*\);/,
+  );
   assert.match(kdsSrc, /if \(unchanged\) \{\s*if \(!fetchInFlight\) loading = false;\s*renderBar\(\);\s*renderBanner\(\);\s*return;\s*\}/);
   assert.match(kdsSrc, /let liveSignature = '';/);
   assert.match(kdsSrc, /liveSignature = '';/);
@@ -332,7 +342,7 @@ test('kds hands the board to polling and keeps header buttons alive when nothing
   // publish() merges the live snapshot over the polled one, so a fallback that
   // kept `live` would pin every ticket to its status at the moment the listener
   // died and hide the changes other staff make while polling is in charge.
-  assert.match(kdsSrc, /const all = mergeKdsOrders\(live \?\? \[\], polled\);/);
+  assert.match(kdsSrc, /const all = mergeKdsOrders\(live \?\? \[\], polled, polledFresh\);/);
   assert.match(
     kdsSrc,
     /function fallBackToPolling\(\) \{[\s\S]*?liveSignature = '';[\s\S]*?live = null;[\s\S]*?isLive = false;/,

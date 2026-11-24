@@ -41,6 +41,7 @@ const COLUMNS: { status: Column; title: string; tab: string; icon: IconName; cls
 
 export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () => void {
   let polled: KdsOrder[] = [];
+  let polledFresh = false;
   let live: KdsOrder[] | null = null;
   let orders: KdsOrder[] = [];
   let isLive = false;
@@ -93,7 +94,7 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
   // ---- data ----
 
   function publish() {
-    const all = mergeKdsOrders(live ?? [], polled);
+    const all = mergeKdsOrders(live ?? [], polled, polledFresh);
     const visible = showCompleted ? all : all.filter((o) => !isClosedKdsStatus(o.status));
     const activeIds = new Set(all.map((o) => String(o.id ?? '')));
     for (const key of checked) {
@@ -134,6 +135,7 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
       if (disposed || seq !== fetchSeq) return;
       if (data.success === true) {
         polled = data.orders ?? [];
+        polledFresh = true;
         publish();
       } else {
         error = data.message ?? 'Failed to load active orders.';
@@ -196,6 +198,7 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
     // keeping it would pin every ticket to the status it had when the listener
     // died and hide changes other staff make while polling is in charge.
     live = null;
+    polledFresh = false;
     clearTimeout(initialFallbackTimer);
     initialFallbackTimer = 0;
     connecting = false;
@@ -244,13 +247,24 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
           const wasLive = isLive;
           isLive = true;
           fromCache = snap.metadata.fromCache;
+          if (!fromCache) {
+            fetchSeq++;
+            fetchInFlight = false;
+          }
           const nextLive = snap.docs.map((d) => kdsOrderFromDoc(d.id, d.data(), toDate));
           const nextSignature = JSON.stringify(nextLive);
           // includeMetadataChanges makes the listener fire for cache/server
           // flips that leave the documents untouched. Rebuilding every card for
           // those steals scroll position and burns the tablet's CPU, so only the
           // feed indicator is redrawn.
-          const unchanged = shouldSkipUnchangedLiveSnapshot(wasLive, nextSignature, liveSignature, polled.length);
+          const unchanged = shouldSkipUnchangedLiveSnapshot(
+            wasLive,
+            nextSignature,
+            liveSignature,
+            polled.length,
+            fromCache,
+            polledFresh,
+          );
           if (unchanged) {
             if (!fetchInFlight) loading = false;
             renderBar();
@@ -259,6 +273,7 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
           }
           liveSignature = nextSignature;
           polled = [];
+          polledFresh = false;
           live = nextLive;
           publish();
         },
@@ -861,7 +876,10 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
   }
 
   const onVisibilityChange = () => {
-    if (!disposed && !document.hidden && !isLive && getStaff()) void fetchActive(true);
+    if (disposed || document.hidden) return;
+    now = Date.now();
+    refreshElapsedTimes();
+    if (!isLive && getStaff()) void fetchActive(true);
   };
   const onOnline = () => {
     isOffline = false;
@@ -894,6 +912,7 @@ export function mountKds(root: HTMLElement, getStaff: () => Staff | null): () =>
     wideMq.removeEventListener('change', onLayout);
   };
   clock = window.setInterval(() => {
+    if (document.hidden) return;
     now = Date.now();
     refreshElapsedTimes();
   }, 30_000);
