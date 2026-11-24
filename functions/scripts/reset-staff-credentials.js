@@ -8,10 +8,28 @@
 // Auth: GOOGLE_APPLICATION_CREDENTIALS (service account) or gcloud ADC.
 const { initializeApp, getApps } = require('firebase-admin/app');
 const { getFirestore, Timestamp } = require('firebase-admin/firestore');
-const { hashPasswordAsync } = require('../lib/util/security');
+const { hashPasswordAsync, verifyPasswordAsync } = require('../lib/util/security');
 
 const USERNAME_RE = /^[a-z0-9._-]{2,64}$/;
 const PIN_RE = /^[0-9]{4,8}$/;
+const MAX_ACCOUNTS = 50;
+
+/**
+ * The staff account already using `pin`, or null. PIN sign-in scans accounts
+ * and signs in as the first match, so a PIN shared with another account can
+ * hand a staffer the admin session. `updateStaffPin` enforces uniqueness; this
+ * script is the other way credentials get set, so it must too.
+ */
+async function findPinOwner(db, pin, exceptUsername) {
+  const snap = await db.collection('staff_accounts').select('pinHash').limit(MAX_ACCOUNTS).get();
+  for (const doc of snap.docs) {
+    if (doc.id === exceptUsername) continue;
+    const hash = doc.get('pinHash');
+    if (typeof hash !== 'string' || hash.length === 0) continue;
+    if ((await verifyPasswordAsync(pin, hash)) !== 'bad') return doc.id;
+  }
+  return null;
+}
 
 function parseArgs(argv) {
   const out = {};
@@ -42,6 +60,12 @@ async function resetStaffCredentials(db, { username: rawUsername, role, password
   if (password === undefined && pin === undefined) {
     throw new Error('Provide at least one of --password / STAFF_PASSWORD or --pin / STAFF_PIN');
   }
+  if (pin !== undefined) {
+    const owner = await findPinOwner(db, pin, username);
+    if (owner) {
+      throw new Error(`PIN is already used by staff account "${owner}"; choose a different PIN`);
+    }
+  }
 
   const update = {
     username,
@@ -60,7 +84,7 @@ async function resetStaffCredentials(db, { username: rawUsername, role, password
   };
 }
 
-module.exports = { resetStaffCredentials, parseArgs };
+module.exports = { resetStaffCredentials, parseArgs, findPinOwner };
 
 if (require.main === module) {
   const args = parseArgs(process.argv.slice(2));
