@@ -132,7 +132,7 @@ export function getGoogleStaticMapUrl(lat: number, lng: number, apiKey: string):
 
 /** Fallback: Generates MapTiler Static Map URL. */
 export function getMapTilerStaticMapUrl(lat: number, lng: number, apiKey: string): string {
-  return `https://api.maptiler.com/maps/streets-v2/static/${lng},${lat},17/600x400@2x.png?key=${apiKey}&markers=${lng},${lat}`;
+  return `https://api.maptiler.com/maps/streets-v2/static/${lng},${lat},17/600x400@2x.png?key=${encodeURIComponent(apiKey.trim())}&markers=${lng},${lat}`;
 }
 
 /** Universal Google Maps navigation URL for turn-by-turn directions. */
@@ -179,13 +179,13 @@ export async function fetchMapImage(url: string, timeoutMs = 6000): Promise<Buff
 function resolveStaticMapUrl(lat: number, lng: number): string | null {
   let gmapKey = '';
   try {
-    gmapKey = googleMapsApiKey.value();
+    gmapKey = googleMapsApiKey.value().trim();
   } catch {
     gmapKey = '';
   }
-  gmapKey ||= process.env.GOOGLE_MAPS_API_KEY || '';
+  gmapKey ||= (process.env.GOOGLE_MAPS_API_KEY || '').trim();
   if (gmapKey) return getGoogleStaticMapUrl(lat, lng, gmapKey);
-  const maptilerKey = process.env.MAPTILER_KEY || '';
+  const maptilerKey = (process.env.MAPTILER_KEY || '').trim();
   return maptilerKey ? getMapTilerStaticMapUrl(lat, lng, maptilerKey) : null;
 }
 

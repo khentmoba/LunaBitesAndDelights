@@ -43,7 +43,7 @@ export function hasMatchingCheckoutSession(
 }
 
 export function paymongoAuthHeader(requireConfigured = false): string {
-  const key = paymongoSecret.value();
+  const key = paymongoSecret.value().trim();
   if (requireConfigured && !key) {
     throw new HttpsError('internal', 'Payment service not configured');
   }

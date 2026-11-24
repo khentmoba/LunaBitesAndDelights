@@ -12,6 +12,11 @@ import {
 const GENERIC_FAIL = 'Invalid username or password';
 const GENERIC_PIN_FAIL = 'Invalid PIN. Please try again.';
 const PIN_RE = /^[0-9]{4,8}$/;
+export const MAX_PASSWORD_LENGTH = 200;
+
+export function isValidPasswordInput(password: unknown): password is string {
+  return typeof password === 'string' && password.length > 0 && password.length <= MAX_PASSWORD_LENGTH;
+}
 const PIN_VERIFY_CONCURRENCY = 2;
 const GLOBAL_PIN_FAIL_KEY = 'staff:pin_login:global';
 const GLOBAL_PIN_FAIL_MAX = 20;
@@ -174,7 +179,7 @@ async function verifyPasswordLogin(
     'Too many login attempts from this network. Please try again later.',
   );
 
-  if (!usernameRaw || !password) {
+  if (!usernameRaw || !isValidPasswordInput(password)) {
     throw new HttpsError('invalid-argument', GENERIC_FAIL);
   }
 

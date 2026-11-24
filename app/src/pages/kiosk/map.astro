@@ -127,6 +127,8 @@ let lng = draft?.lng ?? STORE.lng;
 let resolvedLat: number | null = draft?.pinned && address ? lat : null;
 let resolvedLng: number | null = draft?.pinned && address ? lng : null;
 let loading = false;
+let locating = false;
+let locateSeq = 0;
 let results: Place[] = [];
 let searchTimer = 0;
 let addressTimer = 0;
@@ -151,11 +153,19 @@ function degrade() {
 function loadMaps(key: string): Promise<typeof google.maps> {
   return new Promise((resolve, reject) => {
     const callback = `__lunaMaps_${Date.now()}`;
-    (window as unknown as Record<string, unknown>)[callback] = () => resolve(google.maps);
+    const win = window as unknown as Record<string, unknown>;
+    const cleanup = () => { delete win[callback]; };
+    win[callback] = () => {
+      cleanup();
+      resolve(google.maps);
+    };
     const script = document.createElement('script');
     script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(key)}&v=weekly&loading=async&callback=${callback}`;
     script.async = true;
-    script.onerror = () => reject(new Error('Google Maps failed to load'));
+    script.onerror = () => {
+      cleanup();
+      reject(new Error('Google Maps failed to load'));
+    };
     document.head.appendChild(script);
   });
 }
@@ -184,6 +194,7 @@ if (!mapsKey) {
       // ignoreIdleUntil so they never unlock Confirm.
       map.addListener('center_changed', () => {
         if (Date.now() < ignoreIdleUntil) return;
+        locateSeq++;
         userInteracted = true;
       });
       map.addListener('idle', () => {
@@ -216,7 +227,7 @@ function render() {
   for (const b of document.querySelectorAll<HTMLButtonElement>('[data-confirm]')) {
     b.disabled = address.length === 0 || loading || needsPin;
   }
-  $<HTMLButtonElement>('[data-locate]').disabled = loading;
+  $<HTMLButtonElement>('[data-locate]').disabled = loading || locating;
   $('[data-loading]').hidden = !loading;
 }
 
@@ -251,15 +262,23 @@ async function fetchAddress(la: number, ln: number): Promise<boolean> {
 }
 
 async function goToMyLocation() {
-  if (loading) return;
-  const pos = await currentPosition();
-  if (!pos || loading) return;
-  lat = pos.lat;
-  lng = pos.lng;
-  clearTimeout(addressTimer);
-  userInteracted = true;
-  moveTo(lat, lng);
-  await fetchAddress(lat, lng);
+  if (loading || locating) return;
+  const seq = ++locateSeq;
+  locating = true;
+  render();
+  try {
+    const pos = await currentPosition();
+    if (!pos || loading || seq !== locateSeq) return;
+    lat = pos.lat;
+    lng = pos.lng;
+    clearTimeout(addressTimer);
+    userInteracted = true;
+    moveTo(lat, lng);
+    await fetchAddress(lat, lng);
+  } finally {
+    locating = false;
+    render();
+  }
 }
 
 // Auto-search after three characters and 800 ms of quiet (Enter searches at two characters immediately).
@@ -318,6 +337,7 @@ list.addEventListener('click', (e) => {
   showResults(false);
   setSearching(false);
   clearTimeout(addressTimer);
+  locateSeq++;
   userInteracted = true;
   moveTo(lat, lng);
   render();
@@ -333,6 +353,7 @@ $('[data-clear]').addEventListener('click', () => {
 
 async function confirm() {
   if (loading) return;
+  locateSeq++;
   userInteracted = true;
   clearTimeout(addressTimer);
   loading = true;
