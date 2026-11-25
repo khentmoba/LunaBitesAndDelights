@@ -3,8 +3,11 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import { spawnSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 import { ciSummary, isDepsCurrent, loadSteps, unresolvedEnv } from '../../tool/ci-local.mjs';
-import { checkPrProof } from '../../tool/check_pr_proof.mjs';
+import { checkPrProof, collectLocalChangedFiles } from '../../tool/check_pr_proof.mjs';
+import { allocateFreePorts, buildEphemeralFirebaseConfig, findJava21, injectConfigArg } from '../../tool/with-java21.mjs';
 
 test('ci-local reads every pr-checks job with its working directory', () => {
   const jobs = Object.fromEntries(loadSteps().map((j) => [j.job, j.steps.map((s) => `${s.cwd}: ${s.run.trim()}`)]));
@@ -14,6 +17,8 @@ test('ci-local reads every pr-checks job with its working directory', () => {
   const functionsScripts = JSON.parse(fs.readFileSync(new URL('../../functions/package.json', import.meta.url), 'utf8')).scripts;
   assert.match(functionsScripts['test:rules'], /npm exec --prefix \.\. --no -- firebase-tools/);
   assert.match(functionsScripts['test:derived'], /npm exec --prefix \.\. --no -- firebase-tools/);
+  assert.match(functionsScripts['test:rules'], /--ephemeral-emulators/);
+  assert.match(functionsScripts['test:derived'], /--ephemeral-emulators/);
   for (const step of ['.: npm ci', 'app: npm run check', 'app: npm run lint', 'app: npm run build', '.: npm run test:site']) assert.ok(jobs.site.includes(step), step);
 });
 
@@ -51,24 +56,38 @@ test('checkPrProof requires evidence for config, tooling and workflow changes', 
     'app/package-lock.json',
   ]) {
     assert.equal(checkPrProof({ body: 'no proof here', files: [file] }).ok, false, file);
-    assert.equal(checkPrProof({ body: 'see docs/evidence/ci-local.txt', files: [file] }).ok, true, file);
+    assert.equal(checkPrProof({ body: 'see docs/evidence/agent-environment.md', files: [file] }).ok, true, file);
   }
 });
 
 test('checkPrProof validates UI images, backend evidence paths, and forbids AI attribution', () => {
   assert.equal(
     checkPrProof({
-      body: 'Updated UI ![shot](https://example.com/a.png) see docs/evidence/ci-local.txt',
-      files: ['app/src/kiosk/cart.ts'],
+      body: 'Updated UI ![shot](https://example.com/a.png) see docs/evidence/agent-environment.md',
+      files: ['app/src/pages/kiosk/cart.astro'],
     }).ok,
     true,
   );
   assert.equal(
-    checkPrProof({ body: 'Updated UI see docs/evidence/ci-local.txt', files: ['app/src/kiosk/cart.ts'] }).ok,
+    checkPrProof({ body: 'Updated UI see docs/evidence/agent-environment.md', files: ['app/src/pages/kiosk/cart.astro'] }).ok,
     false,
   );
   assert.equal(
-    checkPrProof({ body: 'Updated backend see docs/evidence/ci-local.txt', files: ['functions/src/index.ts'] }).ok,
+    checkPrProof({ body: 'Updated styles see docs/evidence/agent-environment.md', files: ['app/src/kiosk/tokens.css'] }).ok,
+    false,
+  );
+  const pureLogicWithEvidence = checkPrProof({
+    body: 'Updated cart logic see docs/evidence/agent-environment.md',
+    files: ['app/src/kiosk/cart.ts', 'app/src/data/menu.ts'],
+  });
+  assert.equal(pureLogicWithEvidence.ok, true);
+  assert.equal(pureLogicWithEvidence.isUI, false);
+  assert.equal(
+    checkPrProof({ body: 'Updated cart logic without evidence', files: ['app/src/kiosk/cart.ts'] }).ok,
+    false,
+  );
+  assert.equal(
+    checkPrProof({ body: 'Updated backend see docs/evidence/agent-environment.md', files: ['functions/src/index.ts'] }).ok,
     true,
   );
   assert.equal(
@@ -78,4 +97,59 @@ test('checkPrProof validates UI images, backend evidence paths, and forbids AI a
     }).ok,
     false,
   );
+});
+
+test('with-java21 ephemeral emulator helpers allocate distinct ports and inject --config', async () => {
+  const ports = await allocateFreePorts(['auth', 'firestore', 'functions', 'hub', 'logging']);
+  const values = Object.values(ports);
+  assert.equal(new Set(values).size, 5, 'all 5 ports must be distinct');
+  for (const port of values) assert.ok(Number.isInteger(port) && port > 0);
+
+  const base = { firestore: { rules: 'firestore.rules' }, emulators: { singleProjectMode: true } };
+  const config = buildEphemeralFirebaseConfig(base, ports);
+  assert.equal(config.firestore.rules, 'firestore.rules');
+  assert.equal(config.emulators.singleProjectMode, true);
+  assert.equal(config.emulators.firestore.port, ports.firestore);
+  assert.equal(config.emulators.functions.port, ports.functions);
+  assert.equal(config.emulators.ui.enabled, false);
+
+  const injected = injectConfigArg(
+    ['npm', 'exec', '--', 'firebase-tools', 'emulators:exec', '--only', 'firestore'],
+    '/tmp/fb.json',
+  );
+  assert.deepEqual(injected, [
+    'npm',
+    'exec',
+    '--',
+    'firebase-tools',
+    'emulators:exec',
+    '--config',
+    '/tmp/fb.json',
+    '--only',
+    'firestore',
+  ]);
+  assert.deepEqual(
+    injectConfigArg(['firebase-tools', 'emulators:exec', '--config', 'custom.json'], '/tmp/fb.json'),
+    ['firebase-tools', 'emulators:exec', '--config', 'custom.json'],
+  );
+});
+
+test('collectLocalChangedFiles returns an array of repo-relative paths', () => {
+  const files = collectLocalChangedFiles({ base: 'HEAD' });
+  assert.ok(Array.isArray(files));
+});
+
+test('with-java21 cleans up its ephemeral Firebase config on normal exit', { skip: !findJava21().found && 'Java 21 not available' }, () => {
+  const repoRoot = fileURLToPath(new URL('../..', import.meta.url));
+  const before = new Set(fs.readdirSync(repoRoot).filter((name) => name.startsWith('.firebase-ephemeral-')));
+  const res = spawnSync(
+    process.execPath,
+    ['tool/with-java21.mjs', '--ephemeral-emulators', process.execPath, '-e', 'process.exit(0)'],
+    { cwd: repoRoot, encoding: 'utf8' },
+  );
+  assert.equal(res.status, 0, res.stderr || res.stdout);
+  const leaked = fs
+    .readdirSync(repoRoot)
+    .filter((name) => name.startsWith('.firebase-ephemeral-') && !before.has(name));
+  assert.deepEqual(leaked, []);
 });

@@ -23,7 +23,12 @@ Single-deploy Astro 7 + TypeScript frontend (`app/`) and Firebase Cloud Function
 - `functions/scripts/` — Operational scripts (`check-firestore-rules-drift.js`, `check-prod-config.js`, `backfill-derived-views.js`, `reset-staff-credentials.js`).
 - `test/site/` — Storefront, kiosk, staff, price-parity, hosting/CSP, file-reference, and local-CI tests (`npm run test:site`).
 - `functions/test/` — Backend unit tests (`functions/test/*.test.js`) and Firebase emulator tests (`functions/test/emulator/firestore-rules.test.js`, `functions/test/emulator/derived-views.test.js`).
-- `tool/` — `ci-local.mjs` (`npm run ci`), `publish_evidence.mjs`, `png_diff.mjs`, `check_pr_proof.mjs`, `with-java21.mjs`, `perf_probe.mjs`, and `tool/parity/`.
+- `tool/` — `ci-local.mjs` (`npm run ci`), `publish_evidence.mjs`, `png_diff.mjs`, `check_pr_proof.mjs`, `with-java21.mjs` (supports `--ephemeral-emulators` for collision-free concurrent worktrees), `screenshot.mjs` (supports `--serve <dir>` on an ephemeral localhost port), `perf_probe.mjs`, and `tool/parity/`.
+
+## Local Emulator & Screenshot Builds
+
+- **Emulator-backed storefront/kiosk/staff builds:** Build with `PUBLIC_FIREBASE_EMULATORS=1 npm --prefix app run build` before running emulator-backed parity or screenshot captures (`tool/parity/shoot.mjs`, `tool/parity/order_e2e.mjs`, `tool/parity/staff_e2e.mjs`); otherwise the built app targets production Firebase instead of local emulators.
+- **Static screenshots without ad-hoc servers:** Use `node tool/screenshot.mjs --serve build/app /kiosk/ 390 844 shot.png` to serve `build/app` on an ephemeral localhost port and capture in headless Chrome.
 
 ## Coupled Invariants
 
