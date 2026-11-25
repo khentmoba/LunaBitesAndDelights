@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 
-const { shouldNotifyPaymentConfirmed } = require('../lib/orders/derived');
+const { shouldNotifyPaymentConfirmed, isKdsMirrorUnchanged } = require('../lib/orders/derived');
 const { Timestamp } = require('firebase-admin/firestore');
 const {
   evaluatePaymentNotificationClaim,
@@ -237,6 +237,23 @@ test('evaluatePaymentNotificationClaim deduplicates sent and in-flight alerts', 
   assert.equal(
     evaluatePaymentNotificationClaim({ paymentNotifStatus: 'failed', paymentNotifSent: false }, now),
     'claimed',
+  );
+});
+
+test('stale KDS mirrors are rewritten even when the order projection did not change', () => {
+  const next = {
+    orderNumber: 'LU-1',
+    status: 'Pending',
+    ts: Timestamp.fromMillis(1_700_000_000_000),
+    expireAt: Timestamp.fromMillis(1_700_000_000_000 + 10 * 24 * 60 * 60 * 1000),
+  };
+  const staleMirror = { ...next, stale: true, sourceEventMs: 1_700_000_000_000 };
+  assert.equal(isKdsMirrorUnchanged(staleMirror, next), false);
+  const derivedSrc = fs.readFileSync(path.resolve(__dirname, '../src/orders/derived.ts'), 'utf8');
+  assert.equal(
+    /JSON\.stringify\(kdsMirrorDoc\([^)]*\)\) === JSON\.stringify\(next\)/.test(derivedSrc),
+    false,
+    'the pre-transaction projection short-circuit must not skip stale mirrors',
   );
 });
 

@@ -71,6 +71,11 @@ test('the GCash handoff rejects a stale or hand-edited pending order', () => {
   }
   const page = readFileSync(new URL('../../app/src/pages/kiosk/gcash.astro', import.meta.url), 'utf8');
   assert.match(page, /if \(!validPending\(pending\)\) \{[\s\S]*?save\(PENDING, null\);[\s\S]*?location\.replace\('\/kiosk\/checkout'\);/);
+  assert.match(
+    page,
+    /verifyCheckoutPayment',\s*\{\s*orderDocId:\s*p\.orderDocId,\s*orderId:\s*p\.orderId,\s*checkoutSessionId:\s*sessionId\s*\}\)/,
+    'anonymous payment verification must send the order proof returned by placeOrder',
+  );
 });
 
 test('Nominatim lookups keep at least a second between requests', async () => {

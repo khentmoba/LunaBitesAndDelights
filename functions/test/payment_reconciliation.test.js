@@ -19,6 +19,7 @@ const {
   markOrderPaymentFailed,
 } = require('../lib/payments/paymongo');
 const { hasMatchingCheckoutSession } = require('../lib/payments/verify_payment');
+const { requireOrderAccess } = require('../lib/payments/verify_payment');
 const { isLiveCheckoutSession, shouldMarkPaymentFailed } = require('../lib/payments/paymongo');
 const { isOrderVisibleInKds, toIsoTimestamp, clampOrdersLimit, isAllowedStatusTransition } = require('../lib/orders/kds');
 const { kdsMirrorDoc, shouldNotifyKitchen } = require('../lib/orders/derived');
@@ -43,6 +44,28 @@ test('prefers the order document id from metadata', () => {
       metadata: { order_doc_id: 'aB3xY9zKq1LmN2pQr4St' },
     }),
     'aB3xY9zKq1LmN2pQr4St',
+  );
+});
+
+test('order callables require a proof tied to the stored order', () => {
+  const key = 'a'.repeat(32);
+  const docId = idempotentOrderDocId(key);
+  const orderData = { orderId: 'LU-260101-000000-ABC' };
+  assert.doesNotThrow(() => requireOrderAccess(undefined, false, docId, orderData, { orderId: orderData.orderId }));
+  assert.doesNotThrow(() => requireOrderAccess(undefined, false, docId, orderData, { idempotencyKey: key }));
+  assert.doesNotThrow(() => requireOrderAccess('staff', true, 'other-doc', orderData, {}));
+  assert.doesNotThrow(() => requireOrderAccess('admin', true, 'other-doc', orderData, {}));
+  assert.throws(
+    () => requireOrderAccess('staff', false, 'other-doc', orderData, {}),
+    /Order reference mismatch/,
+  );
+  assert.throws(
+    () => requireOrderAccess(undefined, false, docId, orderData, {}),
+    /Order reference mismatch/,
+  );
+  assert.throws(
+    () => requireOrderAccess(undefined, false, docId, orderData, { orderId: 'LU-FORGED', idempotencyKey: 'b'.repeat(32) }),
+    /Order reference mismatch/,
   );
 });
 

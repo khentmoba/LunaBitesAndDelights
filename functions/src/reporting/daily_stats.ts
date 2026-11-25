@@ -210,15 +210,26 @@ export function dayDeltas(
 }
 
 /** Firestore merge-set payload that adds a delta day to `dailyStats/{date}`. */
+const safeObject = <T>(entries: Iterable<readonly [string, T]>): Record<string, T> => {
+  const out: Record<string, T> = Object.create(null);
+  for (const [key, value] of entries) {
+    const safeValue = value && typeof value === 'object' && !Array.isArray(value)
+      ? Object.assign(Object.create(null), value)
+      : value;
+    Object.defineProperty(out, key, { value: safeValue, enumerable: true, writable: true, configurable: true });
+  }
+  return out;
+};
+
 export function incrementPayload(d: DayStats): Record<string, any> {
   const inc = (n: number) => FieldValue.increment(n);
   const incGroup = (g: Record<string, ChannelBucket>) =>
-    Object.fromEntries(
+    safeObject(
       Object.entries(g)
         .filter(([, x]) => x.revenue !== 0 || x.count !== 0)
         .map(([k, x]) => [k, { revenue: inc(x.revenue), count: inc(x.count) }])
     );
-  const items = Object.fromEntries(
+  const items = safeObject(
     Object.entries(d.items)
       .filter(([, it]) => it.qty !== 0 || it.revenue !== 0)
       .map(([k, it]) => [k, { name: it.name, variant: it.variant, qty: inc(it.qty), revenue: inc(it.revenue) }])

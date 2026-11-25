@@ -188,7 +188,7 @@ async function verify(p: PendingPayment) {
   setVerifying(true);
   setVerifyError(null);
   try {
-    const res = await callFn<{ paid?: boolean; paymentStatus?: string }>('verifyCheckoutPayment', { orderDocId: p.orderDocId, checkoutSessionId: sessionId });
+    const res = await callFn<{ paid?: boolean; paymentStatus?: string }>('verifyCheckoutPayment', { orderDocId: p.orderDocId, orderId: p.orderId, checkoutSessionId: sessionId });
     if (res.paid === true) {
       cart.clear();
       save(DRAFT, null);

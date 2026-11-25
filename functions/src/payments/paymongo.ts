@@ -5,6 +5,7 @@ import { paymongoSecret } from '../secrets';
 import { escapeMd } from '../telegram_api';
 import { ALNUM_DOC_ID } from '../util/security';
 import { KDS_COLLECTION, buildKdsMirrorWrite, isOrderVisibleInKds } from '../orders/kds';
+import { matchesIdempotentOrderDocId } from '../orders/idempotency';
 
 export interface VerifiedCheckoutSession {
   payments: any[];
@@ -41,6 +42,24 @@ export function hasMatchingCheckoutSession(
   if (initial.length > 0 && initial === sessionId) return true;
   const list = orderData?.checkoutSessionIds;
   return Array.isArray(list) && list.some((id) => typeof id === 'string' && id.trim() === sessionId);
+}
+
+/** Requires an order proof the holder obtained from `placeOrder` or a staff session. */
+export function requireOrderAccess(
+  role: unknown,
+  hasAuth: boolean,
+  orderDocId: string,
+  orderData: Record<string, any>,
+  proof: { orderId?: unknown; idempotencyKey?: unknown },
+): void {
+  if (hasAuth && (role === 'staff' || role === 'admin')) return;
+  if (typeof proof.orderId === 'string' && proof.orderId.length > 0 && proof.orderId === orderData.orderId) {
+    return;
+  }
+  if (matchesIdempotentOrderDocId(orderDocId, proof.idempotencyKey)) {
+    return;
+  }
+  throw new HttpsError('permission-denied', 'Order reference mismatch');
 }
 
 export function paymongoAuthHeader(requireConfigured = false): string {

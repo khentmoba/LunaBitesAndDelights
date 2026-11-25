@@ -123,13 +123,6 @@ export const onOrderWritten = onDocumentWritten(
       const shouldExist = Boolean(after && isOrderVisibleInKds(after));
       if (shouldExist) {
         const next = kdsMirrorDoc(orderId, after!);
-        if (
-          before &&
-          isOrderVisibleInKds(before) &&
-          JSON.stringify(kdsMirrorDoc(orderId, before)) === JSON.stringify(next)
-        ) {
-          return;
-        }
         await db.runTransaction(async (tx) => {
           const snap = await tx.get(mirrorRef);
           const existing = snap.exists ? snap.data() : undefined;

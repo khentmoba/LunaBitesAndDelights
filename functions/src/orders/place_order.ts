@@ -6,31 +6,16 @@ import { phtDateLabel } from '../util';
 import { cleanStr, optStr, clientIpFromRequest, enforceFixedWindowRateLimit } from '../util/security';
 import { validateAndPriceItems } from '../payments/create_checkout';
 import { KDS_COLLECTION, buildKdsMirrorWrite, isOrderVisibleInKds } from './kds';
+import { idempotentOrderDocId, parseIdempotencyKey } from './idempotency';
+
+export { idempotentOrderDocId } from './idempotency';
+export { parseIdempotencyKey } from './idempotency';
 
 const ORDER_TYPES = new Set(['Pickup', 'Delivery', 'Walk-In']);
 const PAYMENT_METHODS = new Set(['Cash', 'GCash']);
 const ORDER_ID_RE = /^[A-Za-z0-9_-]{4,32}$/;
-const IDEMPOTENCY_KEY_RE = /^[A-Za-z0-9_-]{16,64}$/;
 const PLACE_ORDER_RATE_WINDOW_MS = 5 * 60 * 1000;
 const PLACE_ORDER_RATE_MAX = 20;
-
-/** Validates an optional idempotencyKey without silently ignoring malformed non-string inputs. */
-export function parseIdempotencyKey(raw: unknown): string {
-  if (raw === undefined || raw === null || raw === '') return '';
-  if (typeof raw !== 'string') {
-    throw new HttpsError('invalid-argument', 'Invalid idempotencyKey');
-  }
-  const key = raw.trim();
-  if (!IDEMPOTENCY_KEY_RE.test(key)) {
-    throw new HttpsError('invalid-argument', 'Invalid idempotencyKey');
-  }
-  return key;
-}
-
-/** Derives a deterministic alphanumeric Firestore order doc ID from an idempotency key. */
-export function idempotentOrderDocId(key: string): string {
-  return `ord${crypto.createHash('sha256').update(key).digest('hex').slice(0, 28)}`;
-}
 
 /** Legacy SHA-256 fingerprint (pre-entryType) for seamless dedupe across deploy boundaries. */
 export function legacyOrderPayloadFingerprint(input: {
