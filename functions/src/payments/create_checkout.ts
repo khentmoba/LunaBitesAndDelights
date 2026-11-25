@@ -3,7 +3,7 @@ import { getFirestore } from 'firebase-admin/firestore';
 import { logger } from 'firebase-functions';
 import { paymongoSecret } from '../secrets';
 import { cleanStr, optStr, cleanInt, clientIpFromRequest, enforceFixedWindowRateLimit } from '../util/security';
-import { paymongoAuthHeader, requireOrderDoc } from './paymongo';
+import { paymongoAuthHeader, requireOrderAccess, requireOrderDoc } from './paymongo';
 
 const PAYMONGO_API = 'https://api.paymongo.com/v2/checkout_sessions';
 const CHECKOUT_REUSE_MS = 45 * 60 * 1000;
@@ -247,9 +247,10 @@ export const createCheckoutSession = onCall(
 
     // The payment result must land on the order document the kiosk wrote.
     const { orderRef, orderData } = await requireOrderDoc(orderDocId);
-    if (orderData.orderId !== orderId) {
-      throw new HttpsError('permission-denied', 'Order reference mismatch');
-    }
+    requireOrderAccess(role, !!request.auth?.uid, orderDocId, orderData, {
+      orderId,
+      idempotencyKey: d.idempotencyKey,
+    });
     assertOrderCheckoutEligible(orderData);
 
     // Price strictly from the authoritative persisted order items, never client-supplied items.

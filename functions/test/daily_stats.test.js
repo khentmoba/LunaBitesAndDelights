@@ -3,7 +3,7 @@ const assert = require('node:assert');
 
 const {
   contributionOf, dayDeltas, daysFromOrders, emptyDay, applyToDay,
-  dayFromDoc, lifetimeReportFromDays, salesAnalyticsFromDay,
+  dayFromDoc, lifetimeReportFromDays, salesAnalyticsFromDay, incrementPayload,
 } = require('../lib/reporting/daily_stats');
 const { itemKey, emptyChannel, addToChannel, isCountableOrder } = require('../lib/util');
 
@@ -210,6 +210,24 @@ test('dayFromDoc ignores malformed items fields and stores __proto__ safely as a
   assert.strictEqual(Object.getPrototypeOf(parsed.items), Object.prototype);
   assert.strictEqual(Object.prototype.hasOwnProperty.call(parsed.items, '__proto__'), true);
   assert.strictEqual(parsed.items['__proto__'].qty, 2);
+});
+
+test('incrementPayload builds item and bucket maps without prototype pollution', () => {
+  const day = emptyDay('2026-11-25');
+  Object.defineProperty(day.items, '__proto__', {
+    value: { polluted: true, qty: 5, revenue: 50, name: 'Bad', variant: '' },
+    enumerable: true,
+    writable: true,
+    configurable: true,
+  });
+  day.channel.pickup = { revenue: 10, count: 1 };
+  const payload = incrementPayload(day);
+  assert.equal(Object.getPrototypeOf(payload.items), null);
+  assert.equal(Object.getPrototypeOf(payload.channel), null);
+  assert.equal({}.polluted, undefined);
+  assert.equal(Object.prototype.hasOwnProperty.call(payload.items, '__proto__'), true);
+  assert.equal(Object.getPrototypeOf(payload.items['__proto__']), null);
+  assert.equal(Object.getPrototypeOf(payload.channel.pickup), null);
 });
 
 test('salesAnalyticsFromDay matches scanning today orders', () => {

@@ -8,6 +8,7 @@ import { ALNUM_DOC_ID, cleanStr, clientIpFromRequest, enforceFixedWindowRateLimi
 import { finiteNumber } from '../util';
 import { isOrderVisibleInKds } from './kds';
 import { formatPaymentConfirmedMessage } from '../payments/paymongo';
+import { matchesIdempotentOrderDocId } from './idempotency';
 
 const NOTIF_RATE_WINDOW_MS = 10 * 60 * 1000;
 const NOTIF_RATE_MAX = 20;
@@ -976,13 +977,14 @@ export const sendOrderNotification = onCall(
       throw new HttpsError('invalid-argument', 'Missing orderDocId');
     }
     const orderNumber = cleanStr(d.orderNumber, 32, 'orderNumber');
+    const idempotencyKey = d.idempotencyKey;
 
     const orderSnap = await getFirestore().collection('orders').doc(orderDocId).get();
     if (!orderSnap.exists) {
       throw new HttpsError('not-found', 'Order not found');
     }
     const orderData = orderSnap.data()!;
-    if (orderData.orderId !== orderNumber) {
+    if (orderData.orderId !== orderNumber && !matchesIdempotentOrderDocId(orderDocId, idempotencyKey)) {
       throw new HttpsError('permission-denied', 'Order reference mismatch');
     }
     if (!isOrderVisibleInKds(orderData) || orderData.status === 'Cancelled') {

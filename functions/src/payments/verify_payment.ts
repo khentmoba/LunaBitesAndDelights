@@ -15,9 +15,11 @@ import {
   markOrderPaidOnce,
   markOrderPaymentFailed,
   hasMatchingCheckoutSession,
+  requireOrderAccess,
 } from './paymongo';
 
 export { hasMatchingCheckoutSession };
+export { requireOrderAccess } from './paymongo';
 
 const VERIFY_RATE_WINDOW_MS = 5 * 60 * 1000;
 const VERIFY_RATE_MAX = 60;
@@ -53,9 +55,10 @@ export const verifyCheckoutPayment = onCall(
     }
 
     const { orderRef, orderData } = await requireOrderDoc(orderDocId);
-    if (!hasMatchingCheckoutSession(orderData, sessionId)) {
-      throw new HttpsError('permission-denied', 'Checkout session does not match order');
-    }
+    requireOrderAccess(role, !!request.auth?.uid, orderDocId, orderData, {
+      orderId: d.orderId,
+      idempotencyKey: d.idempotencyKey,
+    });
     if (orderData.paymentStatus === 'PAID') {
       return { paid: true, paymentStatus: 'PAID' };
     }
@@ -76,6 +79,9 @@ export const verifyCheckoutPayment = onCall(
       logger.warn(
         `Refusing verifyCheckoutPayment for ${orderDocId}: session ${sessionId} belongs to ${sessionOrderDocId}`,
       );
+      throw new HttpsError('permission-denied', 'Checkout session does not match order');
+    }
+    if (!hasMatchingCheckoutSession(orderData, sessionId)) {
       throw new HttpsError('permission-denied', 'Checkout session does not match order');
     }
 
