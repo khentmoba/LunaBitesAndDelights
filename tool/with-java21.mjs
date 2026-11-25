@@ -153,7 +153,9 @@ async function main() {
 
   const quote = (a) => (/[\s"]/.test(a) ? `"${a.replace(/"/g, '\\"')}"` : a);
   try {
-    const r = spawnSync([cmd, ...finalArgs].map(quote).join(' '), { stdio: 'inherit', shell: true, env });
+    const r = process.platform === 'win32'
+      ? spawnSync([cmd, ...finalArgs].map(quote).join(' '), { stdio: 'inherit', shell: true, env })
+      : spawnSync(cmd, finalArgs, { stdio: 'inherit', env });
     process.exitCode = r.status ?? 1;
   } finally {
     cleanup();
