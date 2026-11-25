@@ -29,6 +29,7 @@ Read-only reference for production state that cannot be inspected from a local c
 - **Consequence for PRs:**
   - Any edit to `firestore.rules` merged to `main` without a coordinated `firebase deploy --only firestore:rules` will cause `.github/workflows/rules-drift.yml` to fail.
   - Legacy rule blocks in `firestore.rules` (direct client `create` on `orders/{orderId}`, `pasugo_errands`, `pasugo_sessions`, `riders`) and composite index rollouts in `firestore.indexes.json` are tracked as production-gated items (`SEC-01`, `SEC-02`, `REL-01`, `PERF-01` in `docs/reliability-performance-security-baseline.md`). Do not modify `firestore.rules` in routine code PRs unless the task explicitly targets rules and coordinates deployment.
+  - If `.github/workflows/rules-drift.yml` is already failing on `main` for a PR that did not touch `firestore.rules`, it reflects pre-existing production rules drift (not a regression from the PR); do not edit `firestore.rules` to silence it.
 
 ## 5. Local Read-Only Inspection (`check:prod-config` & `check:rules-drift`)
 

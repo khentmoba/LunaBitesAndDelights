@@ -31,6 +31,9 @@ Thumbs.db
 .live/
 .preview/
 .evidence-urls.md
+.ci-local.txt
+docs/evidence/ci-local.txt
+.firebase-ephemeral-*.json
 
 # Desktop agent app state
 .reasonix/

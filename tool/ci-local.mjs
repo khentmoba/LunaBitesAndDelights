@@ -2,9 +2,10 @@
 // same working directories and order, so a local pass means the same checks
 // CI runs. Reads the workflow itself, so the two cannot drift.
 //
-//   npm run ci                         # every job (writes docs/evidence/ci-local.txt)
-//   npm run ci -- --job=site,functions # some jobs (does not dirty docs/evidence/ci-local.txt)
-//   npm run ci -- --no-evidence        # skip writing docs/evidence/ci-local.txt
+//   npm run ci                         # every job (quiet on pass; writes .ci-local.txt)
+//   npm run ci -- --verbose            # stream full stdout/stderr of every step
+//   npm run ci -- --job=site,functions # some jobs (does not overwrite .ci-local.txt)
+//   npm run ci -- --no-evidence        # skip writing .ci-local.txt
 //   npm run ci -- --no-install         # force-skip `npm ci` steps
 //   npm run ci -- --install            # force-run `npm ci` steps even if node_modules is current
 //   npm run ci -- --setup-only         # ensure node_modules installed in ., app, functions
@@ -76,12 +77,12 @@ export function unresolvedEnv(env = {}) {
     .map(([k]) => k);
 }
 
-function runStep(cmd, cwd, env = {}) {
+function runStep(cmd, cwd, env = {}, { verbose = false } = {}) {
   return new Promise((done) => {
     const tail = [];
     const keep = (chunk) => {
       for (const line of chunk.toString().split(/\r?\n/)) if (line.trim()) tail.push(line);
-      tail.splice(0, Math.max(0, tail.length - 25));
+      tail.splice(0, Math.max(0, tail.length - 40));
     };
     const stepEnv = { ...process.env, CI: '1' };
     for (const [k, v] of Object.entries(env)) {
@@ -89,8 +90,14 @@ function runStep(cmd, cwd, env = {}) {
       stepEnv[k] = String(v);
     }
     const p = spawn(bash, ['-c', cmd], { cwd: join(root, cwd), env: stepEnv });
-    p.stdout.on('data', (c) => (process.stdout.write(c), keep(c)));
-    p.stderr.on('data', (c) => (process.stderr.write(c), keep(c)));
+    p.stdout.on('data', (c) => {
+      if (verbose) process.stdout.write(c);
+      keep(c);
+    });
+    p.stderr.on('data', (c) => {
+      if (verbose) process.stderr.write(c);
+      keep(c);
+    });
     p.on('close', (code) => done({ code: code ?? 1, tail }));
     p.on('error', (e) => done({ code: 1, tail: [String(e)] }));
   });
@@ -98,14 +105,18 @@ function runStep(cmd, cwd, env = {}) {
 
 async function main() {
   const args = process.argv.slice(2);
+  const verbose = args.includes('--verbose') || args.includes('-v');
   if (args.includes('--setup-only')) {
     for (const dir of ['.', 'app', 'functions']) {
       if (isDepsCurrent(dir)) {
         console.log(`SKIP  npm ci (${dir}) -- up to date`);
       } else {
         console.log(`▶ npm ci (${dir})`);
-        const { code } = await runStep('npm ci --no-audit --no-fund', dir);
-        if (code !== 0) process.exit(code);
+        const { code, tail } = await runStep('npm ci --no-audit --no-fund', dir, {}, { verbose });
+        if (code !== 0) {
+          if (!verbose && tail.length) console.error(tail.join('\n'));
+          process.exit(code);
+        }
       }
     }
     process.exit(0);
@@ -150,29 +161,35 @@ async function main() {
         // Running this step locally with empty env would pass vacuously and give
         // false assurance that the real PR gate was checked.
         lines.push(`SKIP  ${s.name} (${s.cwd}) needs PR context: ${needsContext.join(', ')}`);
-        console.log(`\n▶ SKIP ${j.job} › ${s.name}  (needs PR context: ${needsContext.join(', ')})`);
+        console.log(`SKIP  ${j.job} › ${s.name} (${s.cwd}) needs PR context: ${needsContext.join(', ')}`);
         skipped++;
         continue;
       }
-      console.log(`\n▶ ${j.job} › ${s.name}  (${s.cwd})`);
+      if (verbose) console.log(`\n▶ ${j.job} › ${s.name}  (${s.cwd})`);
       const t0 = Date.now();
-      const { code, tail } = await runStep(s.run, s.cwd, s.env);
+      const { code, tail } = await runStep(s.run, s.cwd, s.env, { verbose });
       const secs = ((Date.now() - t0) / 1000).toFixed(0);
-      lines.push(`${code === 0 ? 'PASS' : 'FAIL'}  ${s.name} (${s.cwd}) exit=${code} ${secs}s`);
+      const status = code === 0 ? 'PASS' : 'FAIL';
+      lines.push(`${status}  ${s.name} (${s.cwd}) exit=${code} ${secs}s`);
+      console.log(`${status}  ${j.job} › ${s.name} (${s.cwd}) ${secs}s`);
       if (code !== 0) {
         failed++;
-        lines.push(...tail.slice(-12).map((l) => `      ${l}`));
+        const snippet = tail.slice(-25);
+        lines.push(...snippet.map((l) => `      ${l}`));
+        if (!verbose && tail.length) {
+          console.error(tail.map((l) => `  | ${l}`).join('\n'));
+        }
       }
     }
   }
   const total = jobs.reduce((n, j) => n + j.steps.length, 0);
   lines.push('', ciSummary({ failed, skipped, total }));
   if (writeEvidence) {
-    const out = join(root, 'docs/evidence/ci-local.txt');
+    const out = join(root, '.ci-local.txt');
     writeFileSync(out, `${lines.join('\n')}\n`);
-    console.log(`\n${lines.join('\n')}\n\nSummary written to docs/evidence/ci-local.txt`);
+    console.log(`\n${ciSummary({ failed, skipped, total })} (details in .ci-local.txt)`);
   } else {
-    console.log(`\n${lines.join('\n')}\n\n(Skipped writing docs/evidence/ci-local.txt on partial/--no-evidence run)`);
+    console.log(`\n${ciSummary({ failed, skipped, total })} (skipped writing .ci-local.txt)`);
   }
   process.exit(failed ? 1 : 0);
 }

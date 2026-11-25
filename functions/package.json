@@ -10,10 +10,10 @@
     "deploy": "firebase deploy --only functions",
     "logs": "firebase functions:log",
     "test": "npm run build && node --test \"test/*.test.js\"",
-    "test:rules": "node ../tool/with-java21.mjs npm exec --prefix .. --no -- firebase-tools emulators:exec --only firestore \"node --test test/emulator/firestore-rules.test.js\"",
+    "test:rules": "node ../tool/with-java21.mjs --ephemeral-emulators npm exec --prefix .. --no -- firebase-tools emulators:exec --only firestore \"node --test test/emulator/firestore-rules.test.js\"",
     "check:rules-drift": "node scripts/check-firestore-rules-drift.js",
     "check:prod-config": "node scripts/check-prod-config.js",
-    "test:derived": "npm run build && node ../tool/with-java21.mjs npm exec --prefix .. --no -- firebase-tools emulators:exec --project demo-lunaexpress --only functions,firestore \"node --test test/emulator/derived-views.test.js\""
+    "test:derived": "npm run build && node ../tool/with-java21.mjs --ephemeral-emulators npm exec --prefix .. --no -- firebase-tools emulators:exec --project demo-lunaexpress --only functions,firestore \"node --test test/emulator/derived-views.test.js\""
   },
   "engines": {
     "node": "22"
